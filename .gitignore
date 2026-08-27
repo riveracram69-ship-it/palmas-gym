@@ -1,0 +1,43 @@
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# Sensitive Backups & Database dumps
+backups/*.sql
+backups/*.gz
+backups/*.zip
+*.sql
+
+# Private Uploads containing Member PII
+uploads/members/*
+!uploads/members/.gitkeep
+!uploads/members/default-avatar.png
+!uploads/members/index.php
+
+# Logs
+*.log
+email_logs.txt
+backups/email_logs.txt
+
+# Node / Mobile build artifacts
+mobile-app/node_modules/
+mobile-app/android/.gradle/
+mobile-app/android/app/build/
+mobile-app/android/build/
+mobile-app/android/captures/
+mobile-app/android/.idea/
+mobile-app/android/app/src/main/assets/public/
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project

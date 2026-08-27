@@ -1,0 +1,30 @@
+name: Automated Daily Maintenance Cron
+
+on:
+  schedule:
+    # Runs everyday at 00:05 UTC (08:05 AM PHT)
+    - cron: '5 0 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  daily-maintenance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Daily Maintenance Worker
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET_KEY: ${{ secrets.CRON_SECRET_KEY }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET_KEY" ]; then
+            echo "Error: APP_URL or CRON_SECRET_KEY secret is not configured in GitHub repository secrets."
+            exit 1
+          fi
+          echo "Triggering daily maintenance at $APP_URL/cron/daily_maintenance.php..."
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X GET "$APP_URL/cron/daily_maintenance.php?key=$CRON_SECRET_KEY")
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d':' -f2)
+          echo "HTTP Status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Maintenance trigger failed with HTTP status $HTTP_STATUS"
+            exit 1
+          fi
+          echo "Daily maintenance completed successfully."

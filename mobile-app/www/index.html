@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en" class="hydrated">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Palma's Elite Gym - Mobile Member App</title>
+
+  <!-- Ionic CSS & JS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core/css/ionic.bundle.css" />
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js"></script>
+  <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.js"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Google Fonts: Inter & Outfit -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --ion-font-family: 'Inter', sans-serif;
+      --ion-color-primary: #2d6a4f;
+      --ion-color-primary-rgb: 45, 106, 79;
+      --ion-color-primary-contrast: #ffffff;
+      --ion-background-color: #091c14;
+      --ion-text-color: #f8f9fa;
+      --ion-tab-bar-background: #0d281e;
+      --ion-tab-bar-color: #74c69d;
+      --ion-tab-bar-color-selected: #52b788;
+      --ion-toolbar-background: #0f2d20;
+      --ion-toolbar-color: #ffffff;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #091c14;
+      color: #f8f9fa;
+      user-select: none;
+    }
+
+    h1, h2, h3, h4, .brand-font {
+      font-family: 'Outfit', sans-serif;
+    }
+
+    /* Gradient Brand Cards */
+    .membership-card {
+      background: linear-gradient(135deg, #1b4332 0%, #081c15 100%);
+      border: 1px solid rgba(82, 183, 136, 0.3);
+      border-radius: 20px;
+      padding: 22px;
+      margin: 16px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .membership-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(116, 198, 157, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .qr-box {
+      background: #ffffff;
+      padding: 14px;
+      border-radius: 16px;
+      display: inline-block;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      margin: 14px auto;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .status-active { background: rgba(82, 183, 136, 0.25); color: #74c69d; border: 1px solid #52b788; }
+    .status-expired { background: rgba(220, 53, 69, 0.25); color: #ff85a1; border: 1px solid #dc3545; }
+
+    .timer-bar-wrap {
+      width: 180px;
+      height: 4px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 4px;
+      margin: 6px auto 0 auto;
+      overflow: hidden;
+    }
+    .timer-bar {
+      height: 100%;
+      background: #52b788;
+      width: 100%;
+      transition: width 1s linear;
+    }
+
+    .dark-card {
+      background: #0f2d20;
+      border-radius: 14px;
+      border: 1px solid rgba(82, 183, 136, 0.15);
+      margin-bottom: 12px;
+    }
+
+    .login-container {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 28px 20px;
+      background: radial-gradient(circle at top, #1b4332 0%, #091c14 80%);
+    }
+
+    .glass-input {
+      --background: rgba(15, 45, 32, 0.85);
+      --color: #ffffff;
+      --placeholder-color: #95d5b2;
+      border-radius: 12px;
+      margin-bottom: 14px;
+      border: 1px solid rgba(82, 183, 136, 0.25);
+    }
+  </style>
+</head>
+<body>
+  <ion-app>
+
+    <!-- 1. LOGIN SCREEN -->
+    <div id="view-login" class="login-container">
+      <div style="text-align: center; margin-bottom: 25px;">
+        <div style="width: 76px; height: 76px; background: #1b4332; border-radius: 20px; margin: 0 auto 14px auto; display: flex; align-items: center; justify-content: center; border: 2px solid #52b788; box-shadow: 0 0 25px rgba(82, 183, 136, 0.3);">
+          <i class="fa-solid fa-dumbbell" style="font-size: 36px; color: #74c69d;"></i>
+        </div>
+        <h2 style="font-weight: 800; color: #ffffff; margin: 0; letter-spacing: 1px;">PALMA'S ELITE GYM</h2>
+        <p style="color: #95d5b2; font-size: 0.88rem; margin-top: 4px; margin-bottom: 8px;">Exclusive Member Mobile Portal</p>
+        
+        <!-- Auto-Discovery Status Badge -->
+        <div id="server-status-pill" onclick="runAutoDiscovery(true)" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(15, 45, 32, 0.8); border: 1px solid #52b788; color: #95d5b2; font-size: 0.72rem; padding: 4px 12px; border-radius: 20px; cursor: pointer;">
+          <span id="server-status-dot" style="width: 7px; height: 7px; background: #74c69d; border-radius: 50%; display: inline-block;"></span>
+          <span id="server-status-text">Detecting Server...</span>
+          <i class="fa-solid fa-rotate" style="font-size: 0.65rem; color: #74c69d; margin-left: 2px;"></i>
+        </div>
+      </div>
+
+      <div>
+        <ion-item lines="none" class="glass-input">
+          <ion-icon name="person-outline" slot="start" style="color: #74c69d;"></ion-icon>
+          <ion-input id="input-username" type="text" placeholder="Member ID or Email"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none" class="glass-input">
+          <ion-icon name="lock-closed-outline" slot="start" style="color: #74c69d;"></ion-icon>
+          <ion-input id="input-password" type="password" placeholder="Password"></ion-input>
+        </ion-item>
+
+        <ion-button expand="block" style="--background: #2d6a4f; --color: white; font-weight: 700; height: 50px; margin-top: 20px; border-radius: 12px;" onclick="submitLogin()">
+          SIGN IN
+        </ion-button>
+
+        <div style="text-align: center; margin-top: 15px;">
+          <p style="color: #95d5b2; font-size: 0.82rem; margin-bottom: 8px;">Don't have an account?</p>
+          <ion-button expand="block" fill="outline" style="--border-color: #52b788; --color: #74c69d; font-weight: 600; height: 44px; border-radius: 12px;" onclick="showRegisterView()">
+            <ion-icon name="person-add-outline" slot="start"></ion-icon> CREATE AN ACCOUNT
+          </ion-button>
+        </div>
+
+        <!-- Server IP Host Settings for local/LAN testing -->
+        <div style="text-align: center; margin-top: 25px;">
+          <a href="javascript:void(0)" onclick="toggleServerSettings()" style="color: #74c69d; font-size: 0.8rem; text-decoration: none;">
+            <i class="fa-solid fa-gear"></i> Server Connection Settings
+          </a>
+          <div id="server-settings-box" style="display: none; margin-top: 10px;">
+            <input id="input-server-url" type="text" style="width: 100%; padding: 8px; border-radius: 8px; background: #081c15; color: #74c69d; border: 1px solid #2d6a4f; font-size: 0.8rem;" value="" />
+            <button onclick="saveServerUrl()" style="margin-top: 6px; padding: 4px 12px; border-radius: 6px; background: #2d6a4f; color: white; border: none; font-size: 0.75rem;">Save Server URL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1B. REGISTER SCREEN -->
+    <div id="view-register" class="login-container" style="display: none; height: auto; min-height: 100vh; overflow-y: auto; padding-top: 35px; padding-bottom: 35px;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="width: 64px; height: 64px; background: #1b4332; border-radius: 18px; margin: 0 auto 12px auto; display: flex; align-items: center; justify-content: center; border: 2px solid #52b788; box-shadow: 0 0 20px rgba(82, 183, 136, 0.3);">
+          <i class="fa-solid fa-user-plus" style="font-size: 28px; color: #74c69d;"></i>
+        </div>
+        <h2 style="font-weight: 800; color: #ffffff; margin: 0; font-size: 1.35rem; letter-spacing: 0.5px;">CREATE ACCOUNT</h2>
+        <p style="color: #95d5b2; font-size: 0.82rem; margin-top: 4px;">Join Palma's Elite Gym & Get Instant Pass</p>
+      </div>
+
+      <div>
+        <ion-item lines="none" class="glass-input">
+          <ion-icon name="person-outline" slot="start" style="color: #74c69d;"></ion-icon>
+          <ion-input id="reg-name" type="text" placeholder="Full Name"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none" class="glass-input">
+          <ion-icon name="mail-outline" slot="start" style="color: #74c69d;"></ion-icon>
+          <ion-input id="reg-email" type="email" placeholder="Email Address"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none" class="glass-input">
+          <ion-icon name="call-outline" slot="start" style="color: #74c69d;"></ion-icon>
+          <ion-input id="reg-phone" type="tel" placeholder="Contact No. (09XXXXXXXXX)"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none" class="glass-input">
+          <ion-icon name="male-female-outline" slot="start" style="color: #74c69d;"></ion-icon>
+          <ion-select id="reg-gender" placeholder="Gender" style="color: #fff; width: 100%;">
+            <ion-select-option value="Male">Male</ion-select-option>
+            <ion-select-option value="Female">Female</ion-select-option>
+            <ion-select-option value="Other">Other</ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item lines="none" class="glass-input">
+          <ion-icon name="lock-closed-outline" slot="start" style="color: #74c69d;"></ion-icon>
+          <ion-input id="reg-password" type="password" placeholder="Password (min. 6 chars)"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none" class="glass-input">
+          <ion-icon name="shield-checkmark-outline" slot="start" style="color: #74c69d;"></ion-icon>
+          <ion-input id="reg-confirmpassword" type="password" placeholder="Confirm Password"></ion-input>
+        </ion-item>
+
+        <ion-button expand="block" id="btn-submit-reg" style="--background: #2d6a4f; --color: white; font-weight: 700; height: 50px; margin-top: 18px; border-radius: 12px;" onclick="submitRegister()">
+          REGISTER NOW
+        </ion-button>
+
+        <div style="text-align: center; margin-top: 15px;">
+          <p style="color: #95d5b2; font-size: 0.82rem; margin-bottom: 6px;">Already have an account?</p>
+          <a href="javascript:void(0)" onclick="showLoginView()" style="color: #74c69d; font-size: 0.9rem; font-weight: 700; text-decoration: none;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Sign In
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1C. FIRST-TIME SETUP PASSWORD SCREEN -->
+    <div id="view-setup-password" class="login-container" style="display: none; height: auto; min-height: 100vh; overflow-y: auto; padding-top: 40px; padding-bottom: 40px;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div style="width: 68px; height: 68px; background: #1b4332; border-radius: 18px; margin: 0 auto 14px auto; display: flex; align-items: center; justify-content: center; border: 2px solid #52b788; box-shadow: 0 0 20px rgba(82, 183, 136, 0.3);">
+          <i class="fa-solid fa-key" style="font-size: 30px; color: #74c69d;"></i>
+        </div>
+        <h2 style="font-weight: 800; color: #ffffff; margin: 0; font-size: 1.35rem;">SETUP YOUR PASSWORD</h2>
+        <p id="setup-member-welcome" style="color: #95d5b2; font-size: 0.85rem; margin-top: 6px;">Welcome! Create your secure password.</p>
+      </div>
+
+      <div>
+        <input type="hidden" id="setup-member-id" value="" />
+
+        <div style="background: rgba(15, 45, 32, 0.8); padding: 14px; border-radius: 12px; border-left: 4px solid #52b788; margin-bottom: 18px;">
+          <p style="color: #d8f3dc; font-size: 0.8rem; margin: 0; line-height: 1.4;">
+            <i class="fa-solid fa-circle-info" style="color: #74c69d;"></i> <strong>First-Time Login:</strong> Your membership was registered at the gym front desk. Please create your secure password for all future logins.
+          </p>
+        </div>
+
+        <ion-item lines="none" class="glass-input">
+          <ion-icon name="lock-closed-outline" slot="start" style="color: #74c69d;"></ion-icon>
+          <ion-input id="setup-password-input" type="password" placeholder="New Password (min. 6 chars)"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none" class="glass-input">
+          <ion-icon name="shield-checkmark-outline" slot="start" style="color: #74c69d;"></ion-icon>
+          <ion-input id="setup-confirm-input" type="password" placeholder="Confirm New Password"></ion-input>
+        </ion-item>
+
+        <ion-button expand="block" id="btn-save-setup-pass" style="--background: #2d6a4f; --color: white; font-weight: 700; height: 50px; margin-top: 18px; border-radius: 12px;" onclick="submitSetupPassword()">
+          SAVE PASSWORD & LOG IN
+        </ion-button>
+
+        <div style="text-align: center; margin-top: 15px;">
+          <a href="javascript:void(0)" onclick="showLoginView()" style="color: #74c69d; font-size: 0.85rem; text-decoration: none;">
+            <i class="fa-solid fa-arrow-left"></i> Cancel & Back to Login
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. MAIN APP (TABS VIEW) -->
+    <div id="view-main" style="display: none; height: 100%;">
+      <ion-tabs>
+        <!-- TAB 1: DIGITAL QR PASS -->
+        <ion-tab tab="tab-id">
+          <ion-header translucent="true">
+            <ion-toolbar>
+              <ion-title class="brand-font">Palma's Elite Pass</ion-title>
+              <ion-buttons slot="end">
+                <ion-button onclick="refreshDashboard()"><ion-icon name="refresh-outline"></ion-icon></ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-header>
+
+          <ion-content fullscreen="true">
+            <ion-refresher slot="fixed" id="refresher-pass">
+              <ion-refresher-content></ion-refresher-content>
+            </ion-refresher>
+
+            <div class="membership-card text-center" style="text-align: center;">
+              <h3 id="card-name" style="margin: 0; font-weight: 700; color: #ffffff; font-size: 1.35rem;">--</h3>
+              <p id="card-code" style="color: #74c69d; margin: 4px 0 10px 0; font-weight: 600; letter-spacing: 1px;">--</p>
+              
+              <div class="qr-box">
+                <div id="qr-target"></div>
+              </div>
+
+              <!-- 15-second rotating indicator -->
+              <div class="timer-bar-wrap">
+                <div id="qr-timer-bar" class="timer-bar"></div>
+              </div>
+              <p style="font-size: 0.72rem; color: #95d5b2; margin-top: 6px;">Dynamic Security QR • Auto-refreshes every 15s</p>
+
+              <div style="margin-top: 12px;">
+                <span id="card-status-pill" class="status-pill status-active">ACTIVE</span>
+              </div>
+
+              <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                  <span style="color: #95d5b2;">Membership Plan:</span>
+                  <strong id="card-plan" style="color: #ffffff;">--</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #95d5b2;">Valid Expiry:</span>
+                  <strong id="card-expiry" style="color: #ffffff;">--</strong>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin: 0 16px 20px 16px; text-align: center; color: #95d5b2; font-size: 0.8rem;">
+              <i class="fa-solid fa-info-circle"></i> Present this QR code to the gym scanner counter upon arrival.
+            </div>
+          </ion-content>
+        </ion-tab>
+
+        <!-- TAB 2: ATTENDANCE HISTORY -->
+        <ion-tab tab="tab-attendance">
+          <ion-header>
+            <ion-toolbar>
+              <ion-title class="brand-font">Attendance Log</ion-title>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content class="ion-padding">
+            <h4 style="color: #74c69d; margin-top: 0;">Recent Check-ins</h4>
+            <div id="attendance-container"></div>
+          </ion-content>
+        </ion-tab>
+
+        <!-- TAB 3: PAYMENTS & RENEWAL -->
+        <ion-tab tab="tab-payments">
+          <ion-header>
+            <ion-toolbar>
+              <ion-title class="brand-font">Renewals & Billing</ion-title>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content class="ion-padding">
+            <!-- Renewal banner -->
+            <div id="renewal-banner" class="dark-card" style="padding: 16px; margin-bottom: 20px; border-color: #2d6a4f;">
+              <h4 style="color: #d8f3dc; margin: 0 0 8px 0;"><i class="fa-solid fa-arrows-rotate"></i> Extend Membership</h4>
+              <p style="color: #95d5b2; font-size: 0.85rem; margin-bottom: 14px;">Select your preferred plan and submit a renewal request to gym administrators.</p>
+              <ion-button expand="block" color="success" onclick="openRenewalModal()">
+                Request Plan Renewal
+              </ion-button>
+            </div>
+
+            <h4 style="color: #74c69d;">Payment History</h4>
+            <div id="payments-container"></div>
+          </ion-content>
+        </ion-tab>
+
+        <!-- TAB 4: PROFILE & SETTINGS -->
+        <ion-tab tab="tab-profile">
+          <ion-header>
+            <ion-toolbar>
+              <ion-title class="brand-font">My Profile</ion-title>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content class="ion-padding">
+            <div style="text-align: center; margin: 20px 0;">
+              <div style="width: 90px; height: 90px; border-radius: 50%; background: #1b4332; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 3px solid #52b788;">
+                <i class="fa-solid fa-user" style="font-size: 40px; color: #74c69d;"></i>
+              </div>
+              <h3 id="prof-name" style="margin: 12px 0 2px 0; color: #ffffff;">--</h3>
+              <p id="prof-code" style="color: #74c69d; margin: 0; font-size: 0.9rem;">--</p>
+            </div>
+
+            <ion-list style="background: transparent;">
+              <ion-item class="dark-card">
+                <ion-icon name="mail-outline" slot="start" style="color: #74c69d;"></ion-icon>
+                <ion-label>
+                  <p style="color: #95d5b2;">Email</p>
+                  <h3 id="prof-email" style="color: #fff;">--</h3>
+                </ion-label>
+              </ion-item>
+              <ion-item class="dark-card">
+                <ion-icon name="call-outline" slot="start" style="color: #74c69d;"></ion-icon>
+                <ion-label>
+                  <p style="color: #95d5b2;">Contact</p>
+                  <h3 id="prof-phone" style="color: #fff;">--</h3>
+                </ion-label>
+              </ion-item>
+            </ion-list>
+
+            <ion-button expand="block" color="danger" style="margin-top: 30px; font-weight: 700;" onclick="logout()">
+              <ion-icon name="log-out-outline" slot="start"></ion-icon>
+              LOGOUT
+            </ion-button>
+          </ion-content>
+        </ion-tab>
+
+        <!-- BOTTOM TABS -->
+        <ion-tab-bar slot="bottom">
+          <ion-tab-button tab="tab-id">
+            <ion-icon name="qr-code-outline"></ion-icon>
+            <ion-label>Gym Pass</ion-label>
+          </ion-tab-button>
+          <ion-tab-button tab="tab-attendance">
+            <ion-icon name="calendar-outline"></ion-icon>
+            <ion-label>Attendance</ion-label>
+          </ion-tab-button>
+          <ion-tab-button tab="tab-payments">
+            <ion-icon name="card-outline"></ion-icon>
+            <ion-label>Payments</ion-label>
+          </ion-tab-button>
+          <ion-tab-button tab="tab-profile">
+            <ion-icon name="person-outline"></ion-icon>
+            <ion-label>Profile</ion-label>
+          </ion-tab-button>
+        </ion-tab-bar>
+      </ion-tabs>
+    </div>
+
+    <!-- RENEWAL & INSTANT AUTO-PAY MODAL -->
+    <ion-modal id="modal-renewal">
+      <ion-header>
+        <ion-toolbar style="--background: #1b4332; --color: #fff;">
+          <ion-title style="font-weight: 700;">Renew Membership</ion-title>
+          <ion-buttons slot="end">
+            <ion-button onclick="closeRenewalModal()" style="--color: #74c69d;"><ion-icon name="close"></ion-icon></ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding" style="--background: #091c14;">
+        <!-- Step 1: Select Plan & Method -->
+        <div id="renewal-step-form">
+          <div style="text-align: center; margin-bottom: 16px;">
+            <div style="width: 50px; height: 50px; border-radius: 14px; background: rgba(82,183,136,0.15); display: inline-flex; align-items: center; justify-content: center; color: #74c69d; font-size: 1.5rem; margin-bottom: 8px;">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <h4 style="color: #ffffff; margin: 0; font-weight: 800;">Choose Your Plan</h4>
+            <p style="color: #95d5b2; font-size: 0.82rem; margin-top: 4px;">Instant activation available for online payments</p>
+          </div>
+
+          <ion-item class="dark-card" style="margin-bottom: 12px;">
+            <ion-label position="stacked" style="color: #74c69d; font-weight: 700; font-size: 0.85rem;">Membership Plan</ion-label>
+            <ion-select id="renew-plan-select" placeholder="Select Plan" style="color: #fff;"></ion-select>
+          </ion-item>
+
+          <ion-item class="dark-card" style="margin-bottom: 16px;">
+            <ion-label position="stacked" style="color: #74c69d; font-weight: 700; font-size: 0.85rem;">Payment Method</ion-label>
+            <ion-select id="renew-method-select" value="Instant GCash" placeholder="Select Method" style="color: #fff;" onionChange="handleRenewMethodChange(this.value)">
+              <ion-select-option value="Instant GCash">⚡ Instant GCash (Auto-Activate)</ion-select-option>
+              <ion-select-option value="Instant Maya">⚡ Instant Maya (Auto-Activate)</ion-select-option>
+              <ion-select-option value="QR Ph">⚡ QR Ph Online (Auto-Activate)</ion-select-option>
+              <ion-select-option value="Cash">Cash (At Front Desk)</ion-select-option>
+            </ion-select>
+          </ion-item>
+
+          <div id="renew-manual-ref-wrap" style="display: none; margin-bottom: 16px;">
+            <ion-item class="dark-card">
+              <ion-input id="renew-ref-input" placeholder="Front Desk / Ref Number (Optional)" style="color: #fff;"></ion-input>
+            </ion-item>
+          </div>
+
+          <div style="background: rgba(45,106,79,0.3); border: 1px solid #52b788; border-radius: 12px; padding: 12px; margin-bottom: 18px;">
+            <p style="color: #d8f3dc; font-size: 0.78rem; margin: 0; line-height: 1.4;">
+              <i class="fa-solid fa-circle-check" style="color: #74c69d;"></i> <strong>24/7 Instant Auto-Activation:</strong> Online payments are verified automatically and activate your Digital Pass in seconds!
+            </p>
+          </div>
+
+          <ion-button expand="block" id="btn-proceed-renewal" style="--background: #2d6a4f; --color: white; font-weight: 800; height: 50px; border-radius: 12px;" onclick="submitRenewal()">
+            <i class="fa-solid fa-bolt" style="margin-right: 6px;"></i> PROCEED TO INSTANT PAYMENT
+          </ion-button>
+        </div>
+
+        <!-- Step 2: Instant QR Ph / GCash Checkout Sheet -->
+        <div id="renewal-step-checkout" style="display: none; text-align: center; padding-top: 10px;">
+          <div style="background: #112d21; border-radius: 16px; border: 1px solid #52b788; padding: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.4);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(82,183,136,0.2); padding-bottom: 12px; margin-bottom: 16px;">
+              <span id="checkout-method-badge" style="background: #2d6a4f; color: #fff; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 12px;">GCASH QR PH</span>
+              <span id="checkout-ref-text" style="font-family: monospace; font-size: 0.75rem; color: #95d5b2;">PEG-GC-1234</span>
+            </div>
+
+            <h3 id="checkout-plan-name" style="color: #fff; margin: 0; font-size: 1.15rem; font-weight: 700;">VIP Monthly Pass</h3>
+            <h1 id="checkout-amount-display" style="color: #74c69d; margin: 8px 0; font-size: 2rem; font-weight: 900;">₱1,500.00</h1>
+            <p style="color: #95d5b2; font-size: 0.78rem; margin: 0 0 16px 0;">Scan via GCash, Maya, or any Banking App</p>
+
+            <!-- Dynamic QR Canvas -->
+            <div style="background: #ffffff; padding: 14px; border-radius: 14px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 16px;">
+              <div id="checkout-qrcode-box" style="width: 180px; height: 180px; display: flex; align-items: center; justify-content: center;"></div>
+            </div>
+
+            <p style="color: #d8f3dc; font-size: 0.75rem; margin-bottom: 18px;">
+              <i class="fa-solid fa-shield-halved" style="color: #74c69d;"></i> Secured by Instant Auto-Activation Gateway
+            </p>
+
+            <!-- Instant Complete / Simulate Payment Button -->
+            <ion-button expand="block" id="btn-confirm-auto-pay" style="--background: #52b788; --color: #091c14; font-weight: 900; height: 50px; border-radius: 12px; margin-bottom: 10px;" onclick="executeAutoActivation()">
+              <i class="fa-solid fa-circle-check" style="margin-right: 6px;"></i> COMPLETE &amp; ACTIVATE PASS
+            </ion-button>
+
+            <a href="javascript:void(0)" onclick="backToRenewalForm()" style="color: #95d5b2; font-size: 0.82rem; text-decoration: none;">
+              <i class="fa-solid fa-arrow-left"></i> Change Plan / Back
+            </a>
+          </div>
+        </div>
+      </ion-content>
+    </ion-modal>
+
+  </ion-app>
+
+  <script>
+    // System Config: Backend API URL
+    // PRODUCTION: Uses HTTPS with production backend API URL.
+    // DEVELOPMENT: Can be configured via Settings modal or local discovery.
+    const DEFAULT_PROD_API_URL = 'https://YOUR-RENDER-SERVICE.onrender.com/gym/api';
+    let API_URL = DEFAULT_PROD_API_URL;
+
+    // Load saved custom URL or fallback to production URL
+    try {
+      const savedUrl = localStorage.getItem('peg_api_url');
+      if (savedUrl) {
+        if (savedUrl.includes('localhost') || savedUrl.includes('GYM-MEMBERSHIP') || savedUrl.includes('127.0.0.1')) {
+          localStorage.removeItem('peg_api_url');
+          API_URL = DEFAULT_PROD_API_URL;
+        } else {
+          API_URL = savedUrl.replace(/\/+$/, '');
+        }
+      }
+    } catch (e) {}
+
+    let currentMember = null;
+    let availablePlans = [];
+    let qrInstance = null;
+    let qrTimerInterval = null;
+    let isDiscovering = false;
+
+    const serverUrlInput = document.getElementById('input-server-url');
+    if (serverUrlInput) {
+      serverUrlInput.value = API_URL;
+    }
+
+    // --- ZERO-CONFIG LAN AUTO-DISCOVERY ENGINE ---
+    async function checkServerHealth(url, timeoutMs = 600) {
+      try {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), timeoutMs);
+        const res = await fetch(`${url}/ping.php`, {
+          method: 'GET',
+          signal: controller.signal
+        });
+        clearTimeout(tid);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.app === 'palmas_elite_gym') {
+            return true;
+          }
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    async function runAutoDiscovery(isManual = false) {
+      if (isDiscovering) return;
+      isDiscovering = true;
+
+      const dot = document.getElementById('server-status-dot');
+      const txt = document.getElementById('server-status-text');
+
+      if (dot) dot.style.background = '#ffd166';
+      if (txt) txt.innerText = 'Scanning Wi-Fi...';
+
+      // 1. Fast check current API_URL
+      if (await checkServerHealth(API_URL, 600)) {
+        if (dot) dot.style.background = '#74c69d';
+        const displayIp = API_URL.replace('http://', '').replace('/gym/api', '');
+        if (txt) txt.innerText = `Connected (${displayIp})`;
+        isDiscovering = false;
+        if (isManual) alert(`Connected to Gym Server at ${API_URL}`);
+        return true;
+      }
+
+      // 2. Common Philippine Router Subnets
+      const subnets = [
+        '192.168.100', // Converge / PLDT
+        '192.168.1',   // Globe / PLDT / TP-Link
+        '192.168.254', // Globe At Home
+        '192.168.0',   // D-Link / TP-Link / Tenda
+        '192.168.18',  // Converge ZTE
+        '10.0.0',      // Hotspots
+        '172.20.10'    // iPhone Hotspot
+      ];
+
+      // Prioritized common PC host numbers
+      const hostCandidates = [
+        11, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+        12, 13, 14, 15, 16, 17, 18, 19, 20,
+        25, 50, 100, 101, 102, 105, 110, 150, 200, 254
+      ];
+
+      let found = false;
+
+      // Scan subnets in parallel chunks
+      for (const subnet of subnets) {
+        if (found) break;
+
+        for (let i = 0; i < hostCandidates.length; i += 10) {
+          if (found) break;
+          const chunk = hostCandidates.slice(i, i + 10);
+          const promises = chunk.map(async (host) => {
+            const targetIp = `${subnet}.${host}`;
+            const targetUrl = `http://${targetIp}/gym/api`;
+            const isAlive = await checkServerHealth(targetUrl, 650);
+            if (isAlive && !found) {
+              found = true;
+              API_URL = targetUrl;
+              localStorage.setItem('peg_api_url', API_URL);
+              if (document.getElementById('input-server-url')) {
+                document.getElementById('input-server-url').value = API_URL;
+              }
+              if (dot) dot.style.background = '#74c69d';
+              if (txt) txt.innerText = `Connected (${targetIp})`;
+              if (isManual) alert(`Gym Server found & connected automatically:\n${API_URL}`);
+              return true;
+            }
+            return false;
+          });
+
+          await Promise.all(promises);
+        }
+      }
+
+      isDiscovering = false;
+
+      if (!found) {
+        if (dot) dot.style.background = '#ef476f';
+        if (txt) txt.innerText = 'Server offline (Tap to scan)';
+        if (isManual) {
+          alert('Could not find Gym Server on this Wi-Fi. Make sure XAMPP Apache is running on your PC, or check Server Connection Settings.');
+        }
+        return false;
+      }
+      return true;
+    }
+
+    // Auto-discover server on startup
+    setTimeout(() => {
+      runAutoDiscovery(false);
+    }, 300);
+
+    function toggleServerSettings() {
+      const box = document.getElementById('server-settings-box');
+      if (box) {
+        box.style.display = (box.style.display === 'none' || !box.style.display) ? 'block' : 'none';
+      }
+    }
+
+    function saveServerUrl() {
+      const input = document.getElementById('input-server-url');
+      if (!input) return;
+      const val = input.value.trim().replace(/\/+$/, '');
+      if (val) {
+        API_URL = val;
+        localStorage.setItem('peg_api_url', val);
+        alert('Server URL saved: ' + API_URL);
+        runAutoDiscovery(false);
+      }
+    }
+
+    function showRegisterView() {
+      document.getElementById('view-login').style.display = 'none';
+      document.getElementById('view-register').style.display = 'block';
+    }
+
+    function showLoginView() {
+      document.getElementById('view-register').style.display = 'none';
+      document.getElementById('view-login').style.display = 'flex';
+    }
+
+    async function submitRegister() {
+      const name = document.getElementById('reg-name').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      const gender = document.getElementById('reg-gender').value || 'Other';
+      const pass = document.getElementById('reg-password').value.trim();
+      const pass2 = document.getElementById('reg-confirmpassword').value.trim();
+
+      if (!name || !email || !pass) {
+        return alert('Please fill in all required fields (Name, Email, Password).');
+      }
+
+      if (pass.length < 6) {
+        return alert('Password must be at least 6 characters long.');
+      }
+
+      if (pass !== pass2) {
+        return alert('Passwords do not match.');
+      }
+
+      const btn = document.getElementById('btn-submit-reg');
+      btn.disabled = true;
+      btn.innerText = 'Creating Account...';
+
+      try {
+        const res = await fetch(`${API_URL}/member_register.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            full_name: name,
+            email: email,
+            contact_number: phone,
+            gender: gender,
+            password: pass
+          })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          alert(`Account Created Successfully!\n\nYour Membership ID: ${data.membership_id}\n\nYou are now signed in.`);
+          currentMember = data.member;
+          localStorage.setItem('peg_member', JSON.stringify(data.member));
+          localStorage.setItem('peg_token', data.token);
+          document.getElementById('view-register').style.display = 'none';
+          initMainView(data.member.id);
+        } else {
+          alert(data.message || 'Registration failed.');
+        }
+      } catch (err) {
+        alert('Could not connect to gym server (' + API_URL + '). Verify network connection.');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'REGISTER NOW';
+      }
+    }
+
+    function showLoginView() {
+      document.getElementById('view-register').style.display = 'none';
+      if (document.getElementById('view-setup-password')) {
+        document.getElementById('view-setup-password').style.display = 'none';
+      }
+      document.getElementById('view-login').style.display = 'flex';
+    }
+
+    async function submitSetupPassword() {
+      const memberId = document.getElementById('setup-member-id').value;
+      const p1 = document.getElementById('setup-password-input').value.trim();
+      const p2 = document.getElementById('setup-confirm-input').value.trim();
+
+      if (!p1 || p1.length < 6) {
+        return alert('Password must be at least 6 characters long.');
+      }
+
+      if (p1 !== p2) {
+        return alert('Passwords do not match.');
+      }
+
+      const btn = document.getElementById('btn-save-setup-pass');
+      btn.disabled = true;
+      btn.innerText = 'Saving Password...';
+
+      try {
+        const res = await fetch(`${API_URL}/member_setup_password.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            member_id: memberId,
+            password: p1,
+            confirm_password: p2
+          })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          alert('Password created successfully! You are now logged in.');
+          currentMember = data.member;
+          localStorage.setItem('peg_member', JSON.stringify(data.member));
+          localStorage.setItem('peg_token', data.token);
+          document.getElementById('view-setup-password').style.display = 'none';
+          initMainView(data.member.id);
+        } else {
+          alert(data.message || 'Failed to save password.');
+        }
+      } catch (err) {
+        alert('Could not connect to gym server (' + API_URL + '). Verify network connection.');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'SAVE PASSWORD & LOG IN';
+      }
+    }
+
+    async function submitLogin() {
+      const u = document.getElementById('input-username').value.trim();
+      const p = document.getElementById('input-password').value.trim();
+
+      if (!u || !p) {
+        return alert('Please enter both Member ID/Email and password.');
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/member_login.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        });
+        const data = await res.json();
+
+        if (data.first_time_setup) {
+          // Member registered at Admin front desk without password yet
+          document.getElementById('setup-member-id').value = data.member_id;
+          document.getElementById('setup-member-welcome').innerText = `Welcome, ${data.full_name}! (${data.membership_id})`;
+          document.getElementById('view-login').style.display = 'none';
+          document.getElementById('view-setup-password').style.display = 'block';
+          return;
+        }
+
+        if (data.success) {
+          currentMember = data.member;
+          localStorage.setItem('peg_member', JSON.stringify(data.member));
+          localStorage.setItem('peg_token', data.token);
+          initMainView(data.member.id);
+        } else {
+          alert(data.message || 'Login failed.');
+        }
+      } catch (err) {
+        alert('Could not connect to gym server (' + API_URL + '). Verify network connection.');
+      }
+    }
+
+    async function initMainView(memberId) {
+      document.getElementById('view-login').style.display = 'none';
+      document.getElementById('view-main').style.display = 'block';
+
+      await loadDashboard(memberId);
+      startDynamicQRTimer();
+    }
+
+    async function loadDashboard(memberId) {
+      try {
+        const token = localStorage.getItem('peg_token');
+        if (!token) {
+          // No token stored — force logout immediately
+          logout(true);
+          return;
+        }
+
+        const res = await fetch(`${API_URL}/member_dashboard.php`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        // If server returns 401, the token is expired or invalid — force logout
+        if (res.status === 401) {
+          logout(true);
+          return;
+        }
+
+        const data = await res.json();
+
+        if (!data.success) {
+          // Server rejected the request (e.g. token revoked) — force logout
+          logout(true);
+          return;
+        }
+
+        const m = data.member;
+        availablePlans = data.plans || [];
+
+        // Tab 1: Pass
+        document.getElementById('card-name').innerText = m.full_name;
+        document.getElementById('card-code').innerText = m.membership_id;
+        document.getElementById('card-plan').innerText = m.plan_name || 'No Active Plan';
+        document.getElementById('card-expiry').innerText = m.expiry_date || 'Expired';
+
+        const statusPill = document.getElementById('card-status-pill');
+        const isExpired = !m.expiry_date || new Date(m.expiry_date) < new Date();
+        if (isExpired || m.status !== 'Active') {
+          statusPill.innerText = 'EXPIRED / INACTIVE';
+          statusPill.className = 'status-pill status-expired';
+        } else {
+          statusPill.innerText = 'ACTIVE MEMBER';
+          statusPill.className = 'status-pill status-active';
+        }
+
+        renderQRCode(data.qr_token || m.membership_id);
+
+        // Tab 2: Attendance
+        renderAttendance(data.attendance || []);
+
+        // Tab 3: Payments & Renewal
+        renderPayments(data.payments || []);
+        populatePlansSelect(availablePlans);
+
+        // Tab 4: Profile
+        document.getElementById('prof-name').innerText = m.full_name;
+        document.getElementById('prof-code').innerText = m.membership_id;
+        document.getElementById('prof-email').innerText = m.email;
+        document.getElementById('prof-phone').innerText = m.contact_number || 'N/A';
+
+      } catch (e) {
+        console.error('Error loading dashboard:', e);
+      }
+    }
+
+    function renderQRCode(text) {
+      const container = document.getElementById('qr-target');
+      container.innerHTML = '';
+      qrInstance = new QRCode(container, {
+        text: text,
+        width: 170,
+        height: 170,
+        colorDark: '#091c14',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    function startDynamicQRTimer() {
+      if (qrTimerInterval) clearInterval(qrTimerInterval);
+      
+      let secondsLeft = 15 - (Math.floor(Date.now() / 1000) % 15);
+      const bar = document.getElementById('qr-timer-bar');
+
+      qrTimerInterval = setInterval(async () => {
+        secondsLeft--;
+        if (bar) bar.style.width = ((secondsLeft / 15) * 100) + '%';
+
+        if (secondsLeft <= 0) {
+          secondsLeft = 15;
+          if (currentMember) {
+            // refresh QR payload
+            try {
+              const token = localStorage.getItem('peg_token');
+              const res = await fetch(`${API_URL}/member_dashboard.php`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              const d = await res.json();
+              if (d.success && d.qr_token) {
+                renderQRCode(d.qr_token);
+              }
+            } catch (err) {}
+          }
+        }
+      }, 1000);
+    }
+
+    // Priority 12: Safe DOM rendering — no innerHTML with database data
+    function renderAttendance(list) {
+      const c = document.getElementById('attendance-container');
+      c.innerHTML = '';
+      if (!list.length) {
+        const msg = document.createElement('p');
+        msg.style.cssText = 'color: #95d5b2; text-align: center;';
+        msg.textContent = 'No attendance records found.';
+        c.appendChild(msg);
+        return;
+      }
+      list.forEach(a => {
+        const card = document.createElement('div');
+        card.className = 'dark-card';
+        card.style.cssText = 'padding: 14px; margin-bottom: 10px;';
+
+        const row = document.createElement('div');
+        row.style.cssText = 'display: flex; justify-content: space-between;';
+
+        const dateEl = document.createElement('strong');
+        dateEl.style.color = '#fff';
+        dateEl.textContent = '\u{1F4C5} ' + (a.date || '--');
+
+        const pill = document.createElement('span');
+        pill.className = 'status-pill status-active';
+        pill.textContent = a.status || 'Present';
+
+        row.appendChild(dateEl);
+        row.appendChild(pill);
+
+        const times = document.createElement('p');
+        times.style.cssText = 'color: #95d5b2; font-size: 0.85rem; margin: 6px 0 0 0;';
+        times.textContent = `Time In: ${a.time_in || '--'} | Time Out: ${a.time_out || '--'}`;
+
+        card.appendChild(row);
+        card.appendChild(times);
+        c.appendChild(card);
+      });
+    }
+
+    // Priority 12: Safe DOM rendering — no innerHTML with database data
+    function renderPayments(list) {
+      const c = document.getElementById('payments-container');
+      c.innerHTML = '';
+      if (!list.length) {
+        const msg = document.createElement('p');
+        msg.style.cssText = 'color: #95d5b2; text-align: center;';
+        msg.textContent = 'No payment transactions recorded.';
+        c.appendChild(msg);
+        return;
+      }
+      list.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'dark-card';
+        card.style.cssText = 'padding: 14px; margin-bottom: 10px;';
+
+        const row = document.createElement('div');
+        row.style.cssText = 'display: flex; justify-content: space-between;';
+
+        const typeEl = document.createElement('strong');
+        typeEl.style.color = '#74c69d';
+        typeEl.textContent = p.payment_type || 'Membership Fee';
+
+        const amountEl = document.createElement('strong');
+        amountEl.style.color = '#fff';
+        amountEl.textContent = '\u20B1' + parseFloat(p.amount).toFixed(2);
+
+        row.appendChild(typeEl);
+        row.appendChild(amountEl);
+
+        const details = document.createElement('p');
+        details.style.cssText = 'color: #95d5b2; font-size: 0.85rem; margin: 6px 0 0 0;';
+        details.textContent = `Date: ${p.payment_date || '--'} \u2022 Method: ${p.payment_method || 'Cash'}`;
+
+        card.appendChild(row);
+        card.appendChild(details);
+        c.appendChild(card);
+      });
+    }
+
+    function populatePlansSelect(plans) {
+      const s = document.getElementById('renew-plan-select');
+      s.innerHTML = plans.map(p => `
+        <ion-select-option value="${p.id}">${p.name} - ₱${parseFloat(p.price).toFixed(2)} (${p.duration_months} mo)</ion-select-option>
+      `).join('');
+    }
+
+    function openRenewalModal() {
+      document.getElementById('modal-renewal').isOpen = true;
+    }
+    function closeRenewalModal() {
+      document.getElementById('modal-renewal').isOpen = false;
+    }
+
+    let currentCheckoutSession = null;
+    let checkoutQrInstance = null;
+
+    function handleRenewMethodChange(val) {
+      const wrap = document.getElementById('renew-manual-ref-wrap');
+      const btn = document.getElementById('btn-proceed-renewal');
+      if (val === 'Cash') {
+        wrap.style.display = 'block';
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i> SUBMIT REQUEST (CASH AT DESK)';
+      } else {
+        wrap.style.display = 'none';
+        btn.innerHTML = '<i class="fa-solid fa-bolt" style="margin-right:6px;"></i> PROCEED TO INSTANT PAYMENT';
+      }
+    }
+
+    function backToRenewalForm() {
+      document.getElementById('renewal-step-checkout').style.display = 'none';
+      document.getElementById('renewal-step-form').style.display = 'block';
+    }
+
+    async function submitRenewal() {
+      const planId = document.getElementById('renew-plan-select').value;
+      const method = document.getElementById('renew-method-select').value;
+      const ref = document.getElementById('renew-ref-input').value.trim();
+
+      if (!planId || !method) {
+        return alert('Please select both a plan and payment method.');
+      }
+
+      // If Cash -> Standard Front desk pending flow
+      if (method === 'Cash') {
+        try {
+          const token = localStorage.getItem('peg_token');
+          const res = await fetch(`${API_URL}/member_renew.php`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              plan_id: planId,
+              payment_method: method,
+              reference_no: ref
+            })
+          });
+          const data = await res.json();
+          alert(data.message);
+          if (data.success) {
+            closeRenewalModal();
+            refreshDashboard();
+          }
+        } catch (err) {
+          alert('Failed to submit renewal request.');
+        }
+        return;
+      }
+
+      // If Instant GCash / Maya / QR Ph -> Launch Instant Checkout Sheet!
+      const btn = document.getElementById('btn-proceed-renewal');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating QR Ph...';
+
+      try {
+        const token = localStorage.getItem('peg_token');
+        const res = await fetch(`${API_URL}/create_payment_checkout.php`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            plan_id: planId,
+            payment_method: method
+          })
+        });
+        const data = await res.json();
+
+        if (data.success && data.checkout) {
+          currentCheckoutSession = data.checkout;
+          
+          document.getElementById('checkout-method-badge').innerText = `${method.toUpperCase()} AUTO-PAY`;
+          document.getElementById('checkout-ref-text').innerText = data.checkout.ref_code;
+          document.getElementById('checkout-plan-name').innerText = `${data.checkout.plan_name} (${data.checkout.duration})`;
+          document.getElementById('checkout-amount-display').innerText = data.checkout.amount_formatted;
+
+          // Render Checkout QR Code
+          const qrBox = document.getElementById('checkout-qrcode-box');
+          qrBox.innerHTML = '';
+          checkoutQrInstance = new QRCode(qrBox, {
+            text: data.checkout.qr_data,
+            width: 170,
+            height: 170,
+            colorDark: '#091c14',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+          });
+
+          // Transition to Checkout step
+          document.getElementById('renewal-step-form').style.display = 'none';
+          document.getElementById('renewal-step-checkout').style.display = 'block';
+        } else {
+          alert(data.message || 'Could not start payment checkout.');
+        }
+      } catch (err) {
+        alert('Could not connect to payment gateway.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-bolt" style="margin-right:6px;"></i> PROCEED TO INSTANT PAYMENT';
+      }
+    }
+
+    async function executeAutoActivation() {
+      if (!currentCheckoutSession) return;
+
+      const btn = document.getElementById('btn-confirm-auto-pay');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying Payment & Activating...';
+
+      try {
+        const token = localStorage.getItem('peg_token');
+        const res = await fetch(`${API_URL}/confirm_auto_payment.php`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            plan_id: currentCheckoutSession.plan_id,
+            payment_method: currentCheckoutSession.payment_method,
+            ref_code: currentCheckoutSession.ref_code
+          })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          alert(`🎉 SUCCESS!\n\n${data.message}\n\nYour Digital Pass has been instantly unlocked!`);
+          closeRenewalModal();
+          backToRenewalForm();
+          refreshDashboard();
+        } else {
+          alert(data.message || 'Payment activation failed.');
+        }
+      } catch (err) {
+        alert('Error connecting to gym server for auto-activation.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-circle-check" style="margin-right: 6px;"></i> COMPLETE &amp; ACTIVATE PASS';
+      }
+    }
+
+    async function refreshDashboard() {
+      if (currentMember) {
+        await loadDashboard(currentMember.id);
+      }
+      const ref = document.getElementById('refresher-pass');
+      if (ref) ref.complete();
+    }
+
+    function logout(silent = false) {
+      if (!silent && !confirm('Are you sure you want to sign out?')) return;
+      clearInterval(qrTimerInterval);
+      localStorage.removeItem('peg_member');
+      localStorage.removeItem('peg_token');
+      currentMember = null;
+      document.getElementById('view-main').style.display = 'none';
+      document.getElementById('view-login').style.display = 'flex';
+    }
+
+    // Auto-login if session exists
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('peg_member');
+      if (saved) {
+        try {
+          currentMember = JSON.parse(saved);
+          initMainView(currentMember.id);
+        } catch(e) {
+          localStorage.removeItem('peg_member');
+        }
+      }
+      
+      const refresher = document.getElementById('refresher-pass');
+      if (refresher) {
+        refresher.addEventListener('ionRefresh', refreshDashboard);
+      }
+    });
+  </script>
+</body>
+</html>

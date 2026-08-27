@@ -1,0 +1,51 @@
+# ==============================================================================
+# RENDER BLUEPRINT - PALMA'S ELITE GYM MANAGEMENT SYSTEM
+# ==============================================================================
+# Deploy this file to Render to provision the web service.
+# NOTE: Production credentials and secrets must be configured via the Render Dashboard.
+# ==============================================================================
+
+services:
+  # 1. Main Web Application & REST API
+  - type: web
+    name: palmas-gym-app
+    runtime: docker
+    dockerfilePath: Dockerfile
+    dockerContext: .
+    plan: starter
+    region: singapore # or oregon, frankfurt based on preference
+    healthCheckPath: /api/ping.php
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_URL
+        sync: false # Set to your Render URL e.g. https://palmas-gym-app.onrender.com
+      - key: DB_HOST
+        sync: false # Managed MySQL Host (e.g. from PlanetScale or Aiven)
+      - key: DB_PORT
+        value: "3306"
+      - key: DB_NAME
+        sync: false # e.g. gym_management
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: QR_SECRET_KEY
+        generateValue: true
+      - key: KIOSK_API_KEY
+        generateValue: true
+      - key: CRON_SECRET_KEY
+        generateValue: true
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: SMTP_FROM_NAME
+        value: "Palma's Elite Gym"

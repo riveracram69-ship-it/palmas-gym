@@ -1,0 +1,32 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# PALMAS ELITE GYM - UPLOADS DIRECTORY SECURITY SHIELD
+# ─────────────────────────────────────────────────────────────────────────────
+# Prevent direct execution of any script files in the uploads directory
+
+# 1. Disable PHP Engine
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+# 2. Force all files to be served as static default handlers
+SetHandler default-handler
+
+# 3. Deny access to dangerous executable or code extensions
+<FilesMatch "(?i)\.(php|phtml|php3|php4|php5|php7|phps|pht|phar|inc|pl|py|cgi|sh|bash|exe|bat|cmd|dll|js|html|htm|shtml)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# 4. Disable Directory Listing
+Options -Indexes -ExecCGI

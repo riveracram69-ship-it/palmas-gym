@@ -1,0 +1,9 @@
+# ==============================================================================
+# ANDROID RELEASE SIGNING CONFIGURATION TEMPLATE
+# ==============================================================================
+# Copy this file to android/key.properties (do NOT commit to Git)
+# ==============================================================================
+storePassword=REPLACE_WITH_KEYSTORE_PASSWORD
+keyPassword=REPLACE_WITH_KEY_PASSWORD
+keyAlias=palmasgym
+storeFile=../../palmas-release-key.jks

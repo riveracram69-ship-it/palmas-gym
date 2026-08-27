@@ -1,0 +1,60 @@
+# ==============================================================================
+# PALMA'S ELITE GYM MANAGEMENT SYSTEM - ROOT SECURITY & ROUTING CONFIGURATION
+# ==============================================================================
+
+# 1. Disable Directory Indexing
+Options -Indexes -MultiViews
+
+# 2. Prevent Access to Hidden Files, Environment Files, and SQL Dumps
+<FilesMatch "^\.|\.(env|sql|log|ini|json|lock|git|sh|bat|md)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# 3. Block Direct HTTP Access to Standalone Migration and Seeder Scripts
+<FilesMatch "(?i)^(migrate_|seed_|refactor_|create_|describe_|inspect_|show_|set_test_).*\.php$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# 4. Security Headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(self), microphone=(), geolocation=()"
+</IfModule>
+
+# 5. URL Rewriting & HTTPS Enforcement
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Optional HTTPS Redirect (uncomment when SSL certificate is active on live domain)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Authorization Header forwarder for API Bearer tokens under FastCGI/PHP-FPM
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>
+
+# 6. PHP Production Error and Execution Safeguards (Apache module mode)
+<IfModule mod_php8.c>
+    php_flag display_errors off
+    php_flag log_errors on
+    php_value error_reporting 32767
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    php_value memory_limit 256M
+</IfModule>

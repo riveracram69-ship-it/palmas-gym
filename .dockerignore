@@ -1,0 +1,49 @@
+# ==============================================================================
+# DOCKER BUILD IGNORE - PALMA'S ELITE GYM MANAGEMENT SYSTEM
+# ==============================================================================
+
+# Environment files & credentials
+.env
+.env.*
+*.env
+
+# Sensitive Backups & Database Dumps
+backups/*.sql
+backups/*.gz
+backups/*.zip
+*.sql
+
+# Member Uploads (PII)
+uploads/members/*
+!uploads/members/.gitkeep
+!uploads/members/default-avatar.png
+!uploads/members/index.php
+
+# Logs
+*.log
+backups/email_logs.txt
+email_logs.txt
+
+# Mobile App build artifacts and node_modules
+mobile-app/node_modules/
+mobile-app/android/
+mobile-app/www/
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# Version Control & IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+*.sublime-*
+.DS_Store
+Thumbs.db
+
+# Documentation & Scratch Files
+scratch/
+tests/
+*.md
+deploy/nginx/

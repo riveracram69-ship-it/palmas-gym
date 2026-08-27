@@ -1,0 +1,19 @@
+# ==============================================================================
+# CRONTAB SCHEDULE - PALMA'S ELITE GYM MANAGEMENT SYSTEM
+# ==============================================================================
+# Install by running: crontab -e (as www-data or deploy user)
+# ==============================================================================
+
+# 1. Daily System Maintenance (Status sync, 3-day & 1-day expiry notices, token cleanup)
+# Runs every midnight at 00:05 AM
+5 0 * * * /usr/bin/php /var/www/palmas-gym/gym/cron/daily_maintenance.php >> /var/log/palmas-gym-maintenance.log 2>&1
+
+# 2. Automated Encrypted/Compressed Database Backup
+# Runs every night at 02:00 AM
+0 2 * * * /bin/bash /var/www/palmas-gym/gym/deploy/cron/backup-database.sh >> /var/log/palmas-gym-backup.log 2>&1
+
+# ------------------------------------------------------------------------------
+# Alternative: HTTP-based Cron Trigger (if running via external scheduler / cPanel)
+# Replace YOUR_CRON_SECRET with value from .env
+# 5 0 * * * curl -s -k "https://YOUR-DOMAIN.example/cron/daily_maintenance.php?key=YOUR_CRON_SECRET" > /dev/null 2>&1
+# ==============================================================================
