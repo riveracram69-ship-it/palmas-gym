@@ -54,8 +54,13 @@ RUN chown -R www-data:www-data /var/www/html/gym \
     && chmod 775 /var/www/html/gym/uploads/members \
     && chmod 775 /var/www/html/gym/backups
 
-# Expose HTTP port (Render handles external SSL/TLS termination on port 443)
-EXPOSE 80
+# Copy and setup entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Run Apache in foreground
+# Expose HTTP port
+EXPOSE 80 10000
+
+# Run entrypoint script
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["apache2-foreground"]
