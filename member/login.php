@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Member Login | <?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?></title>
     <meta name="description" content="Sign in to the exclusive member portal of <?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?>">
-    <link rel="stylesheet" href="/gym/assets/css/member.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../assets/css/member.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         /* Extra login-specific polish */
@@ -109,18 +109,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin: 0.25rem 0 1rem;
         }
 
-        .divider::before, .divider::after {
-            content: '';
+        .divider hr {
             flex: 1;
-            height: 1px;
-            background: var(--border);
+            border: none;
+            border-top: 1px solid var(--border);
         }
 
         .divider span {
-            font-size: 0.65rem;
+            font-size: 0.72rem;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.8px;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .btn-register-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-sm);
+            background: rgba(45,106,79,0.15);
+            border: 1px solid var(--border-accent);
+            color: var(--accent-light);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .btn-register-link:hover {
+            background: rgba(45,106,79,0.3);
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .btn-apk-download {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-sm);
+            background: rgba(82, 183, 136, 0.12);
+            border: 1px dashed var(--accent);
+            color: var(--accent-light);
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            margin-top: 0.6rem;
+        }
+
+        .btn-apk-download:hover {
+            background: rgba(82, 183, 136, 0.22);
+            color: #ffffff;
+            border-style: solid;
         }
 
         .input-wrap {
