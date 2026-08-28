@@ -30,6 +30,8 @@ mobile-app/android/captures/
 mobile-app/android/.idea/
 mobile-app/android/app/src/main/assets/public/
 *.apk
+!downloads/*.apk
+!downloads/palmas-elite-gym.apk
 *.aab
 *.jks
 *.keystore

@@ -29,6 +29,8 @@ mobile-app/node_modules/
 mobile-app/android/
 mobile-app/www/
 *.apk
+!downloads/*.apk
+!downloads/palmas-elite-gym.apk
 *.aab
 *.jks
 *.keystore
