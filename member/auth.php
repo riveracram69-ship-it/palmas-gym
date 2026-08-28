@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 function require_member_login() {
     if (!isset($_SESSION['member_id'])) {
-        header('Location: /gym/member/login.php');
+        header('Location: login.php');
         exit;
     }
 }

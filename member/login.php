@@ -5,7 +5,7 @@ require_once __DIR__ . '/../config/settings.php';
 require_once __DIR__ . '/../config/rate_limiter.php';
 
 if (isset($_SESSION['member_id'])) {
-    header('Location: /gym/member/index.php');
+    header('Location: index.php');
     exit;
 }
 
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         if ($stmt_legacy->fetch()) {
                             clear_rate_limit($pdo, $membership_id, 'member_portal_login');
                             $_SESSION['setup_member_id'] = $member['id'];
-                            header('Location: /gym/member/setup_password.php');
+                            header('Location: setup_password.php');
                             exit;
                         } else {
                             $failed = record_failed_login($pdo, $membership_id, 'member_portal_login');
@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             session_regenerate_id(true);
                             $_SESSION['member_id']   = $member['id'];
                             $_SESSION['member_name'] = $member['full_name'];
-                            header('Location: /gym/member/index.php');
+                            header('Location: index.php');
                             exit;
                         } else {
                             $failed = record_failed_login($pdo, $membership_id, 'member_portal_login');
@@ -83,123 +83,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="description" content="Sign in to the exclusive member portal of <?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?>">
     <link rel="stylesheet" href="../assets/css/member.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-        /* Extra login-specific polish */
-        body {
-            background: radial-gradient(ellipse at top, rgba(27,67,50,0.25) 0%, var(--bg-primary) 50%);
-            min-height: 100vh;
-        }
-
-        .secure-note {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.4rem;
-            font-size: 0.68rem;
-            color: var(--text-muted);
-            margin-top: 0.75rem;
-        }
-
-        .secure-note i { color: var(--accent-light); font-size: 0.65rem; }
-
-        .divider {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin: 0.25rem 0 1rem;
-        }
-
-        .divider hr {
-            flex: 1;
-            border: none;
-            border-top: 1px solid var(--border);
-        }
-
-        .divider span {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-        }
-
-        .btn-register-link {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border-radius: var(--radius-sm);
-            background: rgba(45,106,79,0.15);
-            border: 1px solid var(--border-accent);
-            color: var(--accent-light);
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            box-sizing: border-box;
-        }
-
-        .btn-register-link:hover {
-            background: rgba(45,106,79,0.3);
-            border-color: var(--accent);
-            color: var(--text-primary);
-        }
-
-        .btn-apk-download {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border-radius: var(--radius-sm);
-            background: rgba(82, 183, 136, 0.12);
-            border: 1px dashed var(--accent);
-            color: var(--accent-light);
-            font-size: 0.82rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            box-sizing: border-box;
-            margin-top: 0.6rem;
-        }
-
-        .btn-apk-download:hover {
-            background: rgba(82, 183, 136, 0.22);
-            color: #ffffff;
-            border-style: solid;
-        }
-
-        .input-wrap {
-            position: relative;
-        }
-
-        .input-wrap .input-icon {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-
-        .input-wrap .form-control {
-            padding-left: 2.5rem;
-        }
-
-        .help-text {
-            font-size: 0.68rem;
-            color: var(--text-muted);
-            margin-top: 0.25rem;
-        }
-    </style>
-    <link rel="manifest" href="/gym/member/manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- PWA Setup -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1b4332">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Palma's Elite">
-    <link rel="apple-touch-icon" href="/gym/assets/images/palmas-logo.png">
+    <link rel="apple-touch-icon" href="../assets/images/palmas-logo.png">
 </head>
 <body>
 <div class="mobile-container" style="padding-bottom:0;">
@@ -211,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Branding -->
         <div class="login-brand fade-up">
             <div class="login-logo-wrap">
-                <img src="/gym/assets/images/palmas-logo.png" alt="<?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?> Logo">
+                <img src="../assets/images/palmas-logo.png" alt="<?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?> Logo">
             </div>
             <h1><?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?></h1>
             <p>Exclusive Member Portal</p>
@@ -305,7 +195,7 @@ document.getElementById('login-form').addEventListener('submit', function() {
 <script>
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/gym/member/sw.js');
+        navigator.serviceWorker.register('sw.js');
     });
 }
 </script>

@@ -3,7 +3,7 @@ require_once __DIR__ . '/auth.php';
 require_member_login();
 
 $member = current_member($pdo);
-if (!$member) { header('Location: /gym/member/logout.php'); exit; }
+if (!$member) { header('Location: logout.php'); exit; }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -11,7 +11,7 @@ if (!$member) { header('Location: /gym/member/logout.php'); exit; }
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>E-ID Card | <?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?></title>
-    <link rel="stylesheet" href="/gym/assets/css/member.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../assets/css/member.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         /* ── E-ID Card Styles ── */
@@ -358,11 +358,11 @@ if (!$member) { header('Location: /gym/member/logout.php'); exit; }
             display: none !important;
         }
     </style>
-    <link rel="manifest" href="/gym/member/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Palma's Elite">
-    <link rel="apple-touch-icon" href="/gym/assets/images/palmas-logo.png">
+    <link rel="apple-touch-icon" href="../assets/images/palmas-logo.png">
 </head>
 <body>
 <div class="mobile-container">
@@ -370,7 +370,7 @@ if (!$member) { header('Location: /gym/member/logout.php'); exit; }
     <!-- Header -->
     <header class="app-header">
         <div class="app-brand">
-            <img src="/gym/assets/images/palmas-logo.png" alt="Logo">
+            <img src="../assets/images/palmas-logo.png" alt="Logo">
             <h1>My E-ID Card</h1>
         </div>
         <div class="header-actions">
@@ -387,12 +387,12 @@ if (!$member) { header('Location: /gym/member/logout.php'); exit; }
             <div class="eid-card">
 
                 <!-- Subtle watermark -->
-                <img src="/gym/assets/images/palmas-logo.png" class="eid-watermark" alt="">
+                <img src="../assets/images/palmas-logo.png" class="eid-watermark" alt="">
 
                 <!-- Green header -->
                 <div class="eid-header">
                     <div class="eid-logo-box">
-                        <img src="/gym/assets/images/palmas-logo.png" alt="Logo">
+                        <img src="../assets/images/palmas-logo.png" alt="Logo">
                     </div>
                     <h1 class="eid-gym-name"><?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?></h1>
                     <p class="eid-gym-sub">Elite Fitness Club</p>
@@ -540,7 +540,7 @@ async function refreshQR() {
     let offlineBadge = document.getElementById("offline-qr-badge");
     
     try {
-        const res = await fetch('/gym/member/get_qr_token.php');
+        const res = await fetch('get_qr_token.php');
         const data = await res.json();
         if (data.success && data.token) {
             localStorage.setItem('cached_qr_token_' + memberID, data.token);
@@ -661,7 +661,7 @@ async function shareEID() {
 <script>
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/gym/member/sw.js');
+        navigator.serviceWorker.register('sw.js');
     });
 }
 </script>

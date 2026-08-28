@@ -9,6 +9,6 @@ if (ini_get("session.use_cookies")) {
     );
 }
 session_destroy();
-header('Location: /gym/member/login.php');
+header('Location: login.php');
 exit;
 ?>

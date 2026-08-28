@@ -5,7 +5,7 @@ require_once __DIR__ . '/../config/settings.php';
 require_once __DIR__ . '/../config/email.php';
 
 if (isset($_SESSION['member_id'])) {
-    header('Location: /gym/member/index.php');
+    header('Location: index.php');
     exit;
 }
 
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $update_stmt = $pdo->prepare("UPDATE members SET reset_token = ?, reset_expires_at = ? WHERE id = ?");
                     $update_stmt->execute([$token, $expires_at, $member['id']]);
                     
-                    $reset_link = "https://" . $_SERVER['HTTP_HOST'] . "/gym/member/reset_password.php?token=" . $token;
+                    $reset_link = "https://" . $_SERVER['HTTP_HOST'] . "reset_password.php?token=" . $token;
                     
                     $subject = "Password Reset Request - " . ($app_settings['gym_name'] ?? "Gym");
                     $title = "Reset Your Password";
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Forgot Password | <?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?></title>
-    <link rel="stylesheet" href="/gym/assets/css/member.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../assets/css/member.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         body {
@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="login-bg-glow"></div>
         <div class="login-brand fade-up">
             <div class="login-logo-wrap">
-                <img src="/gym/assets/images/palmas-logo.png" alt="<?php echo htmlspecialchars($app_settings['gym_name'] ?? "Gym"); ?> Logo">
+                <img src="../assets/images/palmas-logo.png" alt="<?php echo htmlspecialchars($app_settings['gym_name'] ?? "Gym"); ?> Logo">
             </div>
             <h1>Forgot Password</h1>
             <p>Enter your email to receive a reset link.</p>

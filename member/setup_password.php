@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/settings.php';
 
 if (!isset($_SESSION['setup_member_id'])) {
-    header('Location: /gym/member/login.php');
+    header('Location: login.php');
     exit;
 }
 
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['member_name'] = $member['full_name'];
             unset($_SESSION['setup_member_id']);
             
-            header('Location: /gym/member/index.php');
+            header('Location: index.php');
             exit;
         } catch (Exception $e) {
             $error = "A database error occurred. Please try again.";
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Setup Password | <?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?></title>
-    <link rel="stylesheet" href="/gym/assets/css/member.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../assets/css/member.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         body {
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="login-bg-glow"></div>
         <div class="login-brand fade-up">
             <div class="login-logo-wrap">
-                <img src="/gym/assets/images/palmas-logo.png" alt="Logo">
+                <img src="../assets/images/palmas-logo.png" alt="Logo">
             </div>
             <h1>Setup Your Password</h1>
             <p>Please create a secure password for future logins.</p>

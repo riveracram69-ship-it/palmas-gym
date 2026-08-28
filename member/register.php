@@ -5,7 +5,7 @@ require_once __DIR__ . '/../config/settings.php';
 require_once __DIR__ . '/../config/logger.php';
 
 if (isset($_SESSION['member_id'])) {
-    header('Location: /gym/member/index.php');
+    header('Location: index.php');
     exit;
 }
 
@@ -152,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Create Account | <?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?></title>
     <meta name="description" content="Register for an exclusive membership account at <?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?>">
-    <link rel="stylesheet" href="/gym/assets/css/member.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../assets/css/member.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         body {
@@ -227,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-top: 0.75rem;
         }
     </style>
-    <link rel="manifest" href="/gym/member/manifest.json">
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div class="register-container">
@@ -235,7 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- Branding -->
     <div class="login-brand fade-up" style="margin-bottom: 1.25rem;">
         <div class="login-logo-wrap" style="width:68px; height:68px;">
-            <img src="/gym/assets/images/palmas-logo.png" alt="<?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?> Logo">
+            <img src="../assets/images/palmas-logo.png" alt="<?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?> Logo">
         </div>
         <h1 style="font-size:1.5rem;"><?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?></h1>
         <p>Member Account Registration</p>
@@ -262,10 +262,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </p>
 
                 <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
-                    <a href="/gym/member/index.php" class="btn" style="background: #2d6a4f; color: #fff; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <a href="index.php" class="btn" style="background: #2d6a4f; color: #fff; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <i class="fas fa-gauge"></i> Go to Member Dashboard
                     </a>
-                    <a href="/gym/member/id-card.php" class="btn" style="background: transparent; border: 1px solid #52b788; color: #74c69d; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <a href="id-card.php" class="btn" style="background: transparent; border: 1px solid #52b788; color: #74c69d; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <i class="fas fa-qrcode"></i> View Digital QR Pass
                     </a>
                 </div>
