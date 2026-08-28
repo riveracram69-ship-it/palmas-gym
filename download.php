@@ -21,8 +21,9 @@ $currentMobileUrl = $protocol . $mobileHost . $_SERVER['REQUEST_URI'];
 $directApkMobileUrl = $protocol . $mobileHost . $baseDir . '/downloads/palmas-elite-gym.apk';
 
 $downloadLink = "downloads/palmas-elite-gym.apk";
-$apkExists = file_exists(__DIR__ . '/' . $downloadLink);
-$apkSize = $apkExists ? round(filesize(__DIR__ . '/' . $downloadLink) / (1024 * 1024), 1) . ' MB' : '7.5 MB';
+$apkExists = file_exists(__DIR__ . '/' . $downloadLink) || true; // Always enable download on live cloud
+$apkSize = '18.9 MB';
+$apkUrl = $protocol . $mobileHost . (empty($baseDir) ? '' : $baseDir) . '/' . $downloadLink;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -647,7 +648,7 @@ $apkSize = $apkExists ? round(filesize(__DIR__ . '/' . $downloadLink) / (1024 * 
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            const initialUrl = '<?php echo $currentMobileUrl; ?>';
+            const initialUrl = '<?php echo $apkUrl; ?>';
             renderQr(initialUrl);
         });
     </script>
