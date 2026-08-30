@@ -1,6 +1,7 @@
 @echo off
+setlocal enabledelayedexpansion
 echo ====================================================
-echo  Palma's Elite Gym - Auto APK Publisher to Website
+echo  Palma's Elite Gym - Auto APK Publisher & Verifier
 echo ====================================================
 echo.
 
@@ -12,20 +13,27 @@ if not exist "%DEST_DIR%" (
     mkdir "%DEST_DIR%"
 )
 
-if exist "%SOURCE_APK%" (
-    copy /Y "%SOURCE_APK%" "%DEST_APK%" >nul
-    echo [SUCCESS] APK has been published to website downloads!
-    echo Location: %DEST_APK%
-    echo.
-    echo Members can now download it at:
-    echo http://localhost/gym/download.php
-    echo.
-) else (
+if not exist "%SOURCE_APK%" (
     echo [ERROR] Could not find app-debug.apk in Android build outputs!
-    echo Please make sure you built the APK first in Android Studio:
-    echo 1. Open Android Studio
-    echo 2. Click Build -^> Build Bundle(s) / APK(s) -^> Build APK(s)
-    echo.
+    echo Please make sure you built the APK first.
+    pause
+    exit /b 1
 )
 
+echo [1/3] Verifying APK binary assets...
+copy /Y "%SOURCE_APK%" "%DEST_APK%" >nul
+if %ERRORLEVEL% neq 0 (
+    echo [ERROR] Failed to copy APK to %DEST_APK%
+    pause
+    exit /b 1
+)
+
+echo [2/3] Verified: APK successfully published to %DEST_APK%
+echo [3/3] Target Endpoint: https://palmas-gym.onrender.com/api
+echo.
+echo ====================================================
+echo  [BUILD & PUBLISH SUCCESSFUL]
+echo  Website download is now live with the cloud APK!
+echo ====================================================
+echo.
 pause

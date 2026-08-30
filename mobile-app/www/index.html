@@ -628,7 +628,7 @@
           alert(data.message || 'Registration failed.');
         }
       } catch (err) {
-        alert('Could not connect to gym server (' + API_URL + '). Verify network connection.');
+        alert('Unable to connect to the cloud server. Please check your internet connection and try again.');
       } finally {
         btn.disabled = false;
         btn.innerText = 'REGISTER NOW';
@@ -683,7 +683,7 @@
           alert(data.message || 'Failed to save password.');
         }
       } catch (err) {
-        alert('Could not connect to gym server (' + API_URL + '). Verify network connection.');
+        alert('Unable to connect to the cloud server. Please check your internet connection and try again.');
       } finally {
         btn.disabled = false;
         btn.innerText = 'SAVE PASSWORD & LOG IN';
@@ -724,7 +724,7 @@
           alert(data.message || 'Login failed.');
         }
       } catch (err) {
-        alert('Could not connect to gym server (' + API_URL + '). Verify network connection.');
+        alert('Unable to connect to the cloud server. Please check your internet connection and try again.');
       }
     }
 
