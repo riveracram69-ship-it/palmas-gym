@@ -554,8 +554,9 @@
       serverUrlInput.value = API_URL;
     }
 
-    // --- ZERO-CONFIG LAN AUTO-DISCOVERY ENGINE ---
-    async function checkServerHealth(url, timeoutMs = 600) {
+    // --- SERVER CONNECTION ENGINE ---
+    // Checks if a given API URL is reachable within the timeout.
+    async function checkServerHealth(url, timeoutMs = 1500) {
       try {
         const controller = new AbortController();
         const tid = setTimeout(() => controller.abort(), timeoutMs);
@@ -574,6 +575,15 @@
       return false;
     }
 
+    // Returns true if URL looks like a production/cloud URL (not LAN)
+    function isProductionUrl(url) {
+      return url.startsWith('https://') ||
+             url.includes('onrender.com') ||
+             url.includes('railway.app') ||
+             url.includes('vercel.app') ||
+             url.includes('herokuapp.com');
+    }
+
     async function runAutoDiscovery(isManual = false) {
       if (isDiscovering) return;
       isDiscovering = true;
@@ -582,19 +592,50 @@
       const txt = document.getElementById('server-status-text');
 
       if (dot) dot.style.background = '#ffd166';
-      if (txt) txt.innerText = 'Scanning Wi-Fi...';
 
-      // 1. Fast check current API_URL
-      if (await checkServerHealth(API_URL, 600)) {
+      // --- STEP 1: Try the current API_URL first ---
+      // Give cloud/production URLs more time (Render cold starts can take 3-5s)
+      const isProd = isProductionUrl(API_URL);
+      const primaryTimeout = isProd ? 8000 : 1200;
+
+      if (txt) txt.innerText = isProd ? 'Connecting to server...' : 'Scanning Wi-Fi...';
+
+      if (await checkServerHealth(API_URL, primaryTimeout)) {
         if (dot) dot.style.background = '#74c69d';
-        const displayIp = API_URL.replace('http://', '').replace('/gym/api', '');
-        if (txt) txt.innerText = `Connected (${displayIp})`;
+        const displayHost = isProd ? 'Cloud Server' : API_URL.replace('http://', '').replace('/gym/api', '');
+        if (txt) txt.innerText = `Connected (${displayHost})`;
         isDiscovering = false;
         if (isManual) alert(`Connected to Gym Server at ${API_URL}`);
         return true;
       }
 
-      // 2. Common Philippine Router Subnets
+      // --- STEP 2: If production URL failed, also retry the default prod URL ---
+      if (isProd && API_URL !== DEFAULT_PROD_API_URL) {
+        if (txt) txt.innerText = 'Retrying production server...';
+        if (await checkServerHealth(DEFAULT_PROD_API_URL, 8000)) {
+          API_URL = DEFAULT_PROD_API_URL;
+          localStorage.removeItem('peg_api_url');
+          if (dot) dot.style.background = '#74c69d';
+          if (txt) txt.innerText = 'Connected (Cloud Server)';
+          isDiscovering = false;
+          return true;
+        }
+      }
+
+      // --- STEP 3: LAN scan — ONLY if not using a production URL ---
+      // Skip LAN scan if we are configured for the cloud server.
+      if (isProd && !isManual) {
+        // Production URL unreachable — likely a cold start or network issue
+        if (dot) dot.style.background = '#ef476f';
+        if (txt) txt.innerText = 'Server starting up... Tap to retry';
+        isDiscovering = false;
+        return false;
+      }
+
+      // LAN auto-discovery for local/development builds
+      if (txt) txt.innerText = 'Scanning Wi-Fi...';
+
+      // Common Philippine router subnets
       const subnets = [
         '192.168.100', // Converge / PLDT
         '192.168.1',   // Globe / PLDT / TP-Link
@@ -605,7 +646,6 @@
         '172.20.10'    // iPhone Hotspot
       ];
 
-      // Prioritized common PC host numbers
       const hostCandidates = [
         11, 2, 3, 4, 5, 6, 7, 8, 9, 10,
         12, 13, 14, 15, 16, 17, 18, 19, 20,
@@ -614,32 +654,28 @@
 
       let found = false;
 
-      // Scan subnets in parallel chunks
       for (const subnet of subnets) {
         if (found) break;
-
         for (let i = 0; i < hostCandidates.length; i += 10) {
           if (found) break;
           const chunk = hostCandidates.slice(i, i + 10);
           const promises = chunk.map(async (host) => {
             const targetIp = `${subnet}.${host}`;
             const targetUrl = `http://${targetIp}/gym/api`;
-            const isAlive = await checkServerHealth(targetUrl, 650);
+            const isAlive = await checkServerHealth(targetUrl, 700);
             if (isAlive && !found) {
               found = true;
               API_URL = targetUrl;
               localStorage.setItem('peg_api_url', API_URL);
-              if (document.getElementById('input-server-url')) {
-                document.getElementById('input-server-url').value = API_URL;
-              }
+              const inp = document.getElementById('input-server-url');
+              if (inp) inp.value = API_URL;
               if (dot) dot.style.background = '#74c69d';
               if (txt) txt.innerText = `Connected (${targetIp})`;
-              if (isManual) alert(`Gym Server found & connected automatically:\n${API_URL}`);
+              if (isManual) alert(`Gym Server found & connected:\n${API_URL}`);
               return true;
             }
             return false;
           });
-
           await Promise.all(promises);
         }
       }
@@ -657,10 +693,10 @@
       return true;
     }
 
-    // Auto-discover server on startup
+    // Connect on startup — slight delay to let the UI paint first
     setTimeout(() => {
       runAutoDiscovery(false);
-    }, 300);
+    }, 400);
 
     function toggleServerSettings() {
       const box = document.getElementById('server-settings-box');
