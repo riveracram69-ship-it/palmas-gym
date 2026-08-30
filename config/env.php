@@ -103,4 +103,10 @@
     // System Binary Paths (optional overrides)
     if (!defined('MYSQLDUMP_PATH')) define('MYSQLDUMP_PATH', $get_conf('MYSQLDUMP_PATH', ''));
     if (!defined('MYSQL_PATH')) define('MYSQL_PATH', $get_conf('MYSQL_PATH', ''));
+
+    // Mobile Application APK URL (Single source of truth for direct download & QR code)
+    if (!defined('ANDROID_APK_URL')) {
+        $default_apk_url = rtrim(defined('APP_URL') ? APP_URL : 'https://palmas-gym.onrender.com', '/') . '/downloads/palmas-elite-gym.apk';
+        define('ANDROID_APK_URL', $get_conf('ANDROID_APK_URL', $default_apk_url));
+    }
 })();
