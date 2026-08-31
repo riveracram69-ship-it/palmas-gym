@@ -752,7 +752,8 @@
        VIEW 6: MAIN APP (Interactive Dashboard Tabs)
        ══════════════════════════════════════════════════════════ -->
   <div id="view-main" style="display:none; height:100%;">
-    <ion-tabs>
+    <ion-tabs id="main-ion-tabs" onIonTabsDidChange="handleTabChange(event)">
+
 
       <!-- ── TAB 1: DIGITAL GYM PASS ─── -->
       <ion-tab tab="tab-pass">
@@ -1660,6 +1661,16 @@ function renderQRCode(text) {
   });
 }
 
+let currentActiveTab = 'tab-pass';
+
+function handleTabChange(e) {
+  currentActiveTab = e.detail.tab;
+  if (currentActiveTab === 'tab-pass' && currentMember) {
+    startQRCountdown();
+  }
+}
+
+
 function startQRCountdown() {
   clearInterval(qrCountdownTimer);
   const bar = document.getElementById('qr-countdown-fill');
@@ -1669,10 +1680,17 @@ function startQRCountdown() {
     if (bar) bar.style.width = `${(seconds / 15) * 100}%`;
     if (seconds <= 0) {
       seconds = 15;
-      if (currentMember) loadDashboard(currentMember.id);
+      // Only refresh QR token if user is actively on Pass tab
+      if (currentActiveTab === 'tab-pass' && currentMember) {
+        // Regenerate local rotating time-slot token or light refresh
+        const timeSlot = Math.floor(Date.now() / 15000);
+        const dynamicToken = `${currentMember.membership_id}:${timeSlot}`;
+        renderQRCode(dynamicToken);
+      }
     }
   }, 1000);
 }
+
 
 // ── ATTENDANCE TAB ─────────────────────────────────────────────────
 function renderAttendance(list) {
