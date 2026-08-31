@@ -1347,16 +1347,24 @@ async function loadPlansForRegistration() {
   try {
     const res = await fetch(`${API_URL}/member_dashboard.php`);
     const data = await res.json();
-    availablePlans = data.plans || [];
+    availablePlans = (data.plans && data.plans.length) ? data.plans : [
+      { id: 2, name: 'Basic', price: 300.00, duration_months: 1 },
+      { id: 1, name: 'STANDARD', price: 500.00, duration_months: 2 },
+      { id: 3, name: 'Premium', price: 1000.00, duration_months: 6 },
+      { id: 4, name: 'VIP', price: 4000.00, duration_months: 12 }
+    ];
     renderPlanCards(availablePlans, container);
   } catch (e) {
-    renderPlanCards([
-      { id: 1, name: 'Basic Monthly', price: 500, duration_months: 1 },
-      { id: 2, name: 'Standard 3-Months', price: 1350, duration_months: 3 },
-      { id: 3, name: 'VIP Annual', price: 4800, duration_months: 12 }
-    ], container);
+    availablePlans = [
+      { id: 2, name: 'Basic', price: 300.00, duration_months: 1 },
+      { id: 1, name: 'STANDARD', price: 500.00, duration_months: 2 },
+      { id: 3, name: 'Premium', price: 1000.00, duration_months: 6 },
+      { id: 4, name: 'VIP', price: 4000.00, duration_months: 12 }
+    ];
+    renderPlanCards(availablePlans, container);
   }
 }
+
 
 function renderPlanCards(plans, container) {
   container.innerHTML = '';
