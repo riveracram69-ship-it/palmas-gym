@@ -56,6 +56,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $error = 'Please select a valid image file to upload.';
     }
 }
+
+// Handle change password
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'change_password') {
+    $current_password = $_POST['current_password'] ?? '';
+    $new_password     = $_POST['new_password'] ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
+
+    if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        $error = 'Invalid security token. Please refresh and try again.';
+    } elseif (empty($new_password) || empty($confirm_password)) {
+        $error = 'Please fill in all required password fields.';
+    } elseif ($new_password !== $confirm_password) {
+        $error = 'New passwords do not match.';
+    } elseif (strlen($new_password) < 6) {
+        $error = 'New password must be at least 6 characters long.';
+    } elseif (!empty($member['password_hash']) && !password_verify($current_password, $member['password_hash'])) {
+        $error = 'Incorrect current password.';
+    } else {
+        try {
+            $hash = password_hash($new_password, PASSWORD_DEFAULT);
+            $auth_upd = ($member['auth_provider'] ?? 'password') === 'google' ? ", auth_provider = 'both'" : "";
+            $s = $pdo->prepare("UPDATE members SET password_hash = ? {$auth_upd} WHERE id = ?");
+            $s->execute([$hash, $member['id']]);
+            $success = 'Password changed successfully!';
+            $member  = current_member($pdo); // refresh
+            log_activity($pdo, 'Member Password Changed', "Member {$member['full_name']} updated their password.", 'Member');
+        } catch (Exception $e) {
+            $error = 'Could not update password. Please try again.';
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -326,6 +357,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 </div>
                 <button type="submit" class="btn">
                     <i class="fas fa-floppy-disk"></i> Save Changes
+                </button>
+            </form>
+        </div>
+
+        <!-- Change Password -->
+        <div class="edit-section fade-up fade-up-d25" style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
+            <p class="section-title" style="margin-bottom:1rem;"><i class="fas fa-key"></i> Change Password</p>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+                <input type="hidden" name="action" value="change_password">
+                <?php if (!empty($member['password_hash'])): ?>
+                <div class="form-group">
+                    <label for="current_password"><i class="fas fa-lock"></i> Current Password</label>
+                    <input type="password" name="current_password" id="current_password" class="form-control" placeholder="••••••••" required>
+                </div>
+                <?php endif; ?>
+                <div class="form-group">
+                    <label for="new_password"><i class="fas fa-key"></i> New Password (min. 6 chars)</label>
+                    <input type="password" name="new_password" id="new_password" class="form-control" placeholder="••••••••" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm_password"><i class="fas fa-check-double"></i> Confirm New Password</label>
+                    <input type="password" name="confirm_password" id="confirm_password" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn" style="background: var(--accent-gradient);">
+                    <i class="fas fa-shield-halved"></i> Update Password
                 </button>
             </form>
         </div>

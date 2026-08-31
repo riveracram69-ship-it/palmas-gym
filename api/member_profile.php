@@ -65,6 +65,9 @@ try {
         }
         $updates[] = "password_hash = ?";
         $params[] = password_hash($new_password, PASSWORD_DEFAULT);
+        if (($member['auth_provider'] ?? '') === 'google') {
+            $updates[] = "auth_provider = 'both'";
+        }
     }
 
     if (!empty($updates)) {

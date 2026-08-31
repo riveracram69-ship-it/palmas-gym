@@ -8,34 +8,69 @@ $message = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $gym_name = trim($_POST['gym_name'] ?? '');
-    $max_capacity = intval($_POST['max_capacity'] ?? 0);
-    $renewal_threshold_days = intval($_POST['renewal_threshold_days'] ?? 0);
+    $action = $_POST['action'] ?? 'update_settings';
 
-    if (empty($gym_name) || $max_capacity <= 0 || $renewal_threshold_days < 0) {
-        $error = "Please provide valid values for all fields.";
+    if ($action === 'change_password') {
+        $current_pw = $_POST['current_password'] ?? '';
+        $new_pw     = $_POST['new_password'] ?? '';
+        $confirm_pw = $_POST['confirm_password'] ?? '';
+        $user_id    = $_SESSION['user_id'] ?? 0;
+
+        if (empty($current_pw) || empty($new_pw) || empty($confirm_pw)) {
+            $error = "Please fill in all password fields.";
+        } elseif ($new_pw !== $confirm_pw) {
+            $error = "New passwords do not match.";
+        } elseif (strlen($new_pw) < 6) {
+            $error = "New password must be at least 6 characters long.";
+        } else {
+            try {
+                $s = $pdo->prepare("SELECT id, password FROM users WHERE id = ?");
+                $s->execute([$user_id]);
+                $admin_user = $s->fetch(PDO::FETCH_ASSOC);
+
+                if (!$admin_user || !password_verify($current_pw, $admin_user['password'])) {
+                    $error = "Incorrect current password.";
+                } else {
+                    $new_hash = password_hash($new_pw, PASSWORD_DEFAULT);
+                    $upd = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+                    $upd->execute([$new_hash, $user_id]);
+                    log_activity($pdo, 'Admin Password Changed', "Administrator ({$user['name']}) changed their account password.", 'Security');
+                    $message = "Your password has been changed successfully.";
+                }
+            } catch (Exception $e) {
+                $error = "Failed to update password. Please try again.";
+            }
+        }
     } else {
-        try {
-            $pdo->beginTransaction();
+        $gym_name = trim($_POST['gym_name'] ?? '');
+        $max_capacity = intval($_POST['max_capacity'] ?? 0);
+        $renewal_threshold_days = intval($_POST['renewal_threshold_days'] ?? 0);
 
-            $stmt = $pdo->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?");
-            $stmt->execute([$gym_name, 'gym_name']);
-            $stmt->execute([$max_capacity, 'max_capacity']);
-            $stmt->execute([$renewal_threshold_days, 'renewal_threshold_days']);
+        if (empty($gym_name) || $max_capacity <= 0 || $renewal_threshold_days < 0) {
+            $error = "Please provide valid values for all fields.";
+        } else {
+            try {
+                $pdo->beginTransaction();
 
-            $pdo->commit();
-            log_activity($pdo, 'Updated Settings', 'System settings were updated by admin.', 'System');
-            $message = "Settings saved successfully.";
-            
-            // Update the global array for the current page load
-            $app_settings['gym_name'] = $gym_name;
-            $app_settings['max_capacity'] = $max_capacity;
-            $app_settings['renewal_threshold_days'] = $renewal_threshold_days;
+                $stmt = $pdo->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?");
+                $stmt->execute([$gym_name, 'gym_name']);
+                $stmt->execute([$max_capacity, 'max_capacity']);
+                $stmt->execute([$renewal_threshold_days, 'renewal_threshold_days']);
 
-        } catch (Exception $e) {
-            $pdo->rollBack();
-            error_log('System Error in settings.php: ' . $e->getMessage());
-            $error = "Failed to update settings due to an internal system error.";
+                $pdo->commit();
+                log_activity($pdo, 'Updated Settings', 'System settings were updated by admin.', 'System');
+                $message = "Settings saved successfully.";
+                
+                // Update the global array for the current page load
+                $app_settings['gym_name'] = $gym_name;
+                $app_settings['max_capacity'] = $max_capacity;
+                $app_settings['renewal_threshold_days'] = $renewal_threshold_days;
+
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                error_log('System Error in settings.php: ' . $e->getMessage());
+                $error = "Failed to update settings due to an internal system error.";
+            }
         }
     }
 }
@@ -88,6 +123,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Changes</button>
         </div>
             
+        </div>
+    </form>
+</div>
+
+<div class="card" style="max-width: 800px; margin-top: 2rem;">
+    <h3 class="section-title"><i class="fas fa-shield-halved" style="color:var(--accent);"></i> Change Administrator Password</h3>
+    <p class="cell-secondary" style="margin-bottom:1.25rem;">Update your personal admin account password.</p>
+
+    <form method="POST" action="">
+        <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+        <input type="hidden" name="action" value="change_password">
+        <div style="display:flex; flex-direction:column; gap:1.25rem;">
+            
+            <div class="form-group">
+                <label for="current_password">Current Password</label>
+                <input type="password" id="current_password" name="current_password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <div class="form-group">
+                <label for="new_password">New Password (min. 6 characters)</label>
+                <input type="password" id="new_password" name="new_password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Confirm New Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <div style="margin-top:0.5rem;">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i> Update Password</button>
+            </div>
+
         </div>
     </form>
 </div>

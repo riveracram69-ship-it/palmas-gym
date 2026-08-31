@@ -10,7 +10,7 @@ if (empty($token)) {
 }
 
 // Validate Token
-$stmt = $pdo->prepare("SELECT id FROM members WHERE reset_token = ? AND reset_expires_at > NOW() AND status = 'Active'");
+$stmt = $pdo->prepare("SELECT id FROM members WHERE reset_token = ? AND reset_expires_at > NOW() AND (account_status = 'Approved' OR status = 'Active')");
 $stmt->execute([$token]);
 $member = $stmt->fetch(PDO::FETCH_ASSOC);
 

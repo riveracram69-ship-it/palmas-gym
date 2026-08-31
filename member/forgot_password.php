@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "Please enter your registered email address.";
         } else {
             try {
-                $stmt = $pdo->prepare("SELECT id, full_name, email FROM members WHERE email = ? AND status = 'Active'");
+                $stmt = $pdo->prepare("SELECT id, full_name, email FROM members WHERE email = ? AND (account_status = 'Approved' OR status = 'Active')");
                 $stmt->execute([$email]);
                 $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -35,7 +35,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $update_stmt = $pdo->prepare("UPDATE members SET reset_token = ?, reset_expires_at = ? WHERE id = ?");
                     $update_stmt->execute([$token, $expires_at, $member['id']]);
                     
-                    $reset_link = "https://" . $_SERVER['HTTP_HOST'] . "reset_password.php?token=" . $token;
+                    if (defined('APP_URL') && APP_URL !== '') {
+                        $base_url = rtrim(APP_URL, '/');
+                    } else {
+                        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+                        $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'https' : 'http';
+                        $base_url = $protocol . '://' . $host . '/gym';
+                    }
+                    $reset_link = $base_url . "/member/reset_password.php?token=" . $token;
                     
                     $subject = "Password Reset Request - " . ($app_settings['gym_name'] ?? "Gym");
                     $title = "Reset Your Password";

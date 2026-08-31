@@ -1021,6 +1021,52 @@
   </ion-modal>
 
   <!-- ══════════════════════════════════════════════════════════
+       MODAL: CHANGE PASSWORD MODAL
+       ══════════════════════════════════════════════════════════ -->
+  <ion-modal id="modal-change-password">
+    <ion-header>
+      <ion-toolbar style="--background:#1b4332; --color:#fff;">
+        <ion-title style="font-weight:700;">Change Password</ion-title>
+        <ion-buttons slot="end">
+          <ion-button onclick="closeChangePasswordModal()" style="--color: var(--gym-light);"><ion-icon name="close"></ion-icon></ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding" style="--background: var(--gym-dark);">
+      <div id="pw-current-group" class="form-group">
+        <label>Current Password</label>
+        <div class="input-field-wrap">
+          <input type="password" id="change-current-password" placeholder="Enter current password" autocomplete="current-password" />
+          <button class="eye-btn" type="button" onclick="togglePasswordVisibility('change-current-password', this)">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>New Password (min. 6 chars)</label>
+        <div class="input-field-wrap">
+          <input type="password" id="change-new-password" placeholder="Enter new password" autocomplete="new-password" />
+          <button class="eye-btn" type="button" onclick="togglePasswordVisibility('change-new-password', this)">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Confirm New Password</label>
+        <div class="input-field-wrap">
+          <input type="password" id="change-confirm-password" placeholder="Re-enter new password" autocomplete="new-password" />
+          <button class="eye-btn" type="button" onclick="togglePasswordVisibility('change-confirm-password', this)">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </div>
+      </div>
+      <button class="btn-primary" id="btn-save-password" onclick="savePasswordChange()" style="margin-top:18px;">
+        <i class="fa-solid fa-key"></i> UPDATE PASSWORD
+      </button>
+    </ion-content>
+  </ion-modal>
+
+  <!-- ══════════════════════════════════════════════════════════
        MODAL 2: RENEWAL & BILLING MODAL
        ══════════════════════════════════════════════════════════ -->
   <ion-modal id="modal-renewal">
@@ -1909,6 +1955,90 @@ async function saveProfileChanges() {
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> SAVE CHANGES';
+  }
+}
+
+// ── CHANGE PASSWORD MODAL ──────────────────────────────────────────
+function openChangePasswordModal() {
+  const curInp = document.getElementById('change-current-password');
+  const newInp = document.getElementById('change-new-password');
+  const cnfInp = document.getElementById('change-confirm-password');
+  if (curInp) curInp.value = '';
+  if (newInp) newInp.value = '';
+  if (cnfInp) cnfInp.value = '';
+  
+  // If user signed in via Google only and has no password yet, hide current password field
+  const currentGroup = document.getElementById('pw-current-group');
+  if (currentMember && currentMember.auth_provider === 'google') {
+    if (currentGroup) currentGroup.style.display = 'none';
+  } else {
+    if (currentGroup) currentGroup.style.display = 'block';
+  }
+  
+  const m = document.getElementById('modal-change-password');
+  if (m) {
+    m.isOpen = true;
+    if (typeof m.present === 'function') m.present();
+  }
+}
+
+function closeChangePasswordModal() {
+  const m = document.getElementById('modal-change-password');
+  if (m) {
+    m.isOpen = false;
+    if (typeof m.dismiss === 'function') m.dismiss();
+  }
+}
+
+async function savePasswordChange() {
+  const currentPass = document.getElementById('change-current-password').value;
+  const newPass     = document.getElementById('change-new-password').value;
+  const confirmPass = document.getElementById('change-confirm-password').value;
+  const isGoogle    = currentMember && currentMember.auth_provider === 'google';
+
+  if (!isGoogle && !currentPass) {
+    return showToast('Please enter your current password.');
+  }
+  if (!newPass) {
+    return showToast('Please enter your new password.');
+  }
+  if (newPass.length < 6) {
+    return showToast('New password must be at least 6 characters.');
+  }
+  if (newPass !== confirmPass) {
+    return showToast('New passwords do not match.');
+  }
+
+  const btn = document.getElementById('btn-save-password');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Updating...';
+
+  try {
+    const token = localStorage.getItem('peg_token');
+    const res = await fetch(`${API_URL}/member_profile.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        old_password: currentPass,
+        new_password: newPass
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('🎉 Password updated successfully!');
+      closeChangePasswordModal();
+      if (data.member) {
+        currentMember = data.member;
+        localStorage.setItem('peg_member', JSON.stringify(data.member));
+      }
+    } else {
+      showToast(data.message || 'Failed to update password.');
+    }
+  } catch {
+    showToast('Failed to update password. Please check your connection.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-key"></i> UPDATE PASSWORD';
   }
 }
 
