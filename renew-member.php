@@ -48,19 +48,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Amount paid cannot be negative.';
     } else {
         try {
-            $pdo->beginTransaction();
-
-            // Expire old active subscription if any
-            $pdo->prepare("UPDATE subscriptions SET expiry_date = DATE_SUB(CURDATE(), INTERVAL 1 DAY) WHERE member_id = ? AND expiry_date >= CURDATE()")
-                ->execute([$member_id]);
+            // Calculate renewal expiry: if still active, extend from current expiry; otherwise start from today
+            $base_date = date('Y-m-d');
+            if ($current_sub && !empty($current_sub['expiry_date']) && strtotime($current_sub['expiry_date']) >= strtotime(date('Y-m-d'))) {
+                $base_date = $current_sub['expiry_date'];
+            }
 
             // Get plan duration
             $p_stmt = $pdo->prepare("SELECT duration_months, name FROM membership_plans WHERE id = ?");
             $p_stmt->execute([$plan_id]);
             $plan = $p_stmt->fetch();
 
-            $start_date  = date('Y-m-d');
-            $expiry_date = date('Y-m-d', strtotime('+' . ($plan['duration_months'] ?? 1) . ' months'));
+            $duration_months = intval($plan['duration_months'] ?? 1);
+            $start_date  = $base_date;
+            $expiry_date = date('Y-m-d', strtotime("{$base_date} + {$duration_months} months"));
 
             // Insert new subscription
             $stmt = $pdo->prepare("INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_by) VALUES (?, ?, ?, ?, ?)");

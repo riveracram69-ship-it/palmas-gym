@@ -45,7 +45,7 @@ if (!$rate_check['allowed']) {
 
 try {
     $stmt = $pdo->prepare("
-        SELECT id, membership_id, full_name, email, contact_number, photo, status, password_hash 
+        SELECT id, membership_id, full_name, email, contact_number, photo, account_status, status, rejection_reason, password_hash 
         FROM members 
         WHERE (membership_id = :u1 OR LOWER(email) = LOWER(:u2) OR contact_number = :u3) 
         LIMIT 1
@@ -54,6 +54,36 @@ try {
     $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($member) {
+        $acc_status = $member['account_status'] ?? 'Approved';
+
+        if ($acc_status === 'Pending') {
+            echo json_encode([
+                'success' => false,
+                'account_status' => 'Pending',
+                'message' => 'Your registration is currently waiting for staff approval. You will receive an email once approved.'
+            ]);
+            exit;
+        }
+
+        if ($acc_status === 'Rejected') {
+            $reason = !empty($member['rejection_reason']) ? " Reason: " . htmlspecialchars($member['rejection_reason']) : "";
+            echo json_encode([
+                'success' => false,
+                'account_status' => 'Rejected',
+                'message' => "Your registration was not approved.{$reason} Please contact the gym for more information."
+            ]);
+            exit;
+        }
+
+        if ($acc_status === 'Suspended') {
+            echo json_encode([
+                'success' => false,
+                'account_status' => 'Suspended',
+                'message' => 'Your account has been temporarily suspended. Please contact gym administration.'
+            ]);
+            exit;
+        }
+
         if ($member['status'] === 'Archived') {
             echo json_encode(['success' => false, 'message' => 'Your account is archived. Please contact gym staff.']);
             exit;

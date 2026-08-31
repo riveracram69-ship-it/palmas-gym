@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $clean_id = str_replace('-', '', strtoupper($membership_id));
         try {
-            $stmt = $pdo->prepare("SELECT id, full_name, status, password_hash FROM members
+            $stmt = $pdo->prepare("SELECT id, full_name, account_status, status, rejection_reason, password_hash FROM members
                                    WHERE REPLACE(UPPER(membership_id), '-', '') = ?
                                       OR LOWER(email) = LOWER(?)
                                       OR contact_number = ? LIMIT 1");
@@ -31,9 +31,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($member) {
-                if ($member['status'] !== 'Active') {
-                    $error = "Your membership is not currently active. Please speak with the front desk.";
+                $acc_status = $member['account_status'] ?? 'Approved';
+
+                if ($acc_status === 'Pending') {
+                    $error = "Your registration is currently waiting for staff approval. You will receive an email once approved.";
+                } elseif ($acc_status === 'Rejected') {
+                    $reason = !empty($member['rejection_reason']) ? " Reason: " . htmlspecialchars($member['rejection_reason']) : "";
+                    $error = "Your registration was not approved.{$reason} Please contact the gym for more information.";
+                } elseif ($acc_status === 'Suspended') {
+                    $error = "Your account has been temporarily suspended. Please contact gym administration.";
                 } else {
+                    // Account is Approved!
                     if (empty($member['password_hash'])) {
                         $stmt_legacy = $pdo->prepare("SELECT id FROM members WHERE id = ? AND (LOWER(email) = ? OR contact_number = ?)");
                         $stmt_legacy->execute([$member['id'], strtolower($credential), $credential]);

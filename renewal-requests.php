@@ -33,16 +33,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $admin_id = $_SESSION['user_id'] ?? null;
 
             if ($action === 'approve') {
-                // 1. Expire existing active subscriptions for this member (set expiry to yesterday)
-                $pdo->prepare("UPDATE subscriptions SET expiry_date = DATE_SUB(CURDATE(), INTERVAL 1 DAY) WHERE member_id = ? AND expiry_date >= CURDATE()")
-                    ->execute([$req['member_id']]);
+                // 1. Fetch active subscription expiry date if any
+                $cur_sub_stmt = $pdo->prepare("
+                    SELECT expiry_date FROM subscriptions 
+                    WHERE member_id = ? AND expiry_date >= CURDATE() 
+                    ORDER BY expiry_date DESC LIMIT 1
+                ");
+                $cur_sub_stmt->execute([$req['member_id']]);
+                $active_sub = $cur_sub_stmt->fetch();
 
-                // 2. Calculate subscription dates
-                $start_date = date('Y-m-d');
+                $base_date = ($active_sub && !empty($active_sub['expiry_date'])) ? $active_sub['expiry_date'] : date('Y-m-d');
+                $start_date = $base_date;
                 $months = intval($req['duration_months'] ?? 1);
-                $expiry_date = date('Y-m-d', strtotime('+' . $months . ' months'));
+                $expiry_date = date('Y-m-d', strtotime("{$base_date} + {$months} months"));
 
-                // 3. Insert new active subscription
+                // 2. Insert new active subscription
                 $sub_stmt = $pdo->prepare("
                     INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_by) 
                     VALUES (?, ?, ?, ?, ?)
@@ -56,11 +61,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
                 $subscription_id = $pdo->lastInsertId();
 
-                // 4. Update member status to Active
-                $pdo->prepare("UPDATE members SET status = 'Active' WHERE id = ?")
+                // 3. Update member status to Active
+                $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved' WHERE id = ?")
                     ->execute([$req['member_id']]);
 
-                // 5. Record payment
+                // 4. Record payment
                 $pay_stmt = $pdo->prepare("
                     INSERT INTO payments (member_id, subscription_id, amount, payment_method, payment_date, notes, created_at) 
                     VALUES (?, ?, ?, ?, ?, ?, NOW())
@@ -71,11 +76,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $subscription_id,
                     $req['plan_price'],
                     $req['payment_method'],
-                    $start_date,
+                    date('Y-m-d'),
                     $payment_notes
                 ]);
 
-                // 6. Update request status to Approved
+                // 5. Update request status to Approved
                 $up_stmt = $pdo->prepare("
                     UPDATE renewal_requests 
                     SET status = 'Approved', processed_by = ?, notes = ?, updated_at = NOW() 
@@ -85,7 +90,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $pdo->commit();
 
-                // Send Email Notification
+                // Send In-App & Email Notification
+                try {
+                    require_once __DIR__ . '/config/notifications.php';
+                    create_notification(
+                        $pdo, 
+                        (int)$req['member_id'], 
+                        'MEMBERSHIP_RENEWED', 
+                        'Renewal Approved! 🎉', 
+                        "Your renewal request for {$req['plan_name']} was approved! Valid until " . date('F j, Y', strtotime($expiry_date)) . "."
+                    );
+                } catch (Exception $nE) {}
+
                 require_once 'config/email.php';
                 $email_subject = "Renewal Approved - Palma's Elite Gym";
                 $email_title = "Renewal Approved!";
@@ -94,10 +110,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 log_activity(
                     $pdo, 
-                    'Approved Renewal', 
+                    'Membership Renewed', 
                     "Approved renewal for {$req['full_name']} (Plan: {$req['plan_name']}, Expiry: {$expiry_date})", 
                     'Subscription',
                     $admin_id,
+                    $_SESSION['user_name'] ?? 'Admin'
+                );
                     $_SESSION['user_name'] ?? 'Admin'
                 );
 

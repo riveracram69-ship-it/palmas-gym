@@ -131,25 +131,54 @@ function processCheckin(membershipId) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            res.style.background = '#e6f4ea'; res.style.color = 'var(--success)'; res.style.border = '1px solid rgba(30,142,62,0.2)';
-            res.innerHTML = '<i class="fas fa-check-circle"></i> Success: ' + data.member_name;
+            const isCooldown = data.is_cooldown;
+            const bg = isCooldown ? '#fffbe7' : '#e6f4ea';
+            const color = isCooldown ? '#b45309' : '#137333';
+            const border = isCooldown ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(30,142,62,0.2)';
+            const icon = isCooldown ? 'fa-clock' : (data.action === 'check-out' ? 'fa-arrow-right-from-bracket' : 'fa-check-circle');
+
+            let photoHtml = '';
+            if (data.photo) {
+                photoHtml = `<img src="${data.photo}" style="width:54px;height:54px;border-radius:12px;object-fit:cover;border:2px solid ${isCooldown ? '#F59E0B' : '#10B981'};">`;
+            } else {
+                photoHtml = `<div style="width:54px;height:54px;border-radius:12px;background:${isCooldown ? '#FEF3C7' : '#D1FAE5'};color:${isCooldown ? '#B45309' : '#047857'};display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;">${data.member_name.charAt(0).toUpperCase()}</div>`;
+            }
+
+            res.style.background = bg;
+            res.style.color = color;
+            res.style.border = border;
+            res.innerHTML = `
+                <div style="display:flex;gap:1rem;align-items:center;text-align:left;">
+                    ${photoHtml}
+                    <div style="flex:1;">
+                        <div style="font-size:0.75rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:${color};margin-bottom:2px;">
+                            <i class="fas ${icon}"></i> ${isCooldown ? 'COOLDOWN ACTIVE' : (data.action === 'check-out' ? 'CHECK-OUT SUCCESSFUL' : 'VALID MEMBER • CHECK-IN SUCCESS')}
+                        </div>
+                        <div style="font-size:1.05rem;font-weight:700;color:var(--text-main);">${data.member_name}</div>
+                        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">ID: <code>${data.membership_id}</code> • Plan: <strong>${data.plan_name || 'Standard'}</strong></div>
+                        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                            <span class="badge badge-success" style="font-size:0.7rem;padding:2px 8px;"><i class="fas fa-shield-check"></i> ${data.account_status || 'Approved'}</span>
+                            <span class="badge ${data.membership_status === 'Active' ? 'badge-gold' : 'badge-danger'}" style="font-size:0.7rem;padding:2px 8px;">${data.membership_status || 'Active'} (Exp: ${data.expiry_date})</span>
+                        </div>
+                    </div>
+                </div>
+            `;
 
             const noLogs = document.getElementById('no-logs');
             if (noLogs) noLogs.remove();
 
-            const initial = data.member_name.charAt(0).toUpperCase();
-            const time = new Date().toLocaleTimeString('en-PH', {hour:'2-digit',minute:'2-digit'});
+            const time = data.time || new Date().toLocaleTimeString('en-PH', {hour:'2-digit',minute:'2-digit'});
             
-            if (data.action === 'check-in') {
+            if (data.action === 'check-in' && !isCooldown) {
                 const row = document.getElementById('logs-body').insertRow(0);
                 row.id = 'member-' + membershipId;
                 row.innerHTML = `
                     <td>
                         <div class="member-cell">
-                            <div class="member-avatar">${initial}</div>
+                            <div class="member-avatar">${data.member_name.charAt(0).toUpperCase()}</div>
                             <div>
                                 <div class="cell-primary">${data.member_name}</div>
-                                <div class="cell-secondary">${membershipId}</div>
+                                <div class="cell-secondary">${data.membership_id}</div>
                             </div>
                         </div>
                     </td>
@@ -157,21 +186,30 @@ function processCheckin(membershipId) {
                     <td class="cell-secondary">—</td>
                     <td><span class="badge badge-success"><i class="fas fa-circle" style="font-size:0.35rem; margin-right:4px;"></i> Inside</span></td>`;
                 logCount++;
-            } else {
-                // Find and update row
-                // For simplicity in this demo, we'll refresh the page or just prepend a check-out note
-                // Best practice is to update the existing row, but since logs are ordered by time_in desc, 
-                // we'll just reload to keep data sync simple or show a message.
-                location.reload(); 
+                document.getElementById('log-count').textContent = logCount + ' active entries';
+            } else if (data.action === 'check-out') {
+                setTimeout(() => location.reload(), 1500);
             }
-            document.getElementById('log-count').textContent = logCount + ' active entries';
         } else {
-            res.style.background = '#fce8e6'; res.style.color = 'var(--danger)'; res.style.border = '1px solid rgba(217,48,37,0.2)';
-            res.innerHTML = '<i class="fas fa-circle-exclamation"></i> ' + (data.message || 'Scan Error');
+            res.style.background = '#fce8e6'; 
+            res.style.color = '#c5221f'; 
+            res.style.border = '1px solid rgba(217,48,37,0.2)';
+            res.innerHTML = `
+                <div style="text-align:left;">
+                    <div style="font-size:0.8rem;font-weight:800;text-transform:uppercase;color:#c5221f;margin-bottom:4px;">
+                        <i class="fas fa-circle-xmark"></i> ${data.status_type ? 'CHECK-IN BLOCKED (' + data.status_type.toUpperCase() + ')' : 'SCAN FAILED'}
+                    </div>
+                    <div style="font-weight:700;font-size:0.95rem;color:var(--text-main);">${data.member_name || 'Unverified ID'}</div>
+                    <div style="font-size:0.85rem;color:#c5221f;margin-top:2px;">${data.message || 'Invalid scan.'}</div>
+                </div>
+            `;
         }
     })
     .finally(() => {
-        setTimeout(() => { res.style.display = 'none'; if(scanner) scanner.resume(); }, 3000);
+        setTimeout(() => { 
+            res.style.display = 'none'; 
+            if(scanner) scanner.resume(); 
+        }, 5000);
     });
 }
 

@@ -6,65 +6,14 @@
  * tied relationally to member records with CASCADE constraints.
  */
 
-/**
- * Ensure notifications table exists and has proper relational foreign keys
- */
-function ensure_notifications_table(PDO $pdo): void {
-    static $initialized = false;
-    if ($initialized) return;
-
-    try {
-        // 1. Create table if not exists
-        $sql = "CREATE TABLE IF NOT EXISTS notifications (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            member_id INT NOT NULL,
-            type ENUM('Registration', 'Inactivity', 'Expiration', 'Renewal', 'General') NOT NULL DEFAULT 'General',
-            title VARCHAR(255) NOT NULL,
-            message TEXT NULL,
-            delivery_status ENUM('Sent', 'Delivered', 'Failed') NOT NULL DEFAULT 'Sent',
-            read_status ENUM('Unread', 'Read') NOT NULL DEFAULT 'Unread',
-            sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_notif_member (member_id),
-            INDEX idx_notif_sent (sent_at),
-            INDEX idx_notif_read (read_status)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
-        $pdo->exec($sql);
-
-        // 2. Clean up any orphaned records before adding foreign key
-        $pdo->exec("DELETE FROM notifications WHERE member_id NOT IN (SELECT id FROM members)");
-
-        // 3. Add Foreign Key if not yet present
-        $fk_check = $pdo->query("
-            SELECT CONSTRAINT_NAME 
-            FROM information_schema.TABLE_CONSTRAINTS 
-            WHERE TABLE_SCHEMA = DATABASE() 
-              AND TABLE_NAME = 'notifications' 
-              AND CONSTRAINT_TYPE = 'FOREIGN KEY'
-              AND CONSTRAINT_NAME = 'fk_notifications_member'
-        ")->fetchColumn();
-
-        if (!$fk_check) {
-            $pdo->exec("
-                ALTER TABLE notifications 
-                ADD CONSTRAINT fk_notifications_member 
-                FOREIGN KEY (member_id) REFERENCES members (id) 
-                ON DELETE CASCADE 
-                ON UPDATE CASCADE
-            ");
-        }
-
-        $initialized = true;
-    } catch (Exception $e) {
-        error_log("Notifications Table Init/FK Error: " . $e->getMessage());
-    }
-}
+require_once __DIR__ . '/db.php';
 
 /**
  * Create and persist a notification linked to a member
  * 
  * @param PDO $pdo
  * @param int $member_id
- * @param string $type ('Registration' | 'Inactivity' | 'Expiration' | 'Renewal' | 'General')
+ * @param string $notification_type ('ACCOUNT_APPROVED' | 'ACCOUNT_REJECTED' | 'PAYMENT_SUCCESS' | 'PAYMENT_FAILED' | 'MEMBERSHIP_ACTIVATED' | 'MEMBERSHIP_RENEWED' | 'MEMBERSHIP_EXPIRING' | 'MEMBERSHIP_EXPIRED' | 'SYSTEM')
  * @param string $title
  * @param string $message
  * @param string $delivery_status ('Sent' | 'Delivered' | 'Failed')
@@ -73,26 +22,37 @@ function ensure_notifications_table(PDO $pdo): void {
 function create_notification(
     PDO $pdo, 
     int $member_id, 
-    string $type, 
+    string $notification_type, 
     string $title, 
     string $message = '', 
     string $delivery_status = 'Sent'
 ) {
     if ($member_id <= 0) return false;
-    ensure_notifications_table($pdo);
 
-    $allowed_types = ['Registration', 'Inactivity', 'Expiration', 'Renewal', 'General'];
-    if (!in_array($type, $allowed_types)) {
-        $type = 'General';
+    // Map notification_type to legacy type for backwards compatibility
+    $legacy_type = 'General';
+    if (strpos($notification_type, 'ACCOUNT') !== false || strpos($notification_type, 'Registration') !== false) {
+        $legacy_type = 'Registration';
+    } elseif (strpos($notification_type, 'RENEW') !== false) {
+        $legacy_type = 'Renewal';
+    } elseif (strpos($notification_type, 'EXPIR') !== false) {
+        $legacy_type = 'Expiration';
+    } elseif (strpos($notification_type, 'PAYMENT') !== false || strpos($notification_type, 'ACTIVAT') !== false) {
+        $legacy_type = 'Renewal';
     }
 
     try {
         $stmt = $pdo->prepare("
-            INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)
-            VALUES (?, ?, ?, ?, ?, 'Unread', NOW())
+            INSERT INTO notifications (member_id, type, notification_type, title, message, delivery_status, read_status, sent_at)
+            VALUES (?, ?, ?, ?, ?, ?, 'Unread', NOW())
         ");
-        $stmt->execute([$member_id, $type, $title, $message, $delivery_status]);
-        return (int)$pdo->lastInsertId();
+        $stmt->execute([$member_id, $legacy_type, $notification_type, $title, $message, $delivery_status]);
+        $notif_id = (int)$pdo->lastInsertId();
+
+        // Trigger push notification if member has registered devices
+        dispatch_device_push_notification($pdo, $member_id, $title, $message, ['type' => $notification_type]);
+
+        return $notif_id;
     } catch (Exception $e) {
         error_log("create_notification Error: " . $e->getMessage());
         return false;
@@ -102,9 +62,8 @@ function create_notification(
 /**
  * Fetch recent notifications for a specific member
  */
-function get_member_notifications(PDO $pdo, int $member_id, int $limit = 10): array {
+function get_member_notifications(PDO $pdo, int $member_id, int $limit = 15): array {
     if ($member_id <= 0) return [];
-    ensure_notifications_table($pdo);
 
     try {
         $stmt = $pdo->prepare("
@@ -120,5 +79,79 @@ function get_member_notifications(PDO $pdo, int $member_id, int $limit = 10): ar
     } catch (Exception $e) {
         error_log("get_member_notifications Error: " . $e->getMessage());
         return [];
+    }
+}
+
+/**
+ * Mark notification as read
+ */
+function mark_notification_read(PDO $pdo, int $notification_id, int $member_id): bool {
+    try {
+        $stmt = $pdo->prepare("
+            UPDATE notifications 
+            SET read_status = 'Read', read_at = NOW() 
+            WHERE id = ? AND member_id = ?
+        ");
+        return $stmt->execute([$notification_id, $member_id]);
+    } catch (Exception $e) {
+        error_log("mark_notification_read Error: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Mark all member notifications as read
+ */
+function mark_all_notifications_read(PDO $pdo, int $member_id): bool {
+    try {
+        $stmt = $pdo->prepare("
+            UPDATE notifications 
+            SET read_status = 'Read', read_at = NOW() 
+            WHERE member_id = ? AND read_status = 'Unread'
+        ");
+        return $stmt->execute([$member_id]);
+    } catch (Exception $e) {
+        error_log("mark_all_notifications_read Error: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Register a member device token for push notifications
+ */
+function register_member_device(PDO $pdo, int $member_id, string $device_token, string $device_type = 'android'): bool {
+    if ($member_id <= 0 || empty($device_token)) return false;
+
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO member_devices (member_id, device_token, device_type, last_used_at, created_at)
+            VALUES (?, ?, ?, NOW(), NOW())
+            ON DUPLICATE KEY UPDATE last_used_at = NOW(), device_type = VALUES(device_type)
+        ");
+        return $stmt->execute([$member_id, $device_token, $device_type]);
+    } catch (Exception $e) {
+        error_log("register_member_device Error: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Dispatch Push Notification to all active devices of a member
+ */
+function dispatch_device_push_notification(PDO $pdo, int $member_id, string $title, string $body, array $data = []): void {
+    try {
+        $stmt = $pdo->prepare("SELECT device_token, device_type FROM member_devices WHERE member_id = ?");
+        $stmt->execute([$member_id]);
+        $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($devices)) return;
+
+        // In production, send via Firebase Cloud Messaging (FCM) or APNs
+        // Log push dispatch for audit trail
+        foreach ($devices as $dev) {
+            error_log("[PUSH DISPATCH] To Member #{$member_id} ({$dev['device_type']}): '{$title}' - {$body}");
+        }
+    } catch (Exception $e) {
+        error_log("dispatch_device_push_notification Error: " . $e->getMessage());
     }
 }

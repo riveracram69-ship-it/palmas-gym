@@ -106,14 +106,21 @@ try {
 // ── 3. Fetch Persisted Relational Notifications from notifications table ─────────
 try {
     require_once __DIR__ . '/../config/notifications.php';
-    $db_notifs = get_member_notifications($pdo, (int)$member['id'], 10);
+    $db_notifs = get_member_notifications($pdo, (int)$member['id'], 15);
     foreach ($db_notifs as $dn) {
         $icon = 'fa-bell';
         $type = 'info';
-        if ($dn['type'] === 'Registration') { $icon = 'fa-user-plus'; $type = 'success'; }
-        elseif ($dn['type'] === 'Expiration') { $icon = 'fa-calendar-xmark'; $type = 'danger'; }
-        elseif ($dn['type'] === 'Inactivity') { $icon = 'fa-moon'; $type = 'warning'; }
-        elseif ($dn['type'] === 'Renewal') { $icon = 'fa-file-invoice-dollar'; $type = 'success'; }
+        $nt = $dn['notification_type'] ?? '';
+
+        if ($nt === 'ACCOUNT_APPROVED' || $dn['type'] === 'Registration') { 
+            $icon = 'fa-circle-check'; $type = 'success'; 
+        } elseif ($nt === 'ACCOUNT_REJECTED' || $nt === 'MEMBERSHIP_EXPIRED' || $dn['type'] === 'Expiration') { 
+            $icon = 'fa-circle-xmark'; $type = 'danger'; 
+        } elseif ($nt === 'MEMBERSHIP_EXPIRING' || $dn['type'] === 'Inactivity') { 
+            $icon = 'fa-triangle-exclamation'; $type = 'warning'; 
+        } elseif ($nt === 'MEMBERSHIP_ACTIVATED' || $nt === 'MEMBERSHIP_RENEWED' || $nt === 'PAYMENT_SUCCESS' || $dn['type'] === 'Renewal') { 
+            $icon = 'fa-file-invoice-dollar'; $type = 'success'; 
+        }
 
         $notifications[] = [
             'id'      => 'notif_' . $dn['id'],
@@ -122,7 +129,7 @@ try {
             'title'   => $dn['title'],
             'message' => $dn['message'] ?: $dn['title'],
             'time'    => date('M d · h:i A', strtotime($dn['sent_at'])),
-            'unread'  => ($dn['read_status'] === 'Unread'),
+            'unread'  => (($dn['read_status'] ?? 'Unread') === 'Unread'),
         ];
     }
 } catch (Exception $e) {}

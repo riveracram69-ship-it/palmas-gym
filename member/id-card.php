@@ -585,9 +585,6 @@ async function refreshQR() {
 // Initial draw
 refreshQR();
 
-// Refresh every 12 seconds
-setInterval(refreshQR, 12000);
-
 function downloadEID() {
     isCapturing = true;
     const btn = document.getElementById('download-btn');

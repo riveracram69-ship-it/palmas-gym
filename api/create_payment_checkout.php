@@ -51,6 +51,25 @@ try {
     $ref_code = 'PEG-' . strtoupper(substr($payment_method, 0, 2)) . '-' . strtoupper(bin2hex(random_bytes(3))) . '-' . rand(100, 999);
     $amount = floatval($plan['price']);
 
+    // Standardize method
+    $upper_m = strtoupper($payment_method);
+    $std_method = 'GCASH';
+    if (strpos($upper_m, 'CASH') !== false) $std_method = 'CASH';
+    elseif (strpos($upper_m, 'MAYA') !== false) $std_method = 'MAYA';
+    elseif (strpos($upper_m, 'QR') !== false) $std_method = 'QRPH';
+    elseif (strpos($upper_m, 'BANK') !== false) $std_method = 'BANK_TRANSFER';
+    elseif (strpos($upper_m, 'CREDIT') !== false || strpos($upper_m, 'CARD') !== false) $std_method = 'CREDIT_CARD';
+
+    // Insert into payment_transactions
+    try {
+        $tx_stmt = $pdo->prepare("
+            INSERT INTO payment_transactions 
+            (member_id, plan_id, reference_code, payment_method, amount, currency, status, expires_at)
+            VALUES (?, ?, ?, ?, ?, 'PHP', 'PENDING', DATE_ADD(NOW(), INTERVAL 30 MINUTE))
+        ");
+        $tx_stmt->execute([$member_id, $plan_id, $ref_code, $std_method, $amount]);
+    } catch (Exception $txE) {}
+
     // QR Ph Payload standard formatting
     $qr_ph_payload = "00020101021226580010ph.ppmi.qr0111PALMASGYM0215PEG" . $member['membership_id'] . "520459995303608540" . strlen($amount) . $amount . "5802PH5918PALMAS ELITE GYM6006MANILA62210717" . $ref_code . "6304";
 

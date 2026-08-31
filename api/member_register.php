@@ -46,24 +46,15 @@ if (!empty($contact_number) && !preg_match('/^09[0-9]{9}$/', $contact_number)) {
     exit;
 }
 
-try {
-    // Check if email is already taken
-    $check_email = $pdo->prepare("SELECT id FROM members WHERE LOWER(email) = LOWER(?) LIMIT 1");
-    $check_email->execute([$email]);
-    if ($check_email->fetch()) {
-        echo json_encode(['success' => false, 'message' => 'The email address is already registered. Please sign in instead.']);
-        exit;
-    }
+require_once __DIR__ . '/../config/duplicate_validator.php';
 
-    // Check if contact number is already taken (if provided)
-    if (!empty($contact_number)) {
-        $check_contact = $pdo->prepare("SELECT id FROM members WHERE contact_number = ? LIMIT 1");
-        $check_contact->execute([$contact_number]);
-        if ($check_contact->fetch()) {
-            echo json_encode(['success' => false, 'message' => 'This contact number is already registered.']);
-            exit;
-        }
-    }
+$dup_check = validate_member_uniqueness($pdo, $full_name, $email, $contact_number);
+if (!$dup_check['valid']) {
+    echo json_encode(['success' => false, 'message' => implode(' ', $dup_check['errors'])]);
+    exit;
+}
+
+try {
 
     $pdo->beginTransaction();
 
@@ -79,71 +70,41 @@ try {
     $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
     $stmt = $pdo->prepare("
-        INSERT INTO members (membership_id, full_name, email, contact_number, gender, photo, status, password_hash, created_at)
-        VALUES (?, ?, ?, ?, ?, NULL, 'Active', ?, NOW())
+        INSERT INTO members (membership_id, full_name, email, contact_number, gender, photo, account_status, status, selected_plan_id, password_hash, created_at)
+        VALUES (?, ?, ?, ?, ?, NULL, 'Pending', 'Inactive', ?, ?, NOW())
     ");
-    $stmt->execute([$membership_id, $full_name, $email, $contact_number, $gender, $password_hash]);
+    $stmt->execute([$membership_id, $full_name, $email, $contact_number, $gender, ($plan_id > 0 ? $plan_id : null), $password_hash]);
     $member_id = (int)$pdo->lastInsertId();
 
-    // If plan_id is selected or default to 1st plan if exists
-    if ($plan_id <= 0) {
-        $first_plan = $pdo->query("SELECT id FROM membership_plans ORDER BY price ASC LIMIT 1")->fetch();
-        if ($first_plan) {
-            $plan_id = (int)$first_plan['id'];
-        }
-    }
-
-    if ($plan_id > 0) {
-        $plan_stmt = $pdo->prepare("SELECT duration_months FROM membership_plans WHERE id = ?");
-        $plan_stmt->execute([$plan_id]);
-        $plan = $plan_stmt->fetch();
-        $duration = $plan ? (int)$plan['duration_months'] : 1;
-
-        $start_date = date('Y-m-d');
-        $expiry_date = date('Y-m-d', strtotime("+{$duration} months"));
-
-        $sub_stmt = $pdo->prepare("
-            INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date)
-            VALUES (?, ?, ?, ?)
+    // Insert admin notification
+    try {
+        $notif_stmt = $pdo->prepare("
+            INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)
+            VALUES (?, 'Registration', 'New Mobile App Registration Awaiting Review', ?, 'Sent', 'Unread', NOW())
         ");
-        $sub_stmt->execute([$member_id, $plan_id, $start_date, $expiry_date]);
-    }
-
-    // Generate auth token
-    $token = bin2hex(random_bytes(32));
-    $insertToken = $pdo->prepare("INSERT INTO auth_tokens (member_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))");
-    $insertToken->execute([$member_id, $token]);
+        $notif_stmt->execute([$member_id, "New member registration submitted by {$full_name} ({$membership_id}) via Mobile App. Please review and approve."]);
+    } catch (Exception $nEx) {}
 
     $pdo->commit();
 
     // Log Activity
-    log_activity($pdo, 'Member Registration', "New self-registered member: {$full_name} ({$membership_id})", 'Member');
+    log_activity($pdo, 'Member Registration', "New member registered via API (Pending Review): {$full_name} ({$membership_id})", 'Member');
 
     // Email notification if configured
     try {
         require_once __DIR__ . '/../config/email.php';
-        $email_subject = "Welcome to Palma's Elite Gym!";
+        $email_subject = "Registration Received - Palma's Elite Gym";
         $email_title = "Welcome, {$full_name}!";
-        $email_body = "Your account has been created successfully! Your Membership ID is: <strong>{$membership_id}</strong>. You can use this ID or your email along with your password to log in to the Member Portal and Mobile App.";
+        $email_body = "Your registration has been submitted and is currently <strong>Pending Review</strong> by our staff. Your Membership ID is: <strong>{$membership_id}</strong>. You will receive an email once your account has been approved.";
         send_email_notification($email, $email_subject, $email_title, $email_body);
     } catch (Exception $emErr) {}
 
-    $member_data = [
-        'id' => $member_id,
-        'membership_id' => $membership_id,
-        'full_name' => $full_name,
-        'email' => $email,
-        'contact_number' => $contact_number,
-        'photo' => null,
-        'status' => 'Active'
-    ];
-
     echo json_encode([
         'success' => true,
-        'message' => 'Account created successfully! Your Membership ID is ' . $membership_id,
+        'pending_approval' => true,
+        'message' => 'Registration submitted successfully! Your account is currently waiting for staff approval. Your Reference ID is: ' . $membership_id,
         'membership_id' => $membership_id,
-        'token' => $token,
-        'member' => $member_data
+        'full_name' => $full_name
     ]);
 } catch (Exception $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();

@@ -26,6 +26,22 @@
                 <i class="fas fa-qrcode"></i> QR Attendance
             </a>
         </li>
+        <?php
+        $pending_regs_count = 0;
+        try {
+            if (isset($pdo)) {
+                $pending_regs_count = $pdo->query("SELECT COUNT(*) FROM members WHERE account_status = 'Pending'")->fetchColumn();
+            }
+        } catch (Exception $e) {}
+        ?>
+        <li class="nav-item">
+            <a href="pending-registrations.php" class="nav-link <?php echo nav_active('pending-registrations.php'); ?>">
+                <i class="fas fa-user-clock"></i> Pending Approvals
+                <?php if ($pending_regs_count > 0): ?>
+                    <span style="background:#D97706; color:#fff; border-radius:10px; padding:0.15rem 0.55rem; font-size:0.75rem; font-weight:700; margin-left:auto; display:inline-block; line-height:1;"><?php echo $pending_regs_count; ?></span>
+                <?php endif; ?>
+            </a>
+        </li>
     </ul>
 
     <?php if (is_admin()): ?>

@@ -298,21 +298,22 @@
             </ion-refresher>
 
             <div class="membership-card text-center" style="text-align: center;">
-              <h3 id="card-name" style="margin: 0; font-weight: 700; color: #ffffff; font-size: 1.35rem;">--</h3>
-              <p id="card-code" style="color: #74c69d; margin: 4px 0 10px 0; font-weight: 600; letter-spacing: 1px;">--</p>
+              <div style="width: 70px; height: 70px; border-radius: 50%; background: #1b4332; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; border: 3px solid #52b788; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                <i class="fa-solid fa-user" style="font-size: 32px; color: #74c69d;"></i>
+              </div>
+              <h3 id="card-name" style="margin: 0; font-weight: 800; color: #ffffff; font-size: 1.35rem; font-family: 'Outfit', sans-serif;">--</h3>
+              <p id="card-code" style="color: #74c69d; margin: 4px 0 12px 0; font-weight: 700; letter-spacing: 1px; font-size: 0.95rem;">--</p>
               
-              <div class="qr-box">
+              <div class="qr-box" style="margin: 12px auto; padding: 14px; background: #ffffff; border-radius: 16px; display: inline-block; box-shadow: 0 8px 24px rgba(0,0,0,0.35);">
                 <div id="qr-target"></div>
               </div>
 
-              <!-- 15-second rotating indicator -->
-              <div class="timer-bar-wrap">
-                <div id="qr-timer-bar" class="timer-bar"></div>
-              </div>
-              <p style="font-size: 0.72rem; color: #95d5b2; margin-top: 6px;">Dynamic Security QR • Auto-refreshes every 15s</p>
+              <p style="font-size: 0.78rem; color: #95d5b2; margin-top: 8px; font-weight: 500;">
+                <i class="fa-solid fa-shield-check" style="color:#52b788;"></i> Verified Digital Member Pass
+              </p>
 
-              <div style="margin-top: 12px;">
-                <span id="card-status-pill" class="status-pill status-active">ACTIVE</span>
+              <div style="margin-top: 10px;">
+                <span id="card-status-pill" class="status-pill status-active">● ACTIVE</span>
               </div>
 
               <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem;">
@@ -617,6 +618,12 @@
         });
         const data = await res.json();
 
+        if (data.pending_approval) {
+          alert(`Registration Received!\n\nYour Reference ID: ${data.membership_id}\n\nYour account is currently waiting for staff approval. You will be able to log in once your registration is reviewed.`);
+          showLoginView();
+          return;
+        }
+
         if (data.success) {
           alert(`Account Created Successfully!\n\nYour Membership ID: ${data.membership_id}\n\nYou are now signed in.`);
           currentMember = data.member;
@@ -733,7 +740,6 @@
       document.getElementById('view-main').style.display = 'block';
 
       await loadDashboard(memberId);
-      startDynamicQRTimer();
     }
 
     async function loadDashboard(memberId) {
@@ -804,44 +810,16 @@
 
     function renderQRCode(text) {
       const container = document.getElementById('qr-target');
+      if (!container) return;
       container.innerHTML = '';
       qrInstance = new QRCode(container, {
         text: text,
-        width: 170,
-        height: 170,
+        width: 190,
+        height: 190,
         colorDark: '#091c14',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
       });
-    }
-
-    function startDynamicQRTimer() {
-      if (qrTimerInterval) clearInterval(qrTimerInterval);
-      
-      let secondsLeft = 15 - (Math.floor(Date.now() / 1000) % 15);
-      const bar = document.getElementById('qr-timer-bar');
-
-      qrTimerInterval = setInterval(async () => {
-        secondsLeft--;
-        if (bar) bar.style.width = ((secondsLeft / 15) * 100) + '%';
-
-        if (secondsLeft <= 0) {
-          secondsLeft = 15;
-          if (currentMember) {
-            // refresh QR payload
-            try {
-              const token = localStorage.getItem('peg_token');
-              const res = await fetch(`${API_URL}/member_dashboard.php`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-              });
-              const d = await res.json();
-              if (d.success && d.qr_token) {
-                renderQRCode(d.qr_token);
-              }
-            } catch (err) {}
-          }
-        }
-      }, 1000);
     }
 
     // Priority 12: Safe DOM rendering — no innerHTML with database data

@@ -54,22 +54,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($validation_errors)) {
-        try {
-            $stmt = $pdo->prepare("SELECT id FROM members WHERE LOWER(email) = LOWER(?) LIMIT 1");
-            $stmt->execute([$email]);
-            if ($stmt->fetch()) {
-                $validation_errors[] = "This email is already registered. Please sign in instead.";
-            }
-
-            if (!empty($contact_number)) {
-                $stmt = $pdo->prepare("SELECT id FROM members WHERE contact_number = ? LIMIT 1");
-                $stmt->execute([$contact_number]);
-                if ($stmt->fetch()) {
-                    $validation_errors[] = "This contact number is already registered.";
-                }
-            }
-        } catch (Exception $e) {
-            $validation_errors[] = "Database validation error: " . $e->getMessage();
+        require_once __DIR__ . '/../config/duplicate_validator.php';
+        $dup_check = validate_member_uniqueness($pdo, $full_name, $email, $contact_number);
+        if (!$dup_check['valid']) {
+            $validation_errors = array_merge($validation_errors, $dup_check['errors']);
         }
     }
 
@@ -88,48 +76,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
             $stmt = $pdo->prepare("
-                INSERT INTO members (membership_id, full_name, email, contact_number, gender, photo, status, password_hash, created_at)
-                VALUES (?, ?, ?, ?, ?, NULL, 'Active', ?, NOW())
+                INSERT INTO members (membership_id, full_name, email, contact_number, gender, photo, account_status, status, selected_plan_id, password_hash, created_at)
+                VALUES (?, ?, ?, ?, ?, NULL, 'Pending', 'Inactive', ?, ?, NOW())
             ");
-            $stmt->execute([$membership_id, $full_name, $email, $contact_number, $gender, $password_hash]);
+            $stmt->execute([$membership_id, $full_name, $email, $contact_number, $gender, ($plan_id > 0 ? $plan_id : null), $password_hash]);
             $member_id = (int)$pdo->lastInsertId();
 
-            if ($plan_id <= 0 && !empty($plans)) {
-                $plan_id = (int)$plans[0]['id'];
-            }
-
-            if ($plan_id > 0) {
-                $plan_stmt = $pdo->prepare("SELECT duration_months FROM membership_plans WHERE id = ?");
-                $plan_stmt->execute([$plan_id]);
-                $selected_plan = $plan_stmt->fetch();
-                $duration = $selected_plan ? (int)$selected_plan['duration_months'] : 1;
-
-                $start_date = date('Y-m-d');
-                $expiry_date = date('Y-m-d', strtotime("+{$duration} months"));
-
-                $sub_stmt = $pdo->prepare("
-                    INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date)
-                    VALUES (?, ?, ?, ?)
+            // Insert admin notification
+            try {
+                $notif_stmt = $pdo->prepare("
+                    INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)
+                    VALUES (?, 'Registration', 'New Member Registration Awaiting Review', ?, 'Sent', 'Unread', NOW())
                 ");
-                $sub_stmt->execute([$member_id, $plan_id, $start_date, $expiry_date]);
-            }
+                $notif_stmt->execute([$member_id, "New member registration submitted by {$full_name} ({$membership_id}). Please review and approve."]);
+            } catch (Exception $nEx) {}
 
             $pdo->commit();
 
-            log_activity($pdo, 'Member Registration', "Web self-registered member: {$full_name} ({$membership_id})", 'Member');
+            log_activity($pdo, 'Member Registration', "New member registered (Pending Review): {$full_name} ({$membership_id})", 'Member');
 
             try {
                 require_once __DIR__ . '/../config/email.php';
-                $email_subject = "Welcome to Palma's Elite Gym!";
-                $email_title   = "Welcome, {$full_name}!";
-                $email_body    = "Your membership account has been created! Your Membership ID is: <strong>{$membership_id}</strong>. Use it or your email to sign in.";
+                $email_subject = "Registration Received - Palma's Elite Gym";
+                $email_title   = "Hello, {$full_name}!";
+                $email_body    = "Thank you for registering at Palma's Elite Gym! Your registration has been submitted and is currently <strong>Pending Review</strong> by our staff. Your Membership ID is: <strong>{$membership_id}</strong>. You will receive an email once your account has been approved.";
                 send_email_notification($email, $email_subject, $email_title, $email_body);
             } catch (Exception $emErr) {}
 
-            $_SESSION['member_id']   = $member_id;
-            $_SESSION['member_name'] = $full_name;
-            $new_membership_id       = $membership_id;
-            $success                 = "Account successfully created! Welcome to Palma's Elite Gym.";
+            $new_membership_id  = $membership_id;
+            $submitted_name     = $full_name;
+            $success            = "Registration submitted successfully! Your account is currently pending approval by gym staff.";
 
         } catch (Exception $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
@@ -507,22 +483,29 @@ select.if{
   <main class="card" id="main-content">
 
     <?php if ($success): ?>
-    <!-- SUCCESS SCREEN -->
+    <!-- SUCCESS SCREEN: PENDING REVIEW -->
     <div class="success-scr">
-      <div class="success-ico"><i class="fa-solid fa-check"></i></div>
-      <h2>Welcome, <?php echo htmlspecialchars($_SESSION['member_name']); ?>!</h2>
-      <p>Your membership is now active and ready to use.</p>
-      <div class="mid-box">
-        <div class="mid-lbl">Your Membership ID</div>
-        <div class="mid-val"><?php echo htmlspecialchars($new_membership_id); ?></div>
-        <div class="mid-hint">Save this ID &mdash; use it to sign in to the portal and mobile app.</div>
+      <div class="success-ico" style="background:#FEF3C7;color:#D97706;border:2px solid #FDE68A;"><i class="fa-solid fa-clock"></i></div>
+      <h2>Registration Received!</h2>
+      <p style="color:var(--c-muted);font-size:0.95rem;margin-bottom:18px;">
+        Thank you, <strong><?php echo htmlspecialchars($submitted_name); ?></strong>! Your account has been submitted and is currently <strong>Pending Review</strong> by our staff.
+      </p>
+      <div class="mid-box" style="background:#FFFBEB;border:1px solid #FDE68A;">
+        <div class="mid-lbl" style="color:#92400E;">Your Membership Reference ID</div>
+        <div class="mid-val" style="color:#B45309;"><?php echo htmlspecialchars($new_membership_id); ?></div>
+        <div class="mid-hint" style="color:#78350F;">Save this ID &mdash; you will use it with your password once staff approves your account.</div>
+      </div>
+      <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:14px;margin-bottom:20px;text-align:left;">
+        <div style="font-weight:700;color:#166534;font-size:0.85rem;margin-bottom:4px;"><i class="fa-solid fa-shield-halved"></i> What happens next?</div>
+        <div style="font-size:0.8rem;color:#15803D;line-height:1.4;">
+          1. Gym staff will verify your details.<br>
+          2. Your account will be activated.<br>
+          3. You can then sign in to access your Digital QR Pass and Gym features!
+        </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:10px">
-        <a href="index.php" class="btn-primary" style="text-decoration:none;margin-top:0">
-          <i class="fa-solid fa-gauge-high" aria-hidden="true"></i> Go to Dashboard
-        </a>
-        <a href="id-card.php" class="btn-outline">
-          <i class="fa-solid fa-qrcode" aria-hidden="true"></i> View Digital QR Pass
+        <a href="login.php" class="btn-primary" style="text-decoration:none;margin-top:0">
+          <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Back to Sign In
         </a>
       </div>
     </div>

@@ -16,115 +16,196 @@ if (!$is_kiosk && !$is_staff) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $membership_id = $_POST['membership_id'] ?? '';
+    $raw_input = trim($_POST['membership_id'] ?? '');
 
-    if (empty($membership_id)) {
-        echo json_encode(['success' => false, 'message' => 'Empty ID provided']);
+    if (empty($raw_input)) {
+        echo json_encode(['success' => false, 'message' => 'Please scan or provide a Member ID.']);
         exit;
     }
 
-    // Check if the barcode/QR scanned represents a dynamic token
-    if (strpos($membership_id, ':') !== false) {
-        $parts = explode(':', $membership_id);
-        if (count($parts) === 3) {
-            list($token_member_id, $time_slot, $signature) = $parts;
-            
-            // Validate the HMAC-SHA256 signature
-            $expected_signature = hash_hmac('sha256', $token_member_id . '|' . $time_slot, QR_SECRET_KEY);
-            $expected_signature_short = substr($expected_signature, 0, 16);
-            
-            if (!hash_equals($expected_signature_short, $signature)) {
-                echo json_encode(['success' => false, 'message' => 'Invalid QR Code security signature.']);
-                exit;
+    $membership_id = $raw_input;
+
+    // Handle token format (e.g. PEG:MEMBERSHIP_ID:SIG or GYM-XXXXXX:SIG) or direct Membership ID
+    if (strpos($raw_input, ':') !== false) {
+        $parts = explode(':', $raw_input);
+        if (count($parts) >= 2) {
+            // First part or second part is the membership ID
+            $membership_id = $parts[0];
+            if ($parts[0] === 'PEG' && isset($parts[1])) {
+                $membership_id = $parts[1];
             }
-            
-            // Check time slot (permit up to 2 time slots drift = 30 seconds)
-            $current_time_slot = floor(time() / 15);
-            if (abs($current_time_slot - intval($time_slot)) > 2) {
-                echo json_encode(['success' => false, 'message' => 'This QR Code has expired. Please refresh the app.']);
-                exit;
-            }
-            
-            // Override membership_id with decoded value
-            $membership_id = $token_member_id;
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Invalid QR Code format.']);
-            exit;
         }
     }
 
     try {
-        // 1. Get Member
-        $stmt = $pdo->prepare("SELECT id, full_name, status FROM members WHERE membership_id = ?");
-        $stmt->execute([$membership_id]);
-        $member = $stmt->fetch();
+        // 1. Get Member & Plan details
+        $stmt = $pdo->prepare("
+            SELECT m.*, 
+                   (SELECT s.expiry_date 
+                    FROM subscriptions s 
+                    WHERE s.member_id = m.id AND s.expiry_date >= CURDATE()
+                    ORDER BY s.expiry_date DESC, s.id DESC 
+                    LIMIT 1) as expiry_date,
+                   (SELECT p.name 
+                    FROM subscriptions s 
+                    LEFT JOIN membership_plans p ON p.id = s.plan_id 
+                    WHERE s.member_id = m.id AND s.expiry_date >= CURDATE()
+                    ORDER BY s.expiry_date DESC, s.id DESC 
+                    LIMIT 1) as plan_name
+            FROM members m 
+            WHERE m.membership_id = ? OR REPLACE(UPPER(m.membership_id), '-', '') = REPLACE(UPPER(?), '-', '')
+            LIMIT 1
+        ");
+        $stmt->execute([$membership_id, $membership_id]);
+        $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$member) {
-            echo json_encode(['success' => false, 'message' => 'Invalid Member ID']);
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Member not found. Please verify the QR Code or Member ID.'
+            ]);
             exit;
         }
 
-        // 2. Check Expiry from Subscriptions
-        $sub_stmt = $pdo->prepare("SELECT expiry_date FROM subscriptions WHERE member_id = ? ORDER BY expiry_date DESC LIMIT 1");
-        $sub_stmt->execute([$member['id']]);
-        $sub = $sub_stmt->fetch();
+        $acc_status = $member['account_status'] ?? 'Approved';
 
-        if (!$sub || strtotime($sub['expiry_date']) < strtotime(date('Y-m-d'))) {
-            // Auto-update member status if expired
+        // 2. Validate Account Status
+        if ($acc_status === 'Pending') {
+            echo json_encode([
+                'success' => false,
+                'status_type' => 'Pending',
+                'member_name' => $member['full_name'],
+                'membership_id' => $member['membership_id'],
+                'photo' => $member['photo'],
+                'message' => 'Account is Pending Review. Please approve the registration first.'
+            ]);
+            exit;
+        }
+
+        if ($acc_status === 'Rejected') {
+            echo json_encode([
+                'success' => false,
+                'status_type' => 'Rejected',
+                'member_name' => $member['full_name'],
+                'membership_id' => $member['membership_id'],
+                'photo' => $member['photo'],
+                'message' => 'Account Rejected. ' . ($member['rejection_reason'] ?: 'Please contact front desk.')
+            ]);
+            exit;
+        }
+
+        if ($acc_status === 'Suspended' || $member['status'] === 'Suspended') {
+            echo json_encode([
+                'success' => false,
+                'status_type' => 'Suspended',
+                'member_name' => $member['full_name'],
+                'membership_id' => $member['membership_id'],
+                'photo' => $member['photo'],
+                'message' => 'Member account is currently Suspended.'
+            ]);
+            exit;
+        }
+
+        // 3. Check Subscription Expiry
+        $sub_stmt = $pdo->prepare("SELECT expiry_date, plan_id FROM subscriptions WHERE member_id = ? ORDER BY expiry_date DESC LIMIT 1");
+        $sub_stmt->execute([$member['id']]);
+        $sub = $sub_stmt->fetch(PDO::FETCH_ASSOC);
+
+        $is_expired = (!$sub || strtotime($sub['expiry_date']) < strtotime(date('Y-m-d')));
+
+        if ($is_expired) {
             $pdo->prepare("UPDATE members SET status = 'Expired' WHERE id = ?")->execute([$member['id']]);
             
-            echo json_encode(['success' => false, 'message' => 'Membership Expired! Please renew at the desk.']);
+            echo json_encode([
+                'success' => false,
+                'status_type' => 'Expired',
+                'member_name' => $member['full_name'],
+                'membership_id' => $member['membership_id'],
+                'photo' => $member['photo'],
+                'expiry_date' => $sub['expiry_date'] ?? 'No Subscription',
+                'message' => 'Membership Expired (' . ($sub['expiry_date'] ?? 'None') . '). Please renew at the desk.'
+            ]);
             exit;
         }
 
-        // 3. Check for active session (Check-out logic)
-        $session = $pdo->prepare("SELECT id, time_in FROM attendance WHERE member_id = ? AND time_out IS NULL ORDER BY date DESC, time_in DESC LIMIT 1");
-        $session->execute([$member['id']]);
-        $active_session = $session->fetch();
+        // 4. Anti-Duplicate Check-in Cooldown & Active Session Check
+        $last_checkin_stmt = $pdo->prepare("
+            SELECT id, time_in, time_out, 
+                   TIMESTAMPDIFF(MINUTE, time_in, NOW()) as minutes_since_in
+            FROM attendance 
+            WHERE member_id = ? AND date = CURDATE()
+            ORDER BY time_in DESC 
+            LIMIT 1
+        ");
+        $last_checkin_stmt->execute([$member['id']]);
+        $last_record = $last_checkin_stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($active_session) {
-            // Anti-Replay / Debounce: Prevent checkout if they just checked in within 60 seconds
-            if (strtotime($active_session['time_in']) > time() - 60) {
-                echo json_encode(['success' => false, 'message' => 'Please wait a minute before checking out.']);
+        // If currently inside (checked in, no checkout yet)
+        if ($last_record && empty($last_record['time_out'])) {
+            $mins = intval($last_record['minutes_since_in'] ?? 0);
+            
+            // If scanned within 3 minutes of check-in, trigger anti-duplicate cooldown
+            if ($mins < 3) {
+                echo json_encode([
+                    'success' => true,
+                    'is_cooldown' => true,
+                    'action' => 'cooldown',
+                    'member_name' => $member['full_name'],
+                    'membership_id' => $member['membership_id'],
+                    'photo' => $member['photo'],
+                    'account_status' => 'Approved',
+                    'membership_status' => 'Active',
+                    'plan_name' => $member['plan_name'] ?: 'Standard',
+                    'expiry_date' => date('M d, Y', strtotime($member['expiry_date'])),
+                    'time' => date('h:i A', strtotime($last_record['time_in'])),
+                    'message' => 'Member already checked in at ' . date('h:i A', strtotime($last_record['time_in'])) . ' (Cooldown Active).'
+                ]);
                 exit;
             }
 
-            // Check-out
-            $stmt = $pdo->prepare("UPDATE attendance SET time_out = NOW() WHERE id = ?");
-            $stmt->execute([$active_session['id']]);
+            // Otherwise, perform Check-out
+            $upd = $pdo->prepare("UPDATE attendance SET time_out = NOW() WHERE id = ?");
+            $upd->execute([$last_record['id']]);
 
             echo json_encode([
                 'success' => true,
-                'message' => 'Goodbye, ' . $member['full_name'] . '. See you next time!',
+                'action' => 'check-out',
                 'member_name' => $member['full_name'],
-                'action' => 'check-out'
+                'membership_id' => $member['membership_id'],
+                'photo' => $member['photo'],
+                'account_status' => 'Approved',
+                'membership_status' => 'Active',
+                'plan_name' => $member['plan_name'] ?: 'Standard',
+                'expiry_date' => date('M d, Y', strtotime($member['expiry_date'])),
+                'time' => date('h:i A'),
+                'message' => 'Check-out successful! Goodbye, ' . $member['full_name'] . '.'
             ]);
-            log_activity($pdo, 'Member Check-out', "Member {$member['full_name']} ({$membership_id}) checked out.", 'Attendance');
+            log_activity($pdo, 'Member Check-out', "Member {$member['full_name']} ({$member['membership_id']}) checked out.", 'Attendance');
             exit;
         }
 
-        // Anti-Replay / Debounce: Prevent checkin if they just checked out within 60 seconds
-        $last_checkout = $pdo->prepare("SELECT time_out FROM attendance WHERE member_id = ? AND time_out IS NOT NULL ORDER BY date DESC, time_out DESC LIMIT 1");
-        $last_checkout->execute([$member['id']]);
-        $last = $last_checkout->fetch();
-        if ($last && strtotime($last['time_out']) > time() - 60) {
-            echo json_encode(['success' => false, 'message' => 'Please wait a minute before checking in again.']);
-            exit;
-        }
-
-        // 4. Log Check-in
-        $stmt = $pdo->prepare("INSERT INTO attendance (member_id, date, time_in) VALUES (?, CURDATE(), NOW())");
-        $stmt->execute([$member['id']]);
+        // 5. Log New Check-in
+        $ins = $pdo->prepare("INSERT INTO attendance (member_id, date, time_in) VALUES (?, CURDATE(), NOW())");
+        $ins->execute([$member['id']]);
 
         echo json_encode([
             'success' => true,
-            'message' => 'Welcome back, ' . $member['full_name'],
+            'action' => 'check-in',
             'member_name' => $member['full_name'],
-            'action' => 'check-in'
+            'membership_id' => $member['membership_id'],
+            'photo' => $member['photo'],
+            'account_status' => 'Approved',
+            'membership_status' => 'Active',
+            'plan_name' => $member['plan_name'] ?: 'Standard',
+            'expiry_date' => date('M d, Y', strtotime($member['expiry_date'])),
+            'time' => date('h:i A'),
+            'message' => 'VALID MEMBER • Check-in Successful! Welcome, ' . $member['full_name'] . '.'
         ]);
-        log_activity($pdo, 'Member Check-in', "Member {$member['full_name']} ({$membership_id}) checked in.", 'Attendance');
+        log_activity($pdo, 'Member Check-in', "Member {$member['full_name']} ({$member['membership_id']}) checked in.", 'Attendance');
 
     } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => 'A database error occurred.']);
+        error_log('Attendance Error: ' . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'A server error occurred while processing attendance.']);
     }
 }
+

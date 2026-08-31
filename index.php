@@ -84,6 +84,7 @@ try {
     if (isset($pdo) && $pdo) {
         // ── 1. Master KPI Card Calculations ──────────────────────────────────
         $total_members    = (int)$pdo->query("SELECT COUNT(*) FROM members")->fetchColumn();
+        $pending_registrations_cnt = (int)$pdo->query("SELECT COUNT(*) FROM members WHERE account_status = 'Pending'")->fetchColumn();
         $active_members   = (int)$pdo->query("SELECT COUNT(DISTINCT member_id) FROM subscriptions WHERE expiry_date >= CURDATE()")->fetchColumn();
         $expired_members  = (int)$pdo->query("SELECT COUNT(DISTINCT member_id) FROM subscriptions WHERE expiry_date < CURDATE() AND member_id NOT IN (SELECT member_id FROM subscriptions WHERE expiry_date >= CURDATE())")->fetchColumn();
         $inactive_members = max(0, $total_members - ($active_members + $expired_members));
@@ -371,6 +372,28 @@ try {
             </a>
         </div>
     </div>
+
+    <?php if ($pending_registrations_cnt > 0): ?>
+    <!-- ── PENDING REGISTRATIONS ACTION BANNER ───────────────────────────── -->
+    <div style="background:linear-gradient(135deg, rgba(217,119,6,0.15) 0%, rgba(245,158,11,0.08) 100%); border:1px solid rgba(245,158,11,0.3); border-left:5px solid #F59E0B; border-radius:14px; padding:1.25rem 1.5rem; margin-bottom:1.75rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+        <div style="display:flex; align-items:center; gap:1rem;">
+            <div style="width:44px; height:44px; border-radius:12px; background:#FEF3C7; color:#D97706; display:flex; align-items:center; justify-content:center; font-size:1.25rem; flex-shrink:0;">
+                <i class="fas fa-user-clock"></i>
+            </div>
+            <div>
+                <h3 style="margin:0 0 4px 0; font-size:1rem; font-weight:700; color:var(--text-main);">
+                    <?php echo $pending_registrations_cnt; ?> Member Registration<?php echo $pending_registrations_cnt > 1 ? 's' : ''; ?> Awaiting Review
+                </h3>
+                <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">
+                    New sign-ups require staff/admin approval before member access and QR passes are activated.
+                </p>
+            </div>
+        </div>
+        <a href="pending-registrations.php" class="btn" style="background:#D97706; color:#fff; font-weight:700; border-radius:10px; padding:0.6rem 1.25rem; text-decoration:none; display:inline-flex; align-items:center; gap:0.5rem;">
+            Review Applications <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+    <?php endif; ?>
 
     <!-- ── 4 EXECUTIVE HIGH-IMPACT KPI CARDS ────────────────────────────────── -->
     <div class="kpi-master-grid">

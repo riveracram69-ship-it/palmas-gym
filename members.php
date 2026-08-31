@@ -46,11 +46,12 @@ $active = array_filter($members, fn($m) => $m['status'] === 'Active');
             <input type="text" class="form-control" id="member-search" placeholder="Search name, email, or ID…">
         </div>
         <div style="display:flex;gap:0.75rem;align-items:center;">
-            <select class="form-control" id="status-filter" style="width:auto;min-width:140px;">
-                <option value="">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-                <option value="Expired">Expired</option>
+            <select class="form-control" id="status-filter" style="width:auto;min-width:160px;">
+                <option value="">All Accounts</option>
+                <option value="Approved">Approved</option>
+                <option value="Pending">Pending Review</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Suspended">Suspended</option>
             </select>
         </div>
     </div>
@@ -61,8 +62,9 @@ $active = array_filter($members, fn($m) => $m['status'] === 'Active');
                 <tr>
                     <th>Member</th>
                     <th>Membership ID</th>
-                    <th>Plan</th>
-                    <th>Status</th>
+                    <th>Plan & Expiry</th>
+                    <th>Account Status</th>
+                    <th>Membership</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -75,7 +77,7 @@ $active = array_filter($members, fn($m) => $m['status'] === 'Active');
                     data-name="<?php echo strtolower($m['full_name']); ?>"
                     data-email="<?php echo strtolower($m['email']); ?>"
                     data-id="<?php echo strtolower($m['membership_id']); ?>"
-                    data-status="<?php echo htmlspecialchars($m['status']); ?>">
+                    data-status="<?php echo htmlspecialchars($m['account_status'] ?? 'Approved'); ?>">
 
                     <td>
                         <div class="member-cell">
@@ -86,19 +88,37 @@ $active = array_filter($members, fn($m) => $m['status'] === 'Active');
                             </div>
                         </div>
                     </td>
-                    <td><code style="font-size:0.85rem;color:var(--accent);"><?php echo htmlspecialchars($m['membership_id']); ?></code></td>
+                    <td><code style="font-size:0.85rem;color:var(--accent);font-weight:700;"><?php echo htmlspecialchars($m['membership_id']); ?></code></td>
                     <td>
                         <?php if ($m['plan_name'] !== '—'): ?>
-                        <span class="badge badge-gold"><i class="fas fa-tag"></i> <?php echo htmlspecialchars($m['plan_name']); ?></span>
+                        <div style="font-weight:600;font-size:0.85rem;color:var(--text-main);"><i class="fas fa-tag" style="color:var(--accent);font-size:0.75rem;"></i> <?php echo htmlspecialchars($m['plan_name']); ?></div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);"><?php echo $m['expiry_date'] ? 'Exp: ' . date('M d, Y', strtotime($m['expiry_date'])) : '—'; ?></div>
                         <?php else: ?>
-                        <span style="color:var(--text-muted);font-size:0.8rem;">No plan</span>
+                        <span style="color:var(--text-muted);font-size:0.8rem;">No active plan</span>
                         <?php endif; ?>
                     </td>
                     <td>
-                        <span class="badge <?php echo $m['status'] === 'Active' ? 'badge-success' : 'badge-danger'; ?>">
-                            <i class="fas fa-circle" style="font-size:0.35rem;margin-right:4px;"></i>
-                            <?php echo htmlspecialchars($m['status']); ?>
-                        </span>
+                        <?php 
+                        $acc = $m['account_status'] ?? 'Approved';
+                        if ($acc === 'Approved'): ?>
+                            <span class="badge badge-success"><i class="fas fa-check-circle"></i> Approved</span>
+                        <?php elseif ($acc === 'Pending'): ?>
+                            <a href="pending-registrations.php" style="text-decoration:none;"><span class="badge" style="background:#FEF3C7;color:#D97706;border:1px solid #FDE68A;"><i class="fas fa-clock"></i> Pending Review</span></a>
+                        <?php elseif ($acc === 'Rejected'): ?>
+                            <span class="badge badge-danger"><i class="fas fa-times-circle"></i> Rejected</span>
+                        <?php else: ?>
+                            <span class="badge badge-gray"><?php echo htmlspecialchars($acc); ?></span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <?php if (($m['account_status'] ?? 'Approved') === 'Approved'): ?>
+                            <span class="badge <?php echo $m['status'] === 'Active' ? 'badge-success' : 'badge-danger'; ?>">
+                                <i class="fas fa-circle" style="font-size:0.35rem;margin-right:4px;"></i>
+                                <?php echo htmlspecialchars($m['status']); ?>
+                            </span>
+                        <?php else: ?>
+                            <span class="badge badge-gray">—</span>
+                        <?php endif; ?>
                     </td>
                     <td>
                         <div style="display:flex;gap:0.5rem;">
