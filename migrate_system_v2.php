@@ -122,9 +122,44 @@ try {
     echo "  ✓ `member_devices` table is ready\n";
 
     // -------------------------------------------------------------
-    // 5. Activity Logs Indexing & Foreign Keys Check
+    // 5. Renewal Requests Table & Auth Tokens Table
     // -------------------------------------------------------------
-    echo "\n[5/5] Checking indexing on `activity_logs` & `attendance`...\n";
+    echo "\n[5/6] Creating or upgrading `renewal_requests` & `auth_tokens` tables...\n";
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `renewal_requests` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `member_id` INT NOT NULL,
+            `plan_id` INT NOT NULL,
+            `payment_method` ENUM('Cash', 'GCash', 'Bank Transfer', 'Credit Card', 'Maya', 'QRPH') NOT NULL DEFAULT 'GCash',
+            `reference_no` VARCHAR(100) DEFAULT NULL,
+            `status` ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
+            `notes` TEXT DEFAULT NULL,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            `processed_by` INT DEFAULT NULL,
+            KEY `idx_renew_member` (`member_id`),
+            KEY `idx_renew_status` (`status`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
+    
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `auth_tokens` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `member_id` INT NOT NULL,
+            `token` VARCHAR(64) NOT NULL UNIQUE,
+            `expires_at` DATETIME NOT NULL,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            KEY `idx_auth_token` (`token`),
+            KEY `idx_auth_member` (`member_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
+    echo "  ✓ `renewal_requests` and `auth_tokens` tables verified\n";
+
+    // -------------------------------------------------------------
+    // 6. Activity Logs Indexing & Foreign Keys Check
+    // -------------------------------------------------------------
+    echo "\n[6/6] Checking indexing on `activity_logs` & `attendance`...\n";
+
     $pdo->exec("CREATE INDEX IF NOT EXISTS idx_activity_action ON activity_logs (action)");
     $pdo->exec("CREATE INDEX IF NOT EXISTS idx_attendance_lookup_v2 ON attendance (member_id, date, time_out)");
     echo "  ✓ Indexes optimized\n";

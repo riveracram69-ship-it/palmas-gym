@@ -1616,10 +1616,24 @@ async function loadDashboard(memberId) {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
-    if (res.status === 401) { logout(true); return; }
+    if (res.status === 401) {
+      showToast('Session expired. Please log in again.');
+      logout(true);
+      return;
+    }
+
+    if (!res.ok) {
+      // Server error or temporary issue — DO NOT log out the user!
+      console.warn('Dashboard non-200 response:', res.status);
+      showToast('⚠️ Temporary issue loading latest dashboard data. Pull down to refresh.', 4000);
+      return;
+    }
 
     const data = await res.json();
-    if (!data.success) { logout(true); return; }
+    if (!data.success) {
+      showToast(data.message || 'Unable to update latest dashboard data.');
+      return;
+    }
 
     const m = data.member;
     currentMember  = m;
@@ -1775,9 +1789,11 @@ function renderPayments(list) {
 async function loadNotificationsBadge() {
   try {
     const token = localStorage.getItem('peg_token');
-    const res   = await fetch('/member/get_notifications.php', {
+    if (!token) return;
+    const res = await fetch(`${API_URL}/get_notifications.php`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
+    if (!res.ok) return;
     const data  = await res.json();
     const unread = data.unread || 0;
     const badge  = document.getElementById('notif-badge');
@@ -1804,7 +1820,8 @@ async function loadNotifications() {
 
   try {
     const token = localStorage.getItem('peg_token');
-    const res   = await fetch('/member/get_notifications.php', {
+    if (!token) return;
+    const res = await fetch(`${API_URL}/get_notifications.php`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -1844,7 +1861,8 @@ async function loadNotifications() {
 async function markAllRead() {
   try {
     const token = localStorage.getItem('peg_token');
-    await fetch('/member/mark_notifications_read.php', {
+    if (!token) return;
+    await fetch(`${API_URL}/mark_notifications_read.php`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ all: true })
