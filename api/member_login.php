@@ -177,12 +177,14 @@ try {
             'message' => $failed['lockout'] ? $failed['message'] : 'Invalid Member ID, Email, or Password.'
         ]);
     }
-} catch (Exception $e) {
-    error_log('API Error in member_login.php: ' . $e->getMessage());
+} catch (Throwable $e) {
+    // Log FULL exception details to Render server logs (never exposed to client)
+    error_log('[LOGIN-500] ' . get_class($e) . ': ' . $e->getMessage()
+        . ' | File: ' . $e->getFile() . ':' . $e->getLine());
     http_response_code(500);
     echo json_encode([
-        'success' => false,
-        'message' => 'An internal server error occurred.'
+        'success'    => false,
+        'error_code' => 'SERVER_ERROR',
+        'message'    => 'We are having a temporary server issue. Please try again in a moment.'
     ]);
 }
-

@@ -1488,16 +1488,38 @@ async function submitTraditionalLogin() {
 
   const btn = document.getElementById('btn-trad-login');
   btn.disabled = true;
-  btn.textContent = 'Signing in...';
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i>Signing in...';
 
   try {
-    const res  = await fetch(`${API_URL}/member_login.php`, {
+    const res = await fetch(`${API_URL}/member_login.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: u, password: p })
     });
-    const data = await res.json();
 
+    let data = {};
+    try { data = await res.json(); } catch(e) { data = {}; }
+
+    if (res.status === 429 || data.rate_limited) {
+      const wait = data.wait_seconds ? ` Wait ${Math.ceil(data.wait_seconds/60)} min.` : '';
+      showToast('Too many login attempts.' + wait, 5000);
+      return;
+    }
+    if (res.status === 500 || data.error_code === 'SERVER_ERROR') {
+      showToast('Server issue. Please try again in a moment.', 4000);
+      return;
+    }
+    if (res.status === 503) {
+      showToast('System temporarily unavailable. Try again shortly.', 4000);
+      return;
+    }
+    if (data.account_status === 'Pending') { showScreen('view-pending'); return; }
+    if (data.account_status === 'Rejected') {
+      const el = document.getElementById('rejected-reason');
+      if (el) el.textContent = data.message || 'Your registration was not approved.';
+      showScreen('view-rejected'); return;
+    }
+    if (data.account_status === 'Suspended') { showScreen('view-suspended'); return; }
     if (data.first_time_setup) {
       document.getElementById('setup-member-id').value = data.member_id;
       document.getElementById('setup-member-welcome').textContent =
@@ -1505,22 +1527,23 @@ async function submitTraditionalLogin() {
       showScreen('view-setup-password');
       return;
     }
-
     if (data.success) {
       currentMember = data.member;
       localStorage.setItem('peg_member', JSON.stringify(data.member));
       localStorage.setItem('peg_token',  data.token);
       initMainView(data.member.id);
     } else {
-      showToast(data.message || 'Login failed.');
+      showToast(data.message || 'Incorrect Member ID/Email or password.');
     }
   } catch (err) {
-    showToast('Unable to connect to the server. Check your internet connection.');
+    console.error('[LOGIN] Network error:', err);
+    showToast('Unable to connect. Please check your internet connection.');
   } finally {
     btn.disabled = false;
     btn.textContent = 'SIGN IN';
   }
 }
+
 
 // ── SETUP PASSWORD ─────────────────────────────────────────────────
 async function submitSetupPassword() {

@@ -17,17 +17,19 @@ $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
 $options = [
-    // Performance: Reuse existing connections instead of new SSL handshake every request
-    // This alone eliminates ~800–1,200ms per API call (Aiven remote SSL overhead)
-    PDO::ATTR_PERSISTENT            => true,
+    // NOTE: PDO::ATTR_PERSISTENT is intentionally disabled.
+    // Render uses Docker containers where persistent connections cause stale
+    // connection handles after container restarts — leading to 500 errors.
     PDO::ATTR_ERRMODE               => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE    => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES      => false,
     PDO::ATTR_TIMEOUT               => 10,
     PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
-    // Keep connection alive and reduce reconnect overhead
-    PDO::MYSQL_ATTR_INIT_COMMAND    => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci, time_zone='+08:00'",
+    // Single valid SET statement only — combining SET NAMES with time_zone
+    // in one comma-separated statement is invalid MySQL syntax.
+    PDO::MYSQL_ATTR_INIT_COMMAND    => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
 ];
+
 
 $pdo = null;
 try {
