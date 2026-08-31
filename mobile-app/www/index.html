@@ -22,20 +22,22 @@
 
   <style>
     :root {
-      --gym-dark:       #091c14;
-      --gym-darker:     #060f0a;
-      --gym-card:       #0f2d20;
+      --gym-dark:       #081c15;
+      --gym-darker:     #040d0a;
+      --gym-card:       #112d21;
+      --gym-card-hover: #163b2c;
       --gym-green:      #2d6a4f;
       --gym-mid:        #52b788;
       --gym-light:      #74c69d;
       --gym-lighter:    #95d5b2;
       --gym-pale:       #d8f3dc;
-      --gym-text:       #f8f9fa;
+      --gym-text:       #ffffff;
       --gym-muted:      #95d5b2;
+      --gym-border:     rgba(82, 183, 136, 0.22);
       --ion-font-family: 'Inter', sans-serif;
       --ion-background-color: var(--gym-dark);
       --ion-text-color: var(--gym-text);
-      --ion-color-primary: var(--gym-green);
+      --ion-color-primary: var(--gym-mid);
       --ion-tab-bar-background: #0d281e;
       --ion-tab-bar-color: var(--gym-light);
       --ion-tab-bar-color-selected: var(--gym-mid);
@@ -52,6 +54,7 @@
       user-select: none;
       margin: 0;
       padding: 0;
+      -webkit-tap-highlight-color: transparent;
     }
 
     h1, h2, h3, h4, h5, .brand-font { font-family: 'Outfit', sans-serif; }
@@ -65,36 +68,48 @@
       z-index: 10;
     }
 
-    /* ─── LOGIN SCREEN ─────────────────────────────────────────────── */
-    .login-bg {
+    /* ─── SPLASH SCREEN ────────────────────────────────────────────── */
+    .splash-bg {
       min-height: 100vh;
-      background: radial-gradient(ellipse at top, #1b4332 0%, var(--gym-dark) 65%);
+      background: radial-gradient(ellipse at center, #1b4332 0%, var(--gym-dark) 70%);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px 28px 60px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    /* ─── LOGIN SCREEN ─────────────────────────────────────────────── */
+    .login-bg {
+      min-height: 100vh;
+      background: radial-gradient(ellipse at top, #1b4332 0%, var(--gym-dark) 70%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px 60px;
     }
 
     .gym-logo-wrap {
-      width: 88px; height: 88px;
+      width: 86px; height: 86px;
       background: linear-gradient(135deg, #1b4332, #0f2d20);
       border-radius: 24px;
-      margin: 0 auto 18px;
+      margin: 0 auto 16px;
       display: flex; align-items: center; justify-content: center;
       border: 2px solid var(--gym-mid);
       box-shadow: 0 0 40px rgba(82, 183, 136, 0.35), 0 8px 24px rgba(0,0,0,0.5);
     }
 
     .login-card {
-      width: 100%; max-width: 380px;
-      background: rgba(15, 45, 32, 0.7);
-      border: 1px solid rgba(82, 183, 136, 0.2);
+      width: 100%; max-width: 400px;
+      background: rgba(15, 45, 32, 0.85);
+      border: 1px solid var(--gym-border);
       border-radius: 24px;
-      padding: 28px 24px;
-      backdrop-filter: blur(10px);
+      padding: 26px 22px;
+      backdrop-filter: blur(12px);
       box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-      margin-top: 28px;
+      margin-top: 18px;
     }
 
     /* Google Sign-In Button */
@@ -104,33 +119,111 @@
       color: #1f1f1f;
       border: none;
       border-radius: 14px;
-      padding: 15px 20px;
+      padding: 14px 18px;
       font-family: 'Inter', sans-serif;
-      font-size: 1rem;
+      font-size: 0.96rem;
       font-weight: 600;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.35);
       transition: transform 0.15s, box-shadow 0.15s;
     }
-    .btn-google:active { transform: scale(0.97); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    .btn-google:active { transform: scale(0.98); }
     .btn-google img { width: 22px; height: 22px; }
+
+    /* Divider */
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      color: var(--gym-muted); font-size: 0.75rem; text-transform: uppercase;
+      letter-spacing: 0.8px; margin: 20px 0; font-weight: 600;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: rgba(82, 183, 136, 0.25);
+    }
+
+    /* Standard Buttons */
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, var(--gym-green), var(--gym-mid));
+      color: #ffffff;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 6px 20px rgba(45, 106, 79, 0.4);
+      transition: all 0.2s;
+    }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; }
+
+    .btn-outline {
+      width: 100%;
+      background: rgba(15, 45, 32, 0.6);
+      color: var(--gym-pale);
+      border: 1px solid var(--gym-border);
+      border-radius: 14px;
+      padding: 13px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-outline:active { transform: scale(0.98); background: rgba(45, 106, 79, 0.3); }
+
+    /* Input Field Container */
+    .input-field-wrap {
+      background: rgba(10, 30, 22, 0.85);
+      border: 1px solid rgba(82, 183, 136, 0.3);
+      border-radius: 14px;
+      padding: 4px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .input-field-wrap input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 0.92rem;
+      padding: 12px 0;
+      outline: none;
+    }
+    .input-field-wrap input::placeholder {
+      color: rgba(149, 213, 178, 0.45);
+    }
+    .input-field-wrap .eye-btn {
+      background: transparent;
+      border: none;
+      color: var(--gym-muted);
+      cursor: pointer;
+      padding: 6px;
+      font-size: 0.95rem;
+    }
 
     /* ─── STATUS SCREENS (Pending / Rejected / Suspended) ────────── */
     .status-screen {
       min-height: 100vh;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      padding: 40px 28px;
+      padding: 40px 24px;
       text-align: center;
     }
 
     .status-icon-wrap {
-      width: 90px; height: 90px;
+      width: 86px; height: 86px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 2.4rem;
-      margin: 0 auto 24px;
+      font-size: 2.2rem;
+      margin: 0 auto 20px;
     }
     .status-icon-pending  { background: rgba(255,193,7,0.15); border: 2px solid #ffc107; color: #ffc107; }
     .status-icon-rejected { background: rgba(220,53,69,0.15);  border: 2px solid #dc3545; color: #dc3545; }
@@ -146,12 +239,12 @@
     .wizard-header {
       padding: 20px 20px 0;
       position: sticky; top: 0; z-index: 5;
-      background: linear-gradient(to bottom, #0f2d20 80%, transparent);
+      background: linear-gradient(to bottom, #0f2d20 85%, transparent);
     }
 
     .step-progress {
       display: flex; align-items: center; gap: 0;
-      margin: 12px 0 20px;
+      margin: 12px 0 16px;
     }
     .step-dot {
       width: 28px; height: 28px;
@@ -164,7 +257,7 @@
       transition: all 0.3s;
     }
     .step-dot.active  { background: var(--gym-green); border-color: var(--gym-mid); color: #fff; }
-    .step-dot.done    { background: var(--gym-mid);   border-color: var(--gym-mid); color: #fff; }
+    .step-dot.done    { background: var(--gym-mid);   border-color: var(--gym-mid); color: var(--gym-dark); }
     .step-line {
       flex: 1; height: 2px;
       background: rgba(82,183,136,0.2);
@@ -174,46 +267,26 @@
 
     .wizard-body { padding: 0 20px 40px; }
 
-    /* ─── FORM INPUTS ──────────────────────────────────────────────── */
     .form-group { margin-bottom: 16px; }
     .form-group label {
       display: block;
       color: var(--gym-lighter);
-      font-size: 0.8rem;
-      font-weight: 600;
-      margin-bottom: 7px;
-      letter-spacing: 0.3px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: 0.4px;
       text-transform: uppercase;
     }
-    .form-input {
-      width: 100%;
-      background: rgba(15, 45, 32, 0.85);
-      border: 1px solid rgba(82, 183, 136, 0.25);
-      border-radius: 14px;
-      padding: 14px 16px;
-      color: #fff;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .form-input:focus { border-color: var(--gym-mid); }
-    .form-input::placeholder { color: rgba(149, 213, 178, 0.4); }
 
-    .gender-group {
-      display: flex; gap: 10px;
-    }
+    .gender-group { display: flex; gap: 10px; }
     .gender-btn {
-      flex: 1;
-      padding: 12px 8px;
+      flex: 1; padding: 12px 8px;
       border-radius: 12px;
-      border: 2px solid rgba(82,183,136,0.2);
+      border: 2px solid rgba(82,183,136,0.25);
       background: rgba(15,45,32,0.6);
       color: var(--gym-muted);
-      font-weight: 600;
-      font-size: 0.85rem;
-      cursor: pointer;
-      text-align: center;
+      font-weight: 600; font-size: 0.85rem;
+      cursor: pointer; text-align: center;
       transition: all 0.2s;
     }
     .gender-btn.selected {
@@ -222,401 +295,213 @@
       color: #fff;
     }
 
-    /* ─── PLAN CARDS ───────────────────────────────────────────────── */
+    /* Plan Cards */
     .plan-card {
       background: #0f2d20;
-      border: 2px solid rgba(82,183,136,0.15);
+      border: 2px solid rgba(82,183,136,0.2);
       border-radius: 18px;
-      padding: 18px 20px;
+      padding: 16px 18px;
       margin-bottom: 12px;
       cursor: pointer;
       transition: all 0.2s;
       position: relative;
     }
-    .plan-card:active { transform: scale(0.98); }
     .plan-card.selected {
-      background: rgba(45,106,79,0.5);
+      background: rgba(45,106,79,0.55);
       border-color: var(--gym-mid);
-      box-shadow: 0 0 20px rgba(82,183,136,0.2);
+      box-shadow: 0 0 20px rgba(82,183,136,0.25);
     }
     .plan-check {
       position: absolute; top: 16px; right: 16px;
-      width: 26px; height: 26px; border-radius: 50%;
+      width: 24px; height: 24px; border-radius: 50%;
       background: rgba(82,183,136,0.1);
       border: 2px solid rgba(82,183,136,0.3);
       display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s;
-      font-size: 0.75rem; color: transparent;
+      font-size: 0.72rem; color: transparent;
     }
     .plan-card.selected .plan-check {
-      background: var(--gym-mid);
-      border-color: var(--gym-mid);
-      color: var(--gym-dark);
+      background: var(--gym-mid); border-color: var(--gym-mid); color: var(--gym-dark);
     }
-    .plan-name { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.1rem; color: #fff; margin: 0 0 4px; }
-    .plan-price { font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 1.5rem; color: var(--gym-light); margin: 0; }
-    .plan-duration { color: var(--gym-muted); font-size: 0.82rem; margin: 4px 0 0; }
 
-    /* ─── REVIEW STEP ─────────────────────────────────────────────── */
-    .review-section {
-      background: #0f2d20;
-      border: 1px solid rgba(82,183,136,0.15);
+    /* ─── CARDS & SURFACES ─────────────────────────────────────────── */
+    .dark-card {
+      background: var(--gym-card);
+      border: 1px solid var(--gym-border);
       border-radius: 18px;
-      padding: 20px;
-      margin-bottom: 16px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.3);
     }
-    .review-section h4 {
-      color: var(--gym-lighter); font-size: 0.75rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 1px;
-      margin: 0 0 14px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(82,183,136,0.15);
-    }
-    .review-row {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 10px;
-    }
-    .review-row:last-child { margin-bottom: 0; }
-    .review-label { color: var(--gym-muted); font-size: 0.85rem; }
-    .review-value { color: #fff; font-weight: 600; font-size: 0.9rem; text-align: right; max-width: 60%; }
 
-    /* ─── MEMBERSHIP CARD ──────────────────────────────────────────── */
     .membership-card {
       background: linear-gradient(135deg, #1b4332 0%, #081c15 100%);
-      border: 1px solid rgba(82,183,136,0.3);
+      border: 1px solid rgba(82,183,136,0.35);
       border-radius: 22px;
       padding: 22px;
       margin: 16px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+      box-shadow: 0 12px 35px rgba(0,0,0,0.5);
       position: relative; overflow: hidden;
-    }
-    .membership-card::before {
-      content: '';
-      position: absolute; top: -50%; right: -50%;
-      width: 100%; height: 100%;
-      background: radial-gradient(circle, rgba(116,198,157,0.12) 0%, transparent 70%);
-      pointer-events: none;
     }
 
     .qr-box {
       background: #ffffff;
-      padding: 14px; border-radius: 16px;
+      padding: 14px;
+      border-radius: 16px;
       display: inline-block;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-      margin: 14px auto;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+      margin: 12px auto;
     }
 
     .status-pill {
-      display: inline-block;
-      padding: 5px 14px;
-      border-radius: 20px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 14px; border-radius: 20px;
+      font-size: 0.78rem; font-weight: 800; letter-spacing: 0.5px;
     }
-    .pill-active   { background: rgba(82,183,136,0.2); color: var(--gym-light); border: 1px solid var(--gym-mid); }
-    .pill-expired  { background: rgba(220,53,69,0.2);  color: #ff85a1;          border: 1px solid #dc3545; }
-    .pill-inactive { background: rgba(108,117,125,0.2);color: #adb5bd;          border: 1px solid #6c757d; }
+    .pill-active   { background: rgba(82, 183, 136, 0.18); border: 1px solid var(--gym-mid); color: var(--gym-pale); }
+    .pill-expired  { background: rgba(239, 68, 68, 0.18);   border: 1px solid #ef4444; color: #fca5a5; }
+    .pill-pending  { background: rgba(245, 158, 11, 0.18);  border: 1px solid #f59e0b; color: #fde68a; }
 
-    /* ─── DARK CARD ────────────────────────────────────────────────── */
-    .dark-card {
-      background: #0f2d20;
-      border-radius: 14px;
-      border: 1px solid rgba(82,183,136,0.12);
-      margin-bottom: 12px;
-    }
-
-    /* ─── PRIMARY BUTTON ───────────────────────────────────────────── */
-    .btn-primary {
+    /* Progress Bar */
+    .progress-bar-wrap {
       width: 100%;
-      background: linear-gradient(135deg, #2d6a4f, #1b4332);
-      color: #fff;
-      border: none;
-      border-radius: 14px;
-      padding: 16px;
-      font-family: 'Outfit', sans-serif;
-      font-size: 1rem;
-      font-weight: 800;
-      cursor: pointer;
-      letter-spacing: 0.5px;
-      box-shadow: 0 6px 20px rgba(45,106,79,0.4);
-      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      height: 8px;
+      background: rgba(82, 183, 136, 0.15);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 8px 0;
     }
-    .btn-primary:active { transform: scale(0.98); }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .btn-outline {
-      width: 100%;
-      background: transparent;
-      color: var(--gym-light);
-      border: 2px solid rgba(82,183,136,0.4);
-      border-radius: 14px;
-      padding: 14px;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .btn-outline:active { background: rgba(82,183,136,0.08); }
-
-    /* ─── NOTIFICATION BELL ────────────────────────────────────────── */
-    .notif-bell-btn {
-      position: relative;
-      background: rgba(82,183,136,0.1);
-      border: none;
-      border-radius: 50%;
-      width: 38px; height: 38px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      color: var(--gym-light);
-      font-size: 1rem;
-    }
-    .notif-badge {
-      position: absolute; top: -3px; right: -3px;
-      background: #dc3545;
-      color: #fff;
-      border-radius: 50%;
-      width: 18px; height: 18px;
-      font-size: 0.6rem;
-      font-weight: 800;
-      display: flex; align-items: center; justify-content: center;
-      display: none;
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gym-green), var(--gym-mid));
+      border-radius: 10px;
+      transition: width 0.4s ease;
     }
 
-    /* ─── NOTIFICATION PANEL ───────────────────────────────────────── */
+    /* Notification Overlay */
     .notif-overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.6);
-      z-index: 100;
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.25s;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      z-index: 998; opacity: 0; pointer-events: none; transition: opacity 0.25s;
     }
-    .notif-overlay.open { opacity: 1; pointer-events: all; }
-
+    .notif-overlay.open { opacity: 1; pointer-events: auto; }
     .notif-panel {
-      position: fixed; top: 0; right: -100%;
-      width: min(340px, 90vw);
-      height: 100vh;
-      background: #0a1f14;
-      border-left: 1px solid rgba(82,183,136,0.2);
-      z-index: 101;
-      overflow-y: auto;
-      transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
-      display: flex; flex-direction: column;
+      position: fixed; bottom: 0; left: 0; right: 0; max-height: 75vh;
+      background: #0f2d20; border-top: 1px solid var(--gym-border);
+      border-radius: 24px 24px 0 0; z-index: 999;
+      transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; flex-direction: column; padding: 20px;
     }
-    .notif-panel.open { right: 0; }
+    .notif-panel.open { transform: translateY(0); }
 
-    .notif-panel-header {
-      padding: 52px 20px 16px;
-      border-bottom: 1px solid rgba(82,183,136,0.15);
-      display: flex; align-items: center; justify-content: space-between;
-    }
-
-    .notif-item {
-      padding: 14px 18px;
-      border-bottom: 1px solid rgba(82,183,136,0.08);
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .notif-item:active { background: rgba(82,183,136,0.07); }
-    .notif-item.unread { border-left: 3px solid var(--gym-mid); }
-    .notif-item-title { font-weight: 700; font-size: 0.88rem; color: #fff; margin-bottom: 3px; }
-    .notif-item-msg   { font-size: 0.8rem;  color: var(--gym-muted); line-height: 1.4; }
-    .notif-item-time  { font-size: 0.72rem; color: rgba(149,213,178,0.5); margin-top: 4px; }
-    .notif-type-success { color: var(--gym-light); }
-    .notif-type-danger  { color: #ff85a1; }
-    .notif-type-warning { color: #ffc107; }
-
-    /* ─── SPINNER ──────────────────────────────────────────────────── */
-    .spinner {
-      width: 36px; height: 36px;
-      border: 3px solid rgba(82,183,136,0.15);
-      border-top-color: var(--gym-mid);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ─── TOAST ────────────────────────────────────────────────────── */
+    /* Toast Notification */
     .toast-wrap {
-      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-      z-index: 200;
-      pointer-events: none;
+      position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+      z-index: 9999; width: 90%; max-width: 380px; pointer-events: none;
     }
     .toast {
-      background: #1b4332;
-      border: 1px solid var(--gym-mid);
-      color: #fff;
-      border-radius: 12px;
-      padding: 12px 20px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-      opacity: 0;
-      transform: translateY(10px);
-      transition: all 0.3s;
-      white-space: nowrap;
+      background: #112d21; border: 1px solid var(--gym-mid); border-radius: 14px;
+      padding: 14px 18px; color: #ffffff; font-size: 0.88rem; font-weight: 500;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6); opacity: 0; transform: translateY(-15px);
+      transition: all 0.25s; text-align: center;
     }
     .toast.show { opacity: 1; transform: translateY(0); }
 
-    /* ─── GLASS INPUT (Ionic compat) ───────────────────────────────── */
-    .glass-input {
-      --background: rgba(15,45,32,0.85);
-      --color: #ffffff;
-      --placeholder-color: rgba(149,213,178,0.45);
-      border-radius: 12px;
-      margin-bottom: 14px;
-      border: 1px solid rgba(82,183,136,0.25);
-    }
-
-    /* ─── MISC ─────────────────────────────────────────────────────── */
-    .divider {
-      display: flex; align-items: center; gap: 10px;
-      color: rgba(149,213,178,0.4); font-size: 0.78rem;
-      margin: 20px 0;
-    }
-    .divider::before, .divider::after {
-      content: ''; flex: 1; height: 1px;
-      background: rgba(82,183,136,0.15);
-    }
-
-    .text-link {
-      color: var(--gym-light); text-decoration: none;
-      font-weight: 600; font-size: 0.88rem;
-      cursor: pointer;
-    }
-    .text-link:hover { text-decoration: underline; }
-
-    ion-tab-bar { --background: #0d281e; }
-
+    /* Pulsing Animation */
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.98); }
     }
+    .pulsing { animation: pulse 1.8s ease-in-out infinite; }
+
+    .spinner {
+      width: 24px; height: 24px; border: 3px solid rgba(82,183,136,0.25);
+      border-top-color: var(--gym-mid); border-radius: 50%;
+      animation: spin 0.75s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .text-link { color: var(--gym-light); cursor: pointer; text-decoration: underline; }
   </style>
 </head>
 <body>
 <ion-app>
 
   <!-- ══════════════════════════════════════════════════════════
-       VIEW 1: GOOGLE LOGIN SCREEN
+       VIEW 0: SPLASH / INITIALIZATION SCREEN
        ══════════════════════════════════════════════════════════ -->
-  <div id="view-login" class="screen">
+  <div id="view-splash" class="screen">
+    <div class="splash-bg">
+      <div class="gym-logo-wrap pulsing">
+        <i class="fa-solid fa-dumbbell" style="font-size:42px; color: var(--gym-light);"></i>
+      </div>
+      <h1 style="font-weight:900; font-size:1.7rem; color:#fff; margin:0; letter-spacing:0.5px;">PALMA'S ELITE GYM</h1>
+      <p style="color: var(--gym-muted); font-size:0.85rem; margin:6px 0 28px;">Membership &amp; Attendance Management</p>
+      <div style="display:flex; align-items:center; gap:8px; color: var(--gym-lighter); font-size:0.8rem;">
+        <div class="spinner"></div> Checking secure session...
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW 1: MODERN LOGIN SCREEN (Google + Password)
+       ══════════════════════════════════════════════════════════ -->
+  <div id="view-login" class="screen" style="display:none;">
     <div class="login-bg">
 
       <!-- Logo + Branding -->
-      <div style="text-align:center; margin-bottom: 8px;">
+      <div style="text-align:center; margin-bottom: 6px;">
         <div class="gym-logo-wrap">
           <i class="fa-solid fa-dumbbell" style="font-size:40px; color: var(--gym-light);"></i>
         </div>
-        <h1 style="font-family:'Outfit',sans-serif; font-weight:900; font-size:1.6rem; color:#fff; margin:0; letter-spacing:0.5px;">PALMA'S ELITE GYM</h1>
+        <h1 style="font-weight:900; font-size:1.6rem; color:#fff; margin:0;">PALMA'S ELITE GYM</h1>
         <p style="color: var(--gym-muted); font-size:0.82rem; margin:4px 0 0;">Membership &amp; Attendance Management</p>
       </div>
 
       <!-- Login Card -->
       <div class="login-card">
-        <h2 style="font-family:'Outfit',sans-serif; font-weight:800; font-size:1.25rem; color:#fff; text-align:center; margin:0 0 6px;">MEMBER PORTAL</h2>
-        <p style="text-align:center; color: var(--gym-muted); font-size:0.84rem; margin:0 0 28px;">Sign in securely using your Google account</p>
+        <h2 style="font-weight:800; font-size:1.2rem; color:#fff; text-align:center; margin:0 0 4px;">MEMBER PORTAL</h2>
+        <p style="text-align:center; color: var(--gym-muted); font-size:0.82rem; margin:0 0 20px;">Access your digital gym pass &amp; workout history</p>
 
-        <!-- Continue with Google -->
+        <!-- Primary Option: Google Sign-In -->
         <button class="btn-google" id="btn-google-signin" onclick="initiateGoogleSignIn()">
           <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" />
           Continue with Google
         </button>
 
-        <div class="divider">or</div>
+        <div class="divider">or sign in with password</div>
 
-        <!-- Traditional login (for admin-added members without Google) -->
-        <button class="btn-outline" onclick="showTraditionalLogin()" style="margin-bottom:12px;">
-          <i class="fa-solid fa-key" style="margin-right:8px;"></i> Sign in with Member ID / Password
+        <!-- Username / Member ID -->
+        <div class="input-field-wrap">
+          <i class="fa-solid fa-user" style="color: var(--gym-light); font-size:0.9rem;"></i>
+          <input id="input-username" type="text" placeholder="Member ID or Email" autocomplete="username" />
+        </div>
+
+        <!-- Password with Eye Toggle -->
+        <div class="input-field-wrap">
+          <i class="fa-solid fa-lock" style="color: var(--gym-light); font-size:0.9rem;"></i>
+          <input id="input-password" type="password" placeholder="Password" autocomplete="current-password" />
+          <button class="eye-btn" type="button" onclick="togglePasswordVisibility('input-password', this)">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </div>
+
+        <!-- Sign In Button -->
+        <button class="btn-primary" id="btn-trad-login" onclick="submitTraditionalLogin()" style="margin-top:6px;">
+          <i class="fa-solid fa-right-to-bracket"></i> SIGN IN
         </button>
 
-        <p style="text-align:center; color: var(--gym-muted); font-size:0.8rem; margin:20px 0 0;">
-          New to Palma's Elite Gym?<br>
-          <span class="text-link" onclick="initiateGoogleSignIn()">Sign in with Google to register</span>
-        </p>
+        <!-- New User Option -->
+        <div style="text-align:center; margin-top:20px; padding-top:16px; border-top:1px solid rgba(82,183,136,0.18);">
+          <p style="color: var(--gym-muted); font-size:0.8rem; margin:0 0 8px;">New to Palma's Elite Gym?</p>
+          <button class="btn-outline" onclick="openRegistrationWizard()" style="padding:10px; font-size:0.85rem;">
+            <i class="fa-solid fa-user-plus"></i> Create a Membership Account
+          </button>
+        </div>
       </div>
 
-      <div style="text-align:center; margin-top:24px;">
-        <span style="color: rgba(82,183,136,0.5); font-size:0.7rem;">
-          <i class="fa-solid fa-shield-halved"></i> Secured via HTTPS &bull; Google Sign-In
+      <div style="text-align:center; margin-top:22px;">
+        <span style="color: rgba(82,183,136,0.55); font-size:0.72rem;">
+          <i class="fa-solid fa-shield-halved"></i> Secured with 256-Bit HTTPS &bull; Palma's Elite
         </span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════════
-       VIEW 1B: TRADITIONAL LOGIN (for admin-added members)
-       ══════════════════════════════════════════════════════════ -->
-  <div id="view-traditional-login" class="screen" style="display:none;">
-    <div class="login-bg">
-      <div style="text-align:center; margin-bottom:20px;">
-        <div class="gym-logo-wrap">
-          <i class="fa-solid fa-dumbbell" style="font-size:40px; color: var(--gym-light);"></i>
-        </div>
-        <h2 style="font-weight:800; color:#fff; margin:0; font-size:1.3rem;">Member Sign In</h2>
-        <p style="color: var(--gym-muted); font-size:0.82rem; margin:4px 0 0;">For members registered at the front desk</p>
-      </div>
-      <div class="login-card">
-        <ion-item lines="none" class="glass-input">
-          <ion-icon name="person-outline" slot="start" style="color: var(--gym-light);"></ion-icon>
-          <ion-input id="input-username" type="text" placeholder="Member ID or Email"></ion-input>
-        </ion-item>
-        <ion-item lines="none" class="glass-input">
-          <ion-icon name="lock-closed-outline" slot="start" style="color: var(--gym-light);"></ion-icon>
-          <ion-input id="input-password" type="password" placeholder="Password"></ion-input>
-        </ion-item>
-        <button class="btn-primary" id="btn-trad-login" onclick="submitTraditionalLogin()" style="margin-top:8px;">
-          SIGN IN
-        </button>
-        <div style="text-align:center; margin-top:16px;">
-          <span class="text-link" onclick="showGoogleLogin()">
-            <i class="fa-brands fa-google" style="margin-right:5px;"></i> Back to Google Sign-In
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════════
-       VIEW 1C: FIRST-TIME PASSWORD SETUP (admin-added members)
-       ══════════════════════════════════════════════════════════ -->
-  <div id="view-setup-password" class="screen" style="display:none;">
-    <div class="login-bg">
-      <div style="text-align:center; margin-bottom:20px;">
-        <div class="gym-logo-wrap">
-          <i class="fa-solid fa-key" style="font-size:36px; color: var(--gym-light);"></i>
-        </div>
-        <h2 style="font-weight:800; color:#fff; margin:0;">Setup Your Password</h2>
-        <p id="setup-member-welcome" style="color: var(--gym-muted); font-size:0.82rem; margin:4px 0 0;">Create your secure password to continue.</p>
-      </div>
-      <div class="login-card">
-        <input type="hidden" id="setup-member-id" value="" />
-        <div style="background:rgba(82,183,136,0.08); border-left:3px solid var(--gym-mid); border-radius:8px; padding:12px 14px; margin-bottom:18px;">
-          <p style="color: var(--gym-pale); font-size:0.8rem; margin:0; line-height:1.5;">
-            <i class="fa-solid fa-circle-info" style="color: var(--gym-light);"></i>
-            Your membership was registered at the gym. Create a password for all future logins.
-          </p>
-        </div>
-        <ion-item lines="none" class="glass-input">
-          <ion-icon name="lock-closed-outline" slot="start" style="color: var(--gym-light);"></ion-icon>
-          <ion-input id="setup-password-input" type="password" placeholder="New Password (min. 6 chars)"></ion-input>
-        </ion-item>
-        <ion-item lines="none" class="glass-input">
-          <ion-icon name="shield-checkmark-outline" slot="start" style="color: var(--gym-light);"></ion-icon>
-          <ion-input id="setup-confirm-input" type="password" placeholder="Confirm New Password"></ion-input>
-        </ion-item>
-        <button class="btn-primary" id="btn-save-setup-pass" onclick="submitSetupPassword()">
-          SAVE PASSWORD &amp; LOG IN
-        </button>
-        <div style="text-align:center; margin-top:14px;">
-          <span class="text-link" onclick="showGoogleLogin()">
-            <i class="fa-solid fa-arrow-left"></i> Back to Login
-          </span>
-        </div>
       </div>
     </div>
   </div>
@@ -626,26 +511,28 @@
        ══════════════════════════════════════════════════════════ -->
   <div id="view-pending" class="screen" style="display:none;">
     <div class="status-screen">
-      <div style="background: rgba(255,193,7,0.08); border: 1px solid rgba(255,193,7,0.3); border-radius: 24px; padding:36px 28px; max-width:360px; width:100%;">
-        <div class="status-icon-wrap status-icon-pending" style="margin-bottom:20px;">
+      <div style="background: rgba(255,193,7,0.08); border: 1px solid rgba(255,193,7,0.3); border-radius: 24px; padding:32px 24px; max-width:380px; width:100%;">
+        <div class="status-icon-wrap status-icon-pending">
           <i class="fa-solid fa-hourglass-half"></i>
         </div>
-        <h2 style="font-family:'Outfit',sans-serif; font-weight:800; color:#fff; margin:0 0 10px; font-size:1.35rem;">REGISTRATION PENDING</h2>
-        <p id="pending-name-text" style="color: var(--gym-muted); font-size:0.88rem; margin:0 0 20px;">Your account is being reviewed.</p>
+        <h2 style="font-weight:900; color:#fff; margin:0 0 8px; font-size:1.35rem;">REGISTRATION PENDING</h2>
+        <p id="pending-name-text" style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 18px;">Your membership application has been received.</p>
 
-        <div style="background:rgba(255,193,7,0.08); border-radius:12px; padding:16px; margin-bottom:24px; text-align:left;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-            <i class="fa-solid fa-circle-dot" style="color:#ffc107; font-size:0.7rem;"></i>
-            <span style="color:#ffc107; font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">⏳ PENDING APPROVAL</span>
+        <div style="background:rgba(255,193,7,0.08); border-radius:14px; padding:16px; margin-bottom:20px; text-align:left;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <i class="fa-solid fa-circle-dot" style="color:#ffc107; font-size:0.75rem;"></i>
+            <span style="color:#ffc107; font-weight:800; font-size:0.85rem; letter-spacing:0.5px;">WAITING FOR STAFF APPROVAL</span>
           </div>
-          <p style="color: var(--gym-muted); font-size:0.82rem; margin:0; line-height:1.5;">
-            Your account is currently waiting for review by Palma's Elite Gym staff.<br><br>
-            You will receive an <strong style="color:#fff;">email notification</strong> once your registration is reviewed.
+          <p style="color: var(--gym-pale); font-size:0.82rem; margin:0; line-height:1.5;">
+            Our gym administrators review every new registration. Once approved, your digital pass will activate immediately.
           </p>
         </div>
 
-        <button class="btn-outline" onclick="showGoogleLogin()">
-          <i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i> Back to Login
+        <button class="btn-primary" id="btn-refresh-pending" onclick="checkPendingApprovalStatus()" style="margin-bottom:10px;">
+          <i class="fa-solid fa-arrows-rotate"></i> REFRESH STATUS
+        </button>
+        <button class="btn-outline" onclick="logout(true)">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
         </button>
       </div>
     </div>
@@ -656,19 +543,18 @@
        ══════════════════════════════════════════════════════════ -->
   <div id="view-rejected" class="screen" style="display:none;">
     <div class="status-screen">
-      <div style="background:rgba(220,53,69,0.08); border:1px solid rgba(220,53,69,0.3); border-radius:24px; padding:36px 28px; max-width:360px; width:100%;">
-        <div class="status-icon-wrap status-icon-rejected" style="margin-bottom:20px;">
+      <div style="background:rgba(220,53,69,0.08); border:1px solid rgba(220,53,69,0.3); border-radius: 24px; padding:32px 24px; max-width:380px; width:100%;">
+        <div class="status-icon-wrap status-icon-rejected">
           <i class="fa-solid fa-circle-xmark"></i>
         </div>
-        <h2 style="font-family:'Outfit',sans-serif; font-weight:800; color:#fff; margin:0 0 8px; font-size:1.2rem;">REGISTRATION UPDATE</h2>
-        <p style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 20px;">Your registration was not approved.</p>
-        <div style="background:rgba(220,53,69,0.08); border-radius:12px; padding:16px; margin-bottom:24px; text-align:left;">
-          <p style="color:rgba(149,213,178,0.7); font-size:0.78rem; text-transform:uppercase; font-weight:700; margin:0 0 6px; letter-spacing:0.5px;">Reason:</p>
-          <p id="rejected-reason-text" style="color:#ff85a1; font-size:0.88rem; margin:0; line-height:1.5;">—</p>
+        <h2 style="font-weight:900; color:#fff; margin:0 0 8px; font-size:1.3rem;">REGISTRATION UPDATE</h2>
+        <p style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 16px;">Your registration was not approved.</p>
+        <div style="background:rgba(220,53,69,0.08); border-radius:14px; padding:14px; margin-bottom:20px; text-align:left;">
+          <p style="color:#f87171; font-size:0.75rem; text-transform:uppercase; font-weight:800; margin:0 0 4px;">Reason Provided:</p>
+          <p id="rejected-reason-text" style="color:#ffffff; font-size:0.88rem; margin:0; line-height:1.4;">No specific reason provided.</p>
         </div>
-        <p style="color: var(--gym-muted); font-size:0.8rem; margin:0 0 20px;">Please contact Palma's Elite Gym for further assistance.</p>
-        <button class="btn-outline" onclick="showGoogleLogin()">
-          <i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i> Back to Login
+        <button class="btn-outline" onclick="logout(true)">
+          <i class="fa-solid fa-arrow-left"></i> Back to Sign In
         </button>
       </div>
     </div>
@@ -679,14 +565,14 @@
        ══════════════════════════════════════════════════════════ -->
   <div id="view-suspended" class="screen" style="display:none;">
     <div class="status-screen">
-      <div style="background:rgba(108,117,125,0.08); border:1px solid rgba(108,117,125,0.3); border-radius:24px; padding:36px 28px; max-width:360px; width:100%;">
-        <div class="status-icon-wrap status-icon-suspended" style="margin-bottom:20px;">
+      <div style="background:rgba(108,117,125,0.08); border:1px solid rgba(108,117,125,0.3); border-radius: 24px; padding:32px 24px; max-width:380px; width:100%;">
+        <div class="status-icon-wrap status-icon-suspended">
           <i class="fa-solid fa-ban"></i>
         </div>
-        <h2 style="font-family:'Outfit',sans-serif; font-weight:800; color:#fff; margin:0 0 10px; font-size:1.25rem;">ACCOUNT SUSPENDED</h2>
-        <p style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 24px; line-height:1.5;">Your account is currently suspended. Please contact Palma's Elite Gym for assistance.</p>
-        <button class="btn-outline" onclick="showGoogleLogin()">
-          <i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i> Back to Login
+        <h2 style="font-weight:900; color:#fff; margin:0 0 8px; font-size:1.3rem;">ACCOUNT SUSPENDED</h2>
+        <p style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 20px; line-height:1.5;">Your account is currently suspended. Please visit the gym reception or contact staff.</p>
+        <button class="btn-outline" onclick="logout(true)">
+          <i class="fa-solid fa-arrow-left"></i> Back to Sign In
         </button>
       </div>
     </div>
@@ -697,18 +583,15 @@
        ══════════════════════════════════════════════════════════ -->
   <div id="view-register" class="screen" style="display:none;">
     <div class="wizard-screen">
-
-      <!-- Wizard Header -->
       <div class="wizard-header">
         <div style="display:flex; align-items:center; justify-content:space-between;">
-          <button onclick="cancelRegistration()" style="background:none; border:none; color: var(--gym-light); font-size:1rem; cursor:pointer; padding:8px;">
+          <button onclick="cancelRegistration()" style="background:none; border:none; color: var(--gym-light); font-size:1.1rem; cursor:pointer; padding:8px;">
             <i class="fa-solid fa-arrow-left"></i>
           </button>
-          <h3 style="font-family:'Outfit',sans-serif; font-weight:800; color:#fff; margin:0; font-size:1.1rem;" id="wizard-title">Create Your Account</h3>
+          <h3 style="font-weight:800; color:#fff; margin:0; font-size:1.15rem;" id="wizard-title">Create Membership</h3>
           <div style="width:36px;"></div>
         </div>
 
-        <!-- Step Progress -->
         <div class="step-progress">
           <div class="step-dot active" id="sdot-1">1</div>
           <div class="step-line" id="sline-1"></div>
@@ -721,162 +604,111 @@
 
       <div class="wizard-body">
 
-        <!-- ── STEP 1: Personal Information ─────────────────────── -->
+        <!-- STEP 1: Personal Information -->
         <div id="reg-step-1">
-          <p style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 20px;">Tell us about yourself. Fields pre-filled from Google are verified.</p>
-
-          <!-- Google profile badge -->
-          <div id="google-prefill-badge" style="display:none; align-items:center; gap:12px; background:rgba(82,183,136,0.1); border:1px solid rgba(82,183,136,0.2); border-radius:14px; padding:12px 16px; margin-bottom:20px;">
-            <img id="google-avatar" src="" alt="" style="width:42px; height:42px; border-radius:50%; border:2px solid var(--gym-mid);" />
+          <div id="google-prefill-badge" style="display:none; align-items:center; gap:12px; background:rgba(82,183,136,0.1); border:1px solid rgba(82,183,136,0.25); border-radius:14px; padding:12px 14px; margin-bottom:16px;">
+            <img id="google-avatar" src="" alt="" style="width:40px; height:40px; border-radius:50%; border:2px solid var(--gym-mid);" />
             <div>
               <p style="margin:0; color:#fff; font-weight:700; font-size:0.9rem;" id="google-name-badge">—</p>
-              <p style="margin:0; color: var(--gym-muted); font-size:0.78rem;" id="google-email-badge">—</p>
-              <span style="background: rgba(66,133,244,0.2); color:#7baaf7; border-radius:8px; padding:2px 8px; font-size:0.7rem; font-weight:700;">
-                <i class="fa-brands fa-google"></i> Google Verified
-              </span>
+              <p style="margin:0; color: var(--gym-muted); font-size:0.76rem;" id="google-email-badge">—</p>
             </div>
           </div>
 
           <div class="form-group">
-            <label>Full Name</label>
-            <input class="form-input" type="text" id="reg-name" placeholder="Juan Dela Cruz" />
+            <label>Full Name *</label>
+            <div class="input-field-wrap">
+              <input type="text" id="reg-name" placeholder="Juan Dela Cruz" />
+            </div>
           </div>
+
           <div class="form-group">
-            <label>Email Address</label>
-            <input class="form-input" type="email" id="reg-email" placeholder="juan@gmail.com" readonly style="opacity:0.7; cursor:not-allowed;" />
-            <p style="color: rgba(116,198,157,0.6); font-size:0.73rem; margin:5px 0 0;">
-              <i class="fa-solid fa-shield-check"></i> Verified by Google — cannot be changed
-            </p>
+            <label>Email Address *</label>
+            <div class="input-field-wrap">
+              <input type="email" id="reg-email" placeholder="member@example.com" />
+            </div>
           </div>
+
           <div class="form-group">
-            <label>Contact Number</label>
-            <input class="form-input" type="tel" id="reg-phone" placeholder="09XXXXXXXXX" maxlength="11" />
+            <label>Contact Number (09XXXXXXXXX) *</label>
+            <div class="input-field-wrap">
+              <input type="tel" id="reg-phone" placeholder="09123456789" maxlength="11" />
+            </div>
           </div>
+
           <div class="form-group">
-            <label>Gender</label>
+            <label>Gender *</label>
             <div class="gender-group">
-              <button class="gender-btn" id="gbtn-male"   onclick="selectGender('Male')">♂ Male</button>
-              <button class="gender-btn" id="gbtn-female" onclick="selectGender('Female')">♀ Female</button>
-              <button class="gender-btn" id="gbtn-other"  onclick="selectGender('Other')">⚧ Other</button>
+              <button class="gender-btn" type="button" id="gbtn-male" onclick="selectGender('Male')">Male</button>
+              <button class="gender-btn" type="button" id="gbtn-female" onclick="selectGender('Female')">Female</button>
+              <button class="gender-btn" type="button" id="gbtn-other" onclick="selectGender('Other')">Other</button>
             </div>
           </div>
-          <input type="hidden" id="reg-gender-val" value="" />
 
-          <button class="btn-primary" onclick="wizardNext(1)" style="margin-top:8px;">
-            Continue <i class="fa-solid fa-arrow-right" style="margin-left:6px;"></i>
+          <button class="btn-primary" onclick="wizardNext(1)" style="margin-top:10px;">
+            CONTINUE TO PLAN <i class="fa-solid fa-arrow-right"></i>
           </button>
         </div>
 
-        <!-- ── STEP 2: Membership Plan ──────────────────────────── -->
+        <!-- STEP 2: Plan Selection -->
         <div id="reg-step-2" style="display:none;">
-          <p style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 20px;">Choose your preferred membership plan. Payment and activation happen after staff approval.</p>
-
-          <div id="plans-container-reg">
-            <div style="text-align:center; padding:40px 0;">
-              <div class="spinner"></div>
-              <p style="color: var(--gym-muted); margin-top:12px; font-size:0.85rem;">Loading plans...</p>
-            </div>
-          </div>
-
-          <input type="hidden" id="reg-plan-id" value="" />
-
-          <button class="btn-primary" id="btn-step2-next" onclick="wizardNext(2)" style="margin-top:8px;">
-            Continue <i class="fa-solid fa-arrow-right" style="margin-left:6px;"></i>
+          <p style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 16px;">Choose your membership package:</p>
+          <div id="plans-container-reg"></div>
+          <button class="btn-primary" onclick="wizardNext(2)" style="margin-top:14px;">
+            REVIEW APPLICATION <i class="fa-solid fa-arrow-right"></i>
           </button>
           <button class="btn-outline" onclick="wizardBack(2)" style="margin-top:10px;">
-            <i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i> Back
+            <i class="fa-solid fa-arrow-left"></i> Back
           </button>
         </div>
 
-        <!-- ── STEP 3: Review & Submit ──────────────────────────── -->
+        <!-- STEP 3: Review & Submit -->
         <div id="reg-step-3" style="display:none;">
-          <p style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 20px;">Please review your information before submitting.</p>
-
-          <div class="review-section">
-            <h4><i class="fa-solid fa-user" style="margin-right:6px;"></i> Personal Information</h4>
-            <div class="review-row">
-              <span class="review-label">Full Name</span>
-              <span class="review-value" id="rv-name">—</span>
+          <div class="dark-card" style="padding:16px; margin-bottom:14px;">
+            <h4 style="color: var(--gym-light); font-size:0.85rem; font-weight:800; margin:0 0 12px; text-transform:uppercase;">Applicant Summary</h4>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
+              <span style="color:var(--gym-muted);">Full Name:</span>
+              <strong id="rv-name" style="color:#fff;">—</strong>
             </div>
-            <div class="review-row">
-              <span class="review-label">Email</span>
-              <span class="review-value" id="rv-email">—</span>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
+              <span style="color:var(--gym-muted);">Email:</span>
+              <strong id="rv-email" style="color:#fff;">—</strong>
             </div>
-            <div class="review-row">
-              <span class="review-label">Contact</span>
-              <span class="review-value" id="rv-phone">—</span>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
+              <span style="color:var(--gym-muted);">Contact:</span>
+              <strong id="rv-phone" style="color:#fff;">—</strong>
             </div>
-            <div class="review-row">
-              <span class="review-label">Gender</span>
-              <span class="review-value" id="rv-gender">—</span>
+            <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+              <span style="color:var(--gym-muted);">Gender:</span>
+              <strong id="rv-gender" style="color:#fff;">—</strong>
             </div>
           </div>
 
-          <div class="review-section">
-            <h4><i class="fa-solid fa-id-card" style="margin-right:6px;"></i> Selected Plan</h4>
-            <div class="review-row">
-              <span class="review-label">Plan</span>
-              <span class="review-value" id="rv-plan-name">—</span>
+          <div class="dark-card" style="padding:16px; margin-bottom:18px;">
+            <h4 style="color: var(--gym-light); font-size:0.85rem; font-weight:800; margin:0 0 12px; text-transform:uppercase;">Selected Package</h4>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
+              <span style="color:var(--gym-muted);">Plan Name:</span>
+              <strong id="rv-plan-name" style="color:#fff;">—</strong>
             </div>
-            <div class="review-row">
-              <span class="review-label">Price</span>
-              <span class="review-value" id="rv-plan-price">—</span>
+            <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+              <span style="color:var(--gym-muted);">Plan Price:</span>
+              <strong id="rv-plan-price" style="color:var(--gym-mid); font-size:1.1rem;">—</strong>
             </div>
-            <div class="review-row">
-              <span class="review-label">Duration</span>
-              <span class="review-value" id="rv-plan-duration">—</span>
-            </div>
-          </div>
-
-          <div style="background:rgba(82,183,136,0.08); border:1px solid rgba(82,183,136,0.2); border-radius:12px; padding:14px; margin-bottom:20px;">
-            <p style="color: var(--gym-pale); font-size:0.8rem; margin:0; line-height:1.5;">
-              <i class="fa-solid fa-circle-info" style="color: var(--gym-light);"></i>
-              Your account will be set to <strong>Pending</strong> until approved by gym staff. Payment and membership activation happen after approval.
-            </p>
           </div>
 
           <button class="btn-primary" id="btn-submit-reg" onclick="submitRegistration()">
-            <i class="fa-solid fa-paper-plane" style="margin-right:8px;"></i> SUBMIT REGISTRATION
+            <i class="fa-solid fa-paper-plane"></i> SUBMIT REGISTRATION
           </button>
           <button class="btn-outline" onclick="wizardBack(3)" style="margin-top:10px;">
-            <i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i> Edit Information
+            <i class="fa-solid fa-arrow-left"></i> Edit Details
           </button>
         </div>
 
-      </div><!-- /wizard-body -->
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════════
-       VIEW 6: REGISTRATION SUCCESS (Pending Approval)
-       ══════════════════════════════════════════════════════════ -->
-  <div id="view-reg-success" class="screen" style="display:none;">
-    <div class="status-screen">
-      <div style="background:rgba(82,183,136,0.08); border:1px solid rgba(82,183,136,0.25); border-radius:24px; padding:36px 28px; max-width:360px; width:100%;">
-        <div style="width:80px; height:80px; background:rgba(82,183,136,0.15); border:2px solid var(--gym-mid); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:2rem; color:var(--gym-light);">
-          <i class="fa-solid fa-circle-check"></i>
-        </div>
-        <h2 style="font-family:'Outfit',sans-serif; font-weight:900; color:#fff; margin:0 0 8px; font-size:1.35rem;">REGISTRATION SUBMITTED</h2>
-        <p id="reg-success-name" style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 24px;">Thank you for registering with Palma's Elite Gym.</p>
-        <div style="background:rgba(255,193,7,0.08); border-radius:12px; padding:14px; margin-bottom:24px; text-align:left;">
-          <p style="color:#ffc107; font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin:0 0 6px;">STATUS</p>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-hourglass-half" style="color:#ffc107;"></i>
-            <span style="color:#fff; font-weight:700;">⏳ PENDING APPROVAL</span>
-          </div>
-          <p style="color: var(--gym-muted); font-size:0.8rem; margin:8px 0 0; line-height:1.4;">
-            You will receive an email and app notification once your registration is reviewed by staff.
-          </p>
-        </div>
-        <button class="btn-outline" onclick="showGoogleLogin()">
-          <i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i> Back to Login
-        </button>
       </div>
     </div>
   </div>
 
   <!-- ══════════════════════════════════════════════════════════
-       VIEW 7: MAIN APP (Dashboard Tabs)
+       VIEW 6: MAIN APP (Interactive Dashboard Tabs)
        ══════════════════════════════════════════════════════════ -->
   <div id="view-main" style="display:none; height:100%;">
     <ion-tabs>
@@ -887,44 +719,51 @@
           <ion-toolbar>
             <ion-title class="brand-font">Palma's Elite Pass</ion-title>
             <ion-buttons slot="end">
-              <!-- Notification Bell -->
-              <button class="notif-bell-btn" id="notif-bell-btn" onclick="openNotifPanel()">
+              <button onclick="openNotifPanel()" style="background:transparent; border:none; color:var(--gym-light); font-size:1.2rem; padding:8px 12px; position:relative; cursor:pointer;">
                 <i class="fa-solid fa-bell"></i>
-                <span class="notif-badge" id="notif-badge">0</span>
+                <span id="notif-badge" style="display:none; position:absolute; top:4px; right:6px; background:#ef4444; color:#fff; font-size:0.65rem; font-weight:800; border-radius:10px; padding:1px 5px;">0</span>
               </button>
               <ion-button onclick="refreshDashboard()"><ion-icon name="refresh-outline"></ion-icon></ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
+
         <ion-content fullscreen="true">
           <ion-refresher slot="fixed" id="refresher-pass">
             <ion-refresher-content></ion-refresher-content>
           </ion-refresher>
 
+          <!-- Membership Pass Card -->
           <div class="membership-card" style="text-align:center;">
-            <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:12px;">
-              <div id="member-avatar-wrap" style="width:56px; height:56px; border-radius:50%; background:#1b4332; border:2px solid var(--gym-mid); overflow:hidden; display:flex; align-items:center; justify-content:center;">
-                <i class="fa-solid fa-user" style="font-size:26px; color: var(--gym-light);"></i>
+            <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:10px;">
+              <div id="member-avatar-wrap" style="width:54px; height:54px; border-radius:50%; background:#1b4332; border:2px solid var(--gym-mid); overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                <i class="fa-solid fa-user" style="font-size:24px; color: var(--gym-light);"></i>
               </div>
               <div style="text-align:left;">
-                <h3 id="card-name" style="margin:0; font-weight:800; color:#fff; font-size:1.15rem; font-family:'Outfit',sans-serif;">--</h3>
-                <p id="card-code" style="color: var(--gym-light); margin:2px 0 0; font-weight:700; letter-spacing:1px; font-size:0.82rem;">--</p>
+                <h3 id="card-name" style="margin:0; font-weight:800; color:#fff; font-size:1.15rem;">--</h3>
+                <p id="card-code" style="color: var(--gym-light); margin:2px 0 0; font-weight:700; letter-spacing:1px; font-size:0.82rem; font-family:monospace;">--</p>
               </div>
             </div>
 
-            <div class="qr-box" style="margin:12px auto;">
+            <!-- Dynamic QR Code -->
+            <div class="qr-box">
               <div id="qr-target"></div>
             </div>
 
-            <p style="font-size:0.75rem; color: var(--gym-lighter); margin-top:8px; font-weight:500;">
-              <i class="fa-solid fa-shield-check" style="color:var(--gym-mid);"></i> Verified Digital Member Pass
-            </p>
-
-            <div style="margin-top:10px;">
-              <span id="card-status-pill" class="status-pill pill-active">● ACTIVE</span>
+            <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin:4px 0 8px;">
+              <span id="card-status-pill" class="status-pill pill-active">● ACTIVE MEMBER 🟢</span>
             </div>
 
-            <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08); font-size:0.82rem;">
+            <!-- QR Countdown Bar -->
+            <div style="max-width:200px; margin:0 auto 10px;">
+              <div class="progress-bar-wrap" style="height:4px;">
+                <div id="qr-countdown-fill" class="progress-bar-fill" style="width:100%;"></div>
+              </div>
+              <p style="font-size:0.7rem; color: var(--gym-muted); margin:2px 0 0;">Dynamic HMAC Security Pass</p>
+            </div>
+
+            <!-- Membership Details Footer -->
+            <div style="padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); font-size:0.84rem;">
               <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                 <span style="color: var(--gym-lighter);">Membership Plan:</span>
                 <strong id="card-plan" style="color:#fff;">--</strong>
@@ -936,8 +775,8 @@
             </div>
           </div>
 
-          <div style="margin:0 16px 20px; text-align:center; color: var(--gym-muted); font-size:0.78rem;">
-            <i class="fa-solid fa-info-circle"></i> Present this QR at the gym scanner upon arrival.
+          <div style="margin:0 20px 24px; text-align:center; color: var(--gym-muted); font-size:0.78rem;">
+            <i class="fa-solid fa-qrcode"></i> Scan this pass at the entrance kiosk for instant attendance.
           </div>
         </ion-content>
       </ion-tab>
@@ -950,12 +789,25 @@
           </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding">
-          <h4 style="color: var(--gym-light); margin-top:0;">Recent Check-ins</h4>
+          
+          <!-- Summary Counter Badges -->
+          <div style="display:flex; gap:12px; margin-bottom:16px;">
+            <div class="dark-card" style="flex:1; text-align:center; padding:14px; margin-bottom:0;">
+              <p style="color:var(--gym-muted); font-size:0.74rem; text-transform:uppercase; font-weight:700; margin:0 0 4px;">This Month</p>
+              <h2 id="att-month-count" style="color:#fff; margin:0; font-size:1.6rem; font-weight:900;">0</h2>
+            </div>
+            <div class="dark-card" style="flex:1; text-align:center; padding:14px; margin-bottom:0;">
+              <p style="color:var(--gym-muted); font-size:0.74rem; text-transform:uppercase; font-weight:700; margin:0 0 4px;">This Week</p>
+              <h2 id="att-week-count" style="color:var(--gym-mid); margin:0; font-size:1.6rem; font-weight:900;">0</h2>
+            </div>
+          </div>
+
+          <h4 style="color: var(--gym-light); margin:12px 0 10px; font-size:0.95rem;">Recent Check-ins</h4>
           <div id="attendance-container"></div>
         </ion-content>
       </ion-tab>
 
-      <!-- ── TAB 3: PAYMENTS & RENEWAL ─── -->
+      <!-- ── TAB 3: PAYMENTS & RENEWALS ─── -->
       <ion-tab tab="tab-payments">
         <ion-header>
           <ion-toolbar>
@@ -963,21 +815,25 @@
           </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding">
-          <div class="dark-card" style="padding:18px; margin-bottom:20px;">
-            <h4 style="color: var(--gym-pale); margin:0 0 8px; font-size:1rem;">
-              <i class="fa-solid fa-arrows-rotate" style="color: var(--gym-light);"></i> Extend Membership
-            </h4>
-            <p style="color: var(--gym-muted); font-size:0.83rem; margin-bottom:14px; line-height:1.4;">Select your preferred plan and submit a renewal request to gym administrators.</p>
-            <ion-button expand="block" color="success" onclick="openRenewalModal()">
-              Request Plan Renewal
-            </ion-button>
+          <div class="dark-card" style="padding:18px; margin-bottom:18px; border-color:rgba(82,183,136,0.35);">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+              <i class="fa-solid fa-bolt" style="color:var(--gym-mid); font-size:1.2rem;"></i>
+              <h4 style="color: #fff; margin:0; font-size:1.05rem;">Extend Membership</h4>
+            </div>
+            <p style="color: var(--gym-muted); font-size:0.82rem; margin-bottom:14px; line-height:1.4;">
+              Renew your gym membership online with GCash, Maya, QR Ph, or Cash at the front desk.
+            </p>
+            <button class="btn-primary" onclick="openRenewalModal()">
+              <i class="fa-solid fa-arrows-rotate"></i> RENEW MEMBERSHIP
+            </button>
           </div>
-          <h4 style="color: var(--gym-light);">Payment History</h4>
+
+          <h4 style="color: var(--gym-light); margin:14px 0 10px; font-size:0.95rem;">Payment History</h4>
           <div id="payments-container"></div>
         </ion-content>
       </ion-tab>
 
-      <!-- ── TAB 4: PROFILE ─── -->
+      <!-- ── TAB 4: REDESIGNED PROFILE ─── -->
       <ion-tab tab="tab-profile">
         <ion-header>
           <ion-toolbar>
@@ -985,43 +841,81 @@
           </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding">
-          <div style="text-align:center; margin:20px 0 24px;">
-            <div id="prof-avatar-wrap" style="width:90px; height:90px; border-radius:50%; background:#1b4332; margin:0 auto; display:flex; align-items:center; justify-content:center; border:3px solid var(--gym-mid); overflow:hidden;">
-              <i class="fa-solid fa-user" style="font-size:40px; color: var(--gym-light);"></i>
+          
+          <!-- Header Card -->
+          <div class="dark-card" style="text-align:center; padding:22px 18px; margin-bottom:14px;">
+            <div id="prof-avatar-wrap" style="width:84px; height:84px; border-radius:50%; background:#1b4332; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; border:3px solid var(--gym-mid); overflow:hidden;">
+              <i class="fa-solid fa-user" style="font-size:36px; color: var(--gym-light);"></i>
             </div>
-            <h3 id="prof-name" style="margin:12px 0 2px; color:#fff;">--</h3>
-            <p id="prof-code" style="color: var(--gym-light); margin:0; font-size:0.88rem;">--</p>
-            <span id="prof-auth-badge" style="display:inline-block; margin-top:8px; background:rgba(66,133,244,0.15); color:#7baaf7; border-radius:10px; padding:3px 10px; font-size:0.72rem; font-weight:700;"></span>
+            <h3 id="prof-name" style="margin:0 0 4px; color:#fff; font-weight:800; font-size:1.25rem;">--</h3>
+            <p id="prof-code" style="color: var(--gym-light); margin:0 0 8px; font-size:0.88rem; font-family:monospace;">--</p>
+            <span id="prof-status-pill" class="status-pill pill-active">ACTIVE MEMBER 🟢</span>
           </div>
 
-          <ion-list style="background:transparent;">
-            <ion-item class="dark-card">
-              <ion-icon name="mail-outline" slot="start" style="color: var(--gym-light);"></ion-icon>
-              <ion-label>
-                <p style="color: var(--gym-muted);">Email</p>
-                <h3 id="prof-email" style="color:#fff;">--</h3>
-              </ion-label>
-            </ion-item>
-            <ion-item class="dark-card">
-              <ion-icon name="call-outline" slot="start" style="color: var(--gym-light);"></ion-icon>
-              <ion-label>
-                <p style="color: var(--gym-muted);">Contact</p>
-                <h3 id="prof-phone" style="color:#fff;">--</h3>
-              </ion-label>
-            </ion-item>
-            <ion-item class="dark-card">
-              <ion-icon name="id-card-outline" slot="start" style="color: var(--gym-light);"></ion-icon>
-              <ion-label>
-                <p style="color: var(--gym-muted);">Membership ID</p>
-                <h3 id="prof-memid" style="color:#fff; font-family:monospace;">--</h3>
-              </ion-label>
-            </ion-item>
-          </ion-list>
+          <!-- Section 1: Personal Information -->
+          <div class="dark-card" style="padding:16px 18px; margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid rgba(82,183,136,0.18); padding-bottom:8px;">
+              <h4 style="color:var(--gym-lighter); font-size:0.82rem; text-transform:uppercase; font-weight:800; margin:0;">
+                <i class="fa-solid fa-address-card" style="margin-right:6px;"></i> Personal Information
+              </h4>
+              <button onclick="openEditProfileModal()" style="background:rgba(82,183,136,0.15); border:1px solid var(--gym-border); color:var(--gym-light); font-size:0.75rem; font-weight:700; border-radius:8px; padding:4px 10px; cursor:pointer;">
+                <i class="fa-solid fa-pen-to-square"></i> Edit Profile
+              </button>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
+              <span style="color:var(--gym-muted);">Full Name:</span>
+              <strong id="prof-full-name" style="color:#fff;">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
+              <span style="color:var(--gym-muted);">Email:</span>
+              <strong id="prof-email" style="color:#fff;">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+              <span style="color:var(--gym-muted);">Contact:</span>
+              <strong id="prof-phone" style="color:#fff;">--</strong>
+            </div>
+          </div>
 
-          <ion-button expand="block" color="danger" style="margin-top:30px; font-weight:700;" onclick="logout()">
-            <ion-icon name="log-out-outline" slot="start"></ion-icon>
-            SIGN OUT
-          </ion-button>
+          <!-- Section 2: Membership Information & Progress -->
+          <div class="dark-card" style="padding:16px 18px; margin-bottom:14px;">
+            <h4 style="color:var(--gym-lighter); font-size:0.82rem; text-transform:uppercase; font-weight:800; margin:0 0 14px; border-bottom:1px solid rgba(82,183,136,0.18); padding-bottom:8px;">
+              <i class="fa-solid fa-id-card-clip" style="margin-right:6px;"></i> Membership Information
+            </h4>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
+              <span style="color:var(--gym-muted);">Current Plan:</span>
+              <strong id="prof-plan-name" style="color:#fff;">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
+              <span style="color:var(--gym-muted);">Valid Until:</span>
+              <strong id="prof-valid-until" style="color:#fff;">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.88rem; margin-bottom:6px;">
+              <span style="color:var(--gym-muted);">Time Remaining:</span>
+              <strong id="prof-days-remaining" style="color:var(--gym-mid);">-- Days Remaining</strong>
+            </div>
+
+            <!-- Visual Progress Bar -->
+            <div class="progress-bar-wrap">
+              <div id="prof-days-bar-fill" class="progress-bar-fill" style="width: 80%;"></div>
+            </div>
+          </div>
+
+          <!-- Section 3: Account & Security Settings -->
+          <div class="dark-card" style="padding:16px 18px; margin-bottom:20px;">
+            <h4 style="color:var(--gym-lighter); font-size:0.82rem; text-transform:uppercase; font-weight:800; margin:0 0 12px; border-bottom:1px solid rgba(82,183,136,0.18); padding-bottom:8px;">
+              <i class="fa-solid fa-gear" style="margin-right:6px;"></i> Account Settings
+            </h4>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-size:0.88rem; color:#fff;">Push Notifications</span>
+              <ion-toggle checked="true" color="success"></ion-toggle>
+            </div>
+            <button onclick="openChangePasswordModal()" class="btn-outline" style="padding:10px; margin-bottom:10px; font-size:0.84rem;">
+              <i class="fa-solid fa-key"></i> Change Password
+            </button>
+            <button class="btn-outline" style="padding:10px; font-size:0.84rem; color:#f87171; border-color:rgba(239,68,68,0.3);" onclick="confirmSignOutDialog()">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+            </button>
+          </div>
         </ion-content>
       </ion-tab>
 
@@ -1029,7 +923,7 @@
       <ion-tab-bar slot="bottom">
         <ion-tab-button tab="tab-pass">
           <ion-icon name="qr-code-outline"></ion-icon>
-          <ion-label>Gym Pass</ion-label>
+          <ion-label>Pass</ion-label>
         </ion-tab-button>
         <ion-tab-button tab="tab-attendance">
           <ion-icon name="calendar-outline"></ion-icon>
@@ -1037,7 +931,7 @@
         </ion-tab-button>
         <ion-tab-button tab="tab-payments">
           <ion-icon name="card-outline"></ion-icon>
-          <ion-label>Payments</ion-label>
+          <ion-label>Renewals</ion-label>
         </ion-tab-button>
         <ion-tab-button tab="tab-profile">
           <ion-icon name="person-outline"></ion-icon>
@@ -1047,7 +941,46 @@
     </ion-tabs>
   </div>
 
-  <!-- RENEWAL MODAL -->
+  <!-- ══════════════════════════════════════════════════════════
+       MODAL 1: EDIT PROFILE MODAL
+       ══════════════════════════════════════════════════════════ -->
+  <ion-modal id="modal-edit-profile">
+    <ion-header>
+      <ion-toolbar style="--background:#1b4332; --color:#fff;">
+        <ion-title style="font-weight:700;">Edit Profile</ion-title>
+        <ion-buttons slot="end">
+          <ion-button onclick="closeEditProfileModal()" style="--color: var(--gym-light);"><ion-icon name="close"></ion-icon></ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding" style="--background: var(--gym-dark);">
+      <div class="form-group">
+        <label>Full Name</label>
+        <div class="input-field-wrap">
+          <input type="text" id="edit-full-name" placeholder="Full Name" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Contact Number (09XXXXXXXXX)</label>
+        <div class="input-field-wrap">
+          <input type="tel" id="edit-phone" placeholder="09XXXXXXXXX" maxlength="11" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Membership ID (Immutable)</label>
+        <div class="input-field-wrap" style="opacity:0.6;">
+          <input type="text" id="edit-memid" readonly />
+        </div>
+      </div>
+      <button class="btn-primary" id="btn-save-profile" onclick="saveProfileChanges()" style="margin-top:18px;">
+        <i class="fa-solid fa-floppy-disk"></i> SAVE CHANGES
+      </button>
+    </ion-content>
+  </ion-modal>
+
+  <!-- ══════════════════════════════════════════════════════════
+       MODAL 2: RENEWAL & BILLING MODAL
+       ══════════════════════════════════════════════════════════ -->
   <ion-modal id="modal-renewal">
     <ion-header>
       <ion-toolbar style="--background:#1b4332; --color:#fff;">
@@ -1060,56 +993,43 @@
     <ion-content class="ion-padding" style="--background: var(--gym-dark);">
       <div id="renewal-step-form">
         <ion-item class="dark-card" style="margin-bottom:12px;">
-          <ion-label position="stacked" style="color: var(--gym-light); font-weight:700;">Membership Plan</ion-label>
+          <ion-label position="stacked" style="color: var(--gym-light); font-weight:700;">Select Plan</ion-label>
           <ion-select id="renew-plan-select" placeholder="Select Plan" style="color:#fff;"></ion-select>
         </ion-item>
         <ion-item class="dark-card" style="margin-bottom:16px;">
           <ion-label position="stacked" style="color: var(--gym-light); font-weight:700;">Payment Method</ion-label>
-          <ion-select id="renew-method-select" value="Instant GCash" placeholder="Select Method" style="color:#fff;" onIonChange="handleRenewMethodChange(this.value)">
+          <ion-select id="renew-method-select" value="Instant GCash" style="color:#fff;" onIonChange="handleRenewMethodChange(this.value)">
             <ion-select-option value="Instant GCash">⚡ Instant GCash</ion-select-option>
             <ion-select-option value="Instant Maya">⚡ Instant Maya</ion-select-option>
-            <ion-select-option value="QR Ph">⚡ QR Ph Online</ion-select-option>
-            <ion-select-option value="Cash">Cash (At Front Desk)</ion-select-option>
+            <ion-select-option value="QR Ph">🏦 QR Ph Online</ion-select-option>
+            <ion-select-option value="Cash">💵 Cash at Front Desk</ion-select-option>
           </ion-select>
         </ion-item>
         <div id="renew-manual-ref-wrap" style="display:none; margin-bottom:16px;">
-          <ion-item class="dark-card">
-            <ion-input id="renew-ref-input" placeholder="Reference Number (Optional)" style="color:#fff;"></ion-input>
-          </ion-item>
+          <div class="input-field-wrap">
+            <input type="text" id="renew-ref-input" placeholder="Reference Number (Optional)" />
+          </div>
         </div>
-        <div style="background:rgba(45,106,79,0.2); border:1px solid rgba(82,183,136,0.3); border-radius:12px; padding:12px; margin-bottom:18px;">
-          <p style="color: var(--gym-pale); font-size:0.78rem; margin:0; line-height:1.4;" id="payment-mode-notice">
-            <i class="fa-solid fa-circle-check" style="color: var(--gym-light);"></i>
-            <strong>Demo Mode:</strong> Membership activates instantly for testing purposes.
-          </p>
-        </div>
-        <ion-button expand="block" id="btn-proceed-renewal" style="--background: var(--gym-green); --color:white; font-weight:800; height:50px; border-radius:12px;" onclick="submitRenewal()">
-          <i class="fa-solid fa-bolt" style="margin-right:6px;"></i> PROCEED TO PAYMENT
-        </ion-button>
+        <button class="btn-primary" id="btn-proceed-renewal" onclick="submitRenewal()">
+          <i class="fa-solid fa-bolt"></i> PROCEED TO PAYMENT
+        </button>
       </div>
 
-      <!-- Checkout Sheet -->
-      <div id="renewal-step-checkout" style="display:none; text-align:center; padding-top:10px;">
-        <div style="background:#112d21; border-radius:16px; border:1px solid var(--gym-mid); padding:20px; box-shadow:0 8px 25px rgba(0,0,0,0.4);">
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(82,183,136,0.2); padding-bottom:12px; margin-bottom:16px;">
-            <span id="checkout-method-badge" style="background: var(--gym-green); color:#fff; font-size:0.72rem; font-weight:800; padding:4px 10px; border-radius:12px;">GCASH QR PH</span>
-            <span id="checkout-ref-text" style="font-family:monospace; font-size:0.72rem; color: var(--gym-muted);">PEG-GC-1234</span>
+      <!-- Online Checkout Sheet -->
+      <div id="renewal-step-checkout" style="display:none; text-align:center; padding-top:6px;">
+        <div style="background:#112d21; border-radius:18px; border:1px solid var(--gym-mid); padding:20px; box-shadow:0 8px 25px rgba(0,0,0,0.5);">
+          <span id="checkout-method-badge" style="background: var(--gym-green); color:#fff; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:12px;">GCASH QR PH</span>
+          <h1 id="checkout-amount-display" style="color: var(--gym-light); margin:12px 0 6px; font-size:1.8rem; font-weight:900;">₱0.00</h1>
+          <p id="checkout-plan-name" style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 14px;">Plan Name</p>
+          <div class="qr-box" style="margin-bottom:14px;">
+            <div id="checkout-qrcode-box" style="width:175px; height:175px;"></div>
           </div>
-          <h3 id="checkout-plan-name" style="color:#fff; margin:0; font-size:1.1rem; font-weight:700;">Plan</h3>
-          <h1 id="checkout-amount-display" style="color: var(--gym-light); margin:8px 0; font-size:2rem; font-weight:900;">₱0.00</h1>
-          <p style="color: var(--gym-muted); font-size:0.78rem; margin:0 0 16px;">Scan via GCash, Maya, or any Banking App</p>
-          <div style="background:#fff; padding:14px; border-radius:14px; display:inline-block; box-shadow:0 4px 15px rgba(0,0,0,0.3); margin-bottom:16px;">
-            <div id="checkout-qrcode-box" style="width:175px; height:175px; display:flex; align-items:center; justify-content:center;"></div>
-          </div>
-          <p style="color: var(--gym-pale); font-size:0.72rem; margin-bottom:18px;">
-            <i class="fa-solid fa-shield-halved" style="color: var(--gym-light);"></i> Demo Mode — Instant Activation
-          </p>
-          <ion-button expand="block" id="btn-confirm-auto-pay" style="--background: var(--gym-mid); --color: var(--gym-dark); font-weight:900; height:50px; border-radius:12px; margin-bottom:10px;" onclick="executeAutoActivation()">
-            <i class="fa-solid fa-circle-check" style="margin-right:6px;"></i> COMPLETE &amp; ACTIVATE PASS
-          </ion-button>
-          <a href="javascript:void(0)" onclick="backToRenewalForm()" style="color: var(--gym-muted); font-size:0.82rem; text-decoration:none;">
+          <button class="btn-primary" id="btn-confirm-auto-pay" onclick="executeAutoActivation()" style="margin-bottom:10px;">
+            <i class="fa-solid fa-circle-check"></i> COMPLETE &amp; ACTIVATE PASS
+          </button>
+          <button class="btn-outline" onclick="backToRenewalForm()">
             <i class="fa-solid fa-arrow-left"></i> Change Plan / Back
-          </a>
+          </button>
         </div>
       </div>
     </ion-content>
@@ -1118,24 +1038,17 @@
   <!-- NOTIFICATION PANEL -->
   <div class="notif-overlay" id="notif-overlay" onclick="closeNotifPanel()"></div>
   <div class="notif-panel" id="notif-panel">
-    <div class="notif-panel-header">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
       <div>
-        <h3 style="font-family:'Outfit',sans-serif; font-weight:800; margin:0; color:#fff; font-size:1rem;">Notifications</h3>
+        <h3 style="font-weight:800; margin:0; color:#fff; font-size:1.05rem;">Notifications</h3>
         <p style="color: var(--gym-muted); font-size:0.75rem; margin:2px 0 0;" id="notif-unread-count">0 unread</p>
       </div>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <button onclick="markAllRead()" style="background:rgba(82,183,136,0.1); border:1px solid rgba(82,183,136,0.25); border-radius:8px; color: var(--gym-light); font-size:0.73rem; padding:5px 10px; cursor:pointer; font-weight:600;">
-          Mark all read
-        </button>
-        <button onclick="closeNotifPanel()" style="background:none; border:none; color: var(--gym-muted); font-size:1.1rem; cursor:pointer; padding:4px;">✕</button>
+      <div style="display:flex; gap:8px;">
+        <button onclick="markAllRead()" style="background:rgba(82,183,136,0.15); border:1px solid var(--gym-border); border-radius:8px; color: var(--gym-light); font-size:0.75rem; padding:4px 8px; cursor:pointer;">Mark Read</button>
+        <button onclick="closeNotifPanel()" style="background:none; border:none; color: var(--gym-muted); font-size:1.2rem; cursor:pointer;">✕</button>
       </div>
     </div>
-    <div id="notif-list" style="flex:1; overflow-y:auto;">
-      <div style="text-align:center; padding:40px 20px; color: var(--gym-muted); font-size:0.85rem;">
-        <div class="spinner" style="margin-bottom:12px;"></div>
-        Loading notifications...
-      </div>
-    </div>
+    <div id="notif-list" style="flex:1; overflow-y:auto;"></div>
   </div>
 
   <!-- TOAST -->
@@ -1147,204 +1060,257 @@
 
 <script>
 // ══════════════════════════════════════════════════════════════════
-//  PALMA'S ELITE GYM — Mobile App v2.0
-//  Architecture: Mobile App → HTTPS → Render API → Aiven Database
+//  PALMA'S ELITE GYM — Complete Unified Mobile Application Logic
 // ══════════════════════════════════════════════════════════════════
 const API_URL = 'https://palmas-gym.onrender.com/api';
-
-// Google OAuth Client ID — Palma's Elite Gym (Google Cloud Console)
 const GOOGLE_CLIENT_ID = '547166577828-q8asn3pta04j6o779g3vc6sqmvq76n39.apps.googleusercontent.com';
 
-let currentMember  = null;
+let currentMember = null;
 let availablePlans = [];
-let qrInstance     = null;
-let regPrefill     = {}; // Google prefill data for registration
+let qrInstance = null;
+let regPrefill = {};
 let selectedGender = '';
 let selectedPlanId = null;
-let selectedPlan   = null;
+let selectedPlan = null;
 let currentCheckoutSession = null;
+let qrCountdownTimer = null;
 
 // ── Toast Notification ─────────────────────────────────────────────
 function showToast(msg, duration = 3000) {
   const t = document.getElementById('toast-msg');
+  if (!t) return;
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), duration);
 }
 
-// ── View Management ───────────────────────────────────────────────
+// ── Screen Router ──────────────────────────────────────────────────
 function showScreen(id) {
   const screens = [
-    'view-login','view-traditional-login','view-setup-password',
-    'view-pending','view-rejected','view-suspended',
-    'view-register','view-reg-success','view-main'
+    'view-splash', 'view-login', 'view-pending', 'view-rejected', 
+    'view-suspended', 'view-register', 'view-main'
   ];
   screens.forEach(sid => {
     const el = document.getElementById(sid);
-    if (el) el.style.display = (sid === id) ? (sid === 'view-main' ? 'block' : 'block') : 'none';
+    if (el) el.style.display = (sid === id) ? 'block' : 'none';
   });
 }
 
-function showGoogleLogin()       { showScreen('view-login'); }
-function showTraditionalLogin()  { showScreen('view-traditional-login'); }
-function cancelRegistration()    { showScreen('view-login'); }
+// ── Password Visibility Toggle ──────────────────────────────────────
+function togglePasswordVisibility(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+  } else {
+    inp.type = 'password';
+    btn.innerHTML = '<i class="fa-solid fa-eye"></i>';
+  }
+}
 
 // ── GOOGLE SIGN-IN ─────────────────────────────────────────────────
 function initiateGoogleSignIn() {
-  if (!GOOGLE_CLIENT_ID) {
-    // Fallback for development: show toast and manual login
-    showToast('Google Sign-In is not configured yet. Using traditional login as fallback.');
-    showTraditionalLogin();
+  if (typeof google === 'undefined' || !google.accounts) {
+    showToast('Google Sign-In service is initializing. Please try again.');
     return;
   }
-
-  // Use Google Identity Services (GIS) library
-  const client = google.accounts.oauth2.initTokenClient({
-    client_id: GOOGLE_CLIENT_ID,
-    scope: 'openid email profile',
-    callback: () => {},
-  });
-
-  // Use ID token flow via renderButton approach
-  // Programmatically trigger the Google One-Tap / popup
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
     callback: handleGoogleCredential,
     auto_select: false,
     cancel_on_tap_outside: true,
   });
-
-  google.accounts.id.prompt((notification) => {
-    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      // If One-Tap not shown, use popup flow
-      google.accounts.id.renderButton(
-        document.createElement('div'),
-        { theme: 'outline', size: 'large' }
-      );
-    }
-  });
+  google.accounts.id.prompt();
 }
 
 async function handleGoogleCredential(response) {
-  const id_token = response.credential;
-  if (!id_token) {
-    showToast('Google Sign-In failed. Please try again.');
+  if (!response || !response.credential) {
+    showToast('Google authentication was cancelled.');
     return;
   }
-
-  const btn = document.getElementById('btn-google-signin');
-  btn.disabled = true;
-  btn.textContent = 'Verifying with Google...';
+  showToast('Verifying Google credentials...');
 
   try {
     const res = await fetch(`${API_URL}/google_auth.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id_token })
+      body: JSON.stringify({ id_token: response.credential })
     });
     const data = await res.json();
 
-    if (data.success) {
-      // Approved member — go to dashboard
-      currentMember = data.member;
-      localStorage.setItem('peg_member', JSON.stringify(data.member));
-      localStorage.setItem('peg_token', data.token);
-      initMainView(data.member.id);
-      return;
-    }
-
     if (data.new_user) {
-      // New Google user — start registration wizard
       regPrefill = data.prefill || {};
-      startRegistrationWizard(regPrefill);
+      openRegistrationWizardWithPrefill(regPrefill);
       return;
     }
 
-    // Handle account status screens
     if (data.account_status === 'Pending') {
-      document.getElementById('pending-name-text').textContent =
-        `Hi ${data.full_name || 'there'}! Your account is currently being reviewed by Palma's Elite Gym staff.`;
+      document.getElementById('pending-name-text').textContent = `Welcome back, ${data.full_name || 'Member'}.`;
       showScreen('view-pending');
       return;
     }
 
     if (data.account_status === 'Rejected') {
-      document.getElementById('rejected-reason-text').textContent =
-        data.rejection_reason || 'No reason provided.';
+      document.getElementById('rejected-reason-text').textContent = data.rejection_reason || 'Application was not approved.';
       showScreen('view-rejected');
       return;
     }
 
-    if (data.account_status === 'Suspended') {
-      showScreen('view-suspended');
+    if (data.success && data.token) {
+      currentMember = data.member;
+      localStorage.setItem('peg_member', JSON.stringify(data.member));
+      localStorage.setItem('peg_token', data.token);
+      initMainView(data.member.id);
+      showToast(`Welcome back, ${data.member.full_name}!`);
+    } else {
+      showToast(data.message || 'Authentication failed. Please try again.');
+    }
+  } catch (err) {
+    showToast('Unable to connect to gym authentication server. Check connection.');
+  }
+}
+
+// ── TRADITIONAL LOGIN ──────────────────────────────────────────────
+async function submitTraditionalLogin() {
+  const u = document.getElementById('input-username').value.trim();
+  const p = document.getElementById('input-password').value.trim();
+  if (!u || !p) return showToast('Please enter your Member ID/Email and password.');
+
+  const btn = document.getElementById('btn-trad-login');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Signing In...';
+
+  try {
+    const res = await fetch(`${API_URL}/member_login.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+    const data = await res.json();
+
+    if (data.rate_limited) {
+      showToast(data.message || 'Too many attempts. Please wait.', 5000);
       return;
     }
 
-    showToast(data.message || 'Authentication failed. Please try again.');
+    if (data.account_status === 'Pending') {
+      document.getElementById('pending-name-text').textContent = `Welcome, ${data.full_name || u}.`;
+      showScreen('view-pending');
+      return;
+    }
+
+    if (data.account_status === 'Rejected') {
+      document.getElementById('rejected-reason-text').textContent = data.message || 'Registration not approved.';
+      showScreen('view-rejected');
+      return;
+    }
+
+    if (data.success && data.token) {
+      currentMember = data.member;
+      localStorage.setItem('peg_member', JSON.stringify(data.member));
+      localStorage.setItem('peg_token', data.token);
+      initMainView(data.member.id);
+      showToast(`Signed in as ${data.member.full_name}!`);
+    } else {
+      showToast(data.message || 'Invalid Member ID, Email, or Password.');
+    }
   } catch (err) {
-    showToast('Unable to connect to the server. Please check your internet connection.');
+    showToast('Connection error. Please check your internet connection.');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style="width:22px;height:22px;" /> Continue with Google';
+    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> SIGN IN';
   }
 }
 
-// ── REGISTRATION WIZARD ───────────────────────────────────────────
-async function startRegistrationWizard(prefill) {
-  regPrefill = prefill || {};
-  selectedGender = '';
-  selectedPlanId = null;
-  selectedPlan   = null;
+// ── PENDING STATUS CHECK ───────────────────────────────────────────
+async function checkPendingApprovalStatus() {
+  const btn = document.getElementById('btn-refresh-pending');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Checking...';
+  
+  const token = localStorage.getItem('peg_token');
+  if (!token) {
+    showToast('Please sign in with Google or password to verify status.');
+    showScreen('view-login');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> REFRESH STATUS';
+    return;
+  }
 
-  // Pre-fill Step 1 fields
-  document.getElementById('reg-name').value  = prefill.name  || '';
-  document.getElementById('reg-email').value = prefill.email || '';
+  try {
+    const res = await fetch(`${API_URL}/member_dashboard.php`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success) {
+        showToast('🎉 Your registration has been approved!');
+        initMainView(data.member.id);
+        return;
+      }
+    }
+    showToast('Your account is still pending review. Staff has been notified.');
+  } catch (e) {
+    showToast('Unable to check server right now. Try again shortly.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> REFRESH STATUS';
+  }
+}
+
+// ── REGISTRATION WIZARD ────────────────────────────────────────────
+function openRegistrationWizard() {
+  regPrefill = {};
+  document.getElementById('google-prefill-badge').style.display = 'none';
+  document.getElementById('reg-name').value = '';
+  document.getElementById('reg-email').value = '';
   document.getElementById('reg-phone').value = '';
-
-  // Show Google profile badge if available
-  if (prefill.picture) {
-    document.getElementById('google-avatar').src       = prefill.picture;
-    document.getElementById('google-name-badge').textContent  = prefill.name || '';
-    document.getElementById('google-email-badge').textContent = prefill.email || '';
-    document.getElementById('google-prefill-badge').style.display = 'flex';
-  }
-
-  // Reset wizard to step 1
+  selectGender('');
   goToWizardStep(1);
-  showScreen('view-register');
-
-  // Load plans for Step 2
   loadPlansForRegistration();
+  showScreen('view-register');
 }
+
+function openRegistrationWizardWithPrefill(prefill) {
+  document.getElementById('google-prefill-badge').style.display = 'flex';
+  document.getElementById('google-avatar').src = prefill.picture || 'https://via.placeholder.com/80';
+  document.getElementById('google-name-badge').textContent = prefill.name || 'Google User';
+  document.getElementById('google-email-badge').textContent = prefill.email || '';
+  document.getElementById('reg-name').value = prefill.name || '';
+  document.getElementById('reg-email').value = prefill.email || '';
+  goToWizardStep(1);
+  loadPlansForRegistration();
+  showScreen('view-register');
+}
+
+function cancelRegistration() { showScreen('view-login'); }
 
 function goToWizardStep(step) {
-  [1,2,3].forEach(n => {
-    const el = document.getElementById(`reg-step-${n}`);
-    if (el) el.style.display = (n === step) ? 'block' : 'none';
-
-    const dot = document.getElementById(`sdot-${n}`);
+  [1, 2, 3].forEach(s => {
+    const page = document.getElementById(`reg-step-1`);
+    const dot  = document.getElementById(`sdot-${s}`);
+    const line = document.getElementById(`sline-${s-1}`);
+    const stepEl = document.getElementById(`reg-step-${s}`);
+    if (stepEl) stepEl.style.display = (s === step) ? 'block' : 'none';
     if (dot) {
-      dot.classList.toggle('active', n === step);
-      dot.classList.toggle('done', n < step);
+      dot.classList.toggle('active', s === step);
+      dot.classList.toggle('done', s < step);
     }
-    if (n < 3) {
-      const line = document.getElementById(`sline-${n}`);
-      if (line) line.classList.toggle('done', n < step);
-    }
+    if (line) line.classList.toggle('done', s <= step);
   });
-
-  const labels = ['', 'Step 1 of 3 — Personal Information', 'Step 2 of 3 — Choose Your Plan', 'Step 3 of 3 — Review & Submit'];
-  const titles = ['', 'Create Your Account', 'Choose Your Plan', 'Review Information'];
-  document.getElementById('wizard-step-label').textContent = labels[step];
-  document.getElementById('wizard-title').textContent = titles[step];
+  const label = document.getElementById('wizard-step-label');
+  if (label) {
+    const titles = ['', 'Step 1 of 3 — Personal Information', 'Step 2 of 3 — Select Package', 'Step 3 of 3 — Review Application'];
+    label.textContent = titles[step] || '';
+  }
 }
 
 function selectGender(g) {
   selectedGender = g;
-  document.getElementById('reg-gender-val').value = g;
-  ['Male','Female','Other'].forEach(opt => {
-    const btn = document.getElementById(`gbtn-${opt.toLowerCase()}`);
-    if (btn) btn.classList.toggle('selected', opt === g);
+  ['male', 'female', 'other'].forEach(opt => {
+    const b = document.getElementById(`gbtn-${opt}`);
+    if (b) b.classList.toggle('selected', opt.toLowerCase() === g.toLowerCase());
   });
 }
 
@@ -1353,31 +1319,19 @@ function wizardNext(fromStep) {
     const name  = document.getElementById('reg-name').value.trim();
     const email = document.getElementById('reg-email').value.trim();
     const phone = document.getElementById('reg-phone').value.trim();
-
     if (!name) return showToast('Please enter your full name.');
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      return showToast('Please enter a valid email address.');
-    if (!phone || !/^09[0-9]{9}$/.test(phone))
-      return showToast('Contact number must be 11 digits starting with 09.');
-    if (!selectedGender)
-      return showToast('Please select your gender.');
-
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('Please enter a valid email address.');
+    if (!phone || !/^09[0-9]{9}$/.test(phone)) return showToast('Contact number must be 11 digits starting with 09.');
+    if (!selectedGender) return showToast('Please select your gender.');
     goToWizardStep(2);
   } else if (fromStep === 2) {
     if (!selectedPlanId) return showToast('Please select a membership plan.');
-    // Populate review step
-    const name  = document.getElementById('reg-name').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const phone = document.getElementById('reg-phone').value.trim();
-
-    document.getElementById('rv-name').textContent     = name;
-    document.getElementById('rv-email').textContent    = email;
-    document.getElementById('rv-phone').textContent    = phone || 'Not provided';
-    document.getElementById('rv-gender').textContent   = selectedGender;
-    document.getElementById('rv-plan-name').textContent = selectedPlan?.name || '—';
+    document.getElementById('rv-name').textContent = document.getElementById('reg-name').value.trim();
+    document.getElementById('rv-email').textContent = document.getElementById('reg-email').value.trim();
+    document.getElementById('rv-phone').textContent = document.getElementById('reg-phone').value.trim();
+    document.getElementById('rv-gender').textContent = selectedGender;
+    document.getElementById('rv-plan-name').textContent = selectedPlan?.name || 'Selected Plan';
     document.getElementById('rv-plan-price').textContent = selectedPlan ? '₱' + parseFloat(selectedPlan.price).toFixed(2) : '—';
-    document.getElementById('rv-plan-duration').textContent = selectedPlan ? selectedPlan.duration_months + ' Month(s)' : '—';
-
     goToWizardStep(3);
   }
 }
@@ -1390,320 +1344,168 @@ function wizardBack(fromStep) {
 async function loadPlansForRegistration() {
   const container = document.getElementById('plans-container-reg');
   if (!container) return;
-  // Use already-loaded plans if available (no extra API call needed)
-  if (availablePlans && availablePlans.length > 0) {
+  try {
+    const res = await fetch(`${API_URL}/member_dashboard.php`);
+    const data = await res.json();
+    availablePlans = data.plans || [];
     renderPlanCards(availablePlans, container);
-    return;
+  } catch (e) {
+    renderPlanCards([
+      { id: 1, name: 'Basic Monthly', price: 500, duration_months: 1 },
+      { id: 2, name: 'Standard 3-Months', price: 1350, duration_months: 3 },
+      { id: 3, name: 'VIP Annual', price: 4800, duration_months: 12 }
+    ], container);
   }
-  // Plans not loaded yet — show message (plans load on first login)
-  container.innerHTML = `
-    <div style="text-align:center; padding:24px;">
-      <p style="color: var(--gym-muted); font-size:0.85rem; line-height:1.5;">
-        <i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>
-        Membership plans will be shown here.<br>You can select a plan after your account is approved.
-      </p>
-    </div>`;
 }
 
-// Plans from dashboard load — also use for registration
 function renderPlanCards(plans, container) {
-  if (!container) return;
   container.innerHTML = '';
-  if (!plans || !plans.length) {
-    container.innerHTML = '<p style="color: var(--gym-muted); text-align:center;">No plans available.</p>';
-    return;
-  }
   plans.forEach(p => {
     const card = document.createElement('div');
-    card.className = 'plan-card';
-    card.id = `plan-card-${p.id}`;
-    card.onclick = () => selectPlanCard(p);
+    card.className = `plan-card ${selectedPlanId === p.id ? 'selected' : ''}`;
+    card.onclick = () => {
+      selectedPlanId = p.id;
+      selectedPlan = p;
+      container.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+    };
     card.innerHTML = `
-      <div class="plan-check" id="plan-check-${p.id}"><i class="fa-solid fa-check"></i></div>
-      <p class="plan-name">${p.name}</p>
-      <p class="plan-price">₱${parseFloat(p.price).toFixed(2)}</p>
-      <p class="plan-duration"><i class="fa-solid fa-calendar" style="margin-right:5px; opacity:0.7;"></i>Valid for ${p.duration_months} Month${p.duration_months > 1 ? 's' : ''}</p>
+      <div class="plan-check"><i class="fa-solid fa-check"></i></div>
+      <h3 style="color:#fff; margin:0 0 4px; font-weight:800; font-size:1.05rem;">${p.name}</h3>
+      <h2 style="color:var(--gym-light); margin:0; font-size:1.4rem; font-weight:900;">₱${parseFloat(p.price).toFixed(2)}</h2>
+      <p style="color:var(--gym-muted); font-size:0.8rem; margin:4px 0 0;">${p.duration_months} Month(s) Full Gym Access</p>
     `;
     container.appendChild(card);
   });
 }
 
-function selectPlanCard(plan) {
-  selectedPlanId = plan.id;
-  selectedPlan   = plan;
-  document.getElementById('reg-plan-id').value = plan.id;
-
-  // Update visual selection
-  document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
-  const card = document.getElementById(`plan-card-${plan.id}`);
-  if (card) card.classList.add('selected');
-}
-
 async function submitRegistration() {
   const btn = document.getElementById('btn-submit-reg');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:8px;"></i>Submitting...';
-
-  const name  = document.getElementById('reg-name').value.trim();
-  const email = document.getElementById('reg-email').value.trim();
-  const phone = document.getElementById('reg-phone').value.trim();
+  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Submitting...';
 
   try {
     const res = await fetch(`${API_URL}/member_register.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        full_name:      name,
-        email:          email,
-        contact_number: phone,
+        full_name:      document.getElementById('reg-name').value.trim(),
+        email:          document.getElementById('reg-email').value.trim(),
+        contact_number: document.getElementById('reg-phone').value.trim(),
         gender:         selectedGender,
-        plan_id:        selectedPlanId || 0,
+        plan_id:        selectedPlanId || 1,
         google_id:      regPrefill.google_id || '',
-        google_picture: regPrefill.picture   || '',
-        auth_provider:  regPrefill.google_id ? 'google' : 'password',
+        google_picture: regPrefill.picture || '',
+        auth_provider:  regPrefill.google_id ? 'google' : 'password'
       })
     });
     const data = await res.json();
-
     if (data.success || data.pending_approval) {
-      document.getElementById('reg-success-name').textContent =
-        `Thank you, ${name}! Your registration has been received.`;
-      showScreen('view-reg-success');
+      document.getElementById('pending-name-text').textContent = `Thank you, ${document.getElementById('reg-name').value.trim()}!`;
+      showScreen('view-pending');
+      showToast('Registration submitted! Pending staff approval.');
     } else {
-      showToast(data.message || 'Registration failed. Please try again.');
+      showToast(data.message || 'Registration failed.');
     }
   } catch (err) {
-    showToast('Unable to connect to the server. Check your internet connection.');
+    showToast('Failed to submit application. Check connection.');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:8px;"></i> SUBMIT REGISTRATION';
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> SUBMIT REGISTRATION';
   }
 }
 
-// ── TRADITIONAL LOGIN ──────────────────────────────────────────────
-async function submitTraditionalLogin() {
-  const u = document.getElementById('input-username').value.trim();
-  const p = document.getElementById('input-password').value.trim();
-  if (!u || !p) return showToast('Please enter both Member ID/Email and password.');
-
-  const btn = document.getElementById('btn-trad-login');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i>Signing in...';
-
-  try {
-    const res = await fetch(`${API_URL}/member_login.php`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: u, password: p })
-    });
-
-    let data = {};
-    try { data = await res.json(); } catch(e) { data = {}; }
-
-    if (res.status === 429 || data.rate_limited) {
-      const wait = data.wait_seconds ? ` Wait ${Math.ceil(data.wait_seconds/60)} min.` : '';
-      showToast('Too many login attempts.' + wait, 5000);
-      return;
-    }
-    if (res.status === 500 || data.error_code === 'SERVER_ERROR') {
-      showToast('Server issue. Please try again in a moment.', 4000);
-      return;
-    }
-    if (res.status === 503) {
-      showToast('System temporarily unavailable. Try again shortly.', 4000);
-      return;
-    }
-    if (data.account_status === 'Pending') { showScreen('view-pending'); return; }
-    if (data.account_status === 'Rejected') {
-      const el = document.getElementById('rejected-reason');
-      if (el) el.textContent = data.message || 'Your registration was not approved.';
-      showScreen('view-rejected'); return;
-    }
-    if (data.account_status === 'Suspended') { showScreen('view-suspended'); return; }
-    if (data.first_time_setup) {
-      document.getElementById('setup-member-id').value = data.member_id;
-      document.getElementById('setup-member-welcome').textContent =
-        `Welcome, ${data.full_name}! (${data.membership_id})`;
-      showScreen('view-setup-password');
-      return;
-    }
-    if (data.success) {
-      currentMember = data.member;
-      localStorage.setItem('peg_member', JSON.stringify(data.member));
-      localStorage.setItem('peg_token',  data.token);
-      initMainView(data.member.id);
-    } else {
-      showToast(data.message || 'Incorrect Member ID/Email or password.');
-    }
-  } catch (err) {
-    console.error('[LOGIN] Network error:', err);
-    showToast('Unable to connect. Please check your internet connection.');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'SIGN IN';
-  }
-}
-
-
-// ── SETUP PASSWORD ─────────────────────────────────────────────────
-async function submitSetupPassword() {
-  const memberId = document.getElementById('setup-member-id').value;
-  const p1 = document.getElementById('setup-password-input').value.trim();
-  const p2 = document.getElementById('setup-confirm-input').value.trim();
-  if (!p1 || p1.length < 6) return showToast('Password must be at least 6 characters.');
-  if (p1 !== p2) return showToast('Passwords do not match.');
-
-  const btn = document.getElementById('btn-save-setup-pass');
-  btn.disabled = true;
-  btn.textContent = 'Saving...';
-
-  try {
-    const res  = await fetch(`${API_URL}/member_setup_password.php`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ member_id: memberId, password: p1, confirm_password: p2 })
-    });
-    const data = await res.json();
-    if (data.success) {
-      currentMember = data.member;
-      localStorage.setItem('peg_member', JSON.stringify(data.member));
-      localStorage.setItem('peg_token',  data.token);
-      initMainView(data.member.id);
-    } else {
-      showToast(data.message || 'Failed to save password.');
-    }
-  } catch (err) {
-    showToast('Unable to connect to the server.');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'SAVE PASSWORD & LOG IN';
-  }
-}
-
-// ── MAIN DASHBOARD ─────────────────────────────────────────────────
-// Show dashboard instantly with skeleton, then populate from API
+// ── MAIN DASHBOARD INITIALIZATION ──────────────────────────────────
 function initMainView(memberId) {
   showScreen('view-main');
-  // Show skeleton state immediately — user sees the app, not a blank screen
-  showDashboardSkeleton();
-  // Load real data in background
   loadDashboard(memberId);
 }
 
-function showDashboardSkeleton() {
-  // Show loading state on card while API loads
-  const skeletonStyle = 'background: rgba(82,183,136,0.08); border-radius: 8px; color: transparent; min-width: 100px; display: inline-block; animation: pulse 1.2s ease-in-out infinite;';
-  const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
-  setEl('card-name', 'Loading...');
-  setEl('card-code', '••••••••');
-  setEl('card-plan', '—');
-  setEl('card-expiry', '—');
-  const qrEl = document.getElementById('qr-target');
-  if (qrEl) qrEl.innerHTML = '<div style="width:185px;height:185px;background:rgba(82,183,136,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;"><div class="spinner"></div></div>';
-  const attEl = document.getElementById('attendance-container');
-  if (attEl) attEl.innerHTML = '<div style="text-align:center;padding:30px;"><div class="spinner"></div></div>';
-  const payEl = document.getElementById('payments-container');
-  if (payEl) payEl.innerHTML = '<div style="text-align:center;padding:30px;"><div class="spinner"></div></div>';
-}
-
 async function loadDashboard(memberId) {
-  const t0 = performance.now();
   try {
     const token = localStorage.getItem('peg_token');
-    if (!token) { logout(true); return; }
+    if (!token) { showScreen('view-login'); return; }
 
     const res = await fetch(`${API_URL}/member_dashboard.php`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
     if (res.status === 401) {
-      showToast('Session expired. Please log in again.');
+      showToast('Session expired. Please sign in again.');
       logout(true);
       return;
     }
 
     if (!res.ok) {
-      // Server error or temporary issue — DO NOT log out the user!
       console.warn('Dashboard non-200 response:', res.status);
-      showToast('⚠️ Temporary issue loading latest dashboard data. Pull down to refresh.', 4000);
+      showToast('Loading cached pass. Pull down to refresh.', 3000);
       return;
     }
 
     const data = await res.json();
-    if (!data.success) {
-      showToast(data.message || 'Unable to update latest dashboard data.');
-      return;
-    }
+    if (!data.success || !data.member) return;
 
     const m = data.member;
-    currentMember  = m;
+    currentMember = m;
     availablePlans = data.plans || [];
 
-    // Tab 1 — Pass
+    // Populate Tab 1: Pass
     document.getElementById('card-name').textContent   = m.full_name;
     document.getElementById('card-code').textContent   = m.membership_id;
-    document.getElementById('card-plan').textContent   = m.plan_name   || 'No Active Plan';
+    document.getElementById('card-plan').textContent   = m.plan_name || 'No Active Plan';
     document.getElementById('card-expiry').textContent = m.expiry_date || 'No Active Plan';
 
-    // Google avatar on pass card
     if (m.photo) {
-      const avatarWrap = document.getElementById('member-avatar-wrap');
-      avatarWrap.innerHTML = `<img src="${m.photo}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';" />`;
+      document.getElementById('member-avatar-wrap').innerHTML = `<img src="${m.photo}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';" />`;
+      document.getElementById('prof-avatar-wrap').innerHTML   = `<img src="${m.photo}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';" />`;
     }
 
-    const pill    = document.getElementById('card-status-pill');
     const isExpired = !m.expiry_date || new Date(m.expiry_date) < new Date();
+    const pill = document.getElementById('card-status-pill');
     if (isExpired || m.status !== 'Active') {
-      pill.textContent = 'EXPIRED / INACTIVE';
+      pill.textContent = '● INACTIVE / EXPIRED';
       pill.className   = 'status-pill pill-expired';
     } else {
-      pill.textContent = '● ACTIVE MEMBER';
+      pill.textContent = '● ACTIVE MEMBER 🟢';
       pill.className   = 'status-pill pill-active';
     }
 
     renderQRCode(data.qr_token || m.membership_id);
+    startQRCountdown();
 
-    // Tab 2 — Attendance
+    // Populate Tab 2: Attendance
     renderAttendance(data.attendance || []);
 
-    // Tab 3 — Payments
+    // Populate Tab 3: Payments
     renderPayments(data.payments || []);
     populateRenewPlansSelect(availablePlans);
 
-    // Load plans for registration wizard too
-    if (availablePlans.length > 0) {
-      const regContainer = document.getElementById('plans-container-reg');
-      if (regContainer) renderPlanCards(availablePlans, regContainer);
+    // Populate Tab 4: Redesigned Profile
+    document.getElementById('prof-name').textContent           = m.full_name;
+    document.getElementById('prof-code').textContent           = m.membership_id;
+    document.getElementById('prof-full-name').textContent      = m.full_name;
+    document.getElementById('prof-email').textContent          = m.email;
+    document.getElementById('prof-phone').textContent          = m.contact_number || 'Not provided';
+    document.getElementById('prof-plan-name').textContent      = m.plan_name || 'No Plan';
+    document.getElementById('prof-valid-until').textContent    = m.expiry_date || 'N/A';
+
+    // Days Remaining Progress
+    let daysRemaining = 0;
+    if (m.expiry_date) {
+      daysRemaining = Math.max(0, Math.ceil((new Date(m.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)));
     }
+    document.getElementById('prof-days-remaining').textContent = `${daysRemaining} Days Remaining`;
+    const pct = Math.min(100, Math.max(5, (daysRemaining / 30) * 100));
+    document.getElementById('prof-days-bar-fill').style.width = `${pct}%`;
 
-    // Tab 4 — Profile
-    document.getElementById('prof-name').textContent   = m.full_name;
-    document.getElementById('prof-code').textContent   = m.membership_id;
-    document.getElementById('prof-email').textContent  = m.email;
-    document.getElementById('prof-phone').textContent  = m.contact_number || 'N/A';
-    document.getElementById('prof-memid').textContent  = m.membership_id;
-
-    if (m.photo) {
-      const profWrap = document.getElementById('prof-avatar-wrap');
-      profWrap.innerHTML = `<img src="${m.photo}" style="width:100%;height:100%;object-fit:cover;" />`;
-    }
-
-    const authBadge = document.getElementById('prof-auth-badge');
-    if (m.auth_provider === 'google' || m.auth_provider === 'both') {
-      authBadge.innerHTML = '<i class="fa-brands fa-google" style="margin-right:4px;"></i> Google Account';
-      authBadge.style.display = 'inline-block';
-    } else {
-      authBadge.style.display = 'none';
-    }
-
-    // Load notifications badge
     loadNotificationsBadge();
 
   } catch (e) {
-    console.error('Dashboard error:', e);
+    console.error('Dashboard load error:', e);
   }
 }
 
+// ── QR RENDERING & ROTATING ANIMATION ──────────────────────────────
 function renderQRCode(text) {
   const container = document.getElementById('qr-target');
   if (!container) return;
@@ -1711,167 +1513,104 @@ function renderQRCode(text) {
   if (qrInstance) { try { qrInstance.clear(); } catch (e) {} }
   qrInstance = new QRCode(container, {
     text:         text,
-    width:        185,
-    height:       185,
-    colorDark:    '#091c14',
+    width:        180,
+    height:       180,
+    colorDark:    '#081c15',
     colorLight:   '#ffffff',
     correctLevel: QRCode.CorrectLevel.M
   });
 }
 
+function startQRCountdown() {
+  clearInterval(qrCountdownTimer);
+  const bar = document.getElementById('qr-countdown-fill');
+  let seconds = 15;
+  qrCountdownTimer = setInterval(() => {
+    seconds--;
+    if (bar) bar.style.width = `${(seconds / 15) * 100}%`;
+    if (seconds <= 0) {
+      seconds = 15;
+      if (currentMember) loadDashboard(currentMember.id);
+    }
+  }, 1000);
+}
+
+// ── ATTENDANCE TAB ─────────────────────────────────────────────────
 function renderAttendance(list) {
   const c = document.getElementById('attendance-container');
+  if (!c) return;
   c.innerHTML = '';
+
+  // Stats
+  const now = new Date();
+  const curMonth = now.getMonth();
+  const mCount = list.filter(a => new Date(a.date).getMonth() === curMonth).length;
+  document.getElementById('att-month-count').textContent = mCount;
+  document.getElementById('att-week-count').textContent  = Math.min(list.length, 5);
+
   if (!list.length) {
-    const msg = document.createElement('p');
-    msg.style.cssText = 'color: var(--gym-muted); text-align:center; padding:30px 0;';
-    msg.textContent   = 'No attendance records yet.';
-    c.appendChild(msg);
+    c.innerHTML = `
+      <div style="text-align:center; padding:40px 20px; color:var(--gym-muted);">
+        <i class="fa-solid fa-calendar-xmark" style="font-size:2.4rem; opacity:0.4; margin-bottom:10px; display:block;"></i>
+        No attendance recorded yet. Scan your pass at the gym scanner!
+      </div>`;
     return;
   }
+
   list.forEach(a => {
     const card = document.createElement('div');
-    card.className       = 'dark-card';
-    card.style.cssText   = 'padding:14px; margin-bottom:10px;';
-    const row            = document.createElement('div');
-    row.style.cssText    = 'display:flex; justify-content:space-between;';
-    const dateEl         = document.createElement('strong');
-    dateEl.style.color   = '#fff';
-    dateEl.textContent   = '📅 ' + (a.date || '--');
-    const pill           = document.createElement('span');
-    pill.className       = 'status-pill pill-active';
-    pill.textContent     = a.status || 'Present';
-    row.appendChild(dateEl);
-    row.appendChild(pill);
-    const times          = document.createElement('p');
-    times.style.cssText  = 'color: var(--gym-muted); font-size:0.83rem; margin:6px 0 0;';
-    times.textContent    = `Time In: ${a.time_in || '--'} | Time Out: ${a.time_out || '--'}`;
-    card.appendChild(row);
-    card.appendChild(times);
+    card.className = 'dark-card';
+    card.style.cssText = 'padding:14px; margin-bottom:10px;';
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <strong style="color:#fff; font-size:0.92rem;">📅 ${a.date || '--'}</strong>
+        <span class="status-pill pill-active" style="padding:2px 10px; font-size:0.75rem;">${a.status || 'Present'}</span>
+      </div>
+      <p style="color:var(--gym-muted); font-size:0.8rem; margin:6px 0 0;">
+        Time In: <strong style="color:#fff;">${a.time_in || '--'}</strong> | Time Out: <strong style="color:#fff;">${a.time_out || '--'}</strong>
+      </p>
+    `;
     c.appendChild(card);
   });
 }
 
+// ── PAYMENTS TAB ───────────────────────────────────────────────────
 function renderPayments(list) {
   const c = document.getElementById('payments-container');
+  if (!c) return;
   c.innerHTML = '';
+
   if (!list.length) {
-    const msg = document.createElement('p');
-    msg.style.cssText = 'color: var(--gym-muted); text-align:center; padding:30px 0;';
-    msg.textContent   = 'No payment transactions recorded.';
-    c.appendChild(msg);
+    c.innerHTML = `
+      <div style="text-align:center; padding:30px 20px; color:var(--gym-muted);">
+        <i class="fa-solid fa-receipt" style="font-size:2rem; opacity:0.4; margin-bottom:8px; display:block;"></i>
+        No payment transactions recorded yet.
+      </div>`;
     return;
   }
+
   list.forEach(p => {
-    const card          = document.createElement('div');
-    card.className      = 'dark-card';
-    card.style.cssText  = 'padding:14px; margin-bottom:10px;';
-    const row           = document.createElement('div');
-    row.style.cssText   = 'display:flex; justify-content:space-between;';
-    const typeEl        = document.createElement('strong');
-    typeEl.style.color  = 'var(--gym-light)';
-    typeEl.textContent  = p.payment_type || 'Membership Fee';
-    const amountEl      = document.createElement('strong');
-    amountEl.style.color= '#fff';
-    amountEl.textContent= '₱' + parseFloat(p.amount).toFixed(2);
-    row.appendChild(typeEl);
-    row.appendChild(amountEl);
-    const details       = document.createElement('p');
-    details.style.cssText = 'color: var(--gym-muted); font-size:0.82rem; margin:6px 0 0;';
-    details.textContent   = `Date: ${p.payment_date || '--'} • Method: ${p.payment_method || 'Cash'}`;
-    card.appendChild(row);
-    card.appendChild(details);
+    const card = document.createElement('div');
+    card.className = 'dark-card';
+    card.style.cssText = 'padding:14px; margin-bottom:10px;';
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-weight:800; color:#fff; font-size:0.95rem;">${p.payment_type || 'Membership Plan'}</span>
+        <strong style="color:var(--gym-mid); font-size:1.05rem;">₱${parseFloat(p.amount || 0).toFixed(2)}</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:0.78rem; color:var(--gym-muted);">
+        <span>${p.payment_method || 'Online'} &bull; Ref: ${p.reference_no || 'N/A'}</span>
+        <span>${p.payment_date || '--'}</span>
+      </div>
+    `;
     c.appendChild(card);
   });
-}
-
-// ── NOTIFICATIONS ──────────────────────────────────────────────────
-async function loadNotificationsBadge() {
-  try {
-    const token = localStorage.getItem('peg_token');
-    if (!token) return;
-    const res = await fetch(`${API_URL}/get_notifications.php`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!res.ok) return;
-    const data  = await res.json();
-    const unread = data.unread || 0;
-    const badge  = document.getElementById('notif-badge');
-    if (badge) {
-      badge.textContent    = unread > 9 ? '9+' : unread;
-      badge.style.display  = unread > 0 ? 'flex' : 'none';
-    }
-  } catch (e) {}
-}
-
-function openNotifPanel() {
-  document.getElementById('notif-overlay').classList.add('open');
-  document.getElementById('notif-panel').classList.add('open');
-  loadNotifications();
-}
-function closeNotifPanel() {
-  document.getElementById('notif-overlay').classList.remove('open');
-  document.getElementById('notif-panel').classList.remove('open');
-}
-
-async function loadNotifications() {
-  const list = document.getElementById('notif-list');
-  list.innerHTML = '<div style="text-align:center; padding:40px 20px; color: var(--gym-muted); font-size:0.85rem;"><div class="spinner" style="margin-bottom:12px;"></div>Loading...</div>';
-
-  try {
-    const token = localStorage.getItem('peg_token');
-    if (!token) return;
-    const res = await fetch(`${API_URL}/get_notifications.php`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await res.json();
-    const notifs = data.notifications || [];
-    const unread = data.unread || 0;
-
-    document.getElementById('notif-unread-count').textContent = `${unread} unread`;
-    const badge = document.getElementById('notif-badge');
-    if (badge) {
-      badge.textContent   = unread > 9 ? '9+' : unread;
-      badge.style.display = unread > 0 ? 'flex' : 'none';
-    }
-
-    if (!notifs.length) {
-      list.innerHTML = '<div style="text-align:center; padding:50px 20px; color: var(--gym-muted); font-size:0.85rem;"><i class="fa-solid fa-bell-slash" style="font-size:2rem; margin-bottom:10px; display:block; opacity:0.4;"></i>No notifications yet.</div>';
-      return;
-    }
-
-    list.innerHTML = '';
-    notifs.forEach(n => {
-      const item = document.createElement('div');
-      item.className = `notif-item ${n.unread ? 'unread' : ''}`;
-      const typeClass = `notif-type-${n.type || 'info'}`;
-      item.innerHTML = `
-        <div class="notif-item-title ${typeClass}">
-          <i class="fa-solid ${n.icon || 'fa-bell'}" style="margin-right:6px;"></i>${n.title || ''}
-        </div>
-        <div class="notif-item-msg">${n.message || ''}</div>
-        <div class="notif-item-time">${n.time || ''}</div>`;
-      list.appendChild(item);
-    });
-  } catch (e) {
-    list.innerHTML = '<div style="text-align:center; padding:40px 20px; color: var(--gym-muted); font-size:0.85rem;">Failed to load notifications.</div>';
-  }
-}
-
-async function markAllRead() {
-  try {
-    const token = localStorage.getItem('peg_token');
-    if (!token) return;
-    await fetch(`${API_URL}/mark_notifications_read.php`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ all: true })
-    });
-    loadNotifications();
-  } catch (e) {}
 }
 
 // ── RENEWAL MODAL ──────────────────────────────────────────────────
+function openRenewalModal()  { document.getElementById('modal-renewal').isOpen = true; }
+function closeRenewalModal() { document.getElementById('modal-renewal').isOpen = false; }
+
 function populateRenewPlansSelect(plans) {
   const s = document.getElementById('renew-plan-select');
   if (!s) return;
@@ -1880,19 +1619,9 @@ function populateRenewPlansSelect(plans) {
   ).join('');
 }
 
-function openRenewalModal()  { document.getElementById('modal-renewal').isOpen = true; }
-function closeRenewalModal() { document.getElementById('modal-renewal').isOpen = false; }
-
 function handleRenewMethodChange(val) {
   const wrap = document.getElementById('renew-manual-ref-wrap');
-  const btn  = document.getElementById('btn-proceed-renewal');
-  if (val === 'Cash') {
-    wrap.style.display = 'block';
-    btn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i> SUBMIT CASH REQUEST';
-  } else {
-    wrap.style.display = 'none';
-    btn.innerHTML = '<i class="fa-solid fa-bolt" style="margin-right:6px;"></i> PROCEED TO PAYMENT';
-  }
+  if (wrap) wrap.style.display = (val === 'Cash') ? 'block' : 'none';
 }
 
 function backToRenewalForm() {
@@ -1909,27 +1638,21 @@ async function submitRenewal() {
 
   if (method === 'Cash') {
     const token = localStorage.getItem('peg_token');
-    const btn   = document.getElementById('btn-proceed-renewal');
-    btn.disabled = true;
     try {
-      const res  = await fetch(`${API_URL}/member_renew.php`, {
+      const res = await fetch(`${API_URL}/member_renew.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ plan_id: planId, payment_method: method, reference_no: ref })
       });
       const data = await res.json();
-      showToast(data.message || 'Renewal request submitted.');
-      if (data.success) { closeRenewalModal(); refreshDashboard(); }
-    } catch { showToast('Failed to submit renewal request.'); }
-    finally { btn.disabled = false; }
+      showToast(data.message || 'Cash renewal request submitted.');
+      closeRenewalModal();
+      refreshDashboard();
+    } catch { showToast('Unable to submit renewal.'); }
     return;
   }
 
-  // Online payment
-  const btn = document.getElementById('btn-proceed-renewal');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
-
+  // Online Checkout Sheet
   try {
     const token = localStorage.getItem('peg_token');
     const res   = await fetch(`${API_URL}/create_payment_checkout.php`, {
@@ -1938,43 +1661,29 @@ async function submitRenewal() {
       body: JSON.stringify({ plan_id: planId, payment_method: method })
     });
     const data = await res.json();
-
     if (data.success && data.checkout) {
       currentCheckoutSession = data.checkout;
-      document.getElementById('checkout-method-badge').textContent       = `${method.toUpperCase()} AUTO-PAY`;
-      document.getElementById('checkout-ref-text').textContent           = data.checkout.ref_code;
-      document.getElementById('checkout-plan-name').textContent          = `${data.checkout.plan_name} (${data.checkout.duration})`;
-      document.getElementById('checkout-amount-display').textContent     = data.checkout.amount_formatted;
+      document.getElementById('checkout-method-badge').textContent   = `${method.toUpperCase()} AUTO-PAY`;
+      document.getElementById('checkout-plan-name').textContent      = `${data.checkout.plan_name} (${data.checkout.duration})`;
+      document.getElementById('checkout-amount-display').textContent = data.checkout.amount_formatted;
 
       const qrBox = document.getElementById('checkout-qrcode-box');
       qrBox.innerHTML = '';
-      new QRCode(qrBox, {
-        text: data.checkout.qr_data, width: 175, height: 175,
-        colorDark: '#091c14', colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-      });
+      new QRCode(qrBox, { text: data.checkout.qr_data, width: 175, height: 175, colorDark: '#081c15', colorLight: '#ffffff' });
 
       document.getElementById('renewal-step-form').style.display     = 'none';
       document.getElementById('renewal-step-checkout').style.display = 'block';
     } else {
-      showToast(data.message || 'Could not start payment checkout.');
+      showToast(data.message || 'Could not initiate checkout.');
     }
-  } catch { showToast('Could not connect to payment gateway.'); }
-  finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-bolt" style="margin-right:6px;"></i> PROCEED TO PAYMENT';
-  }
+  } catch { showToast('Payment connection error.'); }
 }
 
 async function executeAutoActivation() {
   if (!currentCheckoutSession) return;
-  const btn = document.getElementById('btn-confirm-auto-pay');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
-
+  const token = localStorage.getItem('peg_token');
   try {
-    const token = localStorage.getItem('peg_token');
-    const res   = await fetch(`${API_URL}/confirm_auto_payment.php`, {
+    const res = await fetch(`${API_URL}/confirm_auto_payment.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
@@ -1984,38 +1693,149 @@ async function executeAutoActivation() {
       })
     });
     const data = await res.json();
-
     if (data.success) {
-      showToast('🎉 Membership activated successfully!');
+      showToast('🎉 Membership pass activated successfully!');
       closeRenewalModal();
       backToRenewalForm();
       refreshDashboard();
-    } else if (data.pending) {
-      showToast(data.message || 'Payment is being processed. Please wait.');
     } else {
-      showToast(data.message || 'Payment activation failed.');
+      showToast(data.message || 'Payment processing. Please wait.');
     }
-  } catch { showToast('Error connecting to gym server.'); }
-  finally {
+  } catch { showToast('Server communication error.'); }
+}
+
+// ── EDIT PROFILE MODAL ─────────────────────────────────────────────
+function openEditProfileModal() {
+  if (!currentMember) return;
+  document.getElementById('edit-full-name').value = currentMember.full_name || '';
+  document.getElementById('edit-phone').value     = currentMember.contact_number || '';
+  document.getElementById('edit-memid').value     = currentMember.membership_id || '';
+  document.getElementById('modal-edit-profile').isOpen = true;
+}
+
+function closeEditProfileModal() {
+  document.getElementById('modal-edit-profile').isOpen = false;
+}
+
+async function saveProfileChanges() {
+  const name  = document.getElementById('edit-full-name').value.trim();
+  const phone = document.getElementById('edit-phone').value.trim();
+  if (!name) return showToast('Full name is required.');
+  if (phone && !/^09[0-9]{9}$/.test(phone)) return showToast('Contact number must be 11 digits starting with 09.');
+
+  const btn = document.getElementById('btn-save-profile');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Saving...';
+
+  try {
+    const token = localStorage.getItem('peg_token');
+    const res = await fetch(`${API_URL}/member_profile.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ full_name: name, contact_number: phone })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Profile updated successfully!');
+      closeEditProfileModal();
+      if (currentMember) loadDashboard(currentMember.id);
+    } else {
+      showToast(data.message || 'Failed to update profile.');
+    }
+  } catch {
+    showToast('Failed to save profile. Check connection.');
+  } finally {
     btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-circle-check" style="margin-right:6px;"></i> COMPLETE & ACTIVATE PASS';
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> SAVE CHANGES';
   }
 }
 
-// ── LOGOUT ─────────────────────────────────────────────────────────
+// ── NOTIFICATIONS PANEL ────────────────────────────────────────────
+async function loadNotificationsBadge() {
+  try {
+    const token = localStorage.getItem('peg_token');
+    if (!token) return;
+    const res = await fetch(`${API_URL}/get_notifications.php`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (!res.ok) return;
+    const data  = await res.json();
+    const unread = data.unread || 0;
+    const badge  = document.getElementById('notif-badge');
+    if (badge) {
+      badge.textContent   = unread > 9 ? '9+' : unread;
+      badge.style.display = unread > 0 ? 'inline-block' : 'none';
+    }
+  } catch (e) {}
+}
+
+function openNotifPanel() {
+  document.getElementById('notif-overlay').classList.add('open');
+  document.getElementById('notif-panel').classList.add('open');
+  loadNotifications();
+}
+function closeNotifPanel() {
+  document.getElementById('notif-overlay').classList.remove('open');
+  document.getElementById('notif-panel').classList.remove('open');
+}
+
+async function loadNotifications() {
+  const list = document.getElementById('notif-list');
+  list.innerHTML = '<div style="text-align:center; padding:30px; color:var(--gym-muted);"><div class="spinner"></div></div>';
+  try {
+    const token = localStorage.getItem('peg_token');
+    const res   = await fetch(`${API_URL}/get_notifications.php`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const data  = await res.json();
+    const notifs = data.notifications || [];
+    document.getElementById('notif-unread-count').textContent = `${data.unread || 0} unread`;
+
+    if (!notifs.length) {
+      list.innerHTML = '<div style="text-align:center; padding:40px 20px; color:var(--gym-muted);"><i class="fa-solid fa-bell-slash" style="font-size:2rem; opacity:0.4; margin-bottom:8px; display:block;"></i>No notifications yet.</div>';
+      return;
+    }
+
+    list.innerHTML = notifs.map(n => `
+      <div style="background:rgba(15,45,32,0.7); border-radius:12px; padding:12px 14px; margin-bottom:10px; border:1px solid rgba(82,183,136,0.18);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong style="color:#fff; font-size:0.88rem;"><i class="fa-solid ${n.icon || 'fa-bell'}" style="color:var(--gym-mid); margin-right:6px;"></i>${n.title}</strong>
+          <span style="color:var(--gym-muted); font-size:0.72rem;">${n.time}</span>
+        </div>
+        <p style="color:var(--gym-pale); font-size:0.8rem; margin:6px 0 0; line-height:1.4;">${n.message}</p>
+      </div>
+    `).join('');
+  } catch (e) {
+    list.innerHTML = '<div style="text-align:center; padding:30px; color:var(--gym-muted);">Unable to load notifications.</div>';
+  }
+}
+
+async function markAllRead() {
+  try {
+    const token = localStorage.getItem('peg_token');
+    if (!token) return;
+    await fetch(`${API_URL}/mark_notifications_read.php`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    loadNotifications();
+    loadNotificationsBadge();
+  } catch (e) {}
+}
+
+// ── LOGOUT & SIGN OUT CONFIRMATION ─────────────────────────────────
+function confirmSignOutDialog() {
+  if (confirm("Sign Out?\n\nAre you sure you want to sign out of your Palma's Elite Gym account?")) {
+    logout(true);
+  }
+}
+
 function logout(silent = false) {
-  if (!silent && !confirm('Are you sure you want to sign out?')) return;
-  clearInterval(window._qrTimer);
+  clearInterval(qrCountdownTimer);
   localStorage.removeItem('peg_member');
   localStorage.removeItem('peg_token');
   currentMember = null;
-
-  // Sign out of Google too
   if (typeof google !== 'undefined' && google.accounts) {
     try { google.accounts.id.disableAutoSelect(); } catch (e) {}
   }
-
   showScreen('view-login');
+  if (!silent) showToast('Signed out successfully.');
 }
 
 async function refreshDashboard() {
@@ -2024,37 +1844,35 @@ async function refreshDashboard() {
   if (ref) ref.complete();
 }
 
-// ── STARTUP: Auto-login if token exists ───────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
-  // Initialize all screens hidden except login
-  showScreen('view-login');
+// ── STARTUP AUTHENTICATION INITIALIZATION ─────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  showScreen('view-splash');
 
+  const savedToken = localStorage.getItem('peg_token');
   const savedMember = localStorage.getItem('peg_member');
-  const savedToken  = localStorage.getItem('peg_token');
 
-  if (savedMember && savedToken) {
+  if (savedToken && savedMember) {
     try {
       currentMember = JSON.parse(savedMember);
       initMainView(currentMember.id);
     } catch (e) {
-      localStorage.removeItem('peg_member');
-      localStorage.removeItem('peg_token');
       showScreen('view-login');
     }
+  } else {
+    // Brief branded splash delay then show login
+    setTimeout(() => showScreen('view-login'), 500);
   }
 
-  // Wire pull-to-refresh
-  const refresher = document.getElementById('refresher-pass');
-  if (refresher) refresher.addEventListener('ionRefresh', refreshDashboard);
-
-  // Initialize Google Sign-In if Client ID is set
+  // Initialize Google Sign-In SDK
   if (GOOGLE_CLIENT_ID && typeof google !== 'undefined') {
-    google.accounts.id.initialize({
-      client_id:            GOOGLE_CLIENT_ID,
-      callback:             handleGoogleCredential,
-      auto_select:          false,
-      cancel_on_tap_outside:true,
-    });
+    try {
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+    } catch (e) {}
   }
 });
 </script>
