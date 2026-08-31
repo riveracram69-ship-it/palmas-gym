@@ -3,75 +3,306 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Palma's Elite Gym - Mobile Member App</title>
+  <title>Palma's Elite Gym — Member App</title>
+  <meta name="description" content="Palma's Elite Gym Membership & Attendance Management Mobile App" />
 
   <!-- Ionic CSS & JS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core/css/ionic.bundle.css" />
   <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js"></script>
   <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.js"></script>
-  
-  <!-- FontAwesome Icons -->
+
+  <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <!-- Google Fonts: Inter & Outfit -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <!-- QRCode.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Google Sign-In (GSI) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
     :root {
+      --gym-dark:       #091c14;
+      --gym-darker:     #060f0a;
+      --gym-card:       #0f2d20;
+      --gym-green:      #2d6a4f;
+      --gym-mid:        #52b788;
+      --gym-light:      #74c69d;
+      --gym-lighter:    #95d5b2;
+      --gym-pale:       #d8f3dc;
+      --gym-text:       #f8f9fa;
+      --gym-muted:      #95d5b2;
       --ion-font-family: 'Inter', sans-serif;
-      --ion-color-primary: #2d6a4f;
-      --ion-color-primary-rgb: 45, 106, 79;
-      --ion-color-primary-contrast: #ffffff;
-      --ion-background-color: #091c14;
-      --ion-text-color: #f8f9fa;
+      --ion-background-color: var(--gym-dark);
+      --ion-text-color: var(--gym-text);
+      --ion-color-primary: var(--gym-green);
       --ion-tab-bar-background: #0d281e;
-      --ion-tab-bar-color: #74c69d;
-      --ion-tab-bar-color-selected: #52b788;
+      --ion-tab-bar-color: var(--gym-light);
+      --ion-tab-bar-color-selected: var(--gym-mid);
       --ion-toolbar-background: #0f2d20;
       --ion-toolbar-color: #ffffff;
     }
 
+    * { box-sizing: border-box; }
+
     body {
       font-family: 'Inter', sans-serif;
-      background-color: #091c14;
-      color: #f8f9fa;
+      background-color: var(--gym-dark);
+      color: var(--gym-text);
       user-select: none;
+      margin: 0;
+      padding: 0;
     }
 
-    h1, h2, h3, h4, .brand-font {
-      font-family: 'Outfit', sans-serif;
+    h1, h2, h3, h4, h5, .brand-font { font-family: 'Outfit', sans-serif; }
+
+    /* ─── FULL-SCREEN VIEWS ────────────────────────────────────────── */
+    .screen {
+      position: fixed;
+      inset: 0;
+      overflow-y: auto;
+      background: var(--gym-dark);
+      z-index: 10;
     }
 
-    /* Gradient Brand Cards */
+    /* ─── LOGIN SCREEN ─────────────────────────────────────────────── */
+    .login-bg {
+      min-height: 100vh;
+      background: radial-gradient(ellipse at top, #1b4332 0%, var(--gym-dark) 65%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 28px 60px;
+    }
+
+    .gym-logo-wrap {
+      width: 88px; height: 88px;
+      background: linear-gradient(135deg, #1b4332, #0f2d20);
+      border-radius: 24px;
+      margin: 0 auto 18px;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid var(--gym-mid);
+      box-shadow: 0 0 40px rgba(82, 183, 136, 0.35), 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    .login-card {
+      width: 100%; max-width: 380px;
+      background: rgba(15, 45, 32, 0.7);
+      border: 1px solid rgba(82, 183, 136, 0.2);
+      border-radius: 24px;
+      padding: 28px 24px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      margin-top: 28px;
+    }
+
+    /* Google Sign-In Button */
+    .btn-google {
+      width: 100%;
+      background: #ffffff;
+      color: #1f1f1f;
+      border: none;
+      border-radius: 14px;
+      padding: 15px 20px;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-google:active { transform: scale(0.97); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    .btn-google img { width: 22px; height: 22px; }
+
+    /* ─── STATUS SCREENS (Pending / Rejected / Suspended) ────────── */
+    .status-screen {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 28px;
+      text-align: center;
+    }
+
+    .status-icon-wrap {
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.4rem;
+      margin: 0 auto 24px;
+    }
+    .status-icon-pending  { background: rgba(255,193,7,0.15); border: 2px solid #ffc107; color: #ffc107; }
+    .status-icon-rejected { background: rgba(220,53,69,0.15);  border: 2px solid #dc3545; color: #dc3545; }
+    .status-icon-suspended{ background: rgba(108,117,125,0.15);border: 2px solid #6c757d; color: #6c757d; }
+
+    /* ─── REGISTRATION WIZARD ─────────────────────────────────────── */
+    .wizard-screen {
+      min-height: 100vh;
+      background: radial-gradient(ellipse at top, #1b4332 0%, var(--gym-dark) 65%);
+      padding: 0;
+    }
+
+    .wizard-header {
+      padding: 20px 20px 0;
+      position: sticky; top: 0; z-index: 5;
+      background: linear-gradient(to bottom, #0f2d20 80%, transparent);
+    }
+
+    .step-progress {
+      display: flex; align-items: center; gap: 0;
+      margin: 12px 0 20px;
+    }
+    .step-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: rgba(82,183,136,0.15);
+      border: 2px solid rgba(82,183,136,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: var(--gym-muted);
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+    .step-dot.active  { background: var(--gym-green); border-color: var(--gym-mid); color: #fff; }
+    .step-dot.done    { background: var(--gym-mid);   border-color: var(--gym-mid); color: #fff; }
+    .step-line {
+      flex: 1; height: 2px;
+      background: rgba(82,183,136,0.2);
+      transition: background 0.3s;
+    }
+    .step-line.done { background: var(--gym-mid); }
+
+    .wizard-body { padding: 0 20px 40px; }
+
+    /* ─── FORM INPUTS ──────────────────────────────────────────────── */
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      color: var(--gym-lighter);
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 7px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .form-input {
+      width: 100%;
+      background: rgba(15, 45, 32, 0.85);
+      border: 1px solid rgba(82, 183, 136, 0.25);
+      border-radius: 14px;
+      padding: 14px 16px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: var(--gym-mid); }
+    .form-input::placeholder { color: rgba(149, 213, 178, 0.4); }
+
+    .gender-group {
+      display: flex; gap: 10px;
+    }
+    .gender-btn {
+      flex: 1;
+      padding: 12px 8px;
+      border-radius: 12px;
+      border: 2px solid rgba(82,183,136,0.2);
+      background: rgba(15,45,32,0.6);
+      color: var(--gym-muted);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .gender-btn.selected {
+      background: var(--gym-green);
+      border-color: var(--gym-mid);
+      color: #fff;
+    }
+
+    /* ─── PLAN CARDS ───────────────────────────────────────────────── */
+    .plan-card {
+      background: #0f2d20;
+      border: 2px solid rgba(82,183,136,0.15);
+      border-radius: 18px;
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .plan-card:active { transform: scale(0.98); }
+    .plan-card.selected {
+      background: rgba(45,106,79,0.5);
+      border-color: var(--gym-mid);
+      box-shadow: 0 0 20px rgba(82,183,136,0.2);
+    }
+    .plan-check {
+      position: absolute; top: 16px; right: 16px;
+      width: 26px; height: 26px; border-radius: 50%;
+      background: rgba(82,183,136,0.1);
+      border: 2px solid rgba(82,183,136,0.3);
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      font-size: 0.75rem; color: transparent;
+    }
+    .plan-card.selected .plan-check {
+      background: var(--gym-mid);
+      border-color: var(--gym-mid);
+      color: var(--gym-dark);
+    }
+    .plan-name { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.1rem; color: #fff; margin: 0 0 4px; }
+    .plan-price { font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 1.5rem; color: var(--gym-light); margin: 0; }
+    .plan-duration { color: var(--gym-muted); font-size: 0.82rem; margin: 4px 0 0; }
+
+    /* ─── REVIEW STEP ─────────────────────────────────────────────── */
+    .review-section {
+      background: #0f2d20;
+      border: 1px solid rgba(82,183,136,0.15);
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .review-section h4 {
+      color: var(--gym-lighter); font-size: 0.75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      margin: 0 0 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(82,183,136,0.15);
+    }
+    .review-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+    }
+    .review-row:last-child { margin-bottom: 0; }
+    .review-label { color: var(--gym-muted); font-size: 0.85rem; }
+    .review-value { color: #fff; font-weight: 600; font-size: 0.9rem; text-align: right; max-width: 60%; }
+
+    /* ─── MEMBERSHIP CARD ──────────────────────────────────────────── */
     .membership-card {
       background: linear-gradient(135deg, #1b4332 0%, #081c15 100%);
-      border: 1px solid rgba(82, 183, 136, 0.3);
-      border-radius: 20px;
+      border: 1px solid rgba(82,183,136,0.3);
+      border-radius: 22px;
       padding: 22px;
       margin: 16px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
-      position: relative;
-      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+      position: relative; overflow: hidden;
     }
-
     .membership-card::before {
       content: '';
-      position: absolute;
-      top: -50%;
-      right: -50%;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle, rgba(116, 198, 157, 0.15) 0%, transparent 70%);
+      position: absolute; top: -50%; right: -50%;
+      width: 100%; height: 100%;
+      background: radial-gradient(circle, rgba(116,198,157,0.12) 0%, transparent 70%);
       pointer-events: none;
     }
 
     .qr-box {
       background: #ffffff;
-      padding: 14px;
-      border-radius: 16px;
+      padding: 14px; border-radius: 16px;
       display: inline-block;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
       margin: 14px auto;
     }
 
@@ -84,1023 +315,1696 @@
       letter-spacing: 0.5px;
       text-transform: uppercase;
     }
-    .status-active { background: rgba(82, 183, 136, 0.25); color: #74c69d; border: 1px solid #52b788; }
-    .status-expired { background: rgba(220, 53, 69, 0.25); color: #ff85a1; border: 1px solid #dc3545; }
+    .pill-active   { background: rgba(82,183,136,0.2); color: var(--gym-light); border: 1px solid var(--gym-mid); }
+    .pill-expired  { background: rgba(220,53,69,0.2);  color: #ff85a1;          border: 1px solid #dc3545; }
+    .pill-inactive { background: rgba(108,117,125,0.2);color: #adb5bd;          border: 1px solid #6c757d; }
 
-    .timer-bar-wrap {
-      width: 180px;
-      height: 4px;
-      background: rgba(255,255,255,0.15);
-      border-radius: 4px;
-      margin: 6px auto 0 auto;
-      overflow: hidden;
-    }
-    .timer-bar {
-      height: 100%;
-      background: #52b788;
-      width: 100%;
-      transition: width 1s linear;
-    }
-
+    /* ─── DARK CARD ────────────────────────────────────────────────── */
     .dark-card {
       background: #0f2d20;
       border-radius: 14px;
-      border: 1px solid rgba(82, 183, 136, 0.15);
+      border: 1px solid rgba(82,183,136,0.12);
       margin-bottom: 12px;
     }
 
-    .login-container {
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 28px 20px;
-      background: radial-gradient(circle at top, #1b4332 0%, #091c14 80%);
+    /* ─── PRIMARY BUTTON ───────────────────────────────────────────── */
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, #2d6a4f, #1b4332);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      box-shadow: 0 6px 20px rgba(45,106,79,0.4);
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-outline {
+      width: 100%;
+      background: transparent;
+      color: var(--gym-light);
+      border: 2px solid rgba(82,183,136,0.4);
+      border-radius: 14px;
+      padding: 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-outline:active { background: rgba(82,183,136,0.08); }
+
+    /* ─── NOTIFICATION BELL ────────────────────────────────────────── */
+    .notif-bell-btn {
+      position: relative;
+      background: rgba(82,183,136,0.1);
+      border: none;
+      border-radius: 50%;
+      width: 38px; height: 38px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: var(--gym-light);
+      font-size: 1rem;
+    }
+    .notif-badge {
+      position: absolute; top: -3px; right: -3px;
+      background: #dc3545;
+      color: #fff;
+      border-radius: 50%;
+      width: 18px; height: 18px;
+      font-size: 0.6rem;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      display: none;
     }
 
+    /* ─── NOTIFICATION PANEL ───────────────────────────────────────── */
+    .notif-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .notif-overlay.open { opacity: 1; pointer-events: all; }
+
+    .notif-panel {
+      position: fixed; top: 0; right: -100%;
+      width: min(340px, 90vw);
+      height: 100vh;
+      background: #0a1f14;
+      border-left: 1px solid rgba(82,183,136,0.2);
+      z-index: 101;
+      overflow-y: auto;
+      transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+      display: flex; flex-direction: column;
+    }
+    .notif-panel.open { right: 0; }
+
+    .notif-panel-header {
+      padding: 52px 20px 16px;
+      border-bottom: 1px solid rgba(82,183,136,0.15);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .notif-item {
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(82,183,136,0.08);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .notif-item:active { background: rgba(82,183,136,0.07); }
+    .notif-item.unread { border-left: 3px solid var(--gym-mid); }
+    .notif-item-title { font-weight: 700; font-size: 0.88rem; color: #fff; margin-bottom: 3px; }
+    .notif-item-msg   { font-size: 0.8rem;  color: var(--gym-muted); line-height: 1.4; }
+    .notif-item-time  { font-size: 0.72rem; color: rgba(149,213,178,0.5); margin-top: 4px; }
+    .notif-type-success { color: var(--gym-light); }
+    .notif-type-danger  { color: #ff85a1; }
+    .notif-type-warning { color: #ffc107; }
+
+    /* ─── SPINNER ──────────────────────────────────────────────────── */
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid rgba(82,183,136,0.15);
+      border-top-color: var(--gym-mid);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── TOAST ────────────────────────────────────────────────────── */
+    .toast-wrap {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      z-index: 200;
+      pointer-events: none;
+    }
+    .toast {
+      background: #1b4332;
+      border: 1px solid var(--gym-mid);
+      color: #fff;
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ─── GLASS INPUT (Ionic compat) ───────────────────────────────── */
     .glass-input {
-      --background: rgba(15, 45, 32, 0.85);
+      --background: rgba(15,45,32,0.85);
       --color: #ffffff;
-      --placeholder-color: #95d5b2;
+      --placeholder-color: rgba(149,213,178,0.45);
       border-radius: 12px;
       margin-bottom: 14px;
-      border: 1px solid rgba(82, 183, 136, 0.25);
+      border: 1px solid rgba(82,183,136,0.25);
     }
+
+    /* ─── MISC ─────────────────────────────────────────────────────── */
+    .divider {
+      display: flex; align-items: center; gap: 10px;
+      color: rgba(149,213,178,0.4); font-size: 0.78rem;
+      margin: 20px 0;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px;
+      background: rgba(82,183,136,0.15);
+    }
+
+    .text-link {
+      color: var(--gym-light); text-decoration: none;
+      font-weight: 600; font-size: 0.88rem;
+      cursor: pointer;
+    }
+    .text-link:hover { text-decoration: underline; }
+
+    ion-tab-bar { --background: #0d281e; }
   </style>
 </head>
 <body>
-  <ion-app>
+<ion-app>
 
-    <!-- 1. LOGIN SCREEN -->
-    <div id="view-login" class="login-container">
-      <div style="text-align: center; margin-bottom: 25px;">
-        <div style="width: 76px; height: 76px; background: #1b4332; border-radius: 20px; margin: 0 auto 14px auto; display: flex; align-items: center; justify-content: center; border: 2px solid #52b788; box-shadow: 0 0 25px rgba(82, 183, 136, 0.3);">
-          <i class="fa-solid fa-dumbbell" style="font-size: 36px; color: #74c69d;"></i>
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW 1: GOOGLE LOGIN SCREEN
+       ══════════════════════════════════════════════════════════ -->
+  <div id="view-login" class="screen">
+    <div class="login-bg">
+
+      <!-- Logo + Branding -->
+      <div style="text-align:center; margin-bottom: 8px;">
+        <div class="gym-logo-wrap">
+          <i class="fa-solid fa-dumbbell" style="font-size:40px; color: var(--gym-light);"></i>
         </div>
-        <h2 style="font-weight: 800; color: #ffffff; margin: 0; letter-spacing: 1px;">PALMA'S ELITE GYM</h2>
-        <p style="color: #95d5b2; font-size: 0.88rem; margin-top: 4px; margin-bottom: 8px;">Exclusive Member Mobile Portal</p>
-        
-        <!-- Production Cloud Server Badge -->
-        <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(15, 45, 32, 0.8); border: 1px solid #52b788; color: #95d5b2; font-size: 0.72rem; padding: 4px 12px; border-radius: 20px;">
-          <span id="server-status-dot" style="width: 7px; height: 7px; background: #74c69d; border-radius: 50%; display: inline-block;"></span>
-          <span id="server-status-text">Cloud Server</span>
-          <i class="fa-solid fa-cloud" style="font-size: 0.65rem; color: #74c69d; margin-left: 2px;"></i>
-        </div>
+        <h1 style="font-family:'Outfit',sans-serif; font-weight:900; font-size:1.6rem; color:#fff; margin:0; letter-spacing:0.5px;">PALMA'S ELITE GYM</h1>
+        <p style="color: var(--gym-muted); font-size:0.82rem; margin:4px 0 0;">Membership &amp; Attendance Management</p>
       </div>
 
-      <div>
+      <!-- Login Card -->
+      <div class="login-card">
+        <h2 style="font-family:'Outfit',sans-serif; font-weight:800; font-size:1.25rem; color:#fff; text-align:center; margin:0 0 6px;">MEMBER PORTAL</h2>
+        <p style="text-align:center; color: var(--gym-muted); font-size:0.84rem; margin:0 0 28px;">Sign in securely using your Google account</p>
+
+        <!-- Continue with Google -->
+        <button class="btn-google" id="btn-google-signin" onclick="initiateGoogleSignIn()">
+          <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" />
+          Continue with Google
+        </button>
+
+        <div class="divider">or</div>
+
+        <!-- Traditional login (for admin-added members without Google) -->
+        <button class="btn-outline" onclick="showTraditionalLogin()" style="margin-bottom:12px;">
+          <i class="fa-solid fa-key" style="margin-right:8px;"></i> Sign in with Member ID / Password
+        </button>
+
+        <p style="text-align:center; color: var(--gym-muted); font-size:0.8rem; margin:20px 0 0;">
+          New to Palma's Elite Gym?<br>
+          <span class="text-link" onclick="initiateGoogleSignIn()">Sign in with Google to register</span>
+        </p>
+      </div>
+
+      <div style="text-align:center; margin-top:24px;">
+        <span style="color: rgba(82,183,136,0.5); font-size:0.7rem;">
+          <i class="fa-solid fa-shield-halved"></i> Secured via HTTPS &bull; Google Sign-In
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW 1B: TRADITIONAL LOGIN (for admin-added members)
+       ══════════════════════════════════════════════════════════ -->
+  <div id="view-traditional-login" class="screen" style="display:none;">
+    <div class="login-bg">
+      <div style="text-align:center; margin-bottom:20px;">
+        <div class="gym-logo-wrap">
+          <i class="fa-solid fa-dumbbell" style="font-size:40px; color: var(--gym-light);"></i>
+        </div>
+        <h2 style="font-weight:800; color:#fff; margin:0; font-size:1.3rem;">Member Sign In</h2>
+        <p style="color: var(--gym-muted); font-size:0.82rem; margin:4px 0 0;">For members registered at the front desk</p>
+      </div>
+      <div class="login-card">
         <ion-item lines="none" class="glass-input">
-          <ion-icon name="person-outline" slot="start" style="color: #74c69d;"></ion-icon>
+          <ion-icon name="person-outline" slot="start" style="color: var(--gym-light);"></ion-icon>
           <ion-input id="input-username" type="text" placeholder="Member ID or Email"></ion-input>
         </ion-item>
-
         <ion-item lines="none" class="glass-input">
-          <ion-icon name="lock-closed-outline" slot="start" style="color: #74c69d;"></ion-icon>
+          <ion-icon name="lock-closed-outline" slot="start" style="color: var(--gym-light);"></ion-icon>
           <ion-input id="input-password" type="password" placeholder="Password"></ion-input>
         </ion-item>
-
-        <ion-button expand="block" style="--background: #2d6a4f; --color: white; font-weight: 700; height: 50px; margin-top: 20px; border-radius: 12px;" onclick="submitLogin()">
+        <button class="btn-primary" id="btn-trad-login" onclick="submitTraditionalLogin()" style="margin-top:8px;">
           SIGN IN
-        </ion-button>
-
-        <div style="text-align: center; margin-top: 15px;">
-          <p style="color: #95d5b2; font-size: 0.82rem; margin-bottom: 8px;">Don't have an account?</p>
-          <ion-button expand="block" fill="outline" style="--border-color: #52b788; --color: #74c69d; font-weight: 600; height: 44px; border-radius: 12px;" onclick="showRegisterView()">
-            <ion-icon name="person-add-outline" slot="start"></ion-icon> CREATE AN ACCOUNT
-          </ion-button>
-        </div>
-
-        <!-- Powered by cloud backend -->
-        <div style="text-align: center; margin-top: 20px;">
-          <span style="color: #52b788; font-size: 0.72rem; opacity: 0.7;">
-            <i class="fa-solid fa-shield-halved"></i> Secured via HTTPS
+        </button>
+        <div style="text-align:center; margin-top:16px;">
+          <span class="text-link" onclick="showGoogleLogin()">
+            <i class="fa-brands fa-google" style="margin-right:5px;"></i> Back to Google Sign-In
           </span>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- 1B. REGISTER SCREEN -->
-    <div id="view-register" class="login-container" style="display: none; height: auto; min-height: 100vh; overflow-y: auto; padding-top: 35px; padding-bottom: 35px;">
-      <div style="text-align: center; margin-bottom: 20px;">
-        <div style="width: 64px; height: 64px; background: #1b4332; border-radius: 18px; margin: 0 auto 12px auto; display: flex; align-items: center; justify-content: center; border: 2px solid #52b788; box-shadow: 0 0 20px rgba(82, 183, 136, 0.3);">
-          <i class="fa-solid fa-user-plus" style="font-size: 28px; color: #74c69d;"></i>
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW 1C: FIRST-TIME PASSWORD SETUP (admin-added members)
+       ══════════════════════════════════════════════════════════ -->
+  <div id="view-setup-password" class="screen" style="display:none;">
+    <div class="login-bg">
+      <div style="text-align:center; margin-bottom:20px;">
+        <div class="gym-logo-wrap">
+          <i class="fa-solid fa-key" style="font-size:36px; color: var(--gym-light);"></i>
         </div>
-        <h2 style="font-weight: 800; color: #ffffff; margin: 0; font-size: 1.35rem; letter-spacing: 0.5px;">CREATE ACCOUNT</h2>
-        <p style="color: #95d5b2; font-size: 0.82rem; margin-top: 4px;">Join Palma's Elite Gym & Get Instant Pass</p>
+        <h2 style="font-weight:800; color:#fff; margin:0;">Setup Your Password</h2>
+        <p id="setup-member-welcome" style="color: var(--gym-muted); font-size:0.82rem; margin:4px 0 0;">Create your secure password to continue.</p>
       </div>
-
-      <div>
+      <div class="login-card">
+        <input type="hidden" id="setup-member-id" value="" />
+        <div style="background:rgba(82,183,136,0.08); border-left:3px solid var(--gym-mid); border-radius:8px; padding:12px 14px; margin-bottom:18px;">
+          <p style="color: var(--gym-pale); font-size:0.8rem; margin:0; line-height:1.5;">
+            <i class="fa-solid fa-circle-info" style="color: var(--gym-light);"></i>
+            Your membership was registered at the gym. Create a password for all future logins.
+          </p>
+        </div>
         <ion-item lines="none" class="glass-input">
-          <ion-icon name="person-outline" slot="start" style="color: #74c69d;"></ion-icon>
-          <ion-input id="reg-name" type="text" placeholder="Full Name"></ion-input>
+          <ion-icon name="lock-closed-outline" slot="start" style="color: var(--gym-light);"></ion-icon>
+          <ion-input id="setup-password-input" type="password" placeholder="New Password (min. 6 chars)"></ion-input>
         </ion-item>
-
         <ion-item lines="none" class="glass-input">
-          <ion-icon name="mail-outline" slot="start" style="color: #74c69d;"></ion-icon>
-          <ion-input id="reg-email" type="email" placeholder="Email Address"></ion-input>
+          <ion-icon name="shield-checkmark-outline" slot="start" style="color: var(--gym-light);"></ion-icon>
+          <ion-input id="setup-confirm-input" type="password" placeholder="Confirm New Password"></ion-input>
         </ion-item>
-
-        <ion-item lines="none" class="glass-input">
-          <ion-icon name="call-outline" slot="start" style="color: #74c69d;"></ion-icon>
-          <ion-input id="reg-phone" type="tel" placeholder="Contact No. (09XXXXXXXXX)"></ion-input>
-        </ion-item>
-
-        <ion-item lines="none" class="glass-input">
-          <ion-icon name="male-female-outline" slot="start" style="color: #74c69d;"></ion-icon>
-          <ion-select id="reg-gender" placeholder="Gender" style="color: #fff; width: 100%;">
-            <ion-select-option value="Male">Male</ion-select-option>
-            <ion-select-option value="Female">Female</ion-select-option>
-            <ion-select-option value="Other">Other</ion-select-option>
-          </ion-select>
-        </ion-item>
-
-        <ion-item lines="none" class="glass-input">
-          <ion-icon name="lock-closed-outline" slot="start" style="color: #74c69d;"></ion-icon>
-          <ion-input id="reg-password" type="password" placeholder="Password (min. 6 chars)"></ion-input>
-        </ion-item>
-
-        <ion-item lines="none" class="glass-input">
-          <ion-icon name="shield-checkmark-outline" slot="start" style="color: #74c69d;"></ion-icon>
-          <ion-input id="reg-confirmpassword" type="password" placeholder="Confirm Password"></ion-input>
-        </ion-item>
-
-        <ion-button expand="block" id="btn-submit-reg" style="--background: #2d6a4f; --color: white; font-weight: 700; height: 50px; margin-top: 18px; border-radius: 12px;" onclick="submitRegister()">
-          REGISTER NOW
-        </ion-button>
-
-        <div style="text-align: center; margin-top: 15px;">
-          <p style="color: #95d5b2; font-size: 0.82rem; margin-bottom: 6px;">Already have an account?</p>
-          <a href="javascript:void(0)" onclick="showLoginView()" style="color: #74c69d; font-size: 0.9rem; font-weight: 700; text-decoration: none;">
-            <i class="fa-solid fa-arrow-left"></i> Back to Sign In
-          </a>
+        <button class="btn-primary" id="btn-save-setup-pass" onclick="submitSetupPassword()">
+          SAVE PASSWORD &amp; LOG IN
+        </button>
+        <div style="text-align:center; margin-top:14px;">
+          <span class="text-link" onclick="showGoogleLogin()">
+            <i class="fa-solid fa-arrow-left"></i> Back to Login
+          </span>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- 1C. FIRST-TIME SETUP PASSWORD SCREEN -->
-    <div id="view-setup-password" class="login-container" style="display: none; height: auto; min-height: 100vh; overflow-y: auto; padding-top: 40px; padding-bottom: 40px;">
-      <div style="text-align: center; margin-bottom: 24px;">
-        <div style="width: 68px; height: 68px; background: #1b4332; border-radius: 18px; margin: 0 auto 14px auto; display: flex; align-items: center; justify-content: center; border: 2px solid #52b788; box-shadow: 0 0 20px rgba(82, 183, 136, 0.3);">
-          <i class="fa-solid fa-key" style="font-size: 30px; color: #74c69d;"></i>
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW 2: PENDING APPROVAL SCREEN
+       ══════════════════════════════════════════════════════════ -->
+  <div id="view-pending" class="screen" style="display:none;">
+    <div class="status-screen">
+      <div style="background: rgba(255,193,7,0.08); border: 1px solid rgba(255,193,7,0.3); border-radius: 24px; padding:36px 28px; max-width:360px; width:100%;">
+        <div class="status-icon-wrap status-icon-pending" style="margin-bottom:20px;">
+          <i class="fa-solid fa-hourglass-half"></i>
         </div>
-        <h2 style="font-weight: 800; color: #ffffff; margin: 0; font-size: 1.35rem;">SETUP YOUR PASSWORD</h2>
-        <p id="setup-member-welcome" style="color: #95d5b2; font-size: 0.85rem; margin-top: 6px;">Welcome! Create your secure password.</p>
-      </div>
+        <h2 style="font-family:'Outfit',sans-serif; font-weight:800; color:#fff; margin:0 0 10px; font-size:1.35rem;">REGISTRATION PENDING</h2>
+        <p id="pending-name-text" style="color: var(--gym-muted); font-size:0.88rem; margin:0 0 20px;">Your account is being reviewed.</p>
 
-      <div>
-        <input type="hidden" id="setup-member-id" value="" />
-
-        <div style="background: rgba(15, 45, 32, 0.8); padding: 14px; border-radius: 12px; border-left: 4px solid #52b788; margin-bottom: 18px;">
-          <p style="color: #d8f3dc; font-size: 0.8rem; margin: 0; line-height: 1.4;">
-            <i class="fa-solid fa-circle-info" style="color: #74c69d;"></i> <strong>First-Time Login:</strong> Your membership was registered at the gym front desk. Please create your secure password for all future logins.
+        <div style="background:rgba(255,193,7,0.08); border-radius:12px; padding:16px; margin-bottom:24px; text-align:left;">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+            <i class="fa-solid fa-circle-dot" style="color:#ffc107; font-size:0.7rem;"></i>
+            <span style="color:#ffc107; font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">⏳ PENDING APPROVAL</span>
+          </div>
+          <p style="color: var(--gym-muted); font-size:0.82rem; margin:0; line-height:1.5;">
+            Your account is currently waiting for review by Palma's Elite Gym staff.<br><br>
+            You will receive an <strong style="color:#fff;">email notification</strong> once your registration is reviewed.
           </p>
         </div>
 
-        <ion-item lines="none" class="glass-input">
-          <ion-icon name="lock-closed-outline" slot="start" style="color: #74c69d;"></ion-icon>
-          <ion-input id="setup-password-input" type="password" placeholder="New Password (min. 6 chars)"></ion-input>
-        </ion-item>
+        <button class="btn-outline" onclick="showGoogleLogin()">
+          <i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i> Back to Login
+        </button>
+      </div>
+    </div>
+  </div>
 
-        <ion-item lines="none" class="glass-input">
-          <ion-icon name="shield-checkmark-outline" slot="start" style="color: #74c69d;"></ion-icon>
-          <ion-input id="setup-confirm-input" type="password" placeholder="Confirm New Password"></ion-input>
-        </ion-item>
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW 3: REJECTED SCREEN
+       ══════════════════════════════════════════════════════════ -->
+  <div id="view-rejected" class="screen" style="display:none;">
+    <div class="status-screen">
+      <div style="background:rgba(220,53,69,0.08); border:1px solid rgba(220,53,69,0.3); border-radius:24px; padding:36px 28px; max-width:360px; width:100%;">
+        <div class="status-icon-wrap status-icon-rejected" style="margin-bottom:20px;">
+          <i class="fa-solid fa-circle-xmark"></i>
+        </div>
+        <h2 style="font-family:'Outfit',sans-serif; font-weight:800; color:#fff; margin:0 0 8px; font-size:1.2rem;">REGISTRATION UPDATE</h2>
+        <p style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 20px;">Your registration was not approved.</p>
+        <div style="background:rgba(220,53,69,0.08); border-radius:12px; padding:16px; margin-bottom:24px; text-align:left;">
+          <p style="color:rgba(149,213,178,0.7); font-size:0.78rem; text-transform:uppercase; font-weight:700; margin:0 0 6px; letter-spacing:0.5px;">Reason:</p>
+          <p id="rejected-reason-text" style="color:#ff85a1; font-size:0.88rem; margin:0; line-height:1.5;">—</p>
+        </div>
+        <p style="color: var(--gym-muted); font-size:0.8rem; margin:0 0 20px;">Please contact Palma's Elite Gym for further assistance.</p>
+        <button class="btn-outline" onclick="showGoogleLogin()">
+          <i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i> Back to Login
+        </button>
+      </div>
+    </div>
+  </div>
 
-        <ion-button expand="block" id="btn-save-setup-pass" style="--background: #2d6a4f; --color: white; font-weight: 700; height: 50px; margin-top: 18px; border-radius: 12px;" onclick="submitSetupPassword()">
-          SAVE PASSWORD & LOG IN
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW 4: SUSPENDED SCREEN
+       ══════════════════════════════════════════════════════════ -->
+  <div id="view-suspended" class="screen" style="display:none;">
+    <div class="status-screen">
+      <div style="background:rgba(108,117,125,0.08); border:1px solid rgba(108,117,125,0.3); border-radius:24px; padding:36px 28px; max-width:360px; width:100%;">
+        <div class="status-icon-wrap status-icon-suspended" style="margin-bottom:20px;">
+          <i class="fa-solid fa-ban"></i>
+        </div>
+        <h2 style="font-family:'Outfit',sans-serif; font-weight:800; color:#fff; margin:0 0 10px; font-size:1.25rem;">ACCOUNT SUSPENDED</h2>
+        <p style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 24px; line-height:1.5;">Your account is currently suspended. Please contact Palma's Elite Gym for assistance.</p>
+        <button class="btn-outline" onclick="showGoogleLogin()">
+          <i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i> Back to Login
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW 5: REGISTRATION WIZARD (3 Steps)
+       ══════════════════════════════════════════════════════════ -->
+  <div id="view-register" class="screen" style="display:none;">
+    <div class="wizard-screen">
+
+      <!-- Wizard Header -->
+      <div class="wizard-header">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <button onclick="cancelRegistration()" style="background:none; border:none; color: var(--gym-light); font-size:1rem; cursor:pointer; padding:8px;">
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+          <h3 style="font-family:'Outfit',sans-serif; font-weight:800; color:#fff; margin:0; font-size:1.1rem;" id="wizard-title">Create Your Account</h3>
+          <div style="width:36px;"></div>
+        </div>
+
+        <!-- Step Progress -->
+        <div class="step-progress">
+          <div class="step-dot active" id="sdot-1">1</div>
+          <div class="step-line" id="sline-1"></div>
+          <div class="step-dot" id="sdot-2">2</div>
+          <div class="step-line" id="sline-2"></div>
+          <div class="step-dot" id="sdot-3">3</div>
+        </div>
+        <p id="wizard-step-label" style="color: var(--gym-muted); font-size:0.8rem; margin:0 0 8px; text-align:center;">Step 1 of 3 — Personal Information</p>
+      </div>
+
+      <div class="wizard-body">
+
+        <!-- ── STEP 1: Personal Information ─────────────────────── -->
+        <div id="reg-step-1">
+          <p style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 20px;">Tell us about yourself. Fields pre-filled from Google are verified.</p>
+
+          <!-- Google profile badge -->
+          <div id="google-prefill-badge" style="display:none; align-items:center; gap:12px; background:rgba(82,183,136,0.1); border:1px solid rgba(82,183,136,0.2); border-radius:14px; padding:12px 16px; margin-bottom:20px;">
+            <img id="google-avatar" src="" alt="" style="width:42px; height:42px; border-radius:50%; border:2px solid var(--gym-mid);" />
+            <div>
+              <p style="margin:0; color:#fff; font-weight:700; font-size:0.9rem;" id="google-name-badge">—</p>
+              <p style="margin:0; color: var(--gym-muted); font-size:0.78rem;" id="google-email-badge">—</p>
+              <span style="background: rgba(66,133,244,0.2); color:#7baaf7; border-radius:8px; padding:2px 8px; font-size:0.7rem; font-weight:700;">
+                <i class="fa-brands fa-google"></i> Google Verified
+              </span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Full Name</label>
+            <input class="form-input" type="text" id="reg-name" placeholder="Juan Dela Cruz" />
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input class="form-input" type="email" id="reg-email" placeholder="juan@gmail.com" readonly style="opacity:0.7; cursor:not-allowed;" />
+            <p style="color: rgba(116,198,157,0.6); font-size:0.73rem; margin:5px 0 0;">
+              <i class="fa-solid fa-shield-check"></i> Verified by Google — cannot be changed
+            </p>
+          </div>
+          <div class="form-group">
+            <label>Contact Number</label>
+            <input class="form-input" type="tel" id="reg-phone" placeholder="09XXXXXXXXX" maxlength="11" />
+          </div>
+          <div class="form-group">
+            <label>Gender</label>
+            <div class="gender-group">
+              <button class="gender-btn" id="gbtn-male"   onclick="selectGender('Male')">♂ Male</button>
+              <button class="gender-btn" id="gbtn-female" onclick="selectGender('Female')">♀ Female</button>
+              <button class="gender-btn" id="gbtn-other"  onclick="selectGender('Other')">⚧ Other</button>
+            </div>
+          </div>
+          <input type="hidden" id="reg-gender-val" value="" />
+
+          <button class="btn-primary" onclick="wizardNext(1)" style="margin-top:8px;">
+            Continue <i class="fa-solid fa-arrow-right" style="margin-left:6px;"></i>
+          </button>
+        </div>
+
+        <!-- ── STEP 2: Membership Plan ──────────────────────────── -->
+        <div id="reg-step-2" style="display:none;">
+          <p style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 20px;">Choose your preferred membership plan. Payment and activation happen after staff approval.</p>
+
+          <div id="plans-container-reg">
+            <div style="text-align:center; padding:40px 0;">
+              <div class="spinner"></div>
+              <p style="color: var(--gym-muted); margin-top:12px; font-size:0.85rem;">Loading plans...</p>
+            </div>
+          </div>
+
+          <input type="hidden" id="reg-plan-id" value="" />
+
+          <button class="btn-primary" id="btn-step2-next" onclick="wizardNext(2)" style="margin-top:8px;">
+            Continue <i class="fa-solid fa-arrow-right" style="margin-left:6px;"></i>
+          </button>
+          <button class="btn-outline" onclick="wizardBack(2)" style="margin-top:10px;">
+            <i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i> Back
+          </button>
+        </div>
+
+        <!-- ── STEP 3: Review & Submit ──────────────────────────── -->
+        <div id="reg-step-3" style="display:none;">
+          <p style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 20px;">Please review your information before submitting.</p>
+
+          <div class="review-section">
+            <h4><i class="fa-solid fa-user" style="margin-right:6px;"></i> Personal Information</h4>
+            <div class="review-row">
+              <span class="review-label">Full Name</span>
+              <span class="review-value" id="rv-name">—</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Email</span>
+              <span class="review-value" id="rv-email">—</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Contact</span>
+              <span class="review-value" id="rv-phone">—</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Gender</span>
+              <span class="review-value" id="rv-gender">—</span>
+            </div>
+          </div>
+
+          <div class="review-section">
+            <h4><i class="fa-solid fa-id-card" style="margin-right:6px;"></i> Selected Plan</h4>
+            <div class="review-row">
+              <span class="review-label">Plan</span>
+              <span class="review-value" id="rv-plan-name">—</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Price</span>
+              <span class="review-value" id="rv-plan-price">—</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Duration</span>
+              <span class="review-value" id="rv-plan-duration">—</span>
+            </div>
+          </div>
+
+          <div style="background:rgba(82,183,136,0.08); border:1px solid rgba(82,183,136,0.2); border-radius:12px; padding:14px; margin-bottom:20px;">
+            <p style="color: var(--gym-pale); font-size:0.8rem; margin:0; line-height:1.5;">
+              <i class="fa-solid fa-circle-info" style="color: var(--gym-light);"></i>
+              Your account will be set to <strong>Pending</strong> until approved by gym staff. Payment and membership activation happen after approval.
+            </p>
+          </div>
+
+          <button class="btn-primary" id="btn-submit-reg" onclick="submitRegistration()">
+            <i class="fa-solid fa-paper-plane" style="margin-right:8px;"></i> SUBMIT REGISTRATION
+          </button>
+          <button class="btn-outline" onclick="wizardBack(3)" style="margin-top:10px;">
+            <i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i> Edit Information
+          </button>
+        </div>
+
+      </div><!-- /wizard-body -->
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW 6: REGISTRATION SUCCESS (Pending Approval)
+       ══════════════════════════════════════════════════════════ -->
+  <div id="view-reg-success" class="screen" style="display:none;">
+    <div class="status-screen">
+      <div style="background:rgba(82,183,136,0.08); border:1px solid rgba(82,183,136,0.25); border-radius:24px; padding:36px 28px; max-width:360px; width:100%;">
+        <div style="width:80px; height:80px; background:rgba(82,183,136,0.15); border:2px solid var(--gym-mid); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:2rem; color:var(--gym-light);">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <h2 style="font-family:'Outfit',sans-serif; font-weight:900; color:#fff; margin:0 0 8px; font-size:1.35rem;">REGISTRATION SUBMITTED</h2>
+        <p id="reg-success-name" style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 24px;">Thank you for registering with Palma's Elite Gym.</p>
+        <div style="background:rgba(255,193,7,0.08); border-radius:12px; padding:14px; margin-bottom:24px; text-align:left;">
+          <p style="color:#ffc107; font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin:0 0 6px;">STATUS</p>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-hourglass-half" style="color:#ffc107;"></i>
+            <span style="color:#fff; font-weight:700;">⏳ PENDING APPROVAL</span>
+          </div>
+          <p style="color: var(--gym-muted); font-size:0.8rem; margin:8px 0 0; line-height:1.4;">
+            You will receive an email and app notification once your registration is reviewed by staff.
+          </p>
+        </div>
+        <button class="btn-outline" onclick="showGoogleLogin()">
+          <i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i> Back to Login
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW 7: MAIN APP (Dashboard Tabs)
+       ══════════════════════════════════════════════════════════ -->
+  <div id="view-main" style="display:none; height:100%;">
+    <ion-tabs>
+
+      <!-- ── TAB 1: DIGITAL GYM PASS ─── -->
+      <ion-tab tab="tab-pass">
+        <ion-header translucent="true">
+          <ion-toolbar>
+            <ion-title class="brand-font">Palma's Elite Pass</ion-title>
+            <ion-buttons slot="end">
+              <!-- Notification Bell -->
+              <button class="notif-bell-btn" id="notif-bell-btn" onclick="openNotifPanel()">
+                <i class="fa-solid fa-bell"></i>
+                <span class="notif-badge" id="notif-badge">0</span>
+              </button>
+              <ion-button onclick="refreshDashboard()"><ion-icon name="refresh-outline"></ion-icon></ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content fullscreen="true">
+          <ion-refresher slot="fixed" id="refresher-pass">
+            <ion-refresher-content></ion-refresher-content>
+          </ion-refresher>
+
+          <div class="membership-card" style="text-align:center;">
+            <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:12px;">
+              <div id="member-avatar-wrap" style="width:56px; height:56px; border-radius:50%; background:#1b4332; border:2px solid var(--gym-mid); overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                <i class="fa-solid fa-user" style="font-size:26px; color: var(--gym-light);"></i>
+              </div>
+              <div style="text-align:left;">
+                <h3 id="card-name" style="margin:0; font-weight:800; color:#fff; font-size:1.15rem; font-family:'Outfit',sans-serif;">--</h3>
+                <p id="card-code" style="color: var(--gym-light); margin:2px 0 0; font-weight:700; letter-spacing:1px; font-size:0.82rem;">--</p>
+              </div>
+            </div>
+
+            <div class="qr-box" style="margin:12px auto;">
+              <div id="qr-target"></div>
+            </div>
+
+            <p style="font-size:0.75rem; color: var(--gym-lighter); margin-top:8px; font-weight:500;">
+              <i class="fa-solid fa-shield-check" style="color:var(--gym-mid);"></i> Verified Digital Member Pass
+            </p>
+
+            <div style="margin-top:10px;">
+              <span id="card-status-pill" class="status-pill pill-active">● ACTIVE</span>
+            </div>
+
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08); font-size:0.82rem;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <span style="color: var(--gym-lighter);">Membership Plan:</span>
+                <strong id="card-plan" style="color:#fff;">--</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between;">
+                <span style="color: var(--gym-lighter);">Valid Until:</span>
+                <strong id="card-expiry" style="color:#fff;">--</strong>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin:0 16px 20px; text-align:center; color: var(--gym-muted); font-size:0.78rem;">
+            <i class="fa-solid fa-info-circle"></i> Present this QR at the gym scanner upon arrival.
+          </div>
+        </ion-content>
+      </ion-tab>
+
+      <!-- ── TAB 2: ATTENDANCE ─── -->
+      <ion-tab tab="tab-attendance">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title class="brand-font">Attendance Log</ion-title>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <h4 style="color: var(--gym-light); margin-top:0;">Recent Check-ins</h4>
+          <div id="attendance-container"></div>
+        </ion-content>
+      </ion-tab>
+
+      <!-- ── TAB 3: PAYMENTS & RENEWAL ─── -->
+      <ion-tab tab="tab-payments">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title class="brand-font">Renewals &amp; Billing</ion-title>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <div class="dark-card" style="padding:18px; margin-bottom:20px;">
+            <h4 style="color: var(--gym-pale); margin:0 0 8px; font-size:1rem;">
+              <i class="fa-solid fa-arrows-rotate" style="color: var(--gym-light);"></i> Extend Membership
+            </h4>
+            <p style="color: var(--gym-muted); font-size:0.83rem; margin-bottom:14px; line-height:1.4;">Select your preferred plan and submit a renewal request to gym administrators.</p>
+            <ion-button expand="block" color="success" onclick="openRenewalModal()">
+              Request Plan Renewal
+            </ion-button>
+          </div>
+          <h4 style="color: var(--gym-light);">Payment History</h4>
+          <div id="payments-container"></div>
+        </ion-content>
+      </ion-tab>
+
+      <!-- ── TAB 4: PROFILE ─── -->
+      <ion-tab tab="tab-profile">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title class="brand-font">My Profile</ion-title>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <div style="text-align:center; margin:20px 0 24px;">
+            <div id="prof-avatar-wrap" style="width:90px; height:90px; border-radius:50%; background:#1b4332; margin:0 auto; display:flex; align-items:center; justify-content:center; border:3px solid var(--gym-mid); overflow:hidden;">
+              <i class="fa-solid fa-user" style="font-size:40px; color: var(--gym-light);"></i>
+            </div>
+            <h3 id="prof-name" style="margin:12px 0 2px; color:#fff;">--</h3>
+            <p id="prof-code" style="color: var(--gym-light); margin:0; font-size:0.88rem;">--</p>
+            <span id="prof-auth-badge" style="display:inline-block; margin-top:8px; background:rgba(66,133,244,0.15); color:#7baaf7; border-radius:10px; padding:3px 10px; font-size:0.72rem; font-weight:700;"></span>
+          </div>
+
+          <ion-list style="background:transparent;">
+            <ion-item class="dark-card">
+              <ion-icon name="mail-outline" slot="start" style="color: var(--gym-light);"></ion-icon>
+              <ion-label>
+                <p style="color: var(--gym-muted);">Email</p>
+                <h3 id="prof-email" style="color:#fff;">--</h3>
+              </ion-label>
+            </ion-item>
+            <ion-item class="dark-card">
+              <ion-icon name="call-outline" slot="start" style="color: var(--gym-light);"></ion-icon>
+              <ion-label>
+                <p style="color: var(--gym-muted);">Contact</p>
+                <h3 id="prof-phone" style="color:#fff;">--</h3>
+              </ion-label>
+            </ion-item>
+            <ion-item class="dark-card">
+              <ion-icon name="id-card-outline" slot="start" style="color: var(--gym-light);"></ion-icon>
+              <ion-label>
+                <p style="color: var(--gym-muted);">Membership ID</p>
+                <h3 id="prof-memid" style="color:#fff; font-family:monospace;">--</h3>
+              </ion-label>
+            </ion-item>
+          </ion-list>
+
+          <ion-button expand="block" color="danger" style="margin-top:30px; font-weight:700;" onclick="logout()">
+            <ion-icon name="log-out-outline" slot="start"></ion-icon>
+            SIGN OUT
+          </ion-button>
+        </ion-content>
+      </ion-tab>
+
+      <!-- Bottom Tab Bar -->
+      <ion-tab-bar slot="bottom">
+        <ion-tab-button tab="tab-pass">
+          <ion-icon name="qr-code-outline"></ion-icon>
+          <ion-label>Gym Pass</ion-label>
+        </ion-tab-button>
+        <ion-tab-button tab="tab-attendance">
+          <ion-icon name="calendar-outline"></ion-icon>
+          <ion-label>Attendance</ion-label>
+        </ion-tab-button>
+        <ion-tab-button tab="tab-payments">
+          <ion-icon name="card-outline"></ion-icon>
+          <ion-label>Payments</ion-label>
+        </ion-tab-button>
+        <ion-tab-button tab="tab-profile">
+          <ion-icon name="person-outline"></ion-icon>
+          <ion-label>Profile</ion-label>
+        </ion-tab-button>
+      </ion-tab-bar>
+    </ion-tabs>
+  </div>
+
+  <!-- RENEWAL MODAL -->
+  <ion-modal id="modal-renewal">
+    <ion-header>
+      <ion-toolbar style="--background:#1b4332; --color:#fff;">
+        <ion-title style="font-weight:700;">Renew Membership</ion-title>
+        <ion-buttons slot="end">
+          <ion-button onclick="closeRenewalModal()" style="--color: var(--gym-light);"><ion-icon name="close"></ion-icon></ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding" style="--background: var(--gym-dark);">
+      <div id="renewal-step-form">
+        <ion-item class="dark-card" style="margin-bottom:12px;">
+          <ion-label position="stacked" style="color: var(--gym-light); font-weight:700;">Membership Plan</ion-label>
+          <ion-select id="renew-plan-select" placeholder="Select Plan" style="color:#fff;"></ion-select>
+        </ion-item>
+        <ion-item class="dark-card" style="margin-bottom:16px;">
+          <ion-label position="stacked" style="color: var(--gym-light); font-weight:700;">Payment Method</ion-label>
+          <ion-select id="renew-method-select" value="Instant GCash" placeholder="Select Method" style="color:#fff;" onIonChange="handleRenewMethodChange(this.value)">
+            <ion-select-option value="Instant GCash">⚡ Instant GCash</ion-select-option>
+            <ion-select-option value="Instant Maya">⚡ Instant Maya</ion-select-option>
+            <ion-select-option value="QR Ph">⚡ QR Ph Online</ion-select-option>
+            <ion-select-option value="Cash">Cash (At Front Desk)</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <div id="renew-manual-ref-wrap" style="display:none; margin-bottom:16px;">
+          <ion-item class="dark-card">
+            <ion-input id="renew-ref-input" placeholder="Reference Number (Optional)" style="color:#fff;"></ion-input>
+          </ion-item>
+        </div>
+        <div style="background:rgba(45,106,79,0.2); border:1px solid rgba(82,183,136,0.3); border-radius:12px; padding:12px; margin-bottom:18px;">
+          <p style="color: var(--gym-pale); font-size:0.78rem; margin:0; line-height:1.4;" id="payment-mode-notice">
+            <i class="fa-solid fa-circle-check" style="color: var(--gym-light);"></i>
+            <strong>Demo Mode:</strong> Membership activates instantly for testing purposes.
+          </p>
+        </div>
+        <ion-button expand="block" id="btn-proceed-renewal" style="--background: var(--gym-green); --color:white; font-weight:800; height:50px; border-radius:12px;" onclick="submitRenewal()">
+          <i class="fa-solid fa-bolt" style="margin-right:6px;"></i> PROCEED TO PAYMENT
         </ion-button>
+      </div>
 
-        <div style="text-align: center; margin-top: 15px;">
-          <a href="javascript:void(0)" onclick="showLoginView()" style="color: #74c69d; font-size: 0.85rem; text-decoration: none;">
-            <i class="fa-solid fa-arrow-left"></i> Cancel & Back to Login
+      <!-- Checkout Sheet -->
+      <div id="renewal-step-checkout" style="display:none; text-align:center; padding-top:10px;">
+        <div style="background:#112d21; border-radius:16px; border:1px solid var(--gym-mid); padding:20px; box-shadow:0 8px 25px rgba(0,0,0,0.4);">
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(82,183,136,0.2); padding-bottom:12px; margin-bottom:16px;">
+            <span id="checkout-method-badge" style="background: var(--gym-green); color:#fff; font-size:0.72rem; font-weight:800; padding:4px 10px; border-radius:12px;">GCASH QR PH</span>
+            <span id="checkout-ref-text" style="font-family:monospace; font-size:0.72rem; color: var(--gym-muted);">PEG-GC-1234</span>
+          </div>
+          <h3 id="checkout-plan-name" style="color:#fff; margin:0; font-size:1.1rem; font-weight:700;">Plan</h3>
+          <h1 id="checkout-amount-display" style="color: var(--gym-light); margin:8px 0; font-size:2rem; font-weight:900;">₱0.00</h1>
+          <p style="color: var(--gym-muted); font-size:0.78rem; margin:0 0 16px;">Scan via GCash, Maya, or any Banking App</p>
+          <div style="background:#fff; padding:14px; border-radius:14px; display:inline-block; box-shadow:0 4px 15px rgba(0,0,0,0.3); margin-bottom:16px;">
+            <div id="checkout-qrcode-box" style="width:175px; height:175px; display:flex; align-items:center; justify-content:center;"></div>
+          </div>
+          <p style="color: var(--gym-pale); font-size:0.72rem; margin-bottom:18px;">
+            <i class="fa-solid fa-shield-halved" style="color: var(--gym-light);"></i> Demo Mode — Instant Activation
+          </p>
+          <ion-button expand="block" id="btn-confirm-auto-pay" style="--background: var(--gym-mid); --color: var(--gym-dark); font-weight:900; height:50px; border-radius:12px; margin-bottom:10px;" onclick="executeAutoActivation()">
+            <i class="fa-solid fa-circle-check" style="margin-right:6px;"></i> COMPLETE &amp; ACTIVATE PASS
+          </ion-button>
+          <a href="javascript:void(0)" onclick="backToRenewalForm()" style="color: var(--gym-muted); font-size:0.82rem; text-decoration:none;">
+            <i class="fa-solid fa-arrow-left"></i> Change Plan / Back
           </a>
         </div>
       </div>
+    </ion-content>
+  </ion-modal>
+
+  <!-- NOTIFICATION PANEL -->
+  <div class="notif-overlay" id="notif-overlay" onclick="closeNotifPanel()"></div>
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-panel-header">
+      <div>
+        <h3 style="font-family:'Outfit',sans-serif; font-weight:800; margin:0; color:#fff; font-size:1rem;">Notifications</h3>
+        <p style="color: var(--gym-muted); font-size:0.75rem; margin:2px 0 0;" id="notif-unread-count">0 unread</p>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button onclick="markAllRead()" style="background:rgba(82,183,136,0.1); border:1px solid rgba(82,183,136,0.25); border-radius:8px; color: var(--gym-light); font-size:0.73rem; padding:5px 10px; cursor:pointer; font-weight:600;">
+          Mark all read
+        </button>
+        <button onclick="closeNotifPanel()" style="background:none; border:none; color: var(--gym-muted); font-size:1.1rem; cursor:pointer; padding:4px;">✕</button>
+      </div>
     </div>
-
-    <!-- 2. MAIN APP (TABS VIEW) -->
-    <div id="view-main" style="display: none; height: 100%;">
-      <ion-tabs>
-        <!-- TAB 1: DIGITAL QR PASS -->
-        <ion-tab tab="tab-id">
-          <ion-header translucent="true">
-            <ion-toolbar>
-              <ion-title class="brand-font">Palma's Elite Pass</ion-title>
-              <ion-buttons slot="end">
-                <ion-button onclick="refreshDashboard()"><ion-icon name="refresh-outline"></ion-icon></ion-button>
-              </ion-buttons>
-            </ion-toolbar>
-          </ion-header>
-
-          <ion-content fullscreen="true">
-            <ion-refresher slot="fixed" id="refresher-pass">
-              <ion-refresher-content></ion-refresher-content>
-            </ion-refresher>
-
-            <div class="membership-card text-center" style="text-align: center;">
-              <div style="width: 70px; height: 70px; border-radius: 50%; background: #1b4332; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; border: 3px solid #52b788; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-                <i class="fa-solid fa-user" style="font-size: 32px; color: #74c69d;"></i>
-              </div>
-              <h3 id="card-name" style="margin: 0; font-weight: 800; color: #ffffff; font-size: 1.35rem; font-family: 'Outfit', sans-serif;">--</h3>
-              <p id="card-code" style="color: #74c69d; margin: 4px 0 12px 0; font-weight: 700; letter-spacing: 1px; font-size: 0.95rem;">--</p>
-              
-              <div class="qr-box" style="margin: 12px auto; padding: 14px; background: #ffffff; border-radius: 16px; display: inline-block; box-shadow: 0 8px 24px rgba(0,0,0,0.35);">
-                <div id="qr-target"></div>
-              </div>
-
-              <p style="font-size: 0.78rem; color: #95d5b2; margin-top: 8px; font-weight: 500;">
-                <i class="fa-solid fa-shield-check" style="color:#52b788;"></i> Verified Digital Member Pass
-              </p>
-
-              <div style="margin-top: 10px;">
-                <span id="card-status-pill" class="status-pill status-active">● ACTIVE</span>
-              </div>
-
-              <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                  <span style="color: #95d5b2;">Membership Plan:</span>
-                  <strong id="card-plan" style="color: #ffffff;">--</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: #95d5b2;">Valid Expiry:</span>
-                  <strong id="card-expiry" style="color: #ffffff;">--</strong>
-                </div>
-              </div>
-            </div>
-
-            <div style="margin: 0 16px 20px 16px; text-align: center; color: #95d5b2; font-size: 0.8rem;">
-              <i class="fa-solid fa-info-circle"></i> Present this QR code to the gym scanner counter upon arrival.
-            </div>
-          </ion-content>
-        </ion-tab>
-
-        <!-- TAB 2: ATTENDANCE HISTORY -->
-        <ion-tab tab="tab-attendance">
-          <ion-header>
-            <ion-toolbar>
-              <ion-title class="brand-font">Attendance Log</ion-title>
-            </ion-toolbar>
-          </ion-header>
-          <ion-content class="ion-padding">
-            <h4 style="color: #74c69d; margin-top: 0;">Recent Check-ins</h4>
-            <div id="attendance-container"></div>
-          </ion-content>
-        </ion-tab>
-
-        <!-- TAB 3: PAYMENTS & RENEWAL -->
-        <ion-tab tab="tab-payments">
-          <ion-header>
-            <ion-toolbar>
-              <ion-title class="brand-font">Renewals & Billing</ion-title>
-            </ion-toolbar>
-          </ion-header>
-          <ion-content class="ion-padding">
-            <!-- Renewal banner -->
-            <div id="renewal-banner" class="dark-card" style="padding: 16px; margin-bottom: 20px; border-color: #2d6a4f;">
-              <h4 style="color: #d8f3dc; margin: 0 0 8px 0;"><i class="fa-solid fa-arrows-rotate"></i> Extend Membership</h4>
-              <p style="color: #95d5b2; font-size: 0.85rem; margin-bottom: 14px;">Select your preferred plan and submit a renewal request to gym administrators.</p>
-              <ion-button expand="block" color="success" onclick="openRenewalModal()">
-                Request Plan Renewal
-              </ion-button>
-            </div>
-
-            <h4 style="color: #74c69d;">Payment History</h4>
-            <div id="payments-container"></div>
-          </ion-content>
-        </ion-tab>
-
-        <!-- TAB 4: PROFILE & SETTINGS -->
-        <ion-tab tab="tab-profile">
-          <ion-header>
-            <ion-toolbar>
-              <ion-title class="brand-font">My Profile</ion-title>
-            </ion-toolbar>
-          </ion-header>
-          <ion-content class="ion-padding">
-            <div style="text-align: center; margin: 20px 0;">
-              <div style="width: 90px; height: 90px; border-radius: 50%; background: #1b4332; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 3px solid #52b788;">
-                <i class="fa-solid fa-user" style="font-size: 40px; color: #74c69d;"></i>
-              </div>
-              <h3 id="prof-name" style="margin: 12px 0 2px 0; color: #ffffff;">--</h3>
-              <p id="prof-code" style="color: #74c69d; margin: 0; font-size: 0.9rem;">--</p>
-            </div>
-
-            <ion-list style="background: transparent;">
-              <ion-item class="dark-card">
-                <ion-icon name="mail-outline" slot="start" style="color: #74c69d;"></ion-icon>
-                <ion-label>
-                  <p style="color: #95d5b2;">Email</p>
-                  <h3 id="prof-email" style="color: #fff;">--</h3>
-                </ion-label>
-              </ion-item>
-              <ion-item class="dark-card">
-                <ion-icon name="call-outline" slot="start" style="color: #74c69d;"></ion-icon>
-                <ion-label>
-                  <p style="color: #95d5b2;">Contact</p>
-                  <h3 id="prof-phone" style="color: #fff;">--</h3>
-                </ion-label>
-              </ion-item>
-            </ion-list>
-
-            <ion-button expand="block" color="danger" style="margin-top: 30px; font-weight: 700;" onclick="logout()">
-              <ion-icon name="log-out-outline" slot="start"></ion-icon>
-              LOGOUT
-            </ion-button>
-          </ion-content>
-        </ion-tab>
-
-        <!-- BOTTOM TABS -->
-        <ion-tab-bar slot="bottom">
-          <ion-tab-button tab="tab-id">
-            <ion-icon name="qr-code-outline"></ion-icon>
-            <ion-label>Gym Pass</ion-label>
-          </ion-tab-button>
-          <ion-tab-button tab="tab-attendance">
-            <ion-icon name="calendar-outline"></ion-icon>
-            <ion-label>Attendance</ion-label>
-          </ion-tab-button>
-          <ion-tab-button tab="tab-payments">
-            <ion-icon name="card-outline"></ion-icon>
-            <ion-label>Payments</ion-label>
-          </ion-tab-button>
-          <ion-tab-button tab="tab-profile">
-            <ion-icon name="person-outline"></ion-icon>
-            <ion-label>Profile</ion-label>
-          </ion-tab-button>
-        </ion-tab-bar>
-      </ion-tabs>
+    <div id="notif-list" style="flex:1; overflow-y:auto;">
+      <div style="text-align:center; padding:40px 20px; color: var(--gym-muted); font-size:0.85rem;">
+        <div class="spinner" style="margin-bottom:12px;"></div>
+        Loading notifications...
+      </div>
     </div>
+  </div>
 
-    <!-- RENEWAL & INSTANT AUTO-PAY MODAL -->
-    <ion-modal id="modal-renewal">
-      <ion-header>
-        <ion-toolbar style="--background: #1b4332; --color: #fff;">
-          <ion-title style="font-weight: 700;">Renew Membership</ion-title>
-          <ion-buttons slot="end">
-            <ion-button onclick="closeRenewalModal()" style="--color: #74c69d;"><ion-icon name="close"></ion-icon></ion-button>
-          </ion-buttons>
-        </ion-toolbar>
-      </ion-header>
-      <ion-content class="ion-padding" style="--background: #091c14;">
-        <!-- Step 1: Select Plan & Method -->
-        <div id="renewal-step-form">
-          <div style="text-align: center; margin-bottom: 16px;">
-            <div style="width: 50px; height: 50px; border-radius: 14px; background: rgba(82,183,136,0.15); display: inline-flex; align-items: center; justify-content: center; color: #74c69d; font-size: 1.5rem; margin-bottom: 8px;">
-              <i class="fa-solid fa-bolt"></i>
-            </div>
-            <h4 style="color: #ffffff; margin: 0; font-weight: 800;">Choose Your Plan</h4>
-            <p style="color: #95d5b2; font-size: 0.82rem; margin-top: 4px;">Instant activation available for online payments</p>
-          </div>
+  <!-- TOAST -->
+  <div class="toast-wrap">
+    <div class="toast" id="toast-msg"></div>
+  </div>
 
-          <ion-item class="dark-card" style="margin-bottom: 12px;">
-            <ion-label position="stacked" style="color: #74c69d; font-weight: 700; font-size: 0.85rem;">Membership Plan</ion-label>
-            <ion-select id="renew-plan-select" placeholder="Select Plan" style="color: #fff;"></ion-select>
-          </ion-item>
+</ion-app>
 
-          <ion-item class="dark-card" style="margin-bottom: 16px;">
-            <ion-label position="stacked" style="color: #74c69d; font-weight: 700; font-size: 0.85rem;">Payment Method</ion-label>
-            <ion-select id="renew-method-select" value="Instant GCash" placeholder="Select Method" style="color: #fff;" onionChange="handleRenewMethodChange(this.value)">
-              <ion-select-option value="Instant GCash">⚡ Instant GCash (Auto-Activate)</ion-select-option>
-              <ion-select-option value="Instant Maya">⚡ Instant Maya (Auto-Activate)</ion-select-option>
-              <ion-select-option value="QR Ph">⚡ QR Ph Online (Auto-Activate)</ion-select-option>
-              <ion-select-option value="Cash">Cash (At Front Desk)</ion-select-option>
-            </ion-select>
-          </ion-item>
+<script>
+// ══════════════════════════════════════════════════════════════════
+//  PALMA'S ELITE GYM — Mobile App v2.0
+//  Architecture: Mobile App → HTTPS → Render API → Aiven Database
+// ══════════════════════════════════════════════════════════════════
+const API_URL = 'https://palmas-gym.onrender.com/api';
 
-          <div id="renew-manual-ref-wrap" style="display: none; margin-bottom: 16px;">
-            <ion-item class="dark-card">
-              <ion-input id="renew-ref-input" placeholder="Front Desk / Ref Number (Optional)" style="color: #fff;"></ion-input>
-            </ion-item>
-          </div>
+// Google OAuth Client ID — replace with your actual Client ID from Google Cloud Console
+// Get it at: https://console.cloud.google.com → APIs & Services → Credentials
+const GOOGLE_CLIENT_ID = ''; // <-- SET YOUR GOOGLE_CLIENT_ID HERE
 
-          <div style="background: rgba(45,106,79,0.3); border: 1px solid #52b788; border-radius: 12px; padding: 12px; margin-bottom: 18px;">
-            <p style="color: #d8f3dc; font-size: 0.78rem; margin: 0; line-height: 1.4;">
-              <i class="fa-solid fa-circle-check" style="color: #74c69d;"></i> <strong>24/7 Instant Auto-Activation:</strong> Online payments are verified automatically and activate your Digital Pass in seconds!
-            </p>
-          </div>
+let currentMember  = null;
+let availablePlans = [];
+let qrInstance     = null;
+let regPrefill     = {}; // Google prefill data for registration
+let selectedGender = '';
+let selectedPlanId = null;
+let selectedPlan   = null;
+let currentCheckoutSession = null;
 
-          <ion-button expand="block" id="btn-proceed-renewal" style="--background: #2d6a4f; --color: white; font-weight: 800; height: 50px; border-radius: 12px;" onclick="submitRenewal()">
-            <i class="fa-solid fa-bolt" style="margin-right: 6px;"></i> PROCEED TO INSTANT PAYMENT
-          </ion-button>
+// ── Toast Notification ─────────────────────────────────────────────
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast-msg');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── View Management ───────────────────────────────────────────────
+function showScreen(id) {
+  const screens = [
+    'view-login','view-traditional-login','view-setup-password',
+    'view-pending','view-rejected','view-suspended',
+    'view-register','view-reg-success','view-main'
+  ];
+  screens.forEach(sid => {
+    const el = document.getElementById(sid);
+    if (el) el.style.display = (sid === id) ? (sid === 'view-main' ? 'block' : 'block') : 'none';
+  });
+}
+
+function showGoogleLogin()       { showScreen('view-login'); }
+function showTraditionalLogin()  { showScreen('view-traditional-login'); }
+function cancelRegistration()    { showScreen('view-login'); }
+
+// ── GOOGLE SIGN-IN ─────────────────────────────────────────────────
+function initiateGoogleSignIn() {
+  if (!GOOGLE_CLIENT_ID) {
+    // Fallback for development: show toast and manual login
+    showToast('Google Sign-In is not configured yet. Using traditional login as fallback.');
+    showTraditionalLogin();
+    return;
+  }
+
+  // Use Google Identity Services (GIS) library
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'openid email profile',
+    callback: () => {},
+  });
+
+  // Use ID token flow via renderButton approach
+  // Programmatically trigger the Google One-Tap / popup
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredential,
+    auto_select: false,
+    cancel_on_tap_outside: true,
+  });
+
+  google.accounts.id.prompt((notification) => {
+    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+      // If One-Tap not shown, use popup flow
+      google.accounts.id.renderButton(
+        document.createElement('div'),
+        { theme: 'outline', size: 'large' }
+      );
+    }
+  });
+}
+
+async function handleGoogleCredential(response) {
+  const id_token = response.credential;
+  if (!id_token) {
+    showToast('Google Sign-In failed. Please try again.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-google-signin');
+  btn.disabled = true;
+  btn.textContent = 'Verifying with Google...';
+
+  try {
+    const res = await fetch(`${API_URL}/google_auth.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_token })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      // Approved member — go to dashboard
+      currentMember = data.member;
+      localStorage.setItem('peg_member', JSON.stringify(data.member));
+      localStorage.setItem('peg_token', data.token);
+      initMainView(data.member.id);
+      return;
+    }
+
+    if (data.new_user) {
+      // New Google user — start registration wizard
+      regPrefill = data.prefill || {};
+      startRegistrationWizard(regPrefill);
+      return;
+    }
+
+    // Handle account status screens
+    if (data.account_status === 'Pending') {
+      document.getElementById('pending-name-text').textContent =
+        `Hi ${data.full_name || 'there'}! Your account is currently being reviewed by Palma's Elite Gym staff.`;
+      showScreen('view-pending');
+      return;
+    }
+
+    if (data.account_status === 'Rejected') {
+      document.getElementById('rejected-reason-text').textContent =
+        data.rejection_reason || 'No reason provided.';
+      showScreen('view-rejected');
+      return;
+    }
+
+    if (data.account_status === 'Suspended') {
+      showScreen('view-suspended');
+      return;
+    }
+
+    showToast(data.message || 'Authentication failed. Please try again.');
+  } catch (err) {
+    showToast('Unable to connect to the server. Please check your internet connection.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style="width:22px;height:22px;" /> Continue with Google';
+  }
+}
+
+// ── REGISTRATION WIZARD ───────────────────────────────────────────
+async function startRegistrationWizard(prefill) {
+  regPrefill = prefill || {};
+  selectedGender = '';
+  selectedPlanId = null;
+  selectedPlan   = null;
+
+  // Pre-fill Step 1 fields
+  document.getElementById('reg-name').value  = prefill.name  || '';
+  document.getElementById('reg-email').value = prefill.email || '';
+  document.getElementById('reg-phone').value = '';
+
+  // Show Google profile badge if available
+  if (prefill.picture) {
+    document.getElementById('google-avatar').src       = prefill.picture;
+    document.getElementById('google-name-badge').textContent  = prefill.name || '';
+    document.getElementById('google-email-badge').textContent = prefill.email || '';
+    document.getElementById('google-prefill-badge').style.display = 'flex';
+  }
+
+  // Reset wizard to step 1
+  goToWizardStep(1);
+  showScreen('view-register');
+
+  // Load plans for Step 2
+  loadPlansForRegistration();
+}
+
+function goToWizardStep(step) {
+  [1,2,3].forEach(n => {
+    const el = document.getElementById(`reg-step-${n}`);
+    if (el) el.style.display = (n === step) ? 'block' : 'none';
+
+    const dot = document.getElementById(`sdot-${n}`);
+    if (dot) {
+      dot.classList.toggle('active', n === step);
+      dot.classList.toggle('done', n < step);
+    }
+    if (n < 3) {
+      const line = document.getElementById(`sline-${n}`);
+      if (line) line.classList.toggle('done', n < step);
+    }
+  });
+
+  const labels = ['', 'Step 1 of 3 — Personal Information', 'Step 2 of 3 — Choose Your Plan', 'Step 3 of 3 — Review & Submit'];
+  const titles = ['', 'Create Your Account', 'Choose Your Plan', 'Review Information'];
+  document.getElementById('wizard-step-label').textContent = labels[step];
+  document.getElementById('wizard-title').textContent = titles[step];
+}
+
+function selectGender(g) {
+  selectedGender = g;
+  document.getElementById('reg-gender-val').value = g;
+  ['Male','Female','Other'].forEach(opt => {
+    const btn = document.getElementById(`gbtn-${opt.toLowerCase()}`);
+    if (btn) btn.classList.toggle('selected', opt === g);
+  });
+}
+
+function wizardNext(fromStep) {
+  if (fromStep === 1) {
+    const name  = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const phone = document.getElementById('reg-phone').value.trim();
+
+    if (!name) return showToast('Please enter your full name.');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return showToast('Please enter a valid email address.');
+    if (!phone || !/^09[0-9]{9}$/.test(phone))
+      return showToast('Contact number must be 11 digits starting with 09.');
+    if (!selectedGender)
+      return showToast('Please select your gender.');
+
+    goToWizardStep(2);
+  } else if (fromStep === 2) {
+    if (!selectedPlanId) return showToast('Please select a membership plan.');
+    // Populate review step
+    const name  = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const phone = document.getElementById('reg-phone').value.trim();
+
+    document.getElementById('rv-name').textContent     = name;
+    document.getElementById('rv-email').textContent    = email;
+    document.getElementById('rv-phone').textContent    = phone || 'Not provided';
+    document.getElementById('rv-gender').textContent   = selectedGender;
+    document.getElementById('rv-plan-name').textContent = selectedPlan?.name || '—';
+    document.getElementById('rv-plan-price').textContent = selectedPlan ? '₱' + parseFloat(selectedPlan.price).toFixed(2) : '—';
+    document.getElementById('rv-plan-duration').textContent = selectedPlan ? selectedPlan.duration_months + ' Month(s)' : '—';
+
+    goToWizardStep(3);
+  }
+}
+
+function wizardBack(fromStep) {
+  if (fromStep === 2) goToWizardStep(1);
+  else if (fromStep === 3) goToWizardStep(2);
+}
+
+async function loadPlansForRegistration() {
+  const container = document.getElementById('plans-container-reg');
+  try {
+    const res  = await fetch(`${API_URL}/member_dashboard.php`, {
+      headers: { 'Authorization': 'Bearer public' }
+    });
+    // Dashboard requires auth, so fetch plans via a public endpoint
+    // Use a simple plans fetch
+    const plansRes = await fetch(`${API_URL}/member_dashboard.php`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('peg_token') || 'public'}` }
+    });
+
+    // Try to get plans from a signed-in session or use cached plans
+    if (availablePlans.length > 0) {
+      renderPlanCards(availablePlans, container);
+      return;
+    }
+
+    // Fallback: fetch member_login.php with empty to get a 401 that still returns plans... actually
+    // We need a public plans endpoint. Use the dashboard and handle gracefully.
+    container.innerHTML = `
+      <div style="text-align:center; padding:20px;">
+        <p style="color: var(--gym-muted); font-size:0.85rem;">Please complete sign-in first to load plans, or contact the gym for plan details.</p>
+      </div>`;
+  } catch {
+    container.innerHTML = `
+      <div style="text-align:center; padding:20px;">
+        <p style="color: var(--gym-muted); font-size:0.85rem;">Unable to load plans. Check your connection.</p>
+      </div>`;
+  }
+}
+
+// Plans from dashboard load — also use for registration
+function renderPlanCards(plans, container) {
+  if (!container) return;
+  container.innerHTML = '';
+  if (!plans || !plans.length) {
+    container.innerHTML = '<p style="color: var(--gym-muted); text-align:center;">No plans available.</p>';
+    return;
+  }
+  plans.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'plan-card';
+    card.id = `plan-card-${p.id}`;
+    card.onclick = () => selectPlanCard(p);
+    card.innerHTML = `
+      <div class="plan-check" id="plan-check-${p.id}"><i class="fa-solid fa-check"></i></div>
+      <p class="plan-name">${p.name}</p>
+      <p class="plan-price">₱${parseFloat(p.price).toFixed(2)}</p>
+      <p class="plan-duration"><i class="fa-solid fa-calendar" style="margin-right:5px; opacity:0.7;"></i>Valid for ${p.duration_months} Month${p.duration_months > 1 ? 's' : ''}</p>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function selectPlanCard(plan) {
+  selectedPlanId = plan.id;
+  selectedPlan   = plan;
+  document.getElementById('reg-plan-id').value = plan.id;
+
+  // Update visual selection
+  document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById(`plan-card-${plan.id}`);
+  if (card) card.classList.add('selected');
+}
+
+async function submitRegistration() {
+  const btn = document.getElementById('btn-submit-reg');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:8px;"></i>Submitting...';
+
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+
+  try {
+    const res = await fetch(`${API_URL}/member_register.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        full_name:      name,
+        email:          email,
+        contact_number: phone,
+        gender:         selectedGender,
+        plan_id:        selectedPlanId || 0,
+        google_id:      regPrefill.google_id || '',
+        google_picture: regPrefill.picture   || '',
+        auth_provider:  regPrefill.google_id ? 'google' : 'password',
+      })
+    });
+    const data = await res.json();
+
+    if (data.success || data.pending_approval) {
+      document.getElementById('reg-success-name').textContent =
+        `Thank you, ${name}! Your registration has been received.`;
+      showScreen('view-reg-success');
+    } else {
+      showToast(data.message || 'Registration failed. Please try again.');
+    }
+  } catch (err) {
+    showToast('Unable to connect to the server. Check your internet connection.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:8px;"></i> SUBMIT REGISTRATION';
+  }
+}
+
+// ── TRADITIONAL LOGIN ──────────────────────────────────────────────
+async function submitTraditionalLogin() {
+  const u = document.getElementById('input-username').value.trim();
+  const p = document.getElementById('input-password').value.trim();
+  if (!u || !p) return showToast('Please enter both Member ID/Email and password.');
+
+  const btn = document.getElementById('btn-trad-login');
+  btn.disabled = true;
+  btn.textContent = 'Signing in...';
+
+  try {
+    const res  = await fetch(`${API_URL}/member_login.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+    const data = await res.json();
+
+    if (data.first_time_setup) {
+      document.getElementById('setup-member-id').value = data.member_id;
+      document.getElementById('setup-member-welcome').textContent =
+        `Welcome, ${data.full_name}! (${data.membership_id})`;
+      showScreen('view-setup-password');
+      return;
+    }
+
+    if (data.success) {
+      currentMember = data.member;
+      localStorage.setItem('peg_member', JSON.stringify(data.member));
+      localStorage.setItem('peg_token',  data.token);
+      initMainView(data.member.id);
+    } else {
+      showToast(data.message || 'Login failed.');
+    }
+  } catch (err) {
+    showToast('Unable to connect to the server. Check your internet connection.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'SIGN IN';
+  }
+}
+
+// ── SETUP PASSWORD ─────────────────────────────────────────────────
+async function submitSetupPassword() {
+  const memberId = document.getElementById('setup-member-id').value;
+  const p1 = document.getElementById('setup-password-input').value.trim();
+  const p2 = document.getElementById('setup-confirm-input').value.trim();
+  if (!p1 || p1.length < 6) return showToast('Password must be at least 6 characters.');
+  if (p1 !== p2) return showToast('Passwords do not match.');
+
+  const btn = document.getElementById('btn-save-setup-pass');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  try {
+    const res  = await fetch(`${API_URL}/member_setup_password.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ member_id: memberId, password: p1, confirm_password: p2 })
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentMember = data.member;
+      localStorage.setItem('peg_member', JSON.stringify(data.member));
+      localStorage.setItem('peg_token',  data.token);
+      initMainView(data.member.id);
+    } else {
+      showToast(data.message || 'Failed to save password.');
+    }
+  } catch (err) {
+    showToast('Unable to connect to the server.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'SAVE PASSWORD & LOG IN';
+  }
+}
+
+// ── MAIN DASHBOARD ─────────────────────────────────────────────────
+async function initMainView(memberId) {
+  showScreen('view-main');
+  await loadDashboard(memberId);
+}
+
+async function loadDashboard(memberId) {
+  try {
+    const token = localStorage.getItem('peg_token');
+    if (!token) { logout(true); return; }
+
+    const res = await fetch(`${API_URL}/member_dashboard.php`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.status === 401) { logout(true); return; }
+
+    const data = await res.json();
+    if (!data.success) { logout(true); return; }
+
+    const m = data.member;
+    currentMember  = m;
+    availablePlans = data.plans || [];
+
+    // Tab 1 — Pass
+    document.getElementById('card-name').textContent   = m.full_name;
+    document.getElementById('card-code').textContent   = m.membership_id;
+    document.getElementById('card-plan').textContent   = m.plan_name   || 'No Active Plan';
+    document.getElementById('card-expiry').textContent = m.expiry_date || 'No Active Plan';
+
+    // Google avatar on pass card
+    if (m.photo) {
+      const avatarWrap = document.getElementById('member-avatar-wrap');
+      avatarWrap.innerHTML = `<img src="${m.photo}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';" />`;
+    }
+
+    const pill    = document.getElementById('card-status-pill');
+    const isExpired = !m.expiry_date || new Date(m.expiry_date) < new Date();
+    if (isExpired || m.status !== 'Active') {
+      pill.textContent = 'EXPIRED / INACTIVE';
+      pill.className   = 'status-pill pill-expired';
+    } else {
+      pill.textContent = '● ACTIVE MEMBER';
+      pill.className   = 'status-pill pill-active';
+    }
+
+    renderQRCode(data.qr_token || m.membership_id);
+
+    // Tab 2 — Attendance
+    renderAttendance(data.attendance || []);
+
+    // Tab 3 — Payments
+    renderPayments(data.payments || []);
+    populateRenewPlansSelect(availablePlans);
+
+    // Load plans for registration wizard too
+    if (availablePlans.length > 0) {
+      const regContainer = document.getElementById('plans-container-reg');
+      if (regContainer) renderPlanCards(availablePlans, regContainer);
+    }
+
+    // Tab 4 — Profile
+    document.getElementById('prof-name').textContent   = m.full_name;
+    document.getElementById('prof-code').textContent   = m.membership_id;
+    document.getElementById('prof-email').textContent  = m.email;
+    document.getElementById('prof-phone').textContent  = m.contact_number || 'N/A';
+    document.getElementById('prof-memid').textContent  = m.membership_id;
+
+    if (m.photo) {
+      const profWrap = document.getElementById('prof-avatar-wrap');
+      profWrap.innerHTML = `<img src="${m.photo}" style="width:100%;height:100%;object-fit:cover;" />`;
+    }
+
+    const authBadge = document.getElementById('prof-auth-badge');
+    if (m.auth_provider === 'google' || m.auth_provider === 'both') {
+      authBadge.innerHTML = '<i class="fa-brands fa-google" style="margin-right:4px;"></i> Google Account';
+      authBadge.style.display = 'inline-block';
+    } else {
+      authBadge.style.display = 'none';
+    }
+
+    // Load notifications badge
+    loadNotificationsBadge();
+
+  } catch (e) {
+    console.error('Dashboard error:', e);
+  }
+}
+
+function renderQRCode(text) {
+  const container = document.getElementById('qr-target');
+  if (!container) return;
+  container.innerHTML = '';
+  if (qrInstance) { try { qrInstance.clear(); } catch (e) {} }
+  qrInstance = new QRCode(container, {
+    text:         text,
+    width:        185,
+    height:       185,
+    colorDark:    '#091c14',
+    colorLight:   '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+function renderAttendance(list) {
+  const c = document.getElementById('attendance-container');
+  c.innerHTML = '';
+  if (!list.length) {
+    const msg = document.createElement('p');
+    msg.style.cssText = 'color: var(--gym-muted); text-align:center; padding:30px 0;';
+    msg.textContent   = 'No attendance records yet.';
+    c.appendChild(msg);
+    return;
+  }
+  list.forEach(a => {
+    const card = document.createElement('div');
+    card.className       = 'dark-card';
+    card.style.cssText   = 'padding:14px; margin-bottom:10px;';
+    const row            = document.createElement('div');
+    row.style.cssText    = 'display:flex; justify-content:space-between;';
+    const dateEl         = document.createElement('strong');
+    dateEl.style.color   = '#fff';
+    dateEl.textContent   = '📅 ' + (a.date || '--');
+    const pill           = document.createElement('span');
+    pill.className       = 'status-pill pill-active';
+    pill.textContent     = a.status || 'Present';
+    row.appendChild(dateEl);
+    row.appendChild(pill);
+    const times          = document.createElement('p');
+    times.style.cssText  = 'color: var(--gym-muted); font-size:0.83rem; margin:6px 0 0;';
+    times.textContent    = `Time In: ${a.time_in || '--'} | Time Out: ${a.time_out || '--'}`;
+    card.appendChild(row);
+    card.appendChild(times);
+    c.appendChild(card);
+  });
+}
+
+function renderPayments(list) {
+  const c = document.getElementById('payments-container');
+  c.innerHTML = '';
+  if (!list.length) {
+    const msg = document.createElement('p');
+    msg.style.cssText = 'color: var(--gym-muted); text-align:center; padding:30px 0;';
+    msg.textContent   = 'No payment transactions recorded.';
+    c.appendChild(msg);
+    return;
+  }
+  list.forEach(p => {
+    const card          = document.createElement('div');
+    card.className      = 'dark-card';
+    card.style.cssText  = 'padding:14px; margin-bottom:10px;';
+    const row           = document.createElement('div');
+    row.style.cssText   = 'display:flex; justify-content:space-between;';
+    const typeEl        = document.createElement('strong');
+    typeEl.style.color  = 'var(--gym-light)';
+    typeEl.textContent  = p.payment_type || 'Membership Fee';
+    const amountEl      = document.createElement('strong');
+    amountEl.style.color= '#fff';
+    amountEl.textContent= '₱' + parseFloat(p.amount).toFixed(2);
+    row.appendChild(typeEl);
+    row.appendChild(amountEl);
+    const details       = document.createElement('p');
+    details.style.cssText = 'color: var(--gym-muted); font-size:0.82rem; margin:6px 0 0;';
+    details.textContent   = `Date: ${p.payment_date || '--'} • Method: ${p.payment_method || 'Cash'}`;
+    card.appendChild(row);
+    card.appendChild(details);
+    c.appendChild(card);
+  });
+}
+
+// ── NOTIFICATIONS ──────────────────────────────────────────────────
+async function loadNotificationsBadge() {
+  try {
+    const token = localStorage.getItem('peg_token');
+    const res   = await fetch('/member/get_notifications.php', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data  = await res.json();
+    const unread = data.unread || 0;
+    const badge  = document.getElementById('notif-badge');
+    if (badge) {
+      badge.textContent    = unread > 9 ? '9+' : unread;
+      badge.style.display  = unread > 0 ? 'flex' : 'none';
+    }
+  } catch (e) {}
+}
+
+function openNotifPanel() {
+  document.getElementById('notif-overlay').classList.add('open');
+  document.getElementById('notif-panel').classList.add('open');
+  loadNotifications();
+}
+function closeNotifPanel() {
+  document.getElementById('notif-overlay').classList.remove('open');
+  document.getElementById('notif-panel').classList.remove('open');
+}
+
+async function loadNotifications() {
+  const list = document.getElementById('notif-list');
+  list.innerHTML = '<div style="text-align:center; padding:40px 20px; color: var(--gym-muted); font-size:0.85rem;"><div class="spinner" style="margin-bottom:12px;"></div>Loading...</div>';
+
+  try {
+    const token = localStorage.getItem('peg_token');
+    const res   = await fetch('/member/get_notifications.php', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    const notifs = data.notifications || [];
+    const unread = data.unread || 0;
+
+    document.getElementById('notif-unread-count').textContent = `${unread} unread`;
+    const badge = document.getElementById('notif-badge');
+    if (badge) {
+      badge.textContent   = unread > 9 ? '9+' : unread;
+      badge.style.display = unread > 0 ? 'flex' : 'none';
+    }
+
+    if (!notifs.length) {
+      list.innerHTML = '<div style="text-align:center; padding:50px 20px; color: var(--gym-muted); font-size:0.85rem;"><i class="fa-solid fa-bell-slash" style="font-size:2rem; margin-bottom:10px; display:block; opacity:0.4;"></i>No notifications yet.</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    notifs.forEach(n => {
+      const item = document.createElement('div');
+      item.className = `notif-item ${n.unread ? 'unread' : ''}`;
+      const typeClass = `notif-type-${n.type || 'info'}`;
+      item.innerHTML = `
+        <div class="notif-item-title ${typeClass}">
+          <i class="fa-solid ${n.icon || 'fa-bell'}" style="margin-right:6px;"></i>${n.title || ''}
         </div>
+        <div class="notif-item-msg">${n.message || ''}</div>
+        <div class="notif-item-time">${n.time || ''}</div>`;
+      list.appendChild(item);
+    });
+  } catch (e) {
+    list.innerHTML = '<div style="text-align:center; padding:40px 20px; color: var(--gym-muted); font-size:0.85rem;">Failed to load notifications.</div>';
+  }
+}
 
-        <!-- Step 2: Instant QR Ph / GCash Checkout Sheet -->
-        <div id="renewal-step-checkout" style="display: none; text-align: center; padding-top: 10px;">
-          <div style="background: #112d21; border-radius: 16px; border: 1px solid #52b788; padding: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.4);">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(82,183,136,0.2); padding-bottom: 12px; margin-bottom: 16px;">
-              <span id="checkout-method-badge" style="background: #2d6a4f; color: #fff; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 12px;">GCASH QR PH</span>
-              <span id="checkout-ref-text" style="font-family: monospace; font-size: 0.75rem; color: #95d5b2;">PEG-GC-1234</span>
-            </div>
+async function markAllRead() {
+  try {
+    const token = localStorage.getItem('peg_token');
+    await fetch('/member/mark_notifications_read.php', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ all: true })
+    });
+    loadNotifications();
+  } catch (e) {}
+}
 
-            <h3 id="checkout-plan-name" style="color: #fff; margin: 0; font-size: 1.15rem; font-weight: 700;">VIP Monthly Pass</h3>
-            <h1 id="checkout-amount-display" style="color: #74c69d; margin: 8px 0; font-size: 2rem; font-weight: 900;">₱1,500.00</h1>
-            <p style="color: #95d5b2; font-size: 0.78rem; margin: 0 0 16px 0;">Scan via GCash, Maya, or any Banking App</p>
+// ── RENEWAL MODAL ──────────────────────────────────────────────────
+function populateRenewPlansSelect(plans) {
+  const s = document.getElementById('renew-plan-select');
+  if (!s) return;
+  s.innerHTML = plans.map(p =>
+    `<ion-select-option value="${p.id}">${p.name} — ₱${parseFloat(p.price).toFixed(2)} (${p.duration_months} mo)</ion-select-option>`
+  ).join('');
+}
 
-            <!-- Dynamic QR Canvas -->
-            <div style="background: #ffffff; padding: 14px; border-radius: 14px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 16px;">
-              <div id="checkout-qrcode-box" style="width: 180px; height: 180px; display: flex; align-items: center; justify-content: center;"></div>
-            </div>
+function openRenewalModal()  { document.getElementById('modal-renewal').isOpen = true; }
+function closeRenewalModal() { document.getElementById('modal-renewal').isOpen = false; }
 
-            <p style="color: #d8f3dc; font-size: 0.75rem; margin-bottom: 18px;">
-              <i class="fa-solid fa-shield-halved" style="color: #74c69d;"></i> Secured by Instant Auto-Activation Gateway
-            </p>
+function handleRenewMethodChange(val) {
+  const wrap = document.getElementById('renew-manual-ref-wrap');
+  const btn  = document.getElementById('btn-proceed-renewal');
+  if (val === 'Cash') {
+    wrap.style.display = 'block';
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i> SUBMIT CASH REQUEST';
+  } else {
+    wrap.style.display = 'none';
+    btn.innerHTML = '<i class="fa-solid fa-bolt" style="margin-right:6px;"></i> PROCEED TO PAYMENT';
+  }
+}
 
-            <!-- Instant Complete / Simulate Payment Button -->
-            <ion-button expand="block" id="btn-confirm-auto-pay" style="--background: #52b788; --color: #091c14; font-weight: 900; height: 50px; border-radius: 12px; margin-bottom: 10px;" onclick="executeAutoActivation()">
-              <i class="fa-solid fa-circle-check" style="margin-right: 6px;"></i> COMPLETE &amp; ACTIVATE PASS
-            </ion-button>
+function backToRenewalForm() {
+  document.getElementById('renewal-step-checkout').style.display = 'none';
+  document.getElementById('renewal-step-form').style.display     = 'block';
+}
 
-            <a href="javascript:void(0)" onclick="backToRenewalForm()" style="color: #95d5b2; font-size: 0.82rem; text-decoration: none;">
-              <i class="fa-solid fa-arrow-left"></i> Change Plan / Back
-            </a>
-          </div>
-        </div>
-      </ion-content>
-    </ion-modal>
+async function submitRenewal() {
+  const planId = document.getElementById('renew-plan-select').value;
+  const method = document.getElementById('renew-method-select').value;
+  const ref    = (document.getElementById('renew-ref-input')?.value || '').trim();
 
-  </ion-app>
+  if (!planId || !method) return showToast('Please select a plan and payment method.');
 
-  <script>
-    // =============================================================
-    // PRODUCTION API CONFIGURATION
-    // Mobile app communicates exclusively with the Render cloud backend.
-    // Architecture: Mobile App → HTTPS → Render API → Aiven Database
-    // LAN/Wi-Fi scanning and XAMPP/localhost connections are NOT used.
-    // =============================================================
-    const PRODUCTION_API_URL = 'https://palmas-gym.onrender.com/api';
+  if (method === 'Cash') {
+    const token = localStorage.getItem('peg_token');
+    const btn   = document.getElementById('btn-proceed-renewal');
+    btn.disabled = true;
+    try {
+      const res  = await fetch(`${API_URL}/member_renew.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ plan_id: planId, payment_method: method, reference_no: ref })
+      });
+      const data = await res.json();
+      showToast(data.message || 'Renewal request submitted.');
+      if (data.success) { closeRenewalModal(); refreshDashboard(); }
+    } catch { showToast('Failed to submit renewal request.'); }
+    finally { btn.disabled = false; }
+    return;
+  }
 
-    // Patterns that identify local/private/development addresses — always rejected
-    const LOCAL_URL_PATTERNS = [
-      'localhost', '127.0.0.1', '0.0.0.0',
-      '192.168.', '10.0.', '10.1.', '172.16.', '172.20.',
-      'GYM-MEMBERSHIP', 'http://',
-    ];
+  // Online payment
+  const btn = document.getElementById('btn-proceed-renewal');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
 
-    function isLocalUrl(url) {
-      if (!url) return true;
-      return LOCAL_URL_PATTERNS.some(p => url.includes(p));
-    }
+  try {
+    const token = localStorage.getItem('peg_token');
+    const res   = await fetch(`${API_URL}/create_payment_checkout.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ plan_id: planId, payment_method: method })
+    });
+    const data = await res.json();
 
-    // On startup: wipe any previously saved local/LAN API URL from storage
-    (function clearLegacyLocalUrls() {
-      try {
-        const keys = ['peg_api_url', 'gym_api_url', 'server_url', 'api_url', 'serverUrl'];
-        keys.forEach(k => {
-          const v = localStorage.getItem(k);
-          if (v && isLocalUrl(v)) {
-            localStorage.removeItem(k);
-          }
-        });
-      } catch (e) {}
-    })();
+    if (data.success && data.checkout) {
+      currentCheckoutSession = data.checkout;
+      document.getElementById('checkout-method-badge').textContent       = `${method.toUpperCase()} AUTO-PAY`;
+      document.getElementById('checkout-ref-text').textContent           = data.checkout.ref_code;
+      document.getElementById('checkout-plan-name').textContent          = `${data.checkout.plan_name} (${data.checkout.duration})`;
+      document.getElementById('checkout-amount-display').textContent     = data.checkout.amount_formatted;
 
-    // The single source of truth for the API endpoint — always cloud
-    const API_URL = PRODUCTION_API_URL;
-
-    let currentMember = null;
-    let availablePlans = [];
-    let qrInstance = null;
-    let qrTimerInterval = null;
-
-    // Set status badge to connected on load
-    (function initStatusBadge() {
-      const dot = document.getElementById('server-status-dot');
-      const txt = document.getElementById('server-status-text');
-      if (dot) dot.style.background = '#74c69d';
-      if (txt) txt.innerText = 'Cloud Server';
-    })();
-
-    function showRegisterView() {
-      document.getElementById('view-login').style.display = 'none';
-      document.getElementById('view-register').style.display = 'block';
-    }
-
-    function showLoginView() {
-      document.getElementById('view-register').style.display = 'none';
-      document.getElementById('view-login').style.display = 'flex';
-    }
-
-    async function submitRegister() {
-      const name = document.getElementById('reg-name').value.trim();
-      const email = document.getElementById('reg-email').value.trim();
-      const phone = document.getElementById('reg-phone').value.trim();
-      const gender = document.getElementById('reg-gender').value || 'Other';
-      const pass = document.getElementById('reg-password').value.trim();
-      const pass2 = document.getElementById('reg-confirmpassword').value.trim();
-
-      if (!name || !email || !pass) {
-        return alert('Please fill in all required fields (Name, Email, Password).');
-      }
-
-      if (pass.length < 6) {
-        return alert('Password must be at least 6 characters long.');
-      }
-
-      if (pass !== pass2) {
-        return alert('Passwords do not match.');
-      }
-
-      const btn = document.getElementById('btn-submit-reg');
-      btn.disabled = true;
-      btn.innerText = 'Creating Account...';
-
-      try {
-        const res = await fetch(`${API_URL}/member_register.php`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            full_name: name,
-            email: email,
-            contact_number: phone,
-            gender: gender,
-            password: pass
-          })
-        });
-        const data = await res.json();
-
-        if (data.pending_approval) {
-          alert(`Registration Received!\n\nYour Reference ID: ${data.membership_id}\n\nYour account is currently waiting for staff approval. You will be able to log in once your registration is reviewed.`);
-          showLoginView();
-          return;
-        }
-
-        if (data.success) {
-          alert(`Account Created Successfully!\n\nYour Membership ID: ${data.membership_id}\n\nYou are now signed in.`);
-          currentMember = data.member;
-          localStorage.setItem('peg_member', JSON.stringify(data.member));
-          localStorage.setItem('peg_token', data.token);
-          document.getElementById('view-register').style.display = 'none';
-          initMainView(data.member.id);
-        } else {
-          alert(data.message || 'Registration failed.');
-        }
-      } catch (err) {
-        alert('Unable to connect to the cloud server. Please check your internet connection and try again.');
-      } finally {
-        btn.disabled = false;
-        btn.innerText = 'REGISTER NOW';
-      }
-    }
-
-    function showLoginView() {
-      document.getElementById('view-register').style.display = 'none';
-      if (document.getElementById('view-setup-password')) {
-        document.getElementById('view-setup-password').style.display = 'none';
-      }
-      document.getElementById('view-login').style.display = 'flex';
-    }
-
-    async function submitSetupPassword() {
-      const memberId = document.getElementById('setup-member-id').value;
-      const p1 = document.getElementById('setup-password-input').value.trim();
-      const p2 = document.getElementById('setup-confirm-input').value.trim();
-
-      if (!p1 || p1.length < 6) {
-        return alert('Password must be at least 6 characters long.');
-      }
-
-      if (p1 !== p2) {
-        return alert('Passwords do not match.');
-      }
-
-      const btn = document.getElementById('btn-save-setup-pass');
-      btn.disabled = true;
-      btn.innerText = 'Saving Password...';
-
-      try {
-        const res = await fetch(`${API_URL}/member_setup_password.php`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            member_id: memberId,
-            password: p1,
-            confirm_password: p2
-          })
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          alert('Password created successfully! You are now logged in.');
-          currentMember = data.member;
-          localStorage.setItem('peg_member', JSON.stringify(data.member));
-          localStorage.setItem('peg_token', data.token);
-          document.getElementById('view-setup-password').style.display = 'none';
-          initMainView(data.member.id);
-        } else {
-          alert(data.message || 'Failed to save password.');
-        }
-      } catch (err) {
-        alert('Unable to connect to the cloud server. Please check your internet connection and try again.');
-      } finally {
-        btn.disabled = false;
-        btn.innerText = 'SAVE PASSWORD & LOG IN';
-      }
-    }
-
-    async function submitLogin() {
-      const u = document.getElementById('input-username').value.trim();
-      const p = document.getElementById('input-password').value.trim();
-
-      if (!u || !p) {
-        return alert('Please enter both Member ID/Email and password.');
-      }
-
-      try {
-        const res = await fetch(`${API_URL}/member_login.php`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: u, password: p })
-        });
-        const data = await res.json();
-
-        if (data.first_time_setup) {
-          // Member registered at Admin front desk without password yet
-          document.getElementById('setup-member-id').value = data.member_id;
-          document.getElementById('setup-member-welcome').innerText = `Welcome, ${data.full_name}! (${data.membership_id})`;
-          document.getElementById('view-login').style.display = 'none';
-          document.getElementById('view-setup-password').style.display = 'block';
-          return;
-        }
-
-        if (data.success) {
-          currentMember = data.member;
-          localStorage.setItem('peg_member', JSON.stringify(data.member));
-          localStorage.setItem('peg_token', data.token);
-          initMainView(data.member.id);
-        } else {
-          alert(data.message || 'Login failed.');
-        }
-      } catch (err) {
-        alert('Unable to connect to the cloud server. Please check your internet connection and try again.');
-      }
-    }
-
-    async function initMainView(memberId) {
-      document.getElementById('view-login').style.display = 'none';
-      document.getElementById('view-main').style.display = 'block';
-
-      await loadDashboard(memberId);
-    }
-
-    async function loadDashboard(memberId) {
-      try {
-        const token = localStorage.getItem('peg_token');
-        if (!token) {
-          // No token stored — force logout immediately
-          logout(true);
-          return;
-        }
-
-        const res = await fetch(`${API_URL}/member_dashboard.php`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        // If server returns 401, the token is expired or invalid — force logout
-        if (res.status === 401) {
-          logout(true);
-          return;
-        }
-
-        const data = await res.json();
-
-        if (!data.success) {
-          // Server rejected the request (e.g. token revoked) — force logout
-          logout(true);
-          return;
-        }
-
-        const m = data.member;
-        availablePlans = data.plans || [];
-
-        // Tab 1: Pass
-        document.getElementById('card-name').innerText = m.full_name;
-        document.getElementById('card-code').innerText = m.membership_id;
-        document.getElementById('card-plan').innerText = m.plan_name || 'No Active Plan';
-        document.getElementById('card-expiry').innerText = m.expiry_date || 'Expired';
-
-        const statusPill = document.getElementById('card-status-pill');
-        const isExpired = !m.expiry_date || new Date(m.expiry_date) < new Date();
-        if (isExpired || m.status !== 'Active') {
-          statusPill.innerText = 'EXPIRED / INACTIVE';
-          statusPill.className = 'status-pill status-expired';
-        } else {
-          statusPill.innerText = 'ACTIVE MEMBER';
-          statusPill.className = 'status-pill status-active';
-        }
-
-        renderQRCode(data.qr_token || m.membership_id);
-
-        // Tab 2: Attendance
-        renderAttendance(data.attendance || []);
-
-        // Tab 3: Payments & Renewal
-        renderPayments(data.payments || []);
-        populatePlansSelect(availablePlans);
-
-        // Tab 4: Profile
-        document.getElementById('prof-name').innerText = m.full_name;
-        document.getElementById('prof-code').innerText = m.membership_id;
-        document.getElementById('prof-email').innerText = m.email;
-        document.getElementById('prof-phone').innerText = m.contact_number || 'N/A';
-
-      } catch (e) {
-        console.error('Error loading dashboard:', e);
-      }
-    }
-
-    function renderQRCode(text) {
-      const container = document.getElementById('qr-target');
-      if (!container) return;
-      container.innerHTML = '';
-      qrInstance = new QRCode(container, {
-        text: text,
-        width: 190,
-        height: 190,
-        colorDark: '#091c14',
-        colorLight: '#ffffff',
+      const qrBox = document.getElementById('checkout-qrcode-box');
+      qrBox.innerHTML = '';
+      new QRCode(qrBox, {
+        text: data.checkout.qr_data, width: 175, height: 175,
+        colorDark: '#091c14', colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
       });
+
+      document.getElementById('renewal-step-form').style.display     = 'none';
+      document.getElementById('renewal-step-checkout').style.display = 'block';
+    } else {
+      showToast(data.message || 'Could not start payment checkout.');
     }
+  } catch { showToast('Could not connect to payment gateway.'); }
+  finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-bolt" style="margin-right:6px;"></i> PROCEED TO PAYMENT';
+  }
+}
 
-    // Priority 12: Safe DOM rendering — no innerHTML with database data
-    function renderAttendance(list) {
-      const c = document.getElementById('attendance-container');
-      c.innerHTML = '';
-      if (!list.length) {
-        const msg = document.createElement('p');
-        msg.style.cssText = 'color: #95d5b2; text-align: center;';
-        msg.textContent = 'No attendance records found.';
-        c.appendChild(msg);
-        return;
-      }
-      list.forEach(a => {
-        const card = document.createElement('div');
-        card.className = 'dark-card';
-        card.style.cssText = 'padding: 14px; margin-bottom: 10px;';
+async function executeAutoActivation() {
+  if (!currentCheckoutSession) return;
+  const btn = document.getElementById('btn-confirm-auto-pay');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
 
-        const row = document.createElement('div');
-        row.style.cssText = 'display: flex; justify-content: space-between;';
+  try {
+    const token = localStorage.getItem('peg_token');
+    const res   = await fetch(`${API_URL}/confirm_auto_payment.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        plan_id:        currentCheckoutSession.plan_id,
+        payment_method: currentCheckoutSession.payment_method,
+        ref_code:       currentCheckoutSession.ref_code
+      })
+    });
+    const data = await res.json();
 
-        const dateEl = document.createElement('strong');
-        dateEl.style.color = '#fff';
-        dateEl.textContent = '\u{1F4C5} ' + (a.date || '--');
-
-        const pill = document.createElement('span');
-        pill.className = 'status-pill status-active';
-        pill.textContent = a.status || 'Present';
-
-        row.appendChild(dateEl);
-        row.appendChild(pill);
-
-        const times = document.createElement('p');
-        times.style.cssText = 'color: #95d5b2; font-size: 0.85rem; margin: 6px 0 0 0;';
-        times.textContent = `Time In: ${a.time_in || '--'} | Time Out: ${a.time_out || '--'}`;
-
-        card.appendChild(row);
-        card.appendChild(times);
-        c.appendChild(card);
-      });
+    if (data.success) {
+      showToast('🎉 Membership activated successfully!');
+      closeRenewalModal();
+      backToRenewalForm();
+      refreshDashboard();
+    } else if (data.pending) {
+      showToast(data.message || 'Payment is being processed. Please wait.');
+    } else {
+      showToast(data.message || 'Payment activation failed.');
     }
+  } catch { showToast('Error connecting to gym server.'); }
+  finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-circle-check" style="margin-right:6px;"></i> COMPLETE & ACTIVATE PASS';
+  }
+}
 
-    // Priority 12: Safe DOM rendering — no innerHTML with database data
-    function renderPayments(list) {
-      const c = document.getElementById('payments-container');
-      c.innerHTML = '';
-      if (!list.length) {
-        const msg = document.createElement('p');
-        msg.style.cssText = 'color: #95d5b2; text-align: center;';
-        msg.textContent = 'No payment transactions recorded.';
-        c.appendChild(msg);
-        return;
-      }
-      list.forEach(p => {
-        const card = document.createElement('div');
-        card.className = 'dark-card';
-        card.style.cssText = 'padding: 14px; margin-bottom: 10px;';
+// ── LOGOUT ─────────────────────────────────────────────────────────
+function logout(silent = false) {
+  if (!silent && !confirm('Are you sure you want to sign out?')) return;
+  clearInterval(window._qrTimer);
+  localStorage.removeItem('peg_member');
+  localStorage.removeItem('peg_token');
+  currentMember = null;
 
-        const row = document.createElement('div');
-        row.style.cssText = 'display: flex; justify-content: space-between;';
+  // Sign out of Google too
+  if (typeof google !== 'undefined' && google.accounts) {
+    try { google.accounts.id.disableAutoSelect(); } catch (e) {}
+  }
 
-        const typeEl = document.createElement('strong');
-        typeEl.style.color = '#74c69d';
-        typeEl.textContent = p.payment_type || 'Membership Fee';
+  showScreen('view-login');
+}
 
-        const amountEl = document.createElement('strong');
-        amountEl.style.color = '#fff';
-        amountEl.textContent = '\u20B1' + parseFloat(p.amount).toFixed(2);
+async function refreshDashboard() {
+  if (currentMember) await loadDashboard(currentMember.id);
+  const ref = document.getElementById('refresher-pass');
+  if (ref) ref.complete();
+}
 
-        row.appendChild(typeEl);
-        row.appendChild(amountEl);
+// ── STARTUP: Auto-login if token exists ───────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // Initialize all screens hidden except login
+  showScreen('view-login');
 
-        const details = document.createElement('p');
-        details.style.cssText = 'color: #95d5b2; font-size: 0.85rem; margin: 6px 0 0 0;';
-        details.textContent = `Date: ${p.payment_date || '--'} \u2022 Method: ${p.payment_method || 'Cash'}`;
+  const savedMember = localStorage.getItem('peg_member');
+  const savedToken  = localStorage.getItem('peg_token');
 
-        card.appendChild(row);
-        card.appendChild(details);
-        c.appendChild(card);
-      });
-    }
-
-    function populatePlansSelect(plans) {
-      const s = document.getElementById('renew-plan-select');
-      s.innerHTML = plans.map(p => `
-        <ion-select-option value="${p.id}">${p.name} - ₱${parseFloat(p.price).toFixed(2)} (${p.duration_months} mo)</ion-select-option>
-      `).join('');
-    }
-
-    function openRenewalModal() {
-      document.getElementById('modal-renewal').isOpen = true;
-    }
-    function closeRenewalModal() {
-      document.getElementById('modal-renewal').isOpen = false;
-    }
-
-    let currentCheckoutSession = null;
-    let checkoutQrInstance = null;
-
-    function handleRenewMethodChange(val) {
-      const wrap = document.getElementById('renew-manual-ref-wrap');
-      const btn = document.getElementById('btn-proceed-renewal');
-      if (val === 'Cash') {
-        wrap.style.display = 'block';
-        btn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i> SUBMIT REQUEST (CASH AT DESK)';
-      } else {
-        wrap.style.display = 'none';
-        btn.innerHTML = '<i class="fa-solid fa-bolt" style="margin-right:6px;"></i> PROCEED TO INSTANT PAYMENT';
-      }
-    }
-
-    function backToRenewalForm() {
-      document.getElementById('renewal-step-checkout').style.display = 'none';
-      document.getElementById('renewal-step-form').style.display = 'block';
-    }
-
-    async function submitRenewal() {
-      const planId = document.getElementById('renew-plan-select').value;
-      const method = document.getElementById('renew-method-select').value;
-      const ref = document.getElementById('renew-ref-input').value.trim();
-
-      if (!planId || !method) {
-        return alert('Please select both a plan and payment method.');
-      }
-
-      // If Cash -> Standard Front desk pending flow
-      if (method === 'Cash') {
-        try {
-          const token = localStorage.getItem('peg_token');
-          const res = await fetch(`${API_URL}/member_renew.php`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              plan_id: planId,
-              payment_method: method,
-              reference_no: ref
-            })
-          });
-          const data = await res.json();
-          alert(data.message);
-          if (data.success) {
-            closeRenewalModal();
-            refreshDashboard();
-          }
-        } catch (err) {
-          alert('Failed to submit renewal request.');
-        }
-        return;
-      }
-
-      // If Instant GCash / Maya / QR Ph -> Launch Instant Checkout Sheet!
-      const btn = document.getElementById('btn-proceed-renewal');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating QR Ph...';
-
-      try {
-        const token = localStorage.getItem('peg_token');
-        const res = await fetch(`${API_URL}/create_payment_checkout.php`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            plan_id: planId,
-            payment_method: method
-          })
-        });
-        const data = await res.json();
-
-        if (data.success && data.checkout) {
-          currentCheckoutSession = data.checkout;
-          
-          document.getElementById('checkout-method-badge').innerText = `${method.toUpperCase()} AUTO-PAY`;
-          document.getElementById('checkout-ref-text').innerText = data.checkout.ref_code;
-          document.getElementById('checkout-plan-name').innerText = `${data.checkout.plan_name} (${data.checkout.duration})`;
-          document.getElementById('checkout-amount-display').innerText = data.checkout.amount_formatted;
-
-          // Render Checkout QR Code
-          const qrBox = document.getElementById('checkout-qrcode-box');
-          qrBox.innerHTML = '';
-          checkoutQrInstance = new QRCode(qrBox, {
-            text: data.checkout.qr_data,
-            width: 170,
-            height: 170,
-            colorDark: '#091c14',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.M
-          });
-
-          // Transition to Checkout step
-          document.getElementById('renewal-step-form').style.display = 'none';
-          document.getElementById('renewal-step-checkout').style.display = 'block';
-        } else {
-          alert(data.message || 'Could not start payment checkout.');
-        }
-      } catch (err) {
-        alert('Could not connect to payment gateway.');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-bolt" style="margin-right:6px;"></i> PROCEED TO INSTANT PAYMENT';
-      }
-    }
-
-    async function executeAutoActivation() {
-      if (!currentCheckoutSession) return;
-
-      const btn = document.getElementById('btn-confirm-auto-pay');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying Payment & Activating...';
-
-      try {
-        const token = localStorage.getItem('peg_token');
-        const res = await fetch(`${API_URL}/confirm_auto_payment.php`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            plan_id: currentCheckoutSession.plan_id,
-            payment_method: currentCheckoutSession.payment_method,
-            ref_code: currentCheckoutSession.ref_code
-          })
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          alert(`🎉 SUCCESS!\n\n${data.message}\n\nYour Digital Pass has been instantly unlocked!`);
-          closeRenewalModal();
-          backToRenewalForm();
-          refreshDashboard();
-        } else {
-          alert(data.message || 'Payment activation failed.');
-        }
-      } catch (err) {
-        alert('Error connecting to gym server for auto-activation.');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-circle-check" style="margin-right: 6px;"></i> COMPLETE &amp; ACTIVATE PASS';
-      }
-    }
-
-    async function refreshDashboard() {
-      if (currentMember) {
-        await loadDashboard(currentMember.id);
-      }
-      const ref = document.getElementById('refresher-pass');
-      if (ref) ref.complete();
-    }
-
-    function logout(silent = false) {
-      if (!silent && !confirm('Are you sure you want to sign out?')) return;
-      clearInterval(qrTimerInterval);
+  if (savedMember && savedToken) {
+    try {
+      currentMember = JSON.parse(savedMember);
+      initMainView(currentMember.id);
+    } catch (e) {
       localStorage.removeItem('peg_member');
       localStorage.removeItem('peg_token');
-      currentMember = null;
-      document.getElementById('view-main').style.display = 'none';
-      document.getElementById('view-login').style.display = 'flex';
+      showScreen('view-login');
     }
+  }
 
-    // Auto-login if session exists
-    window.addEventListener('DOMContentLoaded', () => {
-      const saved = localStorage.getItem('peg_member');
-      if (saved) {
-        try {
-          currentMember = JSON.parse(saved);
-          initMainView(currentMember.id);
-        } catch(e) {
-          localStorage.removeItem('peg_member');
-        }
-      }
-      
-      const refresher = document.getElementById('refresher-pass');
-      if (refresher) {
-        refresher.addEventListener('ionRefresh', refreshDashboard);
-      }
+  // Wire pull-to-refresh
+  const refresher = document.getElementById('refresher-pass');
+  if (refresher) refresher.addEventListener('ionRefresh', refreshDashboard);
+
+  // Initialize Google Sign-In if Client ID is set
+  if (GOOGLE_CLIENT_ID && typeof google !== 'undefined') {
+    google.accounts.id.initialize({
+      client_id:            GOOGLE_CLIENT_ID,
+      callback:             handleGoogleCredential,
+      auto_select:          false,
+      cancel_on_tap_outside:true,
     });
-  </script>
+  }
+});
+</script>
 </body>
 </html>

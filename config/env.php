@@ -109,4 +109,16 @@
         $default_apk_url = rtrim(defined('APP_URL') ? APP_URL : 'https://palmas-gym.onrender.com', '/') . '/downloads/palmas-elite-gym.apk';
         define('ANDROID_APK_URL', $get_conf('ANDROID_APK_URL', $default_apk_url));
     }
+
+    // Google OAuth 2.0 Configuration
+    // Get your Client ID from: https://console.cloud.google.com
+    if (!defined('GOOGLE_CLIENT_ID')) {
+        define('GOOGLE_CLIENT_ID', $get_conf('GOOGLE_CLIENT_ID', ''));
+    }
+
+    // Payment Mode: 'demo' allows instant activation without real gateway verification.
+    // Set to 'live' in production when a real payment webhook is configured.
+    if (!defined('PAYMENT_MODE')) {
+        define('PAYMENT_MODE', $get_conf('PAYMENT_MODE', 'demo'));
+    }
 })();

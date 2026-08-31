@@ -226,15 +226,30 @@ try {
                 <tr>
                     <td>
                         <div class="member-cell">
-                            <div class="member-avatar" style="background:var(--accent-dim);color:var(--accent);font-weight:700;">
-                                <?php echo strtoupper(substr($pm['full_name'], 0, 1)); ?>
-                            </div>
+                            <?php if (!empty($pm['google_picture'])): ?>
+                                <img src="<?php echo htmlspecialchars($pm['google_picture']); ?>" alt=""
+                                     style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #4285F4;"
+                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                                <div class="member-avatar" style="background:var(--accent-dim);color:var(--accent);font-weight:700;display:none;">
+                                    <?php echo strtoupper(substr($pm['full_name'], 0, 1)); ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="member-avatar" style="background:var(--accent-dim);color:var(--accent);font-weight:700;">
+                                    <?php echo strtoupper(substr($pm['full_name'], 0, 1)); ?>
+                                </div>
+                            <?php endif; ?>
                             <div>
                                 <div style="font-weight:600;color:var(--text-main);"><?php echo htmlspecialchars($pm['full_name']); ?></div>
                                 <div style="font-size:0.75rem;color:var(--text-muted);"><?php echo htmlspecialchars($pm['email']); ?></div>
+                                <?php if (($pm['auth_provider'] ?? 'password') === 'google' || ($pm['auth_provider'] ?? '') === 'both'): ?>
+                                    <span style="background:rgba(66,133,244,0.15);color:#4285F4;border-radius:6px;padding:1px 7px;font-size:0.68rem;font-weight:700;display:inline-block;margin-top:3px;">
+                                        <i class="fab fa-google"></i> Google Sign-In
+                                    </span>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </td>
+
                     <td><code style="font-size:0.85rem;color:var(--accent);font-weight:700;"><?php echo htmlspecialchars($pm['membership_id']); ?></code></td>
                     <td>
                         <div style="font-size:0.85rem;color:var(--text-main);"><?php echo htmlspecialchars($pm['contact_number'] ?: '—'); ?></div>
