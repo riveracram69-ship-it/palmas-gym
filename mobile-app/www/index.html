@@ -1637,8 +1637,13 @@ async function loadDashboard(memberId) {
     document.getElementById('prof-days-remaining').textContent = `${daysRemaining} Days Remaining`;
     const pct = Math.min(100, Math.max(5, (daysRemaining / 30) * 100));
     document.getElementById('prof-days-bar-fill').style.width = `${pct}%`;
-
-    loadNotificationsBadge();
+    // Set notification badge directly from bundled dashboard response
+    const unread = data.unread_notifications || 0;
+    const badge  = document.getElementById('notif-badge');
+    if (badge) {
+      badge.textContent   = unread > 9 ? '9+' : unread;
+      badge.style.display = unread > 0 ? 'inline-block' : 'none';
+    }
 
   } catch (e) {
     console.error('Dashboard load error:', e);

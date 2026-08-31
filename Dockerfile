@@ -32,7 +32,8 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         opcache
 
 # Enable required Apache modules
-RUN a2enmod rewrite headers
+RUN a2enmod rewrite headers deflate expires
+
 
 # Copy production PHP runtime settings
 COPY deploy/php/production.ini /usr/local/etc/php/conf.d/99-palmas-production.ini
