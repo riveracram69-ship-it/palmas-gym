@@ -22,13 +22,18 @@ $options = [
     // connection handles after container restarts — leading to 500 errors.
     PDO::ATTR_ERRMODE               => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE    => PDO::FETCH_ASSOC,
-    PDO::ATTR_EMULATE_PREPARES      => false,
+    // CRITICAL: Must be TRUE for Aiven MySQL over SSL.
+    // Native prepared statements (false) require an extra protocol round-trip
+    // that fails with Aiven's SSL-wrapped MySQL, causing ALL $pdo->prepare()
+    // calls to throw PDOException → 500 errors on every authenticated endpoint.
+    // Emulated prepares handle binding in PHP → sends one complete query → works.
+    PDO::ATTR_EMULATE_PREPARES      => true,
     PDO::ATTR_TIMEOUT               => 10,
     PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
-    // Single valid SET statement only — combining SET NAMES with time_zone
-    // in one comma-separated statement is invalid MySQL syntax.
+    // Single valid SET statement only
     PDO::MYSQL_ATTR_INIT_COMMAND    => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
 ];
+
 
 
 $pdo = null;
