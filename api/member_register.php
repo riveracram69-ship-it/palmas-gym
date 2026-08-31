@@ -57,13 +57,17 @@ if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// Password required for traditional sign-up only
+// Password handling for traditional sign-up
 if ($auth_provider === 'password') {
-    if (empty($password) || strlen($password) < 6) {
+    if (empty($password)) {
+        // Fallback to contact number or default temporary password
+        $password = !empty($contact_number) ? $contact_number : 'gym123456';
+    } elseif (strlen($password) < 6) {
         echo json_encode(['success' => false, 'message' => 'Password must be at least 6 characters long.']);
         exit;
     }
 }
+
 
 if (!empty($contact_number) && !preg_match('/^09[0-9]{9}$/', $contact_number)) {
     echo json_encode(['success' => false, 'message' => 'Contact number must be 11 digits starting with 09 (e.g. 09123456789).']);

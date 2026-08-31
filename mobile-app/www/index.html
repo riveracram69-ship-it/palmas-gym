@@ -635,6 +635,26 @@
             </div>
           </div>
 
+          <div id="reg-password-group" class="form-group">
+            <label>Password (min. 6 characters) *</label>
+            <div class="input-field-wrap">
+              <input type="password" id="reg-password" placeholder="Create a secure password" />
+              <button class="eye-btn" type="button" onclick="togglePasswordVisibility('reg-password', this)">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div id="reg-confirm-password-group" class="form-group">
+            <label>Confirm Password *</label>
+            <div class="input-field-wrap">
+              <input type="password" id="reg-confirm-password" placeholder="Confirm your password" />
+              <button class="eye-btn" type="button" onclick="togglePasswordVisibility('reg-confirm-password', this)">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
           <div class="form-group">
             <label>Gender *</label>
             <div class="gender-group">
@@ -647,6 +667,7 @@
           <button class="btn-primary" onclick="wizardNext(1)" style="margin-top:10px;">
             CONTINUE TO PLAN <i class="fa-solid fa-arrow-right"></i>
           </button>
+
         </div>
 
         <!-- STEP 2: Plan Selection -->
@@ -1266,6 +1287,14 @@ function openRegistrationWizard() {
   document.getElementById('reg-name').value = '';
   document.getElementById('reg-email').value = '';
   document.getElementById('reg-phone').value = '';
+  const pwGroup = document.getElementById('reg-password-group');
+  const cpwGroup = document.getElementById('reg-confirm-password-group');
+  if (pwGroup) pwGroup.style.display = 'block';
+  if (cpwGroup) cpwGroup.style.display = 'block';
+  const pInp = document.getElementById('reg-password');
+  const cpInp = document.getElementById('reg-confirm-password');
+  if (pInp) pInp.value = '';
+  if (cpInp) cpInp.value = '';
   selectGender('');
   goToWizardStep(1);
   loadPlansForRegistration();
@@ -1279,6 +1308,10 @@ function openRegistrationWizardWithPrefill(prefill) {
   document.getElementById('google-email-badge').textContent = prefill.email || '';
   document.getElementById('reg-name').value = prefill.name || '';
   document.getElementById('reg-email').value = prefill.email || '';
+  const pwGroup = document.getElementById('reg-password-group');
+  const cpwGroup = document.getElementById('reg-confirm-password-group');
+  if (pwGroup) pwGroup.style.display = 'none';
+  if (cpwGroup) cpwGroup.style.display = 'none';
   goToWizardStep(1);
   loadPlansForRegistration();
   showScreen('view-register');
@@ -1322,6 +1355,15 @@ function wizardNext(fromStep) {
     if (!name) return showToast('Please enter your full name.');
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('Please enter a valid email address.');
     if (!phone || !/^09[0-9]{9}$/.test(phone)) return showToast('Contact number must be 11 digits starting with 09.');
+    
+    // Password check for non-Google signups
+    if (!regPrefill.google_id) {
+      const pass = (document.getElementById('reg-password')?.value || '').trim();
+      const cpass = (document.getElementById('reg-confirm-password')?.value || '').trim();
+      if (!pass || pass.length < 6) return showToast('Password must be at least 6 characters long.');
+      if (pass !== cpass) return showToast('Passwords do not match.');
+    }
+
     if (!selectedGender) return showToast('Please select your gender.');
     goToWizardStep(2);
   } else if (fromStep === 2) {
@@ -1365,7 +1407,6 @@ async function loadPlansForRegistration() {
   }
 }
 
-
 function renderPlanCards(plans, container) {
   container.innerHTML = '';
   plans.forEach(p => {
@@ -1400,6 +1441,7 @@ async function submitRegistration() {
         full_name:      document.getElementById('reg-name').value.trim(),
         email:          document.getElementById('reg-email').value.trim(),
         contact_number: document.getElementById('reg-phone').value.trim(),
+        password:       document.getElementById('reg-password')?.value || '',
         gender:         selectedGender,
         plan_id:        selectedPlanId || 1,
         google_id:      regPrefill.google_id || '',
@@ -1422,6 +1464,7 @@ async function submitRegistration() {
     btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> SUBMIT REGISTRATION';
   }
 }
+
 
 // ── MAIN DASHBOARD INITIALIZATION ──────────────────────────────────
 function initMainView(memberId) {
