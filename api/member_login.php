@@ -198,13 +198,14 @@ try {
         exit;
     }
 } catch (Throwable $e) {
-    // Log FULL exception details to Render server logs (never exposed to client)
-    error_log('[LOGIN-500] ' . get_class($e) . ': ' . $e->getMessage()
-        . ' | File: ' . $e->getFile() . ':' . $e->getLine());
+    // Log FULL exception details to Render server logs
+    $errDetail = get_class($e) . ': ' . $e->getMessage() . ' in ' . basename($e->getFile()) . ':' . $e->getLine();
+    error_log('[LOGIN-500] ' . $errDetail);
     http_response_code(500);
     echo json_encode([
         'success'    => false,
         'error_code' => 'SERVER_ERROR',
-        'message'    => 'We are having a temporary server issue. Please try again in a moment.'
+        'message'    => 'Debug: ' . $errDetail
     ]);
 }
+

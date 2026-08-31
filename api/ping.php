@@ -6,8 +6,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 echo json_encode([
     'status' => 'ok',
     'server' => 'palmas-gym',
-    'version' => 'v2.1-emulate-prepares-fixed',
-    'commit' => '71cae61',
+    'version' => 'v2.2-debug-detail',
     'ts' => time()
 ]);
+
 
