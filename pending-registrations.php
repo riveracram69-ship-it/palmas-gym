@@ -270,12 +270,14 @@ try {
                         <div style="display:inline-flex;gap:0.5rem;">
                             <!-- Approve Form -->
                             <form method="POST" onsubmit="return confirm('Approve registration for <?php echo addslashes($pm['full_name']); ?>? This will activate their account and grant gym access.');" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
                                 <input type="hidden" name="action" value="approve">
                                 <input type="hidden" name="member_id" value="<?php echo $pm['id']; ?>">
                                 <button type="submit" class="btn btn-sm" style="background:#10B981;color:#fff;font-weight:600;border:none;border-radius:8px;padding:6px 14px;cursor:pointer;">
                                     <i class="fas fa-check"></i> Approve
                                 </button>
                             </form>
+
 
                             <!-- Reject Button trigger modal -->
                             <button type="button" class="btn btn-sm" style="background:#EF4444;color:#fff;font-weight:600;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;" onclick="openRejectModal(<?php echo $pm['id']; ?>, '<?php echo addslashes($pm['full_name']); ?>', '<?php echo addslashes($pm['membership_id']); ?>')">
@@ -354,8 +356,10 @@ try {
         </p>
 
         <form method="POST" id="rejectForm">
+            <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
             <input type="hidden" name="action" value="reject">
             <input type="hidden" name="member_id" id="rejectInputMemberId" value="">
+
 
             <div style="margin-bottom:16px;">
                 <label style="display:block;font-size:0.85rem;font-weight:600;margin-bottom:6px;">Rejection Reason <span style="color:#EF4444;">*</span></label>
