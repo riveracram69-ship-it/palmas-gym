@@ -57,16 +57,16 @@ if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// Password handling for traditional sign-up
-if ($auth_provider === 'password') {
-    if (empty($password)) {
-        // Fallback to contact number or default temporary password
-        $password = !empty($contact_number) ? $contact_number : 'gym123456';
-    } elseif (strlen($password) < 6) {
-        echo json_encode(['success' => false, 'message' => 'Password must be at least 6 characters long.']);
+// Password handling: Optional during registration (if not provided, member sets it on first login after approval)
+$password_hash = null;
+if (!empty($password)) {
+    if (strlen($password) < 6) {
+        echo json_encode(['success' => false, 'message' => 'If setting a password, it must be at least 6 characters long.']);
         exit;
     }
+    $password_hash = password_hash($password, PASSWORD_DEFAULT);
 }
+
 
 
 if (!empty($contact_number) && !preg_match('/^09[0-9]{9}$/', $contact_number)) {
@@ -107,7 +107,8 @@ try {
         $id_exists->execute([$membership_id]);
     } while ($id_exists->fetch());
 
-    $password_hash = ($auth_provider === 'password') ? password_hash($password, PASSWORD_DEFAULT) : null;
+    // Use pre-computed $password_hash
+
 
     $stmt = $pdo->prepare("
         INSERT INTO members 
