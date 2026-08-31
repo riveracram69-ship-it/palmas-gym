@@ -44,20 +44,16 @@ if (!$rate_check['allowed']) {
 }
 
 try {
-    // Optimized login lookup: UNION ALL uses individual indexes on each column.
-    // Uses positional ? parameters because PDO named params cannot be repeated.
+    // Simple OR lookup — most compatible with all MySQL/MariaDB versions.
+    // Uses positional ? parameters (no named param duplication).
+    // Covers: membership_id, email, and contact_number login.
     $stmt = $pdo->prepare("
-        (SELECT id, membership_id, full_name, email, contact_number, photo,
-                account_status, status, rejection_reason, password_hash
-         FROM members WHERE membership_id = ? LIMIT 1)
-        UNION ALL
-        (SELECT id, membership_id, full_name, email, contact_number, photo,
-                account_status, status, rejection_reason, password_hash
-         FROM members WHERE email = ? LIMIT 1)
-        UNION ALL
-        (SELECT id, membership_id, full_name, email, contact_number, photo,
-                account_status, status, rejection_reason, password_hash
-         FROM members WHERE contact_number = ? LIMIT 1)
+        SELECT id, membership_id, full_name, email, contact_number, photo,
+               account_status, status, rejection_reason, password_hash
+        FROM members
+        WHERE membership_id = ?
+           OR email = ?
+           OR contact_number = ?
         LIMIT 1
     ");
     $stmt->execute([$username, $username, $username]);
