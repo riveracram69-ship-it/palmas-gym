@@ -182,14 +182,19 @@
       background: rgba(10, 30, 22, 0.85);
       border: 1px solid rgba(82, 183, 136, 0.3);
       border-radius: 14px;
-      padding: 4px 14px;
+      padding: 0 14px;
       margin-bottom: 12px;
       display: flex;
       align-items: center;
       gap: 10px;
+      width: 100%;
+      height: 52px;
+      box-sizing: border-box;
+      position: relative;
     }
     .input-field-wrap input {
       flex: 1;
+      min-width: 0;
       background: transparent;
       border: none;
       color: #fff;
@@ -205,9 +210,18 @@
       border: none;
       color: var(--gym-muted);
       cursor: pointer;
-      padding: 6px;
-      font-size: 0.95rem;
+      padding: 8px 6px;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
+    .input-field-wrap .eye-btn:hover,
+    .input-field-wrap .eye-btn:focus {
+      color: var(--gym-light);
+    }
+
 
     /* ─── STATUS SCREENS (Pending / Rejected / Suspended) ────────── */
     .status-screen {
@@ -617,6 +631,7 @@
           <div class="form-group">
             <label>Full Name *</label>
             <div class="input-field-wrap">
+              <i class="fa-solid fa-user" style="color: var(--gym-light); font-size:0.9rem;"></i>
               <input type="text" id="reg-name" placeholder="Juan Dela Cruz" />
             </div>
           </div>
@@ -624,6 +639,7 @@
           <div class="form-group">
             <label>Email Address *</label>
             <div class="input-field-wrap">
+              <i class="fa-solid fa-envelope" style="color: var(--gym-light); font-size:0.9rem;"></i>
               <input type="email" id="reg-email" placeholder="member@example.com" />
             </div>
           </div>
@@ -631,13 +647,15 @@
           <div class="form-group">
             <label>Contact Number (09XXXXXXXXX) *</label>
             <div class="input-field-wrap">
+              <i class="fa-solid fa-phone" style="color: var(--gym-light); font-size:0.9rem;"></i>
               <input type="tel" id="reg-phone" placeholder="09123456789" maxlength="11" />
             </div>
           </div>
 
           <div id="reg-password-group" class="form-group">
-            <label>Password (min. 6 characters) *</label>
+            <label>Password (min. 6 characters)</label>
             <div class="input-field-wrap">
+              <i class="fa-solid fa-lock" style="color: var(--gym-light); font-size:0.9rem;"></i>
               <input type="password" id="reg-password" placeholder="Create a secure password" />
               <button class="eye-btn" type="button" onclick="togglePasswordVisibility('reg-password', this)">
                 <i class="fa-solid fa-eye"></i>
@@ -646,14 +664,16 @@
           </div>
 
           <div id="reg-confirm-password-group" class="form-group">
-            <label>Confirm Password *</label>
+            <label>Confirm Password</label>
             <div class="input-field-wrap">
+              <i class="fa-solid fa-shield-halved" style="color: var(--gym-light); font-size:0.9rem;"></i>
               <input type="password" id="reg-confirm-password" placeholder="Confirm your password" />
               <button class="eye-btn" type="button" onclick="togglePasswordVisibility('reg-confirm-password', this)">
                 <i class="fa-solid fa-eye"></i>
               </button>
             </div>
           </div>
+
 
           <div class="form-group">
             <label>Gender *</label>
@@ -1131,18 +1151,57 @@ function togglePasswordVisibility(inputId, btn) {
 }
 
 // ── GOOGLE SIGN-IN ─────────────────────────────────────────────────
-function initiateGoogleSignIn() {
-  if (typeof google === 'undefined' || !google.accounts) {
-    showToast('Google Sign-In service is initializing. Please try again.');
-    return;
+let googleInitialized = false;
+
+function initGoogleClient() {
+  if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+    try {
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+      googleInitialized = true;
+    } catch (e) {
+      console.warn('GSI init error:', e);
+    }
   }
-  google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback: handleGoogleCredential,
-    auto_select: false,
-    cancel_on_tap_outside: true,
-  });
-  google.accounts.id.prompt();
+}
+
+// Auto-initialize GSI when script loads
+window.addEventListener('load', initGoogleClient);
+document.addEventListener('DOMContentLoaded', initGoogleClient);
+
+function initiateGoogleSignIn() {
+  if (!googleInitialized && typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+    initGoogleClient();
+  }
+
+  if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+    try {
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+      google.accounts.id.prompt((notification) => {
+        if (notification && (notification.isNotDisplayed() || notification.isSkippedMoment())) {
+          console.log('GSI One Tap skipped/not displayed:', notification.getNotDisplayedReason());
+        }
+      });
+      return;
+    } catch (e) {
+      console.warn('GSI prompt error:', e);
+    }
+  }
+
+  showToast('Connecting with Google accounts...');
+  // Direct Google OAuth URL fallback if GSI is blocked in WebView
+  const redirectUri = 'https://palmas-gym.onrender.com/member/google_callback.php';
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20email%20profile&access_type=offline&prompt=select_account`;
+  window.open(authUrl, '_blank');
 }
 
 async function handleGoogleCredential(response) {
@@ -1167,8 +1226,7 @@ async function handleGoogleCredential(response) {
     }
 
     if (data.account_status === 'Pending') {
-      document.getElementById('pending-name-text').textContent = `Welcome back, ${data.full_name || 'Member'}.`;
-      showScreen('view-pending');
+      setPendingScreen(data.email || 'Member', data.full_name || 'Member');
       return;
     }
 
@@ -1216,8 +1274,7 @@ async function submitTraditionalLogin() {
     }
 
     if (data.account_status === 'Pending') {
-      document.getElementById('pending-name-text').textContent = `Welcome, ${data.full_name || u}.`;
-      showScreen('view-pending');
+      setPendingScreen(u, data.full_name || u);
       return;
     }
 
@@ -1244,41 +1301,70 @@ async function submitTraditionalLogin() {
   }
 }
 
-// ── PENDING STATUS CHECK ───────────────────────────────────────────
+// ── PENDING STATUS STATE & CHECK ───────────────────────────────────
+let pendingIdentifier = localStorage.getItem('peg_pending_identifier') || '';
+
+function setPendingScreen(identifier, name) {
+  if (identifier) {
+    pendingIdentifier = identifier;
+    localStorage.setItem('peg_pending_identifier', identifier);
+  }
+  const nameEl = document.getElementById('pending-name-text');
+  if (nameEl) {
+    nameEl.textContent = name ? `Welcome, ${name}.` : 'Your membership application has been received.';
+  }
+  showScreen('view-pending');
+}
+
 async function checkPendingApprovalStatus() {
   const btn = document.getElementById('btn-refresh-pending');
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Checking...';
-  
-  const token = localStorage.getItem('peg_token');
-  if (!token) {
-    showToast('Please sign in with Google or password to verify status.');
-    showScreen('view-login');
+
+  const identifier = pendingIdentifier || localStorage.getItem('peg_pending_identifier') || document.getElementById('input-username')?.value.trim() || document.getElementById('reg-email')?.value.trim() || '';
+
+  if (!identifier) {
+    showToast('Please sign in with your email or password to check approval status.');
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> REFRESH STATUS';
     return;
   }
 
   try {
-    const res = await fetch(`${API_URL}/member_dashboard.php`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+    const res = await fetch(`${API_URL}/check_status.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: identifier })
     });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success) {
-        showToast('🎉 Your registration has been approved!');
-        initMainView(data.member.id);
+    const data = await res.json();
+
+    if (data.success) {
+      if (data.account_status === 'Approved') {
+        showToast('🎉 Your registration has been approved! Redirecting to Sign In...');
+        localStorage.removeItem('peg_pending_identifier');
+        setTimeout(() => {
+          document.getElementById('input-username').value = data.email || data.membership_id;
+          showScreen('view-login');
+        }, 1200);
         return;
+      } else if (data.account_status === 'Rejected') {
+        document.getElementById('rejected-reason-text').textContent = data.rejection_reason || 'Registration not approved.';
+        showScreen('view-rejected');
+        return;
+      } else {
+        showToast('⏳ Status: Still awaiting staff review. Please check back shortly.');
       }
+    } else {
+      showToast(data.message || 'Unable to verify status right now.');
     }
-    showToast('Your account is still pending review. Staff has been notified.');
   } catch (e) {
-    showToast('Unable to check server right now. Try again shortly.');
+    showToast('Network error while checking status. Please check your connection.');
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> REFRESH STATUS';
   }
 }
+
 
 // ── REGISTRATION WIZARD ────────────────────────────────────────────
 function openRegistrationWizard() {
@@ -1451,10 +1537,12 @@ async function submitRegistration() {
     });
     const data = await res.json();
     if (data.success || data.pending_approval) {
-      document.getElementById('pending-name-text').textContent = `Thank you, ${document.getElementById('reg-name').value.trim()}!`;
-      showScreen('view-pending');
+      const regEmail = document.getElementById('reg-email').value.trim();
+      const regName = document.getElementById('reg-name').value.trim();
+      setPendingScreen(regEmail, regName);
       showToast('Registration submitted! Pending staff approval.');
     } else {
+
       showToast(data.message || 'Registration failed.');
     }
   } catch (err) {
