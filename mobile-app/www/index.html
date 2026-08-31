@@ -491,6 +491,11 @@
     .text-link:hover { text-decoration: underline; }
 
     ion-tab-bar { --background: #0d281e; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
   </style>
 </head>
 <body>
@@ -1384,34 +1389,20 @@ function wizardBack(fromStep) {
 
 async function loadPlansForRegistration() {
   const container = document.getElementById('plans-container-reg');
-  try {
-    const res  = await fetch(`${API_URL}/member_dashboard.php`, {
-      headers: { 'Authorization': 'Bearer public' }
-    });
-    // Dashboard requires auth, so fetch plans via a public endpoint
-    // Use a simple plans fetch
-    const plansRes = await fetch(`${API_URL}/member_dashboard.php`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('peg_token') || 'public'}` }
-    });
-
-    // Try to get plans from a signed-in session or use cached plans
-    if (availablePlans.length > 0) {
-      renderPlanCards(availablePlans, container);
-      return;
-    }
-
-    // Fallback: fetch member_login.php with empty to get a 401 that still returns plans... actually
-    // We need a public plans endpoint. Use the dashboard and handle gracefully.
-    container.innerHTML = `
-      <div style="text-align:center; padding:20px;">
-        <p style="color: var(--gym-muted); font-size:0.85rem;">Please complete sign-in first to load plans, or contact the gym for plan details.</p>
-      </div>`;
-  } catch {
-    container.innerHTML = `
-      <div style="text-align:center; padding:20px;">
-        <p style="color: var(--gym-muted); font-size:0.85rem;">Unable to load plans. Check your connection.</p>
-      </div>`;
+  if (!container) return;
+  // Use already-loaded plans if available (no extra API call needed)
+  if (availablePlans && availablePlans.length > 0) {
+    renderPlanCards(availablePlans, container);
+    return;
   }
+  // Plans not loaded yet — show message (plans load on first login)
+  container.innerHTML = `
+    <div style="text-align:center; padding:24px;">
+      <p style="color: var(--gym-muted); font-size:0.85rem; line-height:1.5;">
+        <i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>
+        Membership plans will be shown here.<br>You can select a plan after your account is approved.
+      </p>
+    </div>`;
 }
 
 // Plans from dashboard load — also use for registration
@@ -1567,12 +1558,33 @@ async function submitSetupPassword() {
 }
 
 // ── MAIN DASHBOARD ─────────────────────────────────────────────────
-async function initMainView(memberId) {
+// Show dashboard instantly with skeleton, then populate from API
+function initMainView(memberId) {
   showScreen('view-main');
-  await loadDashboard(memberId);
+  // Show skeleton state immediately — user sees the app, not a blank screen
+  showDashboardSkeleton();
+  // Load real data in background
+  loadDashboard(memberId);
+}
+
+function showDashboardSkeleton() {
+  // Show loading state on card while API loads
+  const skeletonStyle = 'background: rgba(82,183,136,0.08); border-radius: 8px; color: transparent; min-width: 100px; display: inline-block; animation: pulse 1.2s ease-in-out infinite;';
+  const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+  setEl('card-name', 'Loading...');
+  setEl('card-code', '••••••••');
+  setEl('card-plan', '—');
+  setEl('card-expiry', '—');
+  const qrEl = document.getElementById('qr-target');
+  if (qrEl) qrEl.innerHTML = '<div style="width:185px;height:185px;background:rgba(82,183,136,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;"><div class="spinner"></div></div>';
+  const attEl = document.getElementById('attendance-container');
+  if (attEl) attEl.innerHTML = '<div style="text-align:center;padding:30px;"><div class="spinner"></div></div>';
+  const payEl = document.getElementById('payments-container');
+  if (payEl) payEl.innerHTML = '<div style="text-align:center;padding:30px;"><div class="spinner"></div></div>';
 }
 
 async function loadDashboard(memberId) {
+  const t0 = performance.now();
   try {
     const token = localStorage.getItem('peg_token');
     if (!token) { logout(true); return; }
