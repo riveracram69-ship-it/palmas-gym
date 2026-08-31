@@ -44,28 +44,25 @@ if (!$rate_check['allowed']) {
 }
 
 try {
-    // Optimized login lookup: UNION ALL uses individual indexes on each column
-    // Previously: OR query with LOWER() forced partial table scan
-    // Now: each branch uses its own index → 3× faster on large member tables
+    // Optimized login lookup: UNION ALL uses individual indexes on each column.
+    // Uses positional ? parameters because PDO named params cannot be repeated.
     $stmt = $pdo->prepare("
-        SELECT id, membership_id, full_name, email, contact_number, photo,
-               account_status, status, rejection_reason, password_hash
-        FROM members
-        WHERE membership_id = :u1
+        (SELECT id, membership_id, full_name, email, contact_number, photo,
+                account_status, status, rejection_reason, password_hash
+         FROM members WHERE membership_id = ? LIMIT 1)
         UNION ALL
-        SELECT id, membership_id, full_name, email, contact_number, photo,
-               account_status, status, rejection_reason, password_hash
-        FROM members
-        WHERE email = :u2 AND membership_id != :u1
+        (SELECT id, membership_id, full_name, email, contact_number, photo,
+                account_status, status, rejection_reason, password_hash
+         FROM members WHERE email = ? LIMIT 1)
         UNION ALL
-        SELECT id, membership_id, full_name, email, contact_number, photo,
-               account_status, status, rejection_reason, password_hash
-        FROM members
-        WHERE contact_number = :u3 AND email != :u2 AND membership_id != :u1
+        (SELECT id, membership_id, full_name, email, contact_number, photo,
+                account_status, status, rejection_reason, password_hash
+         FROM members WHERE contact_number = ? LIMIT 1)
         LIMIT 1
     ");
-    $stmt->execute([':u1' => $username, ':u2' => $username, ':u3' => $username]);
+    $stmt->execute([$username, $username, $username]);
     $member = $stmt->fetch(PDO::FETCH_ASSOC);
+
 
     if ($member) {
         $acc_status = $member['account_status'] ?? 'Approved';
