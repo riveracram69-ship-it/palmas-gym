@@ -74,12 +74,18 @@
         define('APP_URL', rtrim($get_conf('APP_URL', 'http://localhost/gym'), '/'));
     }
 
-    // Database Configuration
-    if (!defined('DB_HOST')) define('DB_HOST', $get_conf('DB_HOST', 'localhost'));
-    if (!defined('DB_PORT')) define('DB_PORT', $get_conf('DB_PORT', '3306'));
-    if (!defined('DB_NAME')) define('DB_NAME', $get_conf('DB_NAME', 'gym_management'));
-    if (!defined('DB_USER')) define('DB_USER', $get_conf('DB_USER', 'root'));
-    if (!defined('DB_PASS')) define('DB_PASS', $get_conf('DB_PASS', ''));
+    // Database Configuration (Supports DB_HOST or Host, DB_PASS or Password, etc.)
+    $db_host_val = $get_conf('DB_HOST', $get_conf('Host', $get_conf('MYSQLHOST', $get_conf('MYSQL_HOST', 'localhost'))));
+    $db_port_val = $get_conf('DB_PORT', $get_conf('Port', $get_conf('MYSQLPORT', $get_conf('MYSQL_PORT', '3306'))));
+    $db_name_val = $get_conf('DB_NAME', $get_conf('Database', $get_conf('MYSQLDATABASE', $get_conf('MYSQL_DATABASE', 'gym_management'))));
+    $db_user_val = $get_conf('DB_USER', $get_conf('User', $get_conf('Username', $get_conf('MYSQLUSER', $get_conf('MYSQL_USER', 'root')))));
+    $db_pass_val = $get_conf('DB_PASS', $get_conf('Password', $get_conf('DB_PASSWORD', $get_conf('MYSQLPASSWORD', $get_conf('MYSQL_PASSWORD', '')))));
+
+    if (!defined('DB_HOST')) define('DB_HOST', $db_host_val);
+    if (!defined('DB_PORT')) define('DB_PORT', $db_port_val);
+    if (!defined('DB_NAME')) define('DB_NAME', $db_name_val);
+    if (!defined('DB_USER')) define('DB_USER', $db_user_val);
+    if (!defined('DB_PASS')) define('DB_PASS', $db_pass_val);
 
     // Security Keys
     if (!defined('QR_SECRET_KEY')) {
