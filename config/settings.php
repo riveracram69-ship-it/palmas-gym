@@ -15,7 +15,15 @@ try {
 }
 
 // Fallback defaults in case database is empty or queries fail
-if (!isset($app_settings['gym_name'])) $app_settings['gym_name'] = 'GYM PRO';
+if (!isset($app_settings['gym_name'])) $app_settings['gym_name'] = "Palma's Elite Gym";
 if (!isset($app_settings['max_capacity'])) $app_settings['max_capacity'] = 50;
 if (!isset($app_settings['renewal_threshold_days'])) $app_settings['renewal_threshold_days'] = 7;
+
+// E-Wallet & Payment Configuration Defaults
+if (!isset($app_settings['gcash_number'])) $app_settings['gcash_number'] = '0917-000-0000';
+if (!isset($app_settings['gcash_name'])) $app_settings['gcash_name'] = "Palma's Elite Gym";
+if (!isset($app_settings['gcash_qr_image'])) $app_settings['gcash_qr_image'] = '';
+if (!isset($app_settings['maya_number'])) $app_settings['maya_number'] = '0918-000-0000';
+if (!isset($app_settings['maya_name'])) $app_settings['maya_name'] = "Palma's Elite Gym";
+if (!isset($app_settings['maya_qr_image'])) $app_settings['maya_qr_image'] = '';
 ?>

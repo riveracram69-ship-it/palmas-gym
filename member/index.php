@@ -636,21 +636,128 @@ function backToPlan() {
     document.getElementById('renew-step-1').style.flexDirection = 'column';
 }
 
+const gymPaymentSettings = {
+    gcash_number: <?php echo json_encode($app_settings['gcash_number'] ?? ''); ?>,
+    gcash_name:   <?php echo json_encode($app_settings['gcash_name'] ?? "Palma's Elite Gym"); ?>,
+    gcash_qr:     <?php echo json_encode(!empty($app_settings['gcash_qr_image']) ? '../' . $app_settings['gcash_qr_image'] : ''); ?>,
+    maya_number:  <?php echo json_encode($app_settings['maya_number'] ?? ''); ?>,
+    maya_name:    <?php echo json_encode($app_settings['maya_name'] ?? "Palma's Elite Gym"); ?>,
+    maya_qr:      <?php echo json_encode(!empty($app_settings['maya_qr_image']) ? '../' . $app_settings['maya_qr_image'] : ''); ?>
+};
+
+function copyPaymentText(text, btn) {
+    if (!navigator.clipboard) {
+        const temp = document.createElement('input');
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+    } else {
+        navigator.clipboard.writeText(text);
+    }
+    const origHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    btn.style.background = '#52b788';
+    btn.style.color = '#fff';
+    setTimeout(() => {
+        btn.innerHTML = origHtml;
+        btn.style.background = 'rgba(255,255,255,0.08)';
+        btn.style.color = 'inherit';
+    }, 2000);
+}
+
 function toggleRef(method) {
     const isOnline = ['GCash', 'Maya'].includes(method);
     document.getElementById('ref-group').style.display = isOnline ? 'block' : 'none';
     const instructions = document.getElementById('payment-instructions');
-    if (instructions) {
-        if (method === 'GCash') {
-            instructions.innerHTML = '<div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.22);border-radius:12px;padding:0.75rem 1rem;font-size:0.8rem;color:#93c5fd;line-height:1.5;margin-bottom:1rem;"><i class="fas fa-info-circle"></i> Send payment via <strong>GCash</strong> and enter the <strong>Reference Number</strong> below.</div>';
-            instructions.style.display = 'block';
-        } else if (method === 'Maya') {
-            instructions.innerHTML = '<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.22);border-radius:12px;padding:0.75rem 1rem;font-size:0.8rem;color:#6ee7b7;line-height:1.5;margin-bottom:1rem;"><i class="fas fa-info-circle"></i> Send payment via <strong>Maya</strong> and enter the <strong>Reference Number</strong> below.</div>';
-            instructions.style.display = 'block';
-        } else {
-            instructions.innerHTML = '<div style="background:rgba(82,183,136,0.08);border:1px solid rgba(82,183,136,0.22);border-radius:12px;padding:0.75rem 1rem;font-size:0.8rem;color:#a7f3d0;line-height:1.5;margin-bottom:1rem;"><i class="fas fa-hand-holding-dollar"></i> Please settle payment in <strong>Cash</strong> at the Front Desk upon arrival.</div>';
-            instructions.style.display = 'block';
-        }
+    if (!instructions) return;
+
+    if (method === 'GCash') {
+        const num = gymPaymentSettings.gcash_number || '0917-000-0000';
+        const name = gymPaymentSettings.gcash_name || "Palma's Elite Gym";
+        const qrHtml = gymPaymentSettings.gcash_qr ? `
+            <div style="text-align:center; margin-top:0.75rem;">
+                <p style="font-size:0.7rem; color:#8faaa0; margin-bottom:4px;">Scan GCash QR Code:</p>
+                <img src="${gymPaymentSettings.gcash_qr}" alt="GCash QR" style="max-width:140px; border-radius:10px; border:2px solid #3b82f6; background:#fff; padding:4px;">
+            </div>` : '';
+
+        instructions.innerHTML = `
+            <div style="background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.22); border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.6rem;">
+                    <span style="font-size:0.75rem; font-weight:700; color:#60a5fa; text-transform:uppercase; letter-spacing:0.5px;">
+                        <i class="fas fa-mobile-screen"></i> GCash Payment Details
+                    </span>
+                    <span style="font-size:0.7rem; background:rgba(59,130,246,0.2); color:#93c5fd; padding:2px 8px; border-radius:12px; font-weight:600;">Direct E-Wallet</span>
+                </div>
+                
+                <div style="background:rgba(0,0,0,0.25); border-radius:10px; padding:0.75rem 0.9rem; margin-bottom:0.5rem;">
+                    <div style="font-size:0.7rem; color:#8faaa0;">Account Name:</div>
+                    <div style="font-weight:700; color:#f0f7f3; font-size:0.92rem; margin-bottom:0.4rem;">${name}</div>
+                    
+                    <div style="font-size:0.7rem; color:#8faaa0;">GCash Mobile Number:</div>
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <span style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:800; color:#60a5fa; letter-spacing:0.5px;">${num}</span>
+                        <button type="button" onclick="copyPaymentText('${num}', this)" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#f0f7f3; font-size:0.72rem; padding:3px 8px; cursor:pointer; transition:all 0.2s;">
+                            <i class="far fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+                ${qrHtml}
+                <p style="font-size:0.72rem; color:#93c5fd; margin-top:0.6rem; text-align:center;">
+                    <i class="fas fa-info-circle"></i> Send payment, then enter the <strong>Reference Number</strong> below.
+                </p>
+            </div>`;
+        instructions.style.display = 'block';
+
+    } else if (method === 'Maya') {
+        const num = gymPaymentSettings.maya_number || '0918-000-0000';
+        const name = gymPaymentSettings.maya_name || "Palma's Elite Gym";
+        const qrHtml = gymPaymentSettings.maya_qr ? `
+            <div style="text-align:center; margin-top:0.75rem;">
+                <p style="font-size:0.7rem; color:#8faaa0; margin-bottom:4px;">Scan Maya QR Code:</p>
+                <img src="${gymPaymentSettings.maya_qr}" alt="Maya QR" style="max-width:140px; border-radius:10px; border:2px solid #10b981; background:#fff; padding:4px;">
+            </div>` : '';
+
+        instructions.innerHTML = `
+            <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.22); border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.6rem;">
+                    <span style="font-size:0.75rem; font-weight:700; color:#34d399; text-transform:uppercase; letter-spacing:0.5px;">
+                        <i class="fas fa-wallet"></i> Maya Payment Details
+                    </span>
+                    <span style="font-size:0.7rem; background:rgba(16,185,129,0.2); color:#a7f3d0; padding:2px 8px; border-radius:12px; font-weight:600;">Direct E-Wallet</span>
+                </div>
+                
+                <div style="background:rgba(0,0,0,0.25); border-radius:10px; padding:0.75rem 0.9rem; margin-bottom:0.5rem;">
+                    <div style="font-size:0.7rem; color:#8faaa0;">Account Name:</div>
+                    <div style="font-weight:700; color:#f0f7f3; font-size:0.92rem; margin-bottom:0.4rem;">${name}</div>
+                    
+                    <div style="font-size:0.7rem; color:#8faaa0;">Maya Mobile Number:</div>
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <span style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:800; color:#34d399; letter-spacing:0.5px;">${num}</span>
+                        <button type="button" onclick="copyPaymentText('${num}', this)" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#f0f7f3; font-size:0.72rem; padding:3px 8px; cursor:pointer; transition:all 0.2s;">
+                            <i class="far fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+                ${qrHtml}
+                <p style="font-size:0.72rem; color:#6ee7b7; margin-top:0.6rem; text-align:center;">
+                    <i class="fas fa-info-circle"></i> Send payment, then enter the <strong>Reference Number</strong> below.
+                </p>
+            </div>`;
+        instructions.style.display = 'block';
+
+    } else {
+        instructions.innerHTML = `
+            <div style="background:rgba(82,183,136,0.06); border:1px solid rgba(82,183,136,0.22); border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem; color:#52b788; font-weight:700; font-size:0.85rem; margin-bottom:0.35rem;">
+                    <i class="fas fa-hand-holding-dollar"></i> Over-the-Counter Cash Payment
+                </div>
+                <p style="font-size:0.8rem; color:#a7f3d0; line-height:1.5;">
+                    Please settle your membership payment in <strong>Cash</strong> at the Front Desk upon your next visit. Our staff will immediately confirm your payment and extend your subscription.
+                </p>
+            </div>`;
+        instructions.style.display = 'block';
     }
 }
 
