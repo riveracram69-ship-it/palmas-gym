@@ -40,6 +40,7 @@ $pdo = null;
 try {
      $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (\PDOException $e) {
+    error_log("DB Connection Failed: " . $e->getMessage() . " (Host: $host, Port: $port, User: $user, DB: $db)");
     // Graceful error handling for database connection failure
     http_response_code(503); // Service Unavailable
     echo "<!DOCTYPE html>
