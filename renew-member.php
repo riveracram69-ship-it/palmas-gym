@@ -187,8 +187,7 @@ if ($current_sub && $current_sub['expiry_date']) {
                         <select name="payment_method" id="payment-method-select" class="form-control" required>
                             <option value="Cash">Cash</option>
                             <option value="GCash">GCash</option>
-                            <option value="Bank Transfer">Bank Transfer</option>
-                            <option value="Credit Card">Credit Card</option>
+                            <option value="Maya">Maya</option>
                         </select>
                     </div>
                 </div>

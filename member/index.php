@@ -368,32 +368,37 @@ try {
 
             <p style="font-size:0.72rem; font-weight:700; color:#8faaa0; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:0.75rem;">Choose Payment Method</p>
 
+            <!-- Payment Instructions Box -->
+            <div id="payment-instructions" style="display:none;"></div>
+
             <!-- Payment Method Options -->
             <div style="display:flex; flex-direction:column; gap:0.6rem; margin-bottom:1.25rem;">
                 <?php
                 $pmethods = [
-                    ['Cash',          'fa-money-bill-wave', '#52b788', 'rgba(82,183,136,0.1)'],
-                    ['GCash',         'fa-mobile-screen',  '#60a5fa', 'rgba(59,130,246,0.1)'],
-                    ['Credit Card',   'fa-credit-card',    '#a78bfa', 'rgba(139,92,246,0.1)'],
-                    ['Bank Transfer', 'fa-building-columns','#fbbf24','rgba(251,191,36,0.1)'],
+                    ['GCash', 'fa-mobile-screen',   '#60a5fa', 'rgba(59,130,246,0.12)', 'GCash E-Wallet'],
+                    ['Maya',  'fa-wallet',          '#34d399', 'rgba(16,185,129,0.12)', 'Maya E-Wallet'],
+                    ['Cash',  'fa-money-bill-wave', '#52b788', 'rgba(82,183,136,0.12)', 'Cash (Front Desk)'],
                 ];
-                foreach($pmethods as [$pm, $icon, $clr, $bg]):
+                foreach($pmethods as [$pm, $icon, $clr, $bg, $label]):
                 ?>
                 <label class="pay-option" for="pm-<?php echo str_replace(' ','-',$pm); ?>">
                     <input type="radio" name="paymethod" id="pm-<?php echo str_replace(' ','-',$pm); ?>" value="<?php echo $pm; ?>" onchange="toggleRef('<?php echo $pm; ?>')"> 
-                    <div style="width:38px;height:38px;border-radius:10px;background:<?php echo $bg; ?>;color:<?php echo $clr; ?>;display:flex;align-items:center;justify-content:center;font-size:0.9rem;">
+                    <div style="width:38px;height:38px;border-radius:10px;background:<?php echo $bg; ?>;color:<?php echo $clr; ?>;display:flex;align-items:center;justify-content:center;font-size:0.95rem;">
                         <i class="fas <?php echo $icon; ?>"></i>
                     </div>
-                    <span style="font-weight:600; font-size:0.88rem; color:#f0f7f3;"><?php echo $pm; ?></span>
+                    <div style="flex:1;">
+                        <div style="font-weight:600; font-size:0.88rem; color:#f0f7f3;"><?php echo $pm; ?></div>
+                        <div style="font-size:0.72rem; color:#8faaa0;"><?php echo $label; ?></div>
+                    </div>
                     <span class="pay-check"><i class="fas fa-circle-check"></i></span>
                 </label>
                 <?php endforeach; ?>
             </div>
 
-            <!-- Reference No (for GCash/Bank/Card) -->
+            <!-- Reference No (for GCash/Maya) -->
             <div id="ref-group" style="display:none; margin-bottom:1.25rem;">
-                <p style="font-size:0.7rem; font-weight:700; color:#8faaa0; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:0.4rem;">Reference / Transaction No.</p>
-                <input type="text" id="reference-no" placeholder="e.g. 1234567890"
+                <p style="font-size:0.7rem; font-weight:700; color:#8faaa0; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:0.4rem;">GCash / Maya Reference No. *</p>
+                <input type="text" id="reference-no" placeholder="e.g. 1004582914"
                     style="width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:0.8rem 1rem;color:#f0f7f3;font-size:0.88rem;font-family:'Inter',sans-serif;">
             </div>
 
@@ -632,8 +637,21 @@ function backToPlan() {
 }
 
 function toggleRef(method) {
-    const nonCash = ['GCash', 'Credit Card', 'Bank Transfer'];
-    document.getElementById('ref-group').style.display = nonCash.includes(method) ? 'block' : 'none';
+    const isOnline = ['GCash', 'Maya'].includes(method);
+    document.getElementById('ref-group').style.display = isOnline ? 'block' : 'none';
+    const instructions = document.getElementById('payment-instructions');
+    if (instructions) {
+        if (method === 'GCash') {
+            instructions.innerHTML = '<div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.22);border-radius:12px;padding:0.75rem 1rem;font-size:0.8rem;color:#93c5fd;line-height:1.5;margin-bottom:1rem;"><i class="fas fa-info-circle"></i> Send payment via <strong>GCash</strong> and enter the <strong>Reference Number</strong> below.</div>';
+            instructions.style.display = 'block';
+        } else if (method === 'Maya') {
+            instructions.innerHTML = '<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.22);border-radius:12px;padding:0.75rem 1rem;font-size:0.8rem;color:#6ee7b7;line-height:1.5;margin-bottom:1rem;"><i class="fas fa-info-circle"></i> Send payment via <strong>Maya</strong> and enter the <strong>Reference Number</strong> below.</div>';
+            instructions.style.display = 'block';
+        } else {
+            instructions.innerHTML = '<div style="background:rgba(82,183,136,0.08);border:1px solid rgba(82,183,136,0.22);border-radius:12px;padding:0.75rem 1rem;font-size:0.8rem;color:#a7f3d0;line-height:1.5;margin-bottom:1rem;"><i class="fas fa-hand-holding-dollar"></i> Please settle payment in <strong>Cash</strong> at the Front Desk upon arrival.</div>';
+            instructions.style.display = 'block';
+        }
+    }
 }
 
 async function submitRenewal() {
@@ -643,8 +661,8 @@ async function submitRenewal() {
 
     if (!plan)   { alert('Please select a plan.'); return; }
     if (!method) { alert('Please choose a payment method.'); return; }
-    if (['GCash','Credit Card','Bank Transfer'].includes(method.value) && !ref) {
-        alert('Please enter your reference/transaction number.'); return;
+    if (['GCash', 'Maya'].includes(method.value) && !ref) {
+        alert('Please enter your GCash / Maya Reference Number.'); return;
     }
 
     const btn = document.getElementById('confirm-renew-btn');

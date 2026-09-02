@@ -202,8 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <select name="payment_method" id="payment-method-select" class="form-control" required>
                             <option value="Cash">Cash</option>
                             <option value="GCash">GCash</option>
-                            <option value="Bank Transfer">Bank Transfer</option>
-                            <option value="Credit Card">Credit Card</option>
+                            <option value="Maya">Maya</option>
                         </select>
                     </div>
                 </div>
