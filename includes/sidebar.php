@@ -108,14 +108,15 @@
     <div class="sidebar-footer">
         <div class="sidebar-user-card">
             <div class="admin-avatar"><?php echo strtoupper(substr($user['name'] ?? 'A', 0, 1)); ?></div>
-            <div style="min-width:0; flex:1;">
-                <div style="font-size:0.875rem; font-weight:600; color:#ffffff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?php echo htmlspecialchars($user['name'] ?? 'Admin'); ?></div>
-                <div style="font-size:0.72rem; color:var(--sidebar-text);"><?php echo htmlspecialchars($user['role'] ?? 'Staff'); ?></div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-user-name"><?php echo htmlspecialchars($user['name'] ?? 'Admin'); ?></div>
+                <div class="sidebar-user-role"><?php echo htmlspecialchars($user['role'] ?? 'Administrator'); ?></div>
             </div>
-            <a href="logout.php" title="Sign Out" style="color:var(--accent-light); font-size:0.9rem; padding:4px; display:inline-flex; align-items:center; justify-content:center; text-decoration:none;">
-                <i class="fas fa-right-from-bracket"></i>
-            </a>
         </div>
+        <a href="logout.php" class="sidebar-logout-btn" title="Sign Out">
+            <i class="fas fa-right-from-bracket"></i>
+            <span>Log Out</span>
+        </a>
     </div>
 </aside>
 

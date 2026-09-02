@@ -337,33 +337,83 @@ textarea:focus-visible {
 .sidebar-footer {
     margin-top: auto;
     padding: var(--space-4) var(--space-3) var(--space-5);
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(10, 14, 20, 0.4);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(10, 14, 20, 0.7);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
 }
 
 .sidebar-user-card {
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    padding: var(--space-2);
-    border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 0.65rem 0.75rem;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .admin-avatar {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border-radius: var(--radius-sm);
-    background: var(--accent-gradient);
+    background: linear-gradient(135deg, #2d6a4f 0%, #52b788 100%);
     color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px rgba(45, 106, 79, 0.4);
+}
+
+.sidebar-user-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.sidebar-user-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.sidebar-user-role {
+    font-size: 0.72rem;
+    color: #52b788 !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+}
+
+.sidebar-logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: 0.6rem 0.75rem;
+    color: #f87171 !important;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.18);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: var(--transition-fast);
+}
+
+.sidebar-logout-btn:hover {
+    color: #ffffff !important;
+    background: #dc2626 !important;
+    border-color: #dc2626;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
 }
 
 /* ─── 5. MAIN CONTENT CANVAS ────────────────────────────────────────────── */
