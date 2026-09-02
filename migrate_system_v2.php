@@ -156,13 +156,41 @@ try {
     echo "  ✓ `renewal_requests` and `auth_tokens` tables verified\n";
 
     // -------------------------------------------------------------
-    // 6. Activity Logs Indexing & Foreign Keys Check
+    // 7. Users Seeding (Admin & Staff Accounts)
     // -------------------------------------------------------------
-    echo "\n[6/6] Checking indexing on `activity_logs` & `attendance`...\n";
+    echo "\n[7/7] Verifying Admin & Staff user accounts...\n";
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `users` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `name` VARCHAR(100) NOT NULL,
+            `email` VARCHAR(100) NOT NULL UNIQUE,
+            `password` VARCHAR(255) NOT NULL,
+            `role` ENUM('admin', 'staff') NOT NULL DEFAULT 'staff',
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
 
-    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_activity_action ON activity_logs (action)");
-    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_attendance_lookup_v2 ON attendance (member_id, date, time_out)");
-    echo "  ✓ Indexes optimized\n";
+    // Check & insert Admin
+    $admin_check = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+    $admin_check->execute(['admin@gym.com']);
+    if (!$admin_check->fetch()) {
+        $admin_pw = password_hash('password', PASSWORD_DEFAULT);
+        $pdo->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)")
+            ->execute(['Admin User', 'admin@gym.com', $admin_pw, 'admin']);
+        echo "  + Created default Admin account (admin@gym.com)\n";
+    }
+
+    // Check & insert Staff
+    $staff_check = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+    $staff_check->execute(['staff@gym.com']);
+    if (!$staff_check->fetch()) {
+        $staff_pw = password_hash('staff123', PASSWORD_DEFAULT);
+        $pdo->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)")
+            ->execute(['Gym Staff', 'staff@gym.com', $staff_pw, 'staff']);
+        echo "  + Created default Staff account (staff@gym.com)\n";
+    } else {
+        echo "  ✓ Staff account (staff@gym.com) verified\n";
+    }
 
     echo "\n=======================================================\n";
     echo "[SUCCESS] All Migration Steps Applied Successfully!\n";

@@ -332,7 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="input-wrap">
                     <i class="fas fa-envelope input-icon"></i>
                     <input type="email" id="email" name="email"
-                        placeholder="admin@gym.com"
+                        placeholder="you@gym.com"
                         value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>"
                         autocomplete="email" required>
                 </div>
@@ -353,10 +353,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i class="fas fa-arrow-right-to-bracket"></i> Sign In
             </button>
         </form>
-
-        <div class="login-hint">
-            Default: <code>admin@gym.com</code> / <code>password</code>
-        </div>
     </div>
 </div>
 
