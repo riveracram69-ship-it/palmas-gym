@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Fetch request details
         $stmt = $pdo->prepare("
-            SELECT r.*, m.full_name, m.status as member_status, p.name as plan_name, p.price as plan_price, p.duration_months 
+            SELECT r.*, m.full_name, m.email, m.status as member_status, p.name as plan_name, p.price as plan_price, p.duration_months 
             FROM renewal_requests r
             JOIN members m ON r.member_id = m.id
             JOIN membership_plans p ON r.plan_id = p.id
@@ -114,8 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     "Approved renewal for {$req['full_name']} (Plan: {$req['plan_name']}, Expiry: {$expiry_date})", 
                     'Subscription',
                     $admin_id,
-                    $_SESSION['user_name'] ?? 'Admin'
-                );
                     $_SESSION['user_name'] ?? 'Admin'
                 );
 
