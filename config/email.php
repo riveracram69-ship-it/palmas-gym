@@ -71,6 +71,15 @@ function send_email_notification($to, $subject, $title, $body_text) {
         $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = SMTP_PORT;
 
+        // SSL options for local environment / Windows OpenSSL compatibility
+        $mail->SMTPOptions = array(
+            'ssl' => array(
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            )
+        );
+
         // Recipients
         $fromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : 'Palma\'s Elite Gym';
         $mail->setFrom(SMTP_FROM, $fromName);

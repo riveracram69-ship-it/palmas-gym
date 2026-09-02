@@ -30,7 +30,7 @@
         $pending_regs_count = 0;
         try {
             if (isset($pdo)) {
-                $pending_regs_count = $pdo->query("SELECT COUNT(*) FROM members WHERE account_status = 'Pending'")->fetchColumn();
+                $pending_regs_count = (int)$pdo->query("SELECT COUNT(*) FROM members WHERE account_status = 'Pending'")->fetchColumn();
             }
         } catch (Exception $e) {}
         ?>
@@ -38,7 +38,7 @@
             <a href="pending-registrations.php" class="nav-link <?php echo nav_active('pending-registrations.php'); ?>">
                 <i class="fas fa-user-clock"></i> Pending Approvals
                 <?php if ($pending_regs_count > 0): ?>
-                    <span style="background:#D97706; color:#fff; border-radius:10px; padding:0.15rem 0.55rem; font-size:0.75rem; font-weight:700; margin-left:auto; display:inline-block; line-height:1;"><?php echo $pending_regs_count; ?></span>
+                    <span style="background:#f59e0b; color:#ffffff; border-radius:20px; padding:0.18rem 0.55rem; font-size:0.72rem; font-weight:700; margin-left:auto; display:inline-block; line-height:1;"><?php echo $pending_regs_count; ?></span>
                 <?php endif; ?>
             </a>
         </li>
@@ -66,7 +66,7 @@
         $pending_renewals_count = 0;
         try {
             if (isset($pdo)) {
-                $pending_renewals_count = $pdo->query("SELECT COUNT(*) FROM renewal_requests WHERE status = 'Pending'")->fetchColumn();
+                $pending_renewals_count = (int)$pdo->query("SELECT COUNT(*) FROM renewal_requests WHERE status = 'Pending'")->fetchColumn();
             }
         } catch (Exception $e) {}
         ?>
@@ -74,7 +74,7 @@
             <a href="renewal-requests.php" class="nav-link <?php echo nav_active('renewal-requests.php'); ?>">
                 <i class="fas fa-file-invoice-dollar"></i> Renewal Requests
                 <?php if ($pending_renewals_count > 0): ?>
-                    <span style="background:var(--danger); color:#fff; border-radius:50%; padding:0.15rem 0.45rem; font-size:0.7rem; font-weight:700; margin-left:auto; display:inline-block; line-height:1;"><?php echo $pending_renewals_count; ?></span>
+                    <span style="background:var(--danger); color:#ffffff; border-radius:20px; padding:0.18rem 0.55rem; font-size:0.72rem; font-weight:700; margin-left:auto; display:inline-block; line-height:1;"><?php echo $pending_renewals_count; ?></span>
                 <?php endif; ?>
             </a>
         </li>
@@ -106,16 +106,16 @@
     <?php endif; ?>
 
     <div class="sidebar-footer">
-        <div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 0.5rem;margin-bottom:0.5rem;">
-            <div class="admin-avatar" style="width:36px;height:36px;font-size:0.85rem;border-radius:10px;display:flex;align-items:center;justify-content:center;"><?php echo strtoupper(substr($user['name'] ?? 'A', 0, 1)); ?></div>
-            <div style="min-width:0;">
-                <div style="font-size:0.875rem;font-weight:600;color:var(--text-main);"><?php echo htmlspecialchars($user['name'] ?? 'Admin'); ?></div>
-                <div style="font-size:0.75rem;color:var(--text-muted);"><?php echo htmlspecialchars($user['role'] ?? 'Staff'); ?></div>
+        <div class="sidebar-user-card">
+            <div class="admin-avatar"><?php echo strtoupper(substr($user['name'] ?? 'A', 0, 1)); ?></div>
+            <div style="min-width:0; flex:1;">
+                <div style="font-size:0.875rem; font-weight:600; color:#ffffff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?php echo htmlspecialchars($user['name'] ?? 'Admin'); ?></div>
+                <div style="font-size:0.72rem; color:var(--sidebar-text);"><?php echo htmlspecialchars($user['role'] ?? 'Staff'); ?></div>
             </div>
+            <a href="logout.php" title="Sign Out" style="color:var(--accent-light); font-size:0.9rem; padding:4px; display:inline-flex; align-items:center; justify-content:center; text-decoration:none;">
+                <i class="fas fa-right-from-bracket"></i>
+            </a>
         </div>
-        <a href="logout.php" class="nav-link" style="color:var(--accent);margin-top:0.5rem;padding:0.5rem 0.75rem;">
-            <i class="fas fa-arrow-right-from-bracket"></i> Logout
-        </a>
     </div>
 </aside>
 
@@ -124,7 +124,7 @@
     <button class="sidebar-toggle" id="mobileSidebarToggle" aria-label="Toggle Navigation">
         <i class="fas fa-bars"></i>
     </button>
-    <div class="mobile-brand-title">
+    <div class="mobile-brand-title" style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:800; color:var(--accent);">
         <?php echo htmlspecialchars($app_settings['gym_name'] ?? 'GYM PRO'); ?>
     </div>
 </div>

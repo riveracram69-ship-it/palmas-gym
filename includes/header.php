@@ -24,7 +24,7 @@ function nav_active($page) {
     <meta name="description" content="Gym Membership and Attendance Management System">
     <link rel="stylesheet" href="assets/css/main.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
     <meta name="csrf-token" content="<?php echo get_csrf_token(); ?>">
     <script src="assets/js/main.js" defer></script>
 </head>

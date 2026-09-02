@@ -1,7 +1,7 @@
 <?php
 /**
- * UI Components
- * Centralized generation of reusable HTML elements to ensure UI consistency.
+ * UI Components — Centralized generation of reusable UI elements
+ * Ensures design system consistency across Palma's Elite Gym Management System.
  */
 
 /**
@@ -14,11 +14,11 @@
  * @return void
  */
 function render_empty_state($icon, $title, $message = '', $in_table = false) {
-    $html = '<div class="empty-state" style="text-align:center; padding:4rem 1rem; color:var(--text-muted);">';
-    $html .= '<i class="' . htmlspecialchars($icon) . '" style="font-size:3rem; margin-bottom:1rem; opacity:0.15; display:block; color:var(--text-main);"></i>';
-    $html .= '<h3 style="font-size:1.1rem; font-weight:600; color:var(--text-main); margin-bottom:0.25rem;">' . htmlspecialchars($title) . '</h3>';
+    $html = '<div class="empty-state">';
+    $html .= '<i class="' . htmlspecialchars($icon) . '"></i>';
+    $html .= '<h3>' . htmlspecialchars($title) . '</h3>';
     if (!empty($message)) {
-        $html .= '<p style="font-size:0.9rem;">' . htmlspecialchars($message) . '</p>';
+        $html .= '<p>' . $message . '</p>';
     }
     $html .= '</div>';
 
@@ -27,4 +27,35 @@ function render_empty_state($icon, $title, $message = '', $in_table = false) {
     } else {
         echo $html;
     }
+}
+
+/**
+ * Render a standardized Status Badge.
+ *
+ * @param string $status The status string (e.g., 'Active', 'Expired', 'Pending')
+ * @return string The badge HTML
+ */
+function render_status_badge($status) {
+    $s = trim(strtolower($status));
+    $badge_class = 'badge-gray';
+    $icon = 'fas fa-circle';
+
+    if ($s === 'active' || $s === 'approved' || $s === 'paid' || $s === 'completed') {
+        $badge_class = 'badge-success';
+        $icon = 'fas fa-check-circle';
+    } elseif ($s === 'expired' || $s === 'rejected' || $s === 'failed' || $s === 'cancelled') {
+        $badge_class = 'badge-danger';
+        $icon = 'fas fa-times-circle';
+    } elseif ($s === 'pending' || $s === 'pending review') {
+        $badge_class = 'badge-pending';
+        $icon = 'fas fa-clock';
+    } elseif ($s === 'expiring' || $s === 'expiring soon') {
+        $badge_class = 'badge-warning';
+        $icon = 'fas fa-triangle-exclamation';
+    } elseif ($s === 'vip' || $s === 'premium') {
+        $badge_class = 'badge-gold';
+        $icon = 'fas fa-crown';
+    }
+
+    return '<span class="badge ' . $badge_class . '"><i class="' . $icon . '" style="font-size:0.65rem;"></i> ' . htmlspecialchars($status) . '</span>';
 }
