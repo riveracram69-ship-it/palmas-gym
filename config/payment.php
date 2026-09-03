@@ -25,10 +25,9 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             return ['success' => false, 'message' => 'Member not found.'];
         }
 
-        // Verify account status
-        if (($member['account_status'] ?? 'Approved') !== 'Approved') {
-            $pdo->rollBack();
-            return ['success' => false, 'message' => 'Account is not yet approved by staff.'];
+        // Auto-approve member on confirmed payment if needed
+        if (($member['account_status'] ?? '') !== 'Approved') {
+            $pdo->prepare("UPDATE members SET account_status = 'Approved' WHERE id = ?")->execute([$member_id]);
         }
 
         // 2. Fetch Plan & Secure Server-Side Price

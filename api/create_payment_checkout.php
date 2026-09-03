@@ -68,10 +68,12 @@ try {
             VALUES (?, ?, ?, ?, ?, 'PHP', 'PENDING', DATE_ADD(NOW(), INTERVAL 30 MINUTE))
         ");
         $tx_stmt->execute([$member_id, $plan_id, $ref_code, $std_method, $amount]);
-    } catch (Exception $txE) {}
+    } catch (Throwable $txE) {
+        error_log("payment_transactions optional insert warning: " . $txE->getMessage());
+    }
 
-    // QR Ph Payload standard formatting
-    $qr_ph_payload = "00020101021226580010ph.ppmi.qr0111PALMASGYM0215PEG" . $member['membership_id'] . "520459995303608540" . strlen($amount) . $amount . "5802PH5918PALMAS ELITE GYM6006MANILA62210717" . $ref_code . "6304";
+    $amt_str = number_format($amount, 2, '.', '');
+    $qr_ph_payload = "00020101021226580010ph.ppmi.qr0111PALMASGYM0215PEG" . ($member['membership_id'] ?? 'MEMBER') . "520459995303608540" . str_pad((string)strlen($amt_str), 2, '0', STR_PAD_LEFT) . $amt_str . "5802PH5918PALMAS ELITE GYM6006MANILA62210717" . $ref_code . "6304";
 
     echo json_encode([
         'success' => true,
@@ -90,8 +92,7 @@ try {
         ]
     ]);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     error_log('Error in create_payment_checkout.php: ' . $e->getMessage());
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Server error creating checkout session.']);
+    echo json_encode(['success' => false, 'message' => 'Checkout error: ' . $e->getMessage()]);
 }
