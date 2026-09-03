@@ -1150,7 +1150,7 @@
 // ══════════════════════════════════════════════════════════════════
 //  PALMA'S ELITE GYM — Complete Unified Mobile Application Logic
 // ══════════════════════════════════════════════════════════════════
-const API_URL = 'https://palmas-gym.onrender.com/api';
+const API_URL = 'https://palmas-gym-4oxn.onrender.com/api';
 const GOOGLE_CLIENT_ID = '547166577828-q8asn3pta04j6o779g3vc6sqmvq76n39.apps.googleusercontent.com';
 
 let currentMember = null;
@@ -1246,7 +1246,7 @@ function initiateGoogleSignIn() {
 
   showToast('Connecting with Google accounts...');
   // Direct Google OAuth URL fallback if GSI is blocked in WebView
-  const redirectUri = 'https://palmas-gym.onrender.com/member/google_callback.php';
+  const redirectUri = 'https://palmas-gym-4oxn.onrender.com/member/google_callback.php';
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20email%20profile&access_type=offline&prompt=select_account`;
   window.open(authUrl, '_blank');
 }

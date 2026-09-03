@@ -106,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="error-banner" style="background:rgba(82,183,136,0.15); color:var(--accent); border-color:rgba(82,183,136,0.3);"><i class="fas fa-check-circle"></i> <span><?php echo htmlspecialchars($success); ?></span></div>
             <?php else: ?>
             <form action="" method="POST" id="reset-form">
+                <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
                 <div class="form-group">
                     <label for="email"><i class="fas fa-envelope"></i> Registered Email</label>
                     <div class="input-wrap">

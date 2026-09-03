@@ -520,6 +520,7 @@ select.if{
     <?php endif; ?>
 
     <form action="register.php" method="POST" id="reg-form" novalidate>
+      <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
 
       <!-- Full Name -->
       <div class="fg">

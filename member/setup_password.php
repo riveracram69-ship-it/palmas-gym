@@ -85,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form action="setup_password.php" method="POST" id="login-form">
+                <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
                 <div class="form-group">
                     <label for="password"><i class="fas fa-lock"></i> New Password</label>
                     <div class="input-wrap">
