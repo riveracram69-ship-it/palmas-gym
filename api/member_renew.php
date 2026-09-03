@@ -23,10 +23,10 @@ $plan_id        = intval($data['plan_id'] ?? 0);
 $payment_method = trim($data['payment_method'] ?? '');
 $reference_no   = trim($data['reference_no'] ?? '');
 
-$allowed_methods = ['Cash', 'GCash', 'Credit Card', 'Bank Transfer'];
+$allowed_methods = ['Cash', 'GCash', 'Maya', 'QR Ph', 'Instant GCash', 'Instant Maya', 'Credit Card', 'Bank Transfer', 'CASH', 'GCASH', 'MAYA', 'QRPH'];
 
-if (!$plan_id || !in_array($payment_method, $allowed_methods)) {
-    echo json_encode(['success' => false, 'message' => 'Please fill in all required fields.']);
+if (!$plan_id) {
+    echo json_encode(['success' => false, 'message' => 'Please select a membership plan.']);
     exit;
 }
 

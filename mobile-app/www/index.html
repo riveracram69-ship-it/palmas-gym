@@ -1108,24 +1108,28 @@
     </ion-header>
     <ion-content class="ion-padding" style="--background: var(--gym-dark);">
       <div id="renewal-step-form">
-        <ion-item class="dark-card" style="margin-bottom:12px;">
-          <ion-label position="stacked" style="color: var(--gym-light); font-weight:700;">Select Plan</ion-label>
-          <ion-select id="renew-plan-select" placeholder="Select Plan" style="color:#fff;"></ion-select>
-        </ion-item>
-        <ion-item class="dark-card" style="margin-bottom:16px;">
-          <ion-label position="stacked" style="color: var(--gym-light); font-weight:700;">Payment Method</ion-label>
-          <ion-select id="renew-method-select" value="Instant GCash" style="color:#fff;" onIonChange="handleRenewMethodChange(this.value)">
-            <ion-select-option value="Instant GCash">⚡ Instant GCash</ion-select-option>
-            <ion-select-option value="Instant Maya">⚡ Instant Maya</ion-select-option>
-            <ion-select-option value="QR Ph">🏦 QR Ph Online</ion-select-option>
-            <ion-select-option value="Cash">💵 Cash at Front Desk</ion-select-option>
-          </ion-select>
-        </ion-item>
-        <div id="renew-manual-ref-wrap" style="display:none; margin-bottom:16px;">
-          <div class="input-field-wrap">
-            <input type="text" id="renew-ref-input" placeholder="Reference Number (Optional)" />
+        <!-- RENEWAL PLAN SELECTION -->
+        <div style="margin-bottom:14px;">
+          <label style="color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:8px; display:block;">Select Membership Plan</label>
+          <div id="renew-plans-container" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+
+        <!-- PAYMENT METHOD SELECTION -->
+        <div style="margin-bottom:16px;">
+          <label style="color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:8px; display:block;">Payment Method</label>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+            <button type="button" class="gender-btn selected" id="renew-pm-instantgcash" onclick="selectRenewPaymentMethod('Instant GCash')">⚡ GCash</button>
+            <button type="button" class="gender-btn" id="renew-pm-instantmaya" onclick="selectRenewPaymentMethod('Instant Maya')">⚡ Maya</button>
+            <button type="button" class="gender-btn" id="renew-pm-qrph" onclick="selectRenewPaymentMethod('QR Ph')">🏦 QR Ph</button>
+            <button type="button" class="gender-btn" id="renew-pm-cash" onclick="selectRenewPaymentMethod('Cash')">💵 Cash at Front Desk</button>
+          </div>
+          <div id="renew-manual-ref-wrap" style="display:none; margin-top:8px;">
+            <div class="input-field-wrap">
+              <input type="text" id="renew-ref-input" placeholder="Reference Number (Optional)" />
+            </div>
           </div>
         </div>
+
         <button class="btn-primary" id="btn-proceed-renewal" onclick="submitRenewal()">
           <i class="fa-solid fa-bolt"></i> PROCEED TO PAYMENT
         </button>
@@ -1910,7 +1914,49 @@ function refreshDashboard() {
   }
 }
 
-// ── RENEWAL MODAL ──────────────────────────────────────────────────
+// ── RENEWAL MODAL & BILLING ────────────────────────────────────────
+let selectedRenewPlanId = null;
+let selectedRenewPlan = null;
+let selectedRenewMethod = 'Instant GCash';
+
+function selectRenewPaymentMethod(method) {
+  selectedRenewMethod = method;
+  ['Instant GCash', 'Instant Maya', 'QR Ph', 'Cash'].forEach(m => {
+    const key = m.toLowerCase().replace(/[^a-z]/g, '');
+    const btn = document.getElementById(`renew-pm-${key}`);
+    if (btn) btn.classList.toggle('selected', m === method);
+  });
+  const refWrap = document.getElementById('renew-manual-ref-wrap');
+  if (refWrap) refWrap.style.display = (method === 'Cash') ? 'block' : 'none';
+}
+
+function renderRenewPlanCards(plans) {
+  const container = document.getElementById('renew-plans-container');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!selectedRenewPlanId && plans.length > 0) {
+    selectedRenewPlanId = plans[0].id;
+    selectedRenewPlan = plans[0];
+  }
+  plans.forEach(p => {
+    const card = document.createElement('div');
+    card.className = `plan-card ${selectedRenewPlanId == p.id ? 'selected' : ''}`;
+    card.onclick = () => {
+      selectedRenewPlanId = p.id;
+      selectedRenewPlan = p;
+      container.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+    };
+    card.innerHTML = `
+      <div class="plan-check"><i class="fa-solid fa-check"></i></div>
+      <h3 style="color:#fff; margin:0 0 4px; font-weight:800; font-size:1.02rem;">${p.name}</h3>
+      <h2 style="color:var(--gym-light); margin:0; font-size:1.35rem; font-weight:900;">₱${parseFloat(p.price).toFixed(2)}</h2>
+      <p style="color:var(--gym-muted); font-size:0.78rem; margin:3px 0 0;">${p.duration_months} Month(s) Gym Access</p>
+    `;
+    container.appendChild(card);
+  });
+}
+
 async function openRenewalModal() {
   const m = document.getElementById('modal-renewal');
   if (m) {
@@ -1928,7 +1974,8 @@ async function openRenewalModal() {
       { id: 4, name: 'VIP', price: 4000.00, duration_months: 12 }
     ];
   }
-  populateRenewPlansSelect(availablePlans);
+  renderRenewPlanCards(availablePlans);
+  selectRenewPaymentMethod(selectedRenewMethod || 'Instant GCash');
 
   // Background fetch live plans
   try {
@@ -1937,7 +1984,7 @@ async function openRenewalModal() {
       const data = await res.json();
       if (data && data.success && Array.isArray(data.plans) && data.plans.length > 0) {
         availablePlans = data.plans;
-        populateRenewPlansSelect(availablePlans);
+        renderRenewPlanCards(availablePlans);
       }
     }
   } catch (e) {
@@ -1953,36 +2000,33 @@ function closeRenewalModal() {
   }
 }
 
-function populateRenewPlansSelect(plans) {
-  const s = document.getElementById('renew-plan-select');
-  if (!s || !plans || !plans.length) return;
-  s.innerHTML = plans.map(p =>
-    `<ion-select-option value="${p.id}">${p.name} — ₱${parseFloat(p.price).toFixed(2)} (${p.duration_months} mo)</ion-select-option>`
-  ).join('');
-  if (!s.value || !plans.some(p => p.id == s.value)) {
-    s.value = plans[0].id;
-  }
-}
-
-function handleRenewMethodChange(val) {
-  const wrap = document.getElementById('renew-manual-ref-wrap');
-  if (wrap) wrap.style.display = (val === 'Cash') ? 'block' : 'none';
-}
-
 function backToRenewalForm() {
   document.getElementById('renewal-step-checkout').style.display = 'none';
   document.getElementById('renewal-step-form').style.display     = 'block';
 }
 
 async function submitRenewal() {
-  const planId = document.getElementById('renew-plan-select').value;
-  const method = document.getElementById('renew-method-select').value;
+  if (!selectedRenewPlanId) return showToast('Please select a membership plan.');
+  if (!selectedRenewMethod) return showToast('Please select a payment method.');
+
+  const planId = selectedRenewPlanId;
+  const method = selectedRenewMethod;
   const ref    = (document.getElementById('renew-ref-input')?.value || '').trim();
 
-  if (!planId || !method) return showToast('Please select a plan and payment method.');
+  const token = localStorage.getItem('peg_token');
+  if (!token) {
+    showToast('Session expired. Please sign in again.');
+    showScreen('view-login');
+    return;
+  }
+
+  const btn = document.getElementById('btn-proceed-renewal');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Processing...';
+  }
 
   if (method === 'Cash') {
-    const token = localStorage.getItem('peg_token');
     try {
       const res = await fetch(`${API_URL}/member_renew.php`, {
         method: 'POST',
@@ -1993,14 +2037,20 @@ async function submitRenewal() {
       showToast(data.message || 'Cash renewal request submitted.');
       closeRenewalModal();
       refreshDashboard();
-    } catch { showToast('Unable to submit renewal.'); }
+    } catch {
+      showToast('Unable to submit renewal.');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-bolt"></i> PROCEED TO PAYMENT';
+      }
+    }
     return;
   }
 
   // Online Checkout Sheet
   try {
-    const token = localStorage.getItem('peg_token');
-    const res   = await fetch(`${API_URL}/create_payment_checkout.php`, {
+    const res = await fetch(`${API_URL}/create_payment_checkout.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ plan_id: planId, payment_method: method })
@@ -2021,7 +2071,14 @@ async function submitRenewal() {
     } else {
       showToast(data.message || 'Could not initiate checkout.');
     }
-  } catch { showToast('Payment connection error.'); }
+  } catch {
+    showToast('Payment connection error.');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-bolt"></i> PROCEED TO PAYMENT';
+    }
+  }
 }
 
 async function executeAutoActivation() {
