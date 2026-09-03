@@ -1454,7 +1454,6 @@ function cancelRegistration() { showScreen('view-login'); }
 
 function goToWizardStep(step) {
   [1, 2, 3].forEach(s => {
-    const page = document.getElementById(`reg-step-1`);
     const dot  = document.getElementById(`sdot-${s}`);
     const line = document.getElementById(`sline-${s-1}`);
     const stepEl = document.getElementById(`reg-step-${s}`);
@@ -1469,6 +1468,9 @@ function goToWizardStep(step) {
   if (label) {
     const titles = ['', 'Step 1 of 3 — Personal Information', 'Step 2 of 3 — Select Package', 'Step 3 of 3 — Review Application'];
     label.textContent = titles[step] || '';
+  }
+  if (step === 2) {
+    loadPlansForRegistration();
   }
 }
 
@@ -1519,29 +1521,40 @@ function wizardBack(fromStep) {
 async function loadPlansForRegistration() {
   const container = document.getElementById('plans-container-reg');
   if (!container) return;
-  try {
-    const res = await fetch(`${API_URL}/get_plans.php`);
-    const data = await res.json();
-    availablePlans = (data.plans && data.plans.length) ? data.plans : [
-      { id: 2, name: 'Basic', price: 300.00, duration_months: 1 },
-      { id: 1, name: 'STANDARD', price: 500.00, duration_months: 2 },
-      { id: 3, name: 'Premium', price: 1000.00, duration_months: 6 },
-      { id: 4, name: 'VIP', price: 4000.00, duration_months: 12 }
-    ];
-    renderPlanCards(availablePlans, container);
-  } catch (e) {
+
+  // Immediate instant render so screen is never blank
+  if (!availablePlans || availablePlans.length === 0) {
     availablePlans = [
       { id: 2, name: 'Basic', price: 300.00, duration_months: 1 },
       { id: 1, name: 'STANDARD', price: 500.00, duration_months: 2 },
       { id: 3, name: 'Premium', price: 1000.00, duration_months: 6 },
       { id: 4, name: 'VIP', price: 4000.00, duration_months: 12 }
     ];
-    renderPlanCards(availablePlans, container);
+  }
+  renderPlanCards(availablePlans, container);
+
+  // Background live sync from database
+  try {
+    const res = await fetch(`${API_URL}/get_plans.php`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.plans) && data.plans.length > 0) {
+        availablePlans = data.plans;
+        renderPlanCards(availablePlans, container);
+      }
+    }
+  } catch (e) {
+    console.warn("get_plans live sync notice:", e);
   }
 }
 
 function renderPlanCards(plans, container) {
+  if (!container) return;
   container.innerHTML = '';
+  if (!selectedPlanId && plans.length > 0) {
+    selectedPlanId = plans[0].id;
+    selectedPlan = plans[0];
+  }
   plans.forEach(p => {
     const card = document.createElement('div');
     card.className = `plan-card ${selectedPlanId === p.id ? 'selected' : ''}`;
