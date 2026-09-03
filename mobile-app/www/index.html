@@ -736,31 +736,32 @@
             </div>
           </div>
 
-          <!-- PAYMENT METHOD SELECTION -->
+          <!-- PAYMENT METHOD SELECTION (3 Methods: GCash, Maya, Cash) -->
           <div class="dark-card" style="padding:16px; margin-bottom:16px;">
             <label style="display:block; color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:10px;">Choose Payment Option</label>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
-              <button type="button" class="gender-btn selected" id="reg-pm-instantgcash" onclick="selectRegPaymentMethod('Instant GCash')">⚡ GCash</button>
-              <button type="button" class="gender-btn" id="reg-pm-instantmaya" onclick="selectRegPaymentMethod('Instant Maya')">⚡ Maya</button>
-              <button type="button" class="gender-btn" id="reg-pm-qrph" onclick="selectRegPaymentMethod('QR Ph')">🏦 QR Ph</button>
-              <button type="button" class="gender-btn" id="reg-pm-cash" onclick="selectRegPaymentMethod('Cash')">💵 Cash at Gym</button>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:12px;">
+              <button type="button" class="gender-btn selected" id="reg-pm-gcash" onclick="selectRegPaymentMethod('GCash')">⚡ GCash</button>
+              <button type="button" class="gender-btn" id="reg-pm-maya" onclick="selectRegPaymentMethod('Maya')">⚡ Maya</button>
+              <button type="button" class="gender-btn" id="reg-pm-cash" onclick="selectRegPaymentMethod('Cash')">💵 Cash</button>
             </div>
 
             <!-- ONLINE QR CHECKOUT CONTAINER -->
-            <div id="reg-qr-checkout-wrap" style="text-align:center; padding:12px; background:rgba(15,45,32,0.6); border-radius:14px; border:1px solid var(--gym-border); margin-top:8px;">
-              <span id="reg-qr-badge" style="background:var(--gym-green); color:#fff; font-size:0.72rem; font-weight:800; padding:3px 8px; border-radius:10px;">GCASH INSTANT CHECKOUT</span>
-              <p style="color:var(--gym-muted); font-size:0.78rem; margin:8px 0 10px;">Scan QR to pay <strong id="reg-qr-amount-text" style="color:var(--gym-light);">₱0.00</strong></p>
+            <div id="reg-qr-checkout-wrap" style="text-align:center; padding:14px; background:rgba(15,45,32,0.6); border-radius:14px; border:1px solid var(--gym-border); margin-top:8px;">
+              <span id="reg-qr-badge" style="background:var(--gym-green); color:#fff; font-size:0.72rem; font-weight:800; padding:3px 10px; border-radius:10px;">GCASH ACCOUNT DETAILS</span>
+              <p style="color:var(--gym-muted); font-size:0.8rem; margin:8px 0 4px;">Account: <strong style="color:#fff;">Palma's Elite Gym (0917-888-4961)</strong></p>
+              <p style="color:var(--gym-muted); font-size:0.8rem; margin:0 0 10px;">Total Due: <strong id="reg-qr-amount-text" style="color:var(--gym-light); font-size:1.1rem;">₱0.00</strong></p>
               <div class="qr-box" style="margin-bottom:10px; display:inline-block; background:#fff; padding:8px; border-radius:12px;">
                 <div id="reg-payment-qr-target" style="width:160px; height:160px;"></div>
               </div>
               <div class="input-field-wrap" style="margin-top:6px;">
-                <input type="text" id="reg-ref-no" placeholder="Reference Number (Optional)" />
+                <input type="text" id="reg-ref-no" placeholder="Transaction Reference No. (Required)" />
               </div>
+              <span style="display:block; color:var(--gym-muted); font-size:0.72rem; margin-top:5px;">Enter reference number from your payment receipt</span>
             </div>
 
             <div id="reg-cash-info-wrap" style="display:none; text-align:center; padding:14px; background:rgba(82,183,136,0.1); border-radius:12px; font-size:0.82rem; color:var(--gym-light); margin-top:8px;">
               <i class="fa-solid fa-store" style="font-size:1.4rem; margin-bottom:6px; display:block;"></i>
-              You may pay <strong>in cash</strong> at the front desk when you first visit the gym.
+              Please pay <strong>in cash</strong> at the front desk when you first visit the gym. Staff will verify and approve your membership.
             </div>
           </div>
 
@@ -1110,47 +1111,46 @@
       <div id="renewal-step-form">
         <!-- RENEWAL PLAN SELECTION -->
         <div style="margin-bottom:14px;">
-          <label style="color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:8px; display:block;">Select Membership Plan</label>
+          <label style="color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:8px; display:block;">1. Select Membership Plan</label>
           <div id="renew-plans-container" style="display:flex; flex-direction:column; gap:8px;"></div>
         </div>
 
-        <!-- PAYMENT METHOD SELECTION -->
+        <!-- PAYMENT METHOD SELECTION (3 Methods: GCash, Maya, Cash) -->
         <div style="margin-bottom:16px;">
-          <label style="color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:8px; display:block;">Payment Method</label>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
-            <button type="button" class="gender-btn selected" id="renew-pm-instantgcash" onclick="selectRenewPaymentMethod('Instant GCash')">⚡ GCash</button>
-            <button type="button" class="gender-btn" id="renew-pm-instantmaya" onclick="selectRenewPaymentMethod('Instant Maya')">⚡ Maya</button>
-            <button type="button" class="gender-btn" id="renew-pm-qrph" onclick="selectRenewPaymentMethod('QR Ph')">🏦 QR Ph</button>
-            <button type="button" class="gender-btn" id="renew-pm-cash" onclick="selectRenewPaymentMethod('Cash')">💵 Cash at Front Desk</button>
+          <label style="color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:8px; display:block;">2. Choose Payment Method</label>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:12px;">
+            <button type="button" class="gender-btn selected" id="renew-pm-gcash" onclick="selectRenewPaymentMethod('GCash')">⚡ GCash</button>
+            <button type="button" class="gender-btn" id="renew-pm-maya" onclick="selectRenewPaymentMethod('Maya')">⚡ Maya</button>
+            <button type="button" class="gender-btn" id="renew-pm-cash" onclick="selectRenewPaymentMethod('Cash')">💵 Cash</button>
           </div>
-          <div id="renew-manual-ref-wrap" style="display:none; margin-top:8px;">
-            <div class="input-field-wrap">
-              <input type="text" id="renew-ref-input" placeholder="Reference Number (Optional)" />
+
+          <!-- GCASH / MAYA ACCOUNT DETAILS & QR BOX -->
+          <div id="renew-online-pay-wrap" style="text-align:center; padding:14px; background:rgba(15,45,32,0.6); border-radius:14px; border:1px solid var(--gym-border); margin-bottom:14px;">
+            <span id="renew-method-badge" style="background:var(--gym-green); color:#fff; font-size:0.72rem; font-weight:800; padding:3px 10px; border-radius:10px;">GCASH ACCOUNT DETAILS</span>
+            <p style="color:var(--gym-muted); font-size:0.8rem; margin:8px 0 4px;">Account: <strong style="color:#fff;">Palma's Elite Gym (0917-888-4961)</strong></p>
+            <p style="color:var(--gym-muted); font-size:0.8rem; margin:0 0 10px;">Amount Due: <strong id="renew-amount-due-text" style="color:var(--gym-light); font-size:1.1rem;">₱0.00</strong></p>
+            
+            <div class="qr-box" style="margin:0 auto 10px; display:inline-block; background:#fff; padding:8px; border-radius:12px;">
+              <div id="renew-qrcode-target" style="width:160px; height:160px;"></div>
             </div>
+
+            <div class="input-field-wrap" style="margin-top:6px;">
+              <input type="text" id="renew-ref-input" placeholder="Transaction Reference No. (Required)" />
+            </div>
+            <span style="display:block; color:var(--gym-muted); font-size:0.72rem; margin-top:5px;">Enter reference number from your payment receipt</span>
+          </div>
+
+          <!-- CASH PAYMENT NOTICE -->
+          <div id="renew-cash-info-wrap" style="display:none; text-align:center; padding:16px; background:rgba(82,183,136,0.1); border-radius:12px; font-size:0.84rem; color:var(--gym-light); margin-bottom:14px;">
+            <i class="fa-solid fa-store" style="font-size:1.6rem; margin-bottom:8px; display:block;"></i>
+            Please proceed to the gym <strong>Front Desk</strong> to settle your cash payment.<br>
+            <span style="font-size:0.76rem; color:var(--gym-muted); margin-top:4px; display:block;">Our staff will verify and activate your renewal once received.</span>
           </div>
         </div>
 
         <button class="btn-primary" id="btn-proceed-renewal" onclick="submitRenewal()">
-          <i class="fa-solid fa-bolt"></i> PROCEED TO PAYMENT
+          <i class="fa-solid fa-paper-plane"></i> SUBMIT FOR STAFF VERIFICATION
         </button>
-      </div>
-
-      <!-- Online Checkout Sheet -->
-      <div id="renewal-step-checkout" style="display:none; text-align:center; padding-top:6px;">
-        <div style="background:#112d21; border-radius:18px; border:1px solid var(--gym-mid); padding:20px; box-shadow:0 8px 25px rgba(0,0,0,0.5);">
-          <span id="checkout-method-badge" style="background: var(--gym-green); color:#fff; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:12px;">GCASH QR PH</span>
-          <h1 id="checkout-amount-display" style="color: var(--gym-light); margin:12px 0 6px; font-size:1.8rem; font-weight:900;">₱0.00</h1>
-          <p id="checkout-plan-name" style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 14px;">Plan Name</p>
-          <div class="qr-box" style="margin-bottom:14px;">
-            <div id="checkout-qrcode-box" style="width:175px; height:175px;"></div>
-          </div>
-          <button class="btn-primary" id="btn-confirm-auto-pay" onclick="executeAutoActivation()" style="margin-bottom:10px;">
-            <i class="fa-solid fa-circle-check"></i> COMPLETE &amp; ACTIVATE PASS
-          </button>
-          <button class="btn-outline" onclick="backToRenewalForm()">
-            <i class="fa-solid fa-arrow-left"></i> Change Plan / Back
-          </button>
-        </div>
       </div>
     </ion-content>
   </ion-modal>
@@ -1551,12 +1551,12 @@ function wizardBack(fromStep) {
   else if (fromStep === 3) goToWizardStep(2);
 }
 
-let selectedRegPaymentMethod = 'Instant GCash';
+let selectedRegPaymentMethod = 'GCash';
 
 function selectRegPaymentMethod(method) {
   selectedRegPaymentMethod = method;
-  ['Instant GCash', 'Instant Maya', 'QR Ph', 'Cash'].forEach(m => {
-    const key = m.toLowerCase().replace(/[^a-z]/g, '');
+  ['GCash', 'Maya', 'Cash'].forEach(m => {
+    const key = m.toLowerCase();
     const btn = document.getElementById(`reg-pm-${key}`);
     if (btn) btn.classList.toggle('selected', m === method);
   });
@@ -1571,7 +1571,7 @@ function selectRegPaymentMethod(method) {
   } else {
     if (qrWrap) qrWrap.style.display = 'block';
     if (cashWrap) cashWrap.style.display = 'none';
-    if (badge) badge.textContent = `${method.toUpperCase()} INSTANT CHECKOUT`;
+    if (badge) badge.textContent = `${method.toUpperCase()} ACCOUNT DETAILS`;
     renderRegPaymentQR();
   }
 }
@@ -1640,6 +1640,7 @@ function renderPlanCards(plans, container) {
       selectedPlan = p;
       container.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
+      renderRegPaymentQR();
     };
     card.innerHTML = `
       <div class="plan-check"><i class="fa-solid fa-check"></i></div>
@@ -1649,14 +1650,18 @@ function renderPlanCards(plans, container) {
     `;
     container.appendChild(card);
   });
+  renderRegPaymentQR();
 }
 
 async function submitRegistration() {
+  const refNo = (document.getElementById('reg-ref-no')?.value || '').trim();
+  if (selectedRegPaymentMethod !== 'Cash' && !refNo) {
+    return showToast(`Please enter your ${selectedRegPaymentMethod} Reference Number.`);
+  }
+
   const btn = document.getElementById('btn-submit-reg');
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Submitting...';
-
-  const refNo = (document.getElementById('reg-ref-no')?.value || '').trim();
 
   try {
     const res = await fetch(`${API_URL}/member_register.php`, {
@@ -1689,7 +1694,7 @@ async function submitRegistration() {
     showToast('Failed to submit application. Check connection.');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-bolt"></i> COMPLETE &amp; SUBMIT REGISTRATION';
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> SUBMIT REGISTRATION';
   }
 }
 
@@ -1917,17 +1922,48 @@ function refreshDashboard() {
 // ── RENEWAL MODAL & BILLING ────────────────────────────────────────
 let selectedRenewPlanId = null;
 let selectedRenewPlan = null;
-let selectedRenewMethod = 'Instant GCash';
+let selectedRenewMethod = 'GCash';
 
 function selectRenewPaymentMethod(method) {
   selectedRenewMethod = method;
-  ['Instant GCash', 'Instant Maya', 'QR Ph', 'Cash'].forEach(m => {
-    const key = m.toLowerCase().replace(/[^a-z]/g, '');
+  ['GCash', 'Maya', 'Cash'].forEach(m => {
+    const key = m.toLowerCase();
     const btn = document.getElementById(`renew-pm-${key}`);
     if (btn) btn.classList.toggle('selected', m === method);
   });
-  const refWrap = document.getElementById('renew-manual-ref-wrap');
-  if (refWrap) refWrap.style.display = (method === 'Cash') ? 'block' : 'none';
+
+  const onlineWrap = document.getElementById('renew-online-pay-wrap');
+  const cashWrap = document.getElementById('renew-cash-info-wrap');
+  const badge = document.getElementById('renew-method-badge');
+
+  if (method === 'Cash') {
+    if (onlineWrap) onlineWrap.style.display = 'none';
+    if (cashWrap) cashWrap.style.display = 'block';
+  } else {
+    if (onlineWrap) onlineWrap.style.display = 'block';
+    if (cashWrap) cashWrap.style.display = 'none';
+    if (badge) badge.textContent = `${method.toUpperCase()} ACCOUNT DETAILS`;
+    renderRenewQR();
+  }
+}
+
+function renderRenewQR() {
+  const target = document.getElementById('renew-qrcode-target');
+  if (!target) return;
+  target.innerHTML = '';
+  const amt = selectedRenewPlan ? parseFloat(selectedRenewPlan.price).toFixed(2) : '0.00';
+  const amtText = document.getElementById('renew-amount-due-text');
+  if (amtText) amtText.textContent = `₱${amt}`;
+
+  const qrPayload = `00020101021226580010ph.ppmi.qr0111PALMASGYM0215PEG${Date.now()}520459995303608540${amt.length}${amt}5802PH5918PALMAS ELITE GYM6006MANILA6304`;
+  new QRCode(target, {
+    text: qrPayload,
+    width: 160,
+    height: 160,
+    colorDark: '#081c15',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
 }
 
 function renderRenewPlanCards(plans) {
@@ -1946,6 +1982,7 @@ function renderRenewPlanCards(plans) {
       selectedRenewPlan = p;
       container.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
+      renderRenewQR();
     };
     card.innerHTML = `
       <div class="plan-check"><i class="fa-solid fa-check"></i></div>
@@ -1955,6 +1992,7 @@ function renderRenewPlanCards(plans) {
     `;
     container.appendChild(card);
   });
+  renderRenewQR();
 }
 
 async function openRenewalModal() {
@@ -1975,7 +2013,7 @@ async function openRenewalModal() {
     ];
   }
   renderRenewPlanCards(availablePlans);
-  selectRenewPaymentMethod(selectedRenewMethod || 'Instant GCash');
+  selectRenewPaymentMethod(selectedRenewMethod || 'GCash');
 
   // Background fetch live plans
   try {
@@ -2000,11 +2038,6 @@ function closeRenewalModal() {
   }
 }
 
-function backToRenewalForm() {
-  document.getElementById('renewal-step-checkout').style.display = 'none';
-  document.getElementById('renewal-step-form').style.display     = 'block';
-}
-
 async function submitRenewal() {
   if (!selectedRenewPlanId) return showToast('Please select a membership plan.');
   if (!selectedRenewMethod) return showToast('Please select a payment method.');
@@ -2012,6 +2045,10 @@ async function submitRenewal() {
   const planId = selectedRenewPlanId;
   const method = selectedRenewMethod;
   const ref    = (document.getElementById('renew-ref-input')?.value || '').trim();
+
+  if (method !== 'Cash' && !ref) {
+    return showToast(`Please enter your ${method} transaction Reference Number.`);
+  }
 
   const token = localStorage.getItem('peg_token');
   if (!token) {
@@ -2023,87 +2060,29 @@ async function submitRenewal() {
   const btn = document.getElementById('btn-proceed-renewal');
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Processing...';
+    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Submitting...';
   }
 
-  if (method === 'Cash') {
-    try {
-      const res = await fetch(`${API_URL}/member_renew.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ plan_id: planId, payment_method: method, reference_no: ref })
-      });
-      const data = await res.json();
-      showToast(data.message || 'Cash renewal request submitted.');
+  try {
+    const res = await fetch(`${API_URL}/member_renew.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ plan_id: planId, payment_method: method, reference_no: ref })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Renewal request submitted! Awaiting staff verification.');
       closeRenewalModal();
       refreshDashboard();
-    } catch {
-      showToast('Unable to submit renewal.');
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-bolt"></i> PROCEED TO PAYMENT';
-      }
+    } else {
+      showToast(data.message || 'Unable to submit renewal.');
     }
-    return;
-  }
-
-  // Online Checkout Sheet (Instant GCash, Instant Maya, QR Ph)
-  try {
-    let checkoutData = null;
-    try {
-      const res = await fetch(`${API_URL}/create_payment_checkout.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ plan_id: planId, payment_method: method })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.success && data.checkout) {
-          checkoutData = data.checkout;
-        }
-      }
-    } catch (apiErr) {
-      console.warn("create_payment_checkout live sync fallback:", apiErr);
-    }
-
-    // Direct Instant Checkout Generation (Fallback / Seamless)
-    if (!checkoutData) {
-      const pName = selectedRenewPlan?.name || 'Selected Plan';
-      const pPrice = selectedRenewPlan ? parseFloat(selectedRenewPlan.price) : 300.00;
-      const refCode = 'PEG-' + (method.substr(0, 2).toUpperCase() || 'GC') + '-' + Date.now().toString(36).toUpperCase();
-      checkoutData = {
-        ref_code: refCode,
-        plan_id: planId,
-        plan_name: pName,
-        duration: (selectedRenewPlan?.duration_months || 1) + ' Month(s)',
-        amount: pPrice,
-        amount_formatted: '₱' + pPrice.toFixed(2),
-        payment_method: method,
-        qr_data: `00020101021226580010ph.ppmi.qr0111PALMASGYM0215PEG${refCode}520459995303608540${pPrice.toFixed(2).length}${pPrice.toFixed(2)}5802PH5918PALMAS ELITE GYM6006MANILA62210717${refCode}6304`
-      };
-    }
-
-    currentCheckoutSession = checkoutData;
-    document.getElementById('checkout-method-badge').textContent   = `${method.toUpperCase()} AUTO-PAY`;
-    document.getElementById('checkout-plan-name').textContent      = `${checkoutData.plan_name} (${checkoutData.duration})`;
-    document.getElementById('checkout-amount-display').textContent = checkoutData.amount_formatted;
-
-    const qrBox = document.getElementById('checkout-qrcode-box');
-    if (qrBox) {
-      qrBox.innerHTML = '';
-      new QRCode(qrBox, { text: checkoutData.qr_data, width: 175, height: 175, colorDark: '#081c15', colorLight: '#ffffff' });
-    }
-
-    document.getElementById('renewal-step-form').style.display     = 'none';
-    document.getElementById('renewal-step-checkout').style.display = 'block';
-
-  } catch (checkoutErr) {
-    showToast('Payment initialization error: ' + (checkoutErr.message || 'Check connection'));
+  } catch {
+    showToast('Connection error. Please try again.');
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-bolt"></i> PROCEED TO PAYMENT';
+      btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> SUBMIT FOR STAFF VERIFICATION';
     }
   }
 }
