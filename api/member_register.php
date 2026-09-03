@@ -130,6 +130,41 @@ try {
     ]);
     $member_id = (int)$pdo->lastInsertId();
 
+    // Fetch plan details if selected
+    $plan_name = 'Standard';
+    $plan_price = 0.00;
+    if ($plan_id > 0) {
+        $p_fetch = $pdo->prepare("SELECT name, price FROM membership_plans WHERE id = ?");
+        $p_fetch->execute([$plan_id]);
+        $p_row = $p_fetch->fetch(PDO::FETCH_ASSOC);
+        if ($p_row) {
+            $plan_name = $p_row['name'];
+            $plan_price = floatval($p_row['price']);
+        }
+    }
+
+    $payment_method = trim($data['payment_method'] ?? 'Cash');
+    $reference_no   = trim($data['reference_no'] ?? '');
+    if (empty($reference_no) && $payment_method !== 'Cash') {
+        $reference_no = 'REG-' . strtoupper(substr($payment_method, 0, 2)) . '-' . strtoupper(bin2hex(random_bytes(3)));
+    }
+
+    // Record initial payment entry
+    try {
+        $pay_stmt = $pdo->prepare("
+            INSERT INTO payments 
+            (member_id, amount, payment_method, payment_type, reference_no, payment_date, created_at)
+            VALUES (?, ?, ?, ?, ?, CURDATE(), NOW())
+        ");
+        $pay_stmt->execute([
+            $member_id,
+            $plan_price,
+            $payment_method,
+            "Registration - {$plan_name}",
+            $reference_no ?: null
+        ]);
+    } catch (Exception $payEx) {}
+
     // Admin notification
     try {
         $pdo->prepare("
@@ -137,7 +172,7 @@ try {
             VALUES (?, 'Registration', 'New Member Registration Awaiting Review', ?, 'Sent', 'Unread', NOW())
         ")->execute([
             $member_id,
-            "New member {$full_name} ({$membership_id}) registered via " . ($auth_provider === 'google' ? 'Google Sign-In' : 'Mobile App') . ". Please review and approve."
+            "New member {$full_name} ({$membership_id}) registered with {$plan_name} (₱" . number_format($plan_price, 2) . ", Method: {$payment_method}" . ($reference_no ? ", Ref: {$reference_no}" : "") . ") via " . ($auth_provider === 'google' ? 'Google Sign-In' : 'Mobile App') . ". Please review and approve."
         ]);
     } catch (Exception $nEx) {}
 

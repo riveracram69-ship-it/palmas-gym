@@ -702,7 +702,7 @@
           </button>
         </div>
 
-        <!-- STEP 3: Review & Submit -->
+        <!-- STEP 3: Review & Payment -->
         <div id="reg-step-3" style="display:none;">
           <div class="dark-card" style="padding:16px; margin-bottom:14px;">
             <h4 style="color: var(--gym-light); font-size:0.85rem; font-weight:800; margin:0 0 12px; text-transform:uppercase;">Applicant Summary</h4>
@@ -724,23 +724,51 @@
             </div>
           </div>
 
-          <div class="dark-card" style="padding:16px; margin-bottom:18px;">
-            <h4 style="color: var(--gym-light); font-size:0.85rem; font-weight:800; margin:0 0 12px; text-transform:uppercase;">Selected Package</h4>
+          <div class="dark-card" style="padding:16px; margin-bottom:14px; border-color:var(--gym-mid);">
+            <h4 style="color: var(--gym-light); font-size:0.85rem; font-weight:800; margin:0 0 12px; text-transform:uppercase;">Selected Package &amp; Total</h4>
             <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
-              <span style="color:var(--gym-muted);">Plan Name:</span>
+              <span style="color:var(--gym-muted);">Plan:</span>
               <strong id="rv-plan-name" style="color:#fff;">—</strong>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
-              <span style="color:var(--gym-muted);">Plan Price:</span>
-              <strong id="rv-plan-price" style="color:var(--gym-mid); font-size:1.1rem;">—</strong>
+              <span style="color:var(--gym-muted);">Total Due:</span>
+              <strong id="rv-plan-price" style="color:var(--gym-mid); font-size:1.25rem; font-weight:900;">₱0.00</strong>
+            </div>
+          </div>
+
+          <!-- PAYMENT METHOD SELECTION -->
+          <div class="dark-card" style="padding:16px; margin-bottom:16px;">
+            <label style="display:block; color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:10px;">Choose Payment Option</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+              <button type="button" class="gender-btn selected" id="reg-pm-instantgcash" onclick="selectRegPaymentMethod('Instant GCash')">⚡ GCash</button>
+              <button type="button" class="gender-btn" id="reg-pm-instantmaya" onclick="selectRegPaymentMethod('Instant Maya')">⚡ Maya</button>
+              <button type="button" class="gender-btn" id="reg-pm-qrph" onclick="selectRegPaymentMethod('QR Ph')">🏦 QR Ph</button>
+              <button type="button" class="gender-btn" id="reg-pm-cash" onclick="selectRegPaymentMethod('Cash')">💵 Cash at Gym</button>
+            </div>
+
+            <!-- ONLINE QR CHECKOUT CONTAINER -->
+            <div id="reg-qr-checkout-wrap" style="text-align:center; padding:12px; background:rgba(15,45,32,0.6); border-radius:14px; border:1px solid var(--gym-border); margin-top:8px;">
+              <span id="reg-qr-badge" style="background:var(--gym-green); color:#fff; font-size:0.72rem; font-weight:800; padding:3px 8px; border-radius:10px;">GCASH INSTANT CHECKOUT</span>
+              <p style="color:var(--gym-muted); font-size:0.78rem; margin:8px 0 10px;">Scan QR to pay <strong id="reg-qr-amount-text" style="color:var(--gym-light);">₱0.00</strong></p>
+              <div class="qr-box" style="margin-bottom:10px; display:inline-block; background:#fff; padding:8px; border-radius:12px;">
+                <div id="reg-payment-qr-target" style="width:160px; height:160px;"></div>
+              </div>
+              <div class="input-field-wrap" style="margin-top:6px;">
+                <input type="text" id="reg-ref-no" placeholder="Reference Number (Optional)" />
+              </div>
+            </div>
+
+            <div id="reg-cash-info-wrap" style="display:none; text-align:center; padding:14px; background:rgba(82,183,136,0.1); border-radius:12px; font-size:0.82rem; color:var(--gym-light); margin-top:8px;">
+              <i class="fa-solid fa-store" style="font-size:1.4rem; margin-bottom:6px; display:block;"></i>
+              You may pay <strong>in cash</strong> at the front desk when you first visit the gym.
             </div>
           </div>
 
           <button class="btn-primary" id="btn-submit-reg" onclick="submitRegistration()">
-            <i class="fa-solid fa-paper-plane"></i> SUBMIT REGISTRATION
+            <i class="fa-solid fa-bolt"></i> COMPLETE &amp; SUBMIT REGISTRATION
           </button>
           <button class="btn-outline" onclick="wizardBack(3)" style="margin-top:10px;">
-            <i class="fa-solid fa-arrow-left"></i> Edit Details
+            <i class="fa-solid fa-arrow-left"></i> Change Plan / Back
           </button>
         </div>
 
@@ -1510,12 +1538,57 @@ function wizardNext(fromStep) {
     document.getElementById('rv-plan-name').textContent = selectedPlan?.name || 'Selected Plan';
     document.getElementById('rv-plan-price').textContent = selectedPlan ? '₱' + parseFloat(selectedPlan.price).toFixed(2) : '—';
     goToWizardStep(3);
+    selectRegPaymentMethod(selectedRegPaymentMethod || 'Instant GCash');
   }
 }
 
 function wizardBack(fromStep) {
   if (fromStep === 2) goToWizardStep(1);
   else if (fromStep === 3) goToWizardStep(2);
+}
+
+let selectedRegPaymentMethod = 'Instant GCash';
+
+function selectRegPaymentMethod(method) {
+  selectedRegPaymentMethod = method;
+  ['Instant GCash', 'Instant Maya', 'QR Ph', 'Cash'].forEach(m => {
+    const key = m.toLowerCase().replace(/[^a-z]/g, '');
+    const btn = document.getElementById(`reg-pm-${key}`);
+    if (btn) btn.classList.toggle('selected', m === method);
+  });
+
+  const qrWrap = document.getElementById('reg-qr-checkout-wrap');
+  const cashWrap = document.getElementById('reg-cash-info-wrap');
+  const badge = document.getElementById('reg-qr-badge');
+
+  if (method === 'Cash') {
+    if (qrWrap) qrWrap.style.display = 'none';
+    if (cashWrap) cashWrap.style.display = 'block';
+  } else {
+    if (qrWrap) qrWrap.style.display = 'block';
+    if (cashWrap) cashWrap.style.display = 'none';
+    if (badge) badge.textContent = `${method.toUpperCase()} INSTANT CHECKOUT`;
+    renderRegPaymentQR();
+  }
+}
+
+function renderRegPaymentQR() {
+  const target = document.getElementById('reg-payment-qr-target');
+  if (!target) return;
+  target.innerHTML = '';
+  const amt = selectedPlan ? parseFloat(selectedPlan.price).toFixed(2) : '0.00';
+  const amtText = document.getElementById('reg-qr-amount-text');
+  if (amtText) amtText.textContent = `₱${amt}`;
+
+  const qrPayload = `00020101021226580010ph.ppmi.qr0111PALMASGYM0215REG${Date.now()}520459995303608540${amt.length}${amt}5802PH5918PALMAS ELITE GYM6006MANILA6304`;
+  new QRCode(target, {
+    text: qrPayload,
+    width: 160,
+    height: 160,
+    colorDark: '#081c15',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
 }
 
 async function loadPlansForRegistration() {
@@ -1579,6 +1652,8 @@ async function submitRegistration() {
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Submitting...';
 
+  const refNo = (document.getElementById('reg-ref-no')?.value || '').trim();
+
   try {
     const res = await fetch(`${API_URL}/member_register.php`, {
       method: 'POST',
@@ -1590,6 +1665,8 @@ async function submitRegistration() {
         password:       document.getElementById('reg-password')?.value || '',
         gender:         selectedGender,
         plan_id:        selectedPlanId || 1,
+        payment_method: selectedRegPaymentMethod || 'Cash',
+        reference_no:   refNo,
         google_id:      regPrefill.google_id || '',
         google_picture: regPrefill.picture || '',
         auth_provider:  regPrefill.google_id ? 'google' : 'password'
@@ -1600,16 +1677,15 @@ async function submitRegistration() {
       const regEmail = document.getElementById('reg-email').value.trim();
       const regName = document.getElementById('reg-name').value.trim();
       setPendingScreen(regEmail, regName);
-      showToast('Registration submitted! Pending staff approval.');
+      showToast('Registration & Payment submitted! Pending staff approval.');
     } else {
-
       showToast(data.message || 'Registration failed.');
     }
   } catch (err) {
     showToast('Failed to submit application. Check connection.');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> SUBMIT REGISTRATION';
+    btn.innerHTML = '<i class="fa-solid fa-bolt"></i> COMPLETE &amp; SUBMIT REGISTRATION';
   }
 }
 
