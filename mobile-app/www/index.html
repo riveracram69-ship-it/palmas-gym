@@ -1904,16 +1904,64 @@ function renderPayments(list) {
   });
 }
 
+function refreshDashboard() {
+  if (currentMember && currentMember.id) {
+    loadDashboard(currentMember.id);
+  }
+}
+
 // ── RENEWAL MODAL ──────────────────────────────────────────────────
-function openRenewalModal()  { document.getElementById('modal-renewal').isOpen = true; }
-function closeRenewalModal() { document.getElementById('modal-renewal').isOpen = false; }
+async function openRenewalModal() {
+  const m = document.getElementById('modal-renewal');
+  if (m) {
+    m.isOpen = true;
+    if (typeof m.present === 'function') m.present();
+  }
+
+  // Populate immediately with cached/fallback plans
+  if (!availablePlans || availablePlans.length === 0) {
+    availablePlans = [
+      { id: 5, name: '1promo', price: 1.00, duration_months: 1 },
+      { id: 2, name: 'Basic', price: 300.00, duration_months: 1 },
+      { id: 1, name: 'STANDARD', price: 500.00, duration_months: 2 },
+      { id: 3, name: 'Premium', price: 1000.00, duration_months: 6 },
+      { id: 4, name: 'VIP', price: 4000.00, duration_months: 12 }
+    ];
+  }
+  populateRenewPlansSelect(availablePlans);
+
+  // Background fetch live plans
+  try {
+    const res = await fetch(`${API_URL}/get_plans.php`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.plans) && data.plans.length > 0) {
+        availablePlans = data.plans;
+        populateRenewPlansSelect(availablePlans);
+      }
+    }
+  } catch (e) {
+    console.warn("Renewal get_plans live sync:", e);
+  }
+}
+
+function closeRenewalModal() {
+  const m = document.getElementById('modal-renewal');
+  if (m) {
+    m.isOpen = false;
+    if (typeof m.dismiss === 'function') m.dismiss();
+  }
+}
 
 function populateRenewPlansSelect(plans) {
   const s = document.getElementById('renew-plan-select');
-  if (!s) return;
+  if (!s || !plans || !plans.length) return;
   s.innerHTML = plans.map(p =>
     `<ion-select-option value="${p.id}">${p.name} — ₱${parseFloat(p.price).toFixed(2)} (${p.duration_months} mo)</ion-select-option>`
   ).join('');
+  if (!s.value || !plans.some(p => p.id == s.value)) {
+    s.value = plans[0].id;
+  }
 }
 
 function handleRenewMethodChange(val) {
