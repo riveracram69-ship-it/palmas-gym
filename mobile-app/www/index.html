@@ -748,11 +748,32 @@
             <!-- ONLINE QR CHECKOUT CONTAINER -->
             <div id="reg-qr-checkout-wrap" style="text-align:center; padding:14px; background:rgba(15,45,32,0.6); border-radius:14px; border:1px solid var(--gym-border); margin-top:8px;">
               <span id="reg-qr-badge" style="background:var(--gym-green); color:#fff; font-size:0.72rem; font-weight:800; padding:3px 10px; border-radius:10px;">GCASH ACCOUNT DETAILS</span>
-              <p style="color:var(--gym-muted); font-size:0.8rem; margin:8px 0 4px;">Account: <strong style="color:#fff;">Palma's Elite Gym (0917-888-4961)</strong></p>
+              <p style="color:var(--gym-muted); font-size:0.8rem; margin:8px 0 4px;">Account: <strong id="reg-acct-label" style="color:#fff;">Palma's Elite Gym (0917-888-4961)</strong></p>
               <p style="color:var(--gym-muted); font-size:0.8rem; margin:0 0 10px;">Total Due: <strong id="reg-qr-amount-text" style="color:var(--gym-light); font-size:1.1rem;">₱0.00</strong></p>
-              <div class="qr-box" style="margin-bottom:10px; display:inline-block; background:#fff; padding:8px; border-radius:12px;">
+              
+              <!-- QR / Number Toggle -->
+              <div style="display:flex; gap:4px; justify-content:center; margin-bottom:12px;">
+                <button type="button" class="gender-btn selected" id="reg-mode-qr" onclick="toggleRegPayMode('qr')" style="font-size:0.75rem; padding:6px 14px;">📱 Scan QR</button>
+                <button type="button" class="gender-btn" id="reg-mode-number" onclick="toggleRegPayMode('number')" style="font-size:0.75rem; padding:6px 14px;">🔢 Send to Number</button>
+              </div>
+
+              <!-- QR View -->
+              <div id="reg-qr-view" class="qr-box" style="margin-bottom:10px; display:inline-block; background:#fff; padding:8px; border-radius:12px;">
                 <div id="reg-payment-qr-target" style="width:160px; height:160px;"></div>
               </div>
+
+              <!-- Number View -->
+              <div id="reg-number-view" style="display:none; background:rgba(10,35,25,0.7); border:1px dashed var(--gym-mid); border-radius:12px; padding:16px; margin-bottom:10px;">
+                <p style="color:var(--gym-muted); font-size:0.75rem; margin:0 0 8px;">Send exact amount to this number:</p>
+                <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                  <span id="reg-pay-number-display" style="color:#fff; font-size:1.3rem; font-weight:900; letter-spacing:1px;">0917-888-4961</span>
+                  <button type="button" onclick="copyRegPayNumber()" style="background:var(--gym-green); border:none; color:#fff; padding:6px 10px; border-radius:8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                    <i class="fa-solid fa-copy"></i> Copy
+                  </button>
+                </div>
+                <p id="reg-pay-name-display" style="color:var(--gym-light); font-size:0.82rem; font-weight:600; margin:8px 0 0;">Palma's Elite Gym</p>
+              </div>
+
               <div class="input-field-wrap" style="margin-top:6px;">
                 <input type="text" id="reg-ref-no" placeholder="Transaction Reference No. (Required)" />
               </div>
@@ -1127,11 +1148,30 @@
           <!-- GCASH / MAYA ACCOUNT DETAILS & QR BOX -->
           <div id="renew-online-pay-wrap" style="text-align:center; padding:14px; background:rgba(15,45,32,0.6); border-radius:14px; border:1px solid var(--gym-border); margin-bottom:14px;">
             <span id="renew-method-badge" style="background:var(--gym-green); color:#fff; font-size:0.72rem; font-weight:800; padding:3px 10px; border-radius:10px;">GCASH ACCOUNT DETAILS</span>
-            <p style="color:var(--gym-muted); font-size:0.8rem; margin:8px 0 4px;">Account: <strong style="color:#fff;">Palma's Elite Gym (0917-888-4961)</strong></p>
+            <p style="color:var(--gym-muted); font-size:0.8rem; margin:8px 0 4px;">Account: <strong id="renew-acct-label" style="color:#fff;">Palma's Elite Gym (0917-888-4961)</strong></p>
             <p style="color:var(--gym-muted); font-size:0.8rem; margin:0 0 10px;">Amount Due: <strong id="renew-amount-due-text" style="color:var(--gym-light); font-size:1.1rem;">₱0.00</strong></p>
             
-            <div class="qr-box" style="margin:0 auto 10px; display:inline-block; background:#fff; padding:8px; border-radius:12px;">
+            <!-- QR / Number Toggle -->
+            <div style="display:flex; gap:4px; justify-content:center; margin-bottom:12px;">
+              <button type="button" class="gender-btn selected" id="renew-mode-qr" onclick="toggleRenewPayMode('qr')" style="font-size:0.75rem; padding:6px 14px;">📱 Scan QR</button>
+              <button type="button" class="gender-btn" id="renew-mode-number" onclick="toggleRenewPayMode('number')" style="font-size:0.75rem; padding:6px 14px;">🔢 Send to Number</button>
+            </div>
+
+            <!-- QR View -->
+            <div id="renew-qr-view" class="qr-box" style="margin:0 auto 10px; display:inline-block; background:#fff; padding:8px; border-radius:12px;">
               <div id="renew-qrcode-target" style="width:160px; height:160px;"></div>
+            </div>
+
+            <!-- Number View -->
+            <div id="renew-number-view" style="display:none; background:rgba(10,35,25,0.7); border:1px dashed var(--gym-mid); border-radius:12px; padding:16px; margin-bottom:10px;">
+              <p style="color:var(--gym-muted); font-size:0.75rem; margin:0 0 8px;">Send exact amount to this number:</p>
+              <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                <span id="renew-pay-number-display" style="color:#fff; font-size:1.3rem; font-weight:900; letter-spacing:1px;">0917-888-4961</span>
+                <button type="button" onclick="copyRenewPayNumber()" style="background:var(--gym-green); border:none; color:#fff; padding:6px 10px; border-radius:8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                  <i class="fa-solid fa-copy"></i> Copy
+                </button>
+              </div>
+              <p id="renew-pay-name-display" style="color:var(--gym-light); font-size:0.82rem; font-weight:600; margin:8px 0 0;">Palma's Elite Gym</p>
             </div>
 
             <div class="input-field-wrap" style="margin-top:6px;">
@@ -1542,7 +1582,7 @@ function wizardNext(fromStep) {
     document.getElementById('rv-plan-name').textContent = selectedPlan?.name || 'Selected Plan';
     document.getElementById('rv-plan-price').textContent = selectedPlan ? '₱' + parseFloat(selectedPlan.price).toFixed(2) : '—';
     goToWizardStep(3);
-    selectRegPaymentMethod(selectedRegPaymentMethod || 'Instant GCash');
+    selectRegPaymentMethod(selectedRegPaymentMethod || 'GCash');
   }
 }
 
@@ -1584,7 +1624,45 @@ function selectRegPaymentMethod(method) {
       accEl.textContent = `${info.name} (${info.number})`;
     }
     renderRegPaymentQR();
+    updateRegNumberView(info);
   }
+}
+
+function updateRegNumberView(info) {
+  const numDisplay = document.getElementById('reg-pay-number-display');
+  const nameDisplay = document.getElementById('reg-pay-name-display');
+  const acctLabel = document.getElementById('reg-acct-label');
+  if (numDisplay && info) numDisplay.textContent = info.number;
+  if (nameDisplay && info) nameDisplay.textContent = info.name;
+  if (acctLabel && info) acctLabel.textContent = `${info.name} (${info.number})`;
+}
+
+function toggleRegPayMode(mode) {
+  const qrView = document.getElementById('reg-qr-view');
+  const numView = document.getElementById('reg-number-view');
+  const btnQR = document.getElementById('reg-mode-qr');
+  const btnNum = document.getElementById('reg-mode-number');
+  if (mode === 'qr') {
+    if (qrView) qrView.style.display = 'inline-block';
+    if (numView) numView.style.display = 'none';
+    if (btnQR) btnQR.classList.add('selected');
+    if (btnNum) btnNum.classList.remove('selected');
+  } else {
+    if (qrView) qrView.style.display = 'none';
+    if (numView) numView.style.display = 'block';
+    if (btnQR) btnQR.classList.remove('selected');
+    if (btnNum) btnNum.classList.add('selected');
+  }
+}
+
+function copyRegPayNumber() {
+  const info = gymPaymentSettings[selectedRegPaymentMethod.toLowerCase()] || gymPaymentSettings.gcash;
+  const num = info ? info.number : '0917-888-4961';
+  navigator.clipboard.writeText(num.replace(/-/g, '')).then(() => {
+    showToast('Number copied! Paste it in your GCash/Maya app.');
+  }).catch(() => {
+    showToast(num);
+  });
 }
 
 function renderRegPaymentQR() {
@@ -1976,12 +2054,48 @@ function selectRenewPaymentMethod(method) {
     if (badge) badge.textContent = `${method.toUpperCase()} ACCOUNT DETAILS`;
 
     const info = gymPaymentSettings[method.toLowerCase()] || gymPaymentSettings.gcash;
-    const accEl = document.querySelector('#renew-online-pay-wrap p strong');
+    const accEl = document.getElementById('renew-acct-label');
     if (accEl && info) {
       accEl.textContent = `${info.name} (${info.number})`;
     }
     renderRenewQR();
+    updateRenewNumberView(info);
   }
+}
+
+function updateRenewNumberView(info) {
+  const numDisplay = document.getElementById('renew-pay-number-display');
+  const nameDisplay = document.getElementById('renew-pay-name-display');
+  if (numDisplay && info) numDisplay.textContent = info.number;
+  if (nameDisplay && info) nameDisplay.textContent = info.name;
+}
+
+function toggleRenewPayMode(mode) {
+  const qrView = document.getElementById('renew-qr-view');
+  const numView = document.getElementById('renew-number-view');
+  const btnQR = document.getElementById('renew-mode-qr');
+  const btnNum = document.getElementById('renew-mode-number');
+  if (mode === 'qr') {
+    if (qrView) qrView.style.display = 'inline-block';
+    if (numView) numView.style.display = 'none';
+    if (btnQR) btnQR.classList.add('selected');
+    if (btnNum) btnNum.classList.remove('selected');
+  } else {
+    if (qrView) qrView.style.display = 'none';
+    if (numView) numView.style.display = 'block';
+    if (btnQR) btnQR.classList.remove('selected');
+    if (btnNum) btnNum.classList.add('selected');
+  }
+}
+
+function copyRenewPayNumber() {
+  const info = gymPaymentSettings[selectedRenewMethod.toLowerCase()] || gymPaymentSettings.gcash;
+  const num = info ? info.number : '0917-888-4961';
+  navigator.clipboard.writeText(num.replace(/-/g, '')).then(() => {
+    showToast('Number copied! Paste it in your GCash/Maya app.');
+  }).catch(() => {
+    showToast(num);
+  });
 }
 
 function renderRenewQR() {
