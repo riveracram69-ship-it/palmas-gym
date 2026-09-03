@@ -1551,6 +1551,11 @@ function wizardBack(fromStep) {
   else if (fromStep === 3) goToWizardStep(2);
 }
 
+let gymPaymentSettings = {
+  gcash: { name: "Palma's Elite Gym", number: "0917-888-4961", qr_image: null },
+  maya:  { name: "Palma's Elite Gym", number: "0917-888-4961", qr_image: null }
+};
+
 let selectedRegPaymentMethod = 'GCash';
 
 function selectRegPaymentMethod(method) {
@@ -1572,6 +1577,12 @@ function selectRegPaymentMethod(method) {
     if (qrWrap) qrWrap.style.display = 'block';
     if (cashWrap) cashWrap.style.display = 'none';
     if (badge) badge.textContent = `${method.toUpperCase()} ACCOUNT DETAILS`;
+    
+    const info = gymPaymentSettings[method.toLowerCase()] || gymPaymentSettings.gcash;
+    const accEl = document.querySelector('#reg-qr-checkout-wrap p strong');
+    if (accEl && info) {
+      accEl.textContent = `${info.name} (${info.number})`;
+    }
     renderRegPaymentQR();
   }
 }
@@ -1584,6 +1595,23 @@ function renderRegPaymentQR() {
   const amtText = document.getElementById('reg-qr-amount-text');
   if (amtText) amtText.textContent = `₱${amt}`;
 
+  const methodKey = selectedRegPaymentMethod.toLowerCase();
+  const info = gymPaymentSettings[methodKey] || gymPaymentSettings.gcash;
+
+  if (info && info.qr_image) {
+    const baseSiteUrl = API_URL.replace(/\/api\/?$/, '');
+    const imgUrl = info.qr_image.startsWith('http') ? info.qr_image : `${baseSiteUrl}/${info.qr_image}`;
+    target.innerHTML = `<img src="${imgUrl}" alt="${selectedRegPaymentMethod} QR" style="width:160px; height:160px; object-fit:contain; border-radius:8px;" onerror="this.onerror=null; renderFallbackRegQR();">`;
+  } else {
+    renderFallbackRegQR();
+  }
+}
+
+function renderFallbackRegQR() {
+  const target = document.getElementById('reg-payment-qr-target');
+  if (!target) return;
+  target.innerHTML = '';
+  const amt = selectedPlan ? parseFloat(selectedPlan.price).toFixed(2) : '0.00';
   const qrPayload = `00020101021226580010ph.ppmi.qr0111PALMASGYM0215REG${Date.now()}520459995303608540${amt.length}${amt}5802PH5918PALMAS ELITE GYM6006MANILA6304`;
   new QRCode(target, {
     text: qrPayload,
@@ -1617,6 +1645,9 @@ async function loadPlansForRegistration() {
       const data = await res.json();
       if (data && data.success && Array.isArray(data.plans) && data.plans.length > 0) {
         availablePlans = data.plans;
+        if (data.payment_info) {
+          gymPaymentSettings = data.payment_info;
+        }
         renderPlanCards(availablePlans, container);
       }
     }
@@ -1943,6 +1974,12 @@ function selectRenewPaymentMethod(method) {
     if (onlineWrap) onlineWrap.style.display = 'block';
     if (cashWrap) cashWrap.style.display = 'none';
     if (badge) badge.textContent = `${method.toUpperCase()} ACCOUNT DETAILS`;
+
+    const info = gymPaymentSettings[method.toLowerCase()] || gymPaymentSettings.gcash;
+    const accEl = document.querySelector('#renew-online-pay-wrap p strong');
+    if (accEl && info) {
+      accEl.textContent = `${info.name} (${info.number})`;
+    }
     renderRenewQR();
   }
 }
@@ -1955,6 +1992,23 @@ function renderRenewQR() {
   const amtText = document.getElementById('renew-amount-due-text');
   if (amtText) amtText.textContent = `₱${amt}`;
 
+  const methodKey = selectedRenewMethod.toLowerCase();
+  const info = gymPaymentSettings[methodKey] || gymPaymentSettings.gcash;
+
+  if (info && info.qr_image) {
+    const baseSiteUrl = API_URL.replace(/\/api\/?$/, '');
+    const imgUrl = info.qr_image.startsWith('http') ? info.qr_image : `${baseSiteUrl}/${info.qr_image}`;
+    target.innerHTML = `<img src="${imgUrl}" alt="${selectedRenewMethod} QR" style="width:160px; height:160px; object-fit:contain; border-radius:8px;" onerror="this.onerror=null; renderFallbackRenewQR();">`;
+  } else {
+    renderFallbackRenewQR();
+  }
+}
+
+function renderFallbackRenewQR() {
+  const target = document.getElementById('renew-qrcode-target');
+  if (!target) return;
+  target.innerHTML = '';
+  const amt = selectedRenewPlan ? parseFloat(selectedRenewPlan.price).toFixed(2) : '0.00';
   const qrPayload = `00020101021226580010ph.ppmi.qr0111PALMASGYM0215PEG${Date.now()}520459995303608540${amt.length}${amt}5802PH5918PALMAS ELITE GYM6006MANILA6304`;
   new QRCode(target, {
     text: qrPayload,
@@ -2022,7 +2076,11 @@ async function openRenewalModal() {
       const data = await res.json();
       if (data && data.success && Array.isArray(data.plans) && data.plans.length > 0) {
         availablePlans = data.plans;
+        if (data.payment_info) {
+          gymPaymentSettings = data.payment_info;
+        }
         renderRenewPlanCards(availablePlans);
+        selectRenewPaymentMethod(selectedRenewMethod || 'GCash');
       }
     }
   } catch (e) {
