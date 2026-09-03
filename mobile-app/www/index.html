@@ -1520,7 +1520,7 @@ async function loadPlansForRegistration() {
   const container = document.getElementById('plans-container-reg');
   if (!container) return;
   try {
-    const res = await fetch(`${API_URL}/member_dashboard.php`);
+    const res = await fetch(`${API_URL}/get_plans.php`);
     const data = await res.json();
     availablePlans = (data.plans && data.plans.length) ? data.plans : [
       { id: 2, name: 'Basic', price: 300.00, duration_months: 1 },
