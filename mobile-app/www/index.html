@@ -434,6 +434,300 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .text-link { color: var(--gym-light); cursor: pointer; text-decoration: underline; }
+
+    /* ─── PAYMENT & CHECKOUT SYSTEM STYLES ────────────────────────── */
+    .checkout-summary-card {
+      background: rgba(17, 45, 33, 0.85);
+      border: 1px solid var(--gym-border);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .checkout-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(82, 183, 136, 0.12);
+      font-size: 0.88rem;
+    }
+    .checkout-row:last-child {
+      border-bottom: none;
+      padding-top: 14px;
+      margin-top: 4px;
+      border-top: 2px dashed rgba(82, 183, 136, 0.35);
+    }
+    .checkout-row .lbl { color: var(--gym-muted); }
+    .checkout-row .val { color: #ffffff; font-weight: 600; }
+    .checkout-row.total .lbl { font-size: 1.05rem; font-weight: 800; color: #ffffff; }
+    .checkout-row.total .val { font-size: 1.45rem; font-weight: 900; color: var(--gym-mid); font-family: 'Outfit', sans-serif; }
+
+    .payment-method-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: rgba(15, 45, 32, 0.6);
+      border: 2px solid rgba(82, 183, 136, 0.22);
+      border-radius: 16px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .payment-method-card:hover {
+      border-color: rgba(82, 183, 136, 0.5);
+      background: rgba(22, 59, 44, 0.8);
+    }
+    .payment-method-card.selected {
+      border-color: var(--gym-mid);
+      background: rgba(45, 106, 79, 0.5);
+      box-shadow: 0 0 16px rgba(82, 183, 136, 0.2);
+    }
+    .pm-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .pm-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+    .pm-icon-gcash { background: #005ce6; color: #ffffff; }
+    .pm-icon-maya  { background: #059669; color: #ffffff; }
+    .pm-icon-card  { background: #475569; color: #ffffff; }
+    .pm-icon-grab  { background: #00b14f; color: #ffffff; }
+    .pm-icon-cash  { background: #d97706; color: #ffffff; }
+
+    .pm-title {
+      font-weight: 700;
+      color: #ffffff;
+      font-size: 0.95rem;
+      margin: 0 0 2px;
+    }
+    .pm-desc {
+      font-size: 0.74rem;
+      color: var(--gym-muted);
+      margin: 0;
+    }
+    .pm-radio {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid rgba(82, 183, 136, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .payment-method-card.selected .pm-radio {
+      border-color: var(--gym-mid);
+      background: var(--gym-mid);
+    }
+    .payment-method-card.selected .pm-radio::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gym-dark);
+    }
+
+    /* GCash Confirmation View */
+    .gcash-confirm-wrap {
+      text-align: center;
+      padding: 24px 16px;
+      background: radial-gradient(circle at top, rgba(0, 92, 230, 0.15) 0%, rgba(17, 45, 33, 0.8) 70%);
+      border: 1px solid rgba(0, 92, 230, 0.35);
+      border-radius: 20px;
+      margin-bottom: 18px;
+    }
+    .gcash-badge-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #005ce6;
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: 24px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      letter-spacing: 0.5px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 14px rgba(0, 92, 230, 0.4);
+    }
+    .gcash-amount-callout {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #ffffff;
+      margin: 10px 0 4px;
+    }
+
+    /* Result Screens */
+    .result-screen-card {
+      text-align: center;
+      padding: 30px 18px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .result-icon-circle {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      margin: 0 auto 16px;
+    }
+    .result-success {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+    .result-success .result-icon-circle {
+      background: #10b981;
+      color: #ffffff;
+      box-shadow: 0 0 24px rgba(16, 185, 129, 0.4);
+    }
+    .result-pending {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .result-pending .result-icon-circle {
+      background: #f59e0b;
+      color: #ffffff;
+      box-shadow: 0 0 24px rgba(245, 158, 11, 0.4);
+    }
+    .result-failed {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+    .result-failed .result-icon-circle {
+      background: #ef4444;
+      color: #ffffff;
+      box-shadow: 0 0 24px rgba(239, 68, 68, 0.4);
+    }
+    .result-cancelled {
+      background: rgba(100, 116, 139, 0.12);
+      border: 1px solid rgba(100, 116, 139, 0.35);
+    }
+    .result-cancelled .result-icon-circle {
+      background: #64748b;
+      color: #ffffff;
+    }
+
+    /* Payment History Filter Chips */
+    .history-filter-scroll {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .history-filter-chip {
+      background: rgba(15, 45, 32, 0.7);
+      border: 1px solid var(--gym-border);
+      color: var(--gym-muted);
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .history-filter-chip.active {
+      background: var(--gym-mid);
+      border-color: var(--gym-mid);
+      color: var(--gym-darker);
+    }
+
+    /* History Transaction Card */
+    .history-card {
+      background: var(--gym-card);
+      border: 1px solid var(--gym-border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .history-card:hover {
+      border-color: var(--gym-mid);
+      transform: translateY(-1px);
+    }
+    .badge-paid {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    .badge-pending {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    .badge-failed {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+    /* Official Receipt Styling */
+    .receipt-paper {
+      background: #ffffff;
+      color: #1f2937;
+      border-radius: 18px;
+      padding: 24px 20px;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.3);
+      position: relative;
+    }
+    .receipt-header {
+      text-align: center;
+      padding-bottom: 14px;
+      border-bottom: 2px dashed #d1d5db;
+      margin-bottom: 14px;
+    }
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 0.84rem;
+    }
+    .receipt-row .r-lbl { color: #6b7280; }
+    .receipt-row .r-val { font-weight: 600; color: #111827; }
+    .receipt-total {
+      border-top: 2px solid #111827;
+      margin-top: 10px;
+      padding-top: 10px;
+    }
+    .receipt-total .r-lbl { font-size: 1rem; font-weight: 800; color: #111827; }
+    .receipt-total .r-val { font-size: 1.3rem; font-weight: 900; color: #059669; }
+    .receipt-footer {
+      text-align: center;
+      margin-top: 18px;
+      padding-top: 12px;
+      border-top: 1px dashed #d1d5db;
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
   </style>
 </head>
 <body>
@@ -920,8 +1214,29 @@
             </button>
           </div>
 
-          <h4 style="color: var(--gym-light); margin:14px 0 10px; font-size:0.95rem;">Payment History</h4>
-          <div id="payments-container"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin:18px 0 10px;">
+            <h4 style="color: var(--gym-light); margin:0; font-size:1rem; font-weight:800;">
+              <i class="fa-solid fa-clock-rotate-left"></i> Payment History
+            </h4>
+            <button onclick="loadPaymentHistory()" style="background:rgba(82,183,136,0.15); border:1px solid var(--gym-border); color:var(--gym-light); border-radius:8px; padding:4px 10px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+              <i class="fa-solid fa-arrows-rotate"></i> Refresh
+            </button>
+          </div>
+
+          <!-- Filter Chips -->
+          <div class="history-filter-scroll">
+            <button type="button" class="history-filter-chip active" id="hf-all" onclick="filterPaymentHistory('ALL')">All</button>
+            <button type="button" class="history-filter-chip" id="hf-paid" onclick="filterPaymentHistory('PAID')">● Paid</button>
+            <button type="button" class="history-filter-chip" id="hf-pending" onclick="filterPaymentHistory('PENDING')">⏳ Pending</button>
+            <button type="button" class="history-filter-chip" id="hf-failed" onclick="filterPaymentHistory('FAILED')">✕ Failed</button>
+          </div>
+
+          <div id="payments-container">
+            <div style="text-align:center; padding:30px; color:var(--gym-muted);">
+              <div class="spinner"></div>
+              <p style="margin-top:8px; font-size:0.8rem;">Loading payment history...</p>
+            </div>
+          </div>
         </ion-content>
       </ion-tab>
 
@@ -990,6 +1305,10 @@
             <div class="progress-bar-wrap">
               <div id="prof-days-bar-fill" class="progress-bar-fill" style="width: 80%;"></div>
             </div>
+
+            <button onclick="switchToTab('tab-payments')" class="btn-outline" style="padding:10px; margin-top:14px; font-size:0.84rem;">
+              <i class="fa-solid fa-clock-rotate-left"></i> View Payment History
+            </button>
           </div>
 
           <!-- Section 3: Account & Security Settings -->
@@ -1117,80 +1436,323 @@
   </ion-modal>
 
   <!-- ══════════════════════════════════════════════════════════
-       MODAL 2: RENEWAL & BILLING MODAL
+       MODAL 2: MEMBERSHIP CHECKOUT & PAYMENT MODAL
        ══════════════════════════════════════════════════════════ -->
   <ion-modal id="modal-renewal">
     <ion-header>
       <ion-toolbar style="--background:#1b4332; --color:#fff;">
-        <ion-title style="font-weight:700;">Renew Membership</ion-title>
+        <ion-title style="font-weight:700;" id="checkout-modal-title">Membership Checkout</ion-title>
         <ion-buttons slot="end">
           <ion-button onclick="closeRenewalModal()" style="--color: var(--gym-light);"><ion-icon name="close"></ion-icon></ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
     <ion-content class="ion-padding" style="--background: var(--gym-dark);">
-      <div id="renewal-step-form">
-        <!-- RENEWAL PLAN SELECTION -->
-        <div style="margin-bottom:14px;">
-          <label style="color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:8px; display:block;">1. Select Membership Plan</label>
-          <div id="renew-plans-container" style="display:flex; flex-direction:column; gap:8px;"></div>
-        </div>
-
-        <!-- PAYMENT METHOD SELECTION (3 Methods: GCash, Maya, Cash) -->
-        <div style="margin-bottom:16px;">
-          <label style="color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:8px; display:block;">2. Choose Payment Method</label>
-          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:12px;">
-            <button type="button" class="gender-btn selected" id="renew-pm-gcash" onclick="selectRenewPaymentMethod('GCash')">⚡ GCash</button>
-            <button type="button" class="gender-btn" id="renew-pm-maya" onclick="selectRenewPaymentMethod('Maya')">⚡ Maya</button>
-            <button type="button" class="gender-btn" id="renew-pm-cash" onclick="selectRenewPaymentMethod('Cash')">💵 Cash</button>
-          </div>
-
-          <!-- GCASH / MAYA ACCOUNT DETAILS & QR BOX -->
-          <div id="renew-online-pay-wrap" style="text-align:center; padding:14px; background:rgba(15,45,32,0.6); border-radius:14px; border:1px solid var(--gym-border); margin-bottom:14px;">
-            <span id="renew-method-badge" style="background:var(--gym-green); color:#fff; font-size:0.72rem; font-weight:800; padding:3px 10px; border-radius:10px;">GCASH ACCOUNT DETAILS</span>
-            <p style="color:var(--gym-muted); font-size:0.8rem; margin:8px 0 4px;">Account: <strong id="renew-acct-label" style="color:#fff;">Palma's Elite Gym (0917-888-4961)</strong></p>
-            <p style="color:var(--gym-muted); font-size:0.8rem; margin:0 0 10px;">Amount Due: <strong id="renew-amount-due-text" style="color:var(--gym-light); font-size:1.1rem;">₱0.00</strong></p>
-            
-            <!-- QR / Number Toggle -->
-            <div style="display:flex; gap:4px; justify-content:center; margin-bottom:12px;">
-              <button type="button" class="gender-btn selected" id="renew-mode-qr" onclick="toggleRenewPayMode('qr')" style="font-size:0.75rem; padding:6px 14px;">📱 Scan QR</button>
-              <button type="button" class="gender-btn" id="renew-mode-number" onclick="toggleRenewPayMode('number')" style="font-size:0.75rem; padding:6px 14px;">🔢 Send to Number</button>
-            </div>
-
-            <!-- QR View -->
-            <div id="renew-qr-view" class="qr-box" style="margin:0 auto 10px; display:inline-block; background:#fff; padding:8px; border-radius:12px;">
-              <div id="renew-qrcode-target" style="width:160px; height:160px;"></div>
-            </div>
-
-            <!-- Number View -->
-            <div id="renew-number-view" style="display:none; background:rgba(10,35,25,0.7); border:1px dashed var(--gym-mid); border-radius:12px; padding:16px; margin-bottom:10px;">
-              <p style="color:var(--gym-muted); font-size:0.75rem; margin:0 0 8px;">Send exact amount to this number:</p>
-              <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
-                <span id="renew-pay-number-display" style="color:#fff; font-size:1.3rem; font-weight:900; letter-spacing:1px;">0917-888-4961</span>
-                <button type="button" onclick="copyRenewPayNumber()" style="background:var(--gym-green); border:none; color:#fff; padding:6px 10px; border-radius:8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                  <i class="fa-solid fa-copy"></i> Copy
-                </button>
-              </div>
-              <p id="renew-pay-name-display" style="color:var(--gym-light); font-size:0.82rem; font-weight:600; margin:8px 0 0;">Palma's Elite Gym</p>
-            </div>
-
-            <div class="input-field-wrap" style="margin-top:6px;">
-              <input type="text" id="renew-ref-input" placeholder="Transaction Reference No. (Required)" />
-            </div>
-            <span style="display:block; color:var(--gym-muted); font-size:0.72rem; margin-top:5px;">Enter reference number from your payment receipt</span>
-          </div>
-
-          <!-- CASH PAYMENT NOTICE -->
-          <div id="renew-cash-info-wrap" style="display:none; text-align:center; padding:16px; background:rgba(82,183,136,0.1); border-radius:12px; font-size:0.84rem; color:var(--gym-light); margin-bottom:14px;">
-            <i class="fa-solid fa-store" style="font-size:1.6rem; margin-bottom:8px; display:block;"></i>
-            Please proceed to the gym <strong>Front Desk</strong> to settle your cash payment.<br>
-            <span style="font-size:0.76rem; color:var(--gym-muted); margin-top:4px; display:block;">Our staff will verify and activate your renewal once received.</span>
-          </div>
-        </div>
-
-        <button class="btn-primary" id="btn-proceed-renewal" onclick="submitRenewal()">
-          <i class="fa-solid fa-paper-plane"></i> SUBMIT FOR STAFF VERIFICATION
+      
+      <!-- ── STEP 1: SELECT MEMBERSHIP PLAN ── -->
+      <div id="checkout-step-plans" class="checkout-step">
+        <label style="color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:10px; display:block;">
+          1. Select Your Membership Plan
+        </label>
+        <div id="renew-plans-container" style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;"></div>
+        <button class="btn-primary" onclick="proceedToCheckoutSummary()">
+          CONTINUE TO SUMMARY <i class="fa-solid fa-arrow-right" style="margin-left:6px;"></i>
         </button>
+      </div>
+
+      <!-- ── STEP 2: CHECKOUT SUMMARY ── -->
+      <div id="checkout-step-summary" class="checkout-step" style="display:none;">
+        <label style="color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:10px; display:block;">
+          2. Checkout Summary
+        </label>
+        
+        <div class="checkout-summary-card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <h3 id="summary-plan-name" style="margin:0; color:#fff; font-size:1.15rem; font-weight:800;">Standard Membership</h3>
+            <span id="summary-plan-badge" style="background:var(--gym-green); color:#fff; font-size:0.72rem; font-weight:700; padding:3px 10px; border-radius:12px;">ACTIVE PASS</span>
+          </div>
+
+          <div class="checkout-row">
+            <span class="lbl">Duration</span>
+            <span class="val" id="summary-duration">30 Days</span>
+          </div>
+          <div class="checkout-row">
+            <span class="lbl">Membership Fee</span>
+            <span class="val" id="summary-fee">₱1,500.00</span>
+          </div>
+          <div class="checkout-row">
+            <span class="lbl">Discount</span>
+            <span class="val" style="color:var(--gym-light);">₱0.00</span>
+          </div>
+          <div class="checkout-row total">
+            <span class="lbl">Total Amount</span>
+            <span class="val" id="summary-total">₱1,500.00</span>
+          </div>
+        </div>
+
+        <button class="btn-primary" onclick="proceedToPaymentMethodSelection()" style="margin-bottom:8px;">
+          PROCEED TO PAYMENT <i class="fa-solid fa-arrow-right" style="margin-left:6px;"></i>
+        </button>
+        <button class="btn-outline" onclick="showCheckoutStep('plans')" style="padding:11px; font-size:0.85rem;">
+          <i class="fa-solid fa-arrow-left"></i> Change Plan
+        </button>
+      </div>
+
+      <!-- ── STEP 3: SELECT PAYMENT METHOD ── -->
+      <div id="checkout-step-method" class="checkout-step" style="display:none;">
+        <div style="margin-bottom:12px;">
+          <h3 style="color:#fff; margin:0 0 4px; font-size:1.1rem; font-weight:800;">SELECT PAYMENT METHOD</h3>
+          <p style="color:var(--gym-muted); font-size:0.8rem; margin:0;">Choose your preferred secure payment channel:</p>
+        </div>
+
+        <!-- Payment Method Cards -->
+        <div class="payment-method-card selected" id="pm-card-gcash" onclick="selectCheckoutMethod('GCash')">
+          <div class="pm-left">
+            <div class="pm-icon-wrap pm-icon-gcash"><i class="fa-solid fa-mobile-screen"></i></div>
+            <div>
+              <div class="pm-title">GCash</div>
+              <div class="pm-desc">Instant E-Wallet Checkout • 24/7 Verified</div>
+            </div>
+          </div>
+          <div class="pm-radio"></div>
+        </div>
+
+        <div class="payment-method-card" id="pm-card-maya" onclick="selectCheckoutMethod('Maya')">
+          <div class="pm-left">
+            <div class="pm-icon-wrap pm-icon-maya"><i class="fa-solid fa-wallet"></i></div>
+            <div>
+              <div class="pm-title">Maya</div>
+              <div class="pm-desc">E-Wallet &amp; QR Payment Gateway</div>
+            </div>
+          </div>
+          <div class="pm-radio"></div>
+        </div>
+
+        <div class="payment-method-card" id="pm-card-card" onclick="selectCheckoutMethod('Credit Card')">
+          <div class="pm-left">
+            <div class="pm-icon-wrap pm-icon-card"><i class="fa-solid fa-credit-card"></i></div>
+            <div>
+              <div class="pm-title">Visa / Mastercard</div>
+              <div class="pm-desc">Debit or Credit Card Payments</div>
+            </div>
+          </div>
+          <div class="pm-radio"></div>
+        </div>
+
+        <div class="payment-method-card" id="pm-card-grab" onclick="selectCheckoutMethod('GrabPay')">
+          <div class="pm-left">
+            <div class="pm-icon-wrap pm-icon-grab"><i class="fa-solid fa-bag-shopping"></i></div>
+            <div>
+              <div class="pm-title">GrabPay</div>
+              <div class="pm-desc">Direct GrabPay E-Wallet</div>
+            </div>
+          </div>
+          <div class="pm-radio"></div>
+        </div>
+
+        <div class="payment-method-card" id="pm-card-cash" onclick="selectCheckoutMethod('Cash')">
+          <div class="pm-left">
+            <div class="pm-icon-wrap pm-icon-cash"><i class="fa-solid fa-store"></i></div>
+            <div>
+              <div class="pm-title">Cash (Front Desk)</div>
+              <div class="pm-desc">Settle at gym reception counter</div>
+            </div>
+          </div>
+          <div class="pm-radio"></div>
+        </div>
+
+        <!-- Cash Details Notice -->
+        <div id="checkout-cash-notice" style="display:none; text-align:center; padding:14px; background:rgba(82,183,136,0.1); border-radius:14px; margin-bottom:14px; font-size:0.84rem; color:var(--gym-light);">
+          <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i> Proceed to the gym front desk. Staff will verify and activate your renewal once received.
+        </div>
+
+        <button class="btn-primary" id="btn-method-continue" onclick="proceedFromMethodSelection()" style="margin-top:6px; margin-bottom:8px;">
+          CONTINUE <i class="fa-solid fa-arrow-right" style="margin-left:6px;"></i>
+        </button>
+        <button class="btn-outline" onclick="showCheckoutStep('summary')" style="padding:11px; font-size:0.85rem;">
+          <i class="fa-solid fa-arrow-left"></i> Back to Summary
+        </button>
+      </div>
+
+      <!-- ── STEP 4: GCASH CONFIRMATION SCREEN ── -->
+      <div id="checkout-step-confirm-gcash" class="checkout-step" style="display:none;">
+        <div class="gcash-confirm-wrap">
+          <div class="gcash-badge-logo">
+            <i class="fa-solid fa-mobile-screen"></i> GCash Checkout
+          </div>
+          <h2 style="color:#fff; font-size:1.35rem; font-weight:800; margin:0 0 6px;">Pay via GCash</h2>
+          <p style="color:var(--gym-muted); font-size:0.85rem; line-height:1.4; margin:0 0 16px;">
+            You will be redirected to GCash to complete the payment.
+          </p>
+
+          <div style="background:rgba(0,0,0,0.25); border-radius:14px; padding:14px; margin-bottom:16px;">
+            <div style="font-size:0.75rem; color:var(--gym-muted); text-transform:uppercase; font-weight:700; letter-spacing:0.5px;">Amount to Pay</div>
+            <div class="gcash-amount-callout" id="confirm-gcash-amount">₱1,500.00</div>
+            <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-top:8px; border-top:1px solid rgba(255,255,255,0.08); padding-top:8px;">
+              <span style="color:var(--gym-muted);">Payment Method</span>
+              <strong style="color:#60a5fa;" id="confirm-method-label">GCash</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-top:4px;">
+              <span style="color:var(--gym-muted);">Membership Plan</span>
+              <strong style="color:#fff;" id="confirm-plan-label">Standard Membership</strong>
+            </div>
+          </div>
+
+          <p style="color:var(--gym-muted); font-size:0.76rem; margin:0 0 16px; line-height:1.4;">
+            By continuing, you agree to proceed with the payment through GCash.
+          </p>
+
+          <div style="color:var(--gym-light); font-size:0.76rem; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:18px;">
+            <i class="fa-solid fa-lock"></i> 🔒 Secure End-to-End Encrypted Payment
+          </div>
+
+          <button class="btn-primary" id="btn-continue-to-gcash" onclick="executeGatewayCheckout()" style="background:#005ce6; border-color:#005ce6; margin-bottom:8px;">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Continue to GCash
+          </button>
+          
+          <button class="btn-outline" onclick="showCheckoutStep('method')" style="padding:11px; font-size:0.85rem;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Payment Methods
+          </button>
+        </div>
+      </div>
+
+      <!-- ── STEP 5: PAYMENT RESULT SCREEN ── -->
+      <div id="checkout-step-result" class="checkout-step" style="display:none;">
+        
+        <!-- SUCCESS STATE -->
+        <div id="result-state-success" style="display:none;">
+          <div class="result-screen-card result-success">
+            <div class="result-icon-circle"><i class="fa-solid fa-check"></i></div>
+            <h2 style="color:#fff; font-size:1.35rem; font-weight:800; margin:0 0 4px;">Payment Successful</h2>
+            <p style="color:var(--gym-muted); font-size:0.84rem; margin:0 0 14px;">Your payment has been confirmed by the gateway.</p>
+            
+            <div style="font-size:2rem; font-weight:900; color:var(--gym-mid); font-family:'Outfit';" id="res-success-amount">₱1,500.00</div>
+            
+            <div style="text-align:left; background:rgba(0,0,0,0.25); border-radius:14px; padding:14px; margin:16px 0;">
+              <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Payment Method</span><strong class="val" id="res-success-method">GCash</strong></div>
+              <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Reference Number</span><code class="val" id="res-success-ref" style="font-size:0.78rem;">PEG-XXXX</code></div>
+              <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Membership</span><strong class="val" id="res-success-plan">Standard Plan</strong></div>
+              <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Status</span><span class="badge-paid">● ACTIVE</span></div>
+              <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Valid Until</span><strong class="val" id="res-success-valid">Oct 4, 2026</strong></div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <button class="btn-primary" onclick="closeRenewalModal(); refreshDashboard();"><i class="fa-solid fa-id-card"></i> View Membership</button>
+              <button class="btn-outline" onclick="closeRenewalModal(); openPaymentDetailModal(currentResultRef);"><i class="fa-solid fa-receipt"></i> View Payment Receipt</button>
+              <button class="btn-outline" onclick="closeRenewalModal(); refreshDashboard(); loadPaymentHistory();" style="border-color:transparent; color:var(--gym-muted);">Done</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PENDING STATE -->
+        <div id="result-state-pending" style="display:none;">
+          <div class="result-screen-card result-pending">
+            <div class="result-icon-circle"><i class="fa-solid fa-hourglass-half"></i></div>
+            <h2 style="color:#fff; font-size:1.35rem; font-weight:800; margin:0 0 4px;">Payment Processing</h2>
+            <p style="color:var(--gym-muted); font-size:0.84rem; margin:0 0 16px;">
+              Your payment is being verified with the payment gateway.<br>
+              Please wait while we confirm your payment.
+            </p>
+            <div style="background:rgba(0,0,0,0.25); border-radius:12px; padding:12px; margin-bottom:16px;">
+              <span style="font-size:0.75rem; color:var(--gym-muted);">Payment Reference:</span>
+              <div style="font-size:1rem; font-weight:800; color:#fff; font-family:monospace; margin-top:2px;" id="res-pending-ref">--</div>
+            </div>
+            <button class="btn-primary" id="btn-check-pending-status" onclick="pollPaymentStatus(currentResultRef)" style="margin-bottom:8px;">
+              <i class="fa-solid fa-arrows-rotate"></i> Check Payment Status
+            </button>
+            <button class="btn-outline" onclick="closeRenewalModal(); refreshDashboard();">
+              Return to Membership
+            </button>
+          </div>
+        </div>
+
+        <!-- FAILED STATE -->
+        <div id="result-state-failed" style="display:none;">
+          <div class="result-screen-card result-failed">
+            <div class="result-icon-circle"><i class="fa-solid fa-xmark"></i></div>
+            <h2 style="color:#fff; font-size:1.35rem; font-weight:800; margin:0 0 4px;">Payment Failed</h2>
+            <p style="color:var(--gym-muted); font-size:0.84rem; margin:0 0 16px;">
+              We could not confirm your payment.<br>
+              No membership activation has been made.
+            </p>
+            <button class="btn-primary" onclick="showCheckoutStep('confirm-gcash')" style="margin-bottom:8px;">
+              <i class="fa-solid fa-rotate-right"></i> Try Again
+            </button>
+            <button class="btn-outline" onclick="showCheckoutStep('method')">
+              Choose Another Payment Method
+            </button>
+          </div>
+        </div>
+
+        <!-- CANCELLED STATE -->
+        <div id="result-state-cancelled" style="display:none;">
+          <div class="result-screen-card result-cancelled">
+            <div class="result-icon-circle"><i class="fa-solid fa-ban"></i></div>
+            <h2 style="color:#fff; font-size:1.35rem; font-weight:800; margin:0 0 4px;">Payment Cancelled</h2>
+            <p style="color:var(--gym-muted); font-size:0.84rem; margin:0 0 16px;">
+              The payment was cancelled before completion.<br>
+              Your membership has not been activated.
+            </p>
+            <button class="btn-primary" onclick="showCheckoutStep('method')">
+              <i class="fa-solid fa-arrow-left"></i> Return to Payment
+            </button>
+          </div>
+        </div>
+
+        <!-- EXPIRED STATE -->
+        <div id="result-state-expired" style="display:none;">
+          <div class="result-screen-card result-cancelled">
+            <div class="result-icon-circle"><i class="fa-solid fa-clock"></i></div>
+            <h2 style="color:#fff; font-size:1.35rem; font-weight:800; margin:0 0 4px;">Payment Expired</h2>
+            <p style="color:var(--gym-muted); font-size:0.84rem; margin:0 0 16px;">
+              The payment session has expired.<br>
+              No membership activation has been made.
+            </p>
+            <button class="btn-primary" onclick="showCheckoutStep('plans')">
+              <i class="fa-solid fa-rotate-right"></i> Try Again
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </ion-content>
+  </ion-modal>
+
+  <!-- ══════════════════════════════════════════════════════════
+       MODAL 3: PAYMENT DETAILS MODAL
+       ══════════════════════════════════════════════════════════ -->
+  <ion-modal id="modal-payment-detail">
+    <ion-header>
+      <ion-toolbar style="--background:#1b4332; --color:#fff;">
+        <ion-title style="font-weight:700;">Payment Details</ion-title>
+        <ion-buttons slot="end">
+          <ion-button onclick="closePaymentDetailModal()" style="--color: var(--gym-light);"><ion-icon name="close"></ion-icon></ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding" style="--background: var(--gym-dark);">
+      <div id="payment-detail-content">
+        <div style="text-align:center; padding:30px;"><div class="spinner"></div></div>
+      </div>
+    </ion-content>
+  </ion-modal>
+
+  <!-- ══════════════════════════════════════════════════════════
+       MODAL 4: OFFICIAL DIGITAL RECEIPT MODAL
+       ══════════════════════════════════════════════════════════ -->
+  <ion-modal id="modal-payment-receipt">
+    <ion-header>
+      <ion-toolbar style="--background:#1b4332; --color:#fff;">
+        <ion-title style="font-weight:700;">Official Receipt</ion-title>
+        <ion-buttons slot="end">
+          <ion-button onclick="closeReceiptModal()" style="--color: var(--gym-light);"><ion-icon name="close"></ion-icon></ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding" style="--background: var(--gym-dark);">
+      <div id="receipt-modal-content">
+        <div style="text-align:center; padding:30px;"><div class="spinner"></div></div>
       </div>
     </ion-content>
   </ion-modal>
@@ -1925,6 +2487,15 @@ function handleTabChange(e) {
   currentActiveTab = e.detail.tab;
   if (currentActiveTab === 'tab-pass' && currentMember) {
     startQRCountdown();
+  } else if (currentActiveTab === 'tab-payments') {
+    loadPaymentHistory();
+  }
+}
+
+function switchToTab(tabName) {
+  const tabs = document.querySelector('ion-tabs');
+  if (tabs && typeof tabs.select === 'function') {
+    tabs.select(tabName);
   }
 }
 
@@ -1989,36 +2560,122 @@ function renderAttendance(list) {
   });
 }
 
-// ── PAYMENTS TAB ───────────────────────────────────────────────────
-function renderPayments(list) {
-  const c = document.getElementById('payments-container');
-  if (!c) return;
-  c.innerHTML = '';
+// ── COMPLETE MEMBERSHIP PAYMENT & BILLING ENGINE ───────────────────
+let selectedRenewPlanId = null;
+let selectedRenewPlan = null;
+let selectedRenewMethod = 'GCash';
+let currentPendingRef = null;
+let currentResultRef = null;
+let paymentPollingTimer = null;
+let currentHistoryFilter = 'ALL';
 
-  if (!list.length) {
-    c.innerHTML = `
-      <div style="text-align:center; padding:30px 20px; color:var(--gym-muted);">
-        <i class="fa-solid fa-receipt" style="font-size:2rem; opacity:0.4; margin-bottom:8px; display:block;"></i>
-        No payment transactions recorded yet.
-      </div>`;
+// ── PAYMENTS & HISTORY TAB ─────────────────────────────────────────
+function renderPayments(list) {
+  // Delegate rendering to unified loadPaymentHistory
+  loadPaymentHistory(currentHistoryFilter);
+}
+
+async function loadPaymentHistory(filter = currentHistoryFilter) {
+  currentHistoryFilter = filter;
+  const container = document.getElementById('payments-container');
+  if (!container) return;
+
+  const token = localStorage.getItem('peg_token');
+  if (!token) return;
+
+  // Show loading skeleton
+  container.innerHTML = `
+    <div style="text-align:center; padding:28px 16px; color:var(--gym-muted);">
+      <div class="spinner"></div>
+      <p style="margin-top:10px; font-size:0.82rem;">Loading payment history...</p>
+    </div>
+  `;
+
+  try {
+    const res = await fetch(`${API_URL}/payment_history.php?status=${encodeURIComponent(filter)}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.payments)) {
+      throw new Error(data.message || 'Failed to load records');
+    }
+
+    renderPaymentHistoryCards(data.payments);
+
+  } catch (err) {
+    console.warn("Payment history fetch error:", err);
+    container.innerHTML = `
+      <div style="text-align:center; padding:26px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25); border-radius:14px; margin-top:8px;">
+        <i class="fa-solid fa-triangle-exclamation" style="font-size:1.8rem; color:#ef4444; margin-bottom:8px; display:block;"></i>
+        <p style="color:#fff; font-size:0.85rem; margin:0 0 10px;">Unable to load payment history.</p>
+        <button onclick="loadPaymentHistory('${filter}')" style="background:var(--gym-green); color:#fff; border:none; padding:6px 14px; border-radius:8px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+          <i class="fa-solid fa-arrows-rotate"></i> Retry
+        </button>
+      </div>
+    `;
+  }
+}
+
+function filterPaymentHistory(status) {
+  currentHistoryFilter = status;
+  ['all', 'paid', 'pending', 'failed'].forEach(s => {
+    const chip = document.getElementById(`hf-${s}`);
+    if (chip) chip.classList.toggle('active', s === status.toLowerCase());
+  });
+  loadPaymentHistory(status);
+}
+
+function renderPaymentHistoryCards(list) {
+  const container = document.getElementById('payments-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!list || list.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:36px 18px; color:var(--gym-muted);">
+        <i class="fa-solid fa-receipt" style="font-size:2.4rem; opacity:0.35; margin-bottom:12px; display:block;"></i>
+        <h4 style="color:#fff; font-size:0.95rem; margin:0 0 4px; font-weight:700;">No payment history yet</h4>
+        <p style="font-size:0.8rem; margin:0 0 16px; line-height:1.4;">Your completed membership payments will appear here.</p>
+        <button class="btn-outline" onclick="openRenewalModal()" style="padding:8px 16px; font-size:0.8rem; width:auto; display:inline-block;">
+          View Membership Plans
+        </button>
+      </div>
+    `;
     return;
   }
 
   list.forEach(p => {
     const card = document.createElement('div');
-    card.className = 'dark-card';
-    card.style.cssText = 'padding:14px; margin-bottom:10px;';
+    card.className = 'history-card';
+    card.onclick = () => openPaymentDetailModal(p.reference_id || p.id);
+
+    let statusBadge = `<span class="badge-paid">● PAID</span>`;
+    if (p.status === 'PENDING') statusBadge = `<span class="badge-pending">⏳ PENDING</span>`;
+    else if (p.status === 'FAILED') statusBadge = `<span class="badge-failed">✕ FAILED</span>`;
+    else if (p.status === 'CANCELLED') statusBadge = `<span class="badge-failed">CANCELLED</span>`;
+    else if (p.status === 'EXPIRED') statusBadge = `<span class="badge-failed">EXPIRED</span>`;
+
     card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-weight:800; color:#fff; font-size:0.95rem;">${p.payment_type || 'Membership Plan'}</span>
-        <strong style="color:var(--gym-mid); font-size:1.05rem;">₱${parseFloat(p.amount || 0).toFixed(2)}</strong>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+        <div>
+          <h4 style="color:#fff; margin:0; font-size:0.98rem; font-weight:800;">${p.membership_plan || 'Membership Plan'}</h4>
+          <span style="font-size:0.75rem; color:var(--gym-muted);">${p.payment_date} • ${p.payment_time}</span>
+        </div>
+        <div style="text-align:right;">
+          <strong style="color:var(--gym-mid); font-size:1.1rem; font-family:'Outfit'; font-weight:900;">${p.amount_formatted}</strong>
+        </div>
       </div>
-      <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:0.78rem; color:var(--gym-muted);">
-        <span>${p.payment_method || 'Online'} &bull; Ref: ${p.reference_no || 'N/A'}</span>
-        <span>${p.payment_date || '--'}</span>
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.76rem; border-top:1px solid rgba(82,183,136,0.12); padding-top:8px; margin-top:8px;">
+        <span style="color:var(--gym-muted);">
+          <i class="fa-solid fa-wallet" style="margin-right:4px;"></i> ${p.payment_method} &bull; Ref: <code style="color:#fff; font-size:0.72rem;">${p.reference_id}</code>
+        </span>
+        ${statusBadge}
       </div>
     `;
-    c.appendChild(card);
+    container.appendChild(card);
   });
 }
 
@@ -2028,120 +2685,84 @@ function refreshDashboard() {
   }
 }
 
-// ── RENEWAL MODAL & BILLING ────────────────────────────────────────
-let selectedRenewPlanId = null;
-let selectedRenewPlan = null;
-let selectedRenewMethod = 'GCash';
+// ── MULTI-STEP MEMBERSHIP CHECKOUT FLOW ────────────────────────────
 
-function selectRenewPaymentMethod(method) {
-  selectedRenewMethod = method;
-  ['GCash', 'Maya', 'Cash'].forEach(m => {
-    const key = m.toLowerCase();
-    const btn = document.getElementById(`renew-pm-${key}`);
-    if (btn) btn.classList.toggle('selected', m === method);
+function showCheckoutStep(step) {
+  const steps = ['plans', 'summary', 'method', 'confirm-gcash', 'result'];
+  steps.forEach(s => {
+    const el = document.getElementById(`checkout-step-${s}`);
+    if (el) el.style.display = (s === step) ? 'block' : 'none';
   });
 
-  const onlineWrap = document.getElementById('renew-online-pay-wrap');
-  const cashWrap = document.getElementById('renew-cash-info-wrap');
-  const badge = document.getElementById('renew-method-badge');
+  const titleEl = document.getElementById('checkout-modal-title');
+  if (titleEl) {
+    if (step === 'plans') titleEl.textContent = 'Select Membership Plan';
+    else if (step === 'summary') titleEl.textContent = 'Checkout Summary';
+    else if (step === 'method') titleEl.textContent = 'Payment Method';
+    else if (step === 'confirm-gcash') titleEl.textContent = 'Pay via GCash';
+    else if (step === 'result') titleEl.textContent = 'Payment Status';
+  }
+}
 
-  if (method === 'Cash') {
-    if (onlineWrap) onlineWrap.style.display = 'none';
-    if (cashWrap) cashWrap.style.display = 'block';
-  } else {
-    if (onlineWrap) onlineWrap.style.display = 'block';
-    if (cashWrap) cashWrap.style.display = 'none';
-    if (badge) badge.textContent = `${method.toUpperCase()} ACCOUNT DETAILS`;
+async function openRenewalModal(preselectedPlanId = null) {
+  const m = document.getElementById('modal-renewal');
+  if (m) {
+    m.isOpen = true;
+    if (typeof m.present === 'function') m.present();
+  }
 
-    const info = gymPaymentSettings[method.toLowerCase()] || gymPaymentSettings.gcash;
-    const accEl = document.getElementById('renew-acct-label');
-    if (accEl && info) {
-      accEl.textContent = `${info.name} (${info.number})`;
+  showCheckoutStep('plans');
+
+  if (!availablePlans || availablePlans.length === 0) {
+    availablePlans = [
+      { id: 2, name: 'Basic', price: 300.00, duration_months: 1 },
+      { id: 1, name: 'STANDARD', price: 500.00, duration_months: 2 },
+      { id: 3, name: 'Premium', price: 1000.00, duration_months: 6 },
+      { id: 4, name: 'VIP', price: 4000.00, duration_months: 12 }
+    ];
+  }
+
+  if (preselectedPlanId) {
+    selectedRenewPlanId = preselectedPlanId;
+    selectedRenewPlan = availablePlans.find(p => p.id == preselectedPlanId) || availablePlans[0];
+  }
+
+  renderCheckoutPlanCards(availablePlans);
+
+  // Background fetch live server plans
+  try {
+    const res = await fetch(`${API_URL}/get_plans.php`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.plans) && data.plans.length > 0) {
+        availablePlans = data.plans;
+        renderCheckoutPlanCards(availablePlans);
+      }
     }
-    renderRenewQR();
-    updateRenewNumberView(info);
+  } catch (e) {
+    console.warn("get_plans sync:", e);
   }
 }
 
-function updateRenewNumberView(info) {
-  const numDisplay = document.getElementById('renew-pay-number-display');
-  const nameDisplay = document.getElementById('renew-pay-name-display');
-  if (numDisplay && info) numDisplay.textContent = info.number;
-  if (nameDisplay && info) nameDisplay.textContent = info.name;
-}
-
-function toggleRenewPayMode(mode) {
-  const qrView = document.getElementById('renew-qr-view');
-  const numView = document.getElementById('renew-number-view');
-  const btnQR = document.getElementById('renew-mode-qr');
-  const btnNum = document.getElementById('renew-mode-number');
-  if (mode === 'qr') {
-    if (qrView) qrView.style.display = 'inline-block';
-    if (numView) numView.style.display = 'none';
-    if (btnQR) btnQR.classList.add('selected');
-    if (btnNum) btnNum.classList.remove('selected');
-  } else {
-    if (qrView) qrView.style.display = 'none';
-    if (numView) numView.style.display = 'block';
-    if (btnQR) btnQR.classList.remove('selected');
-    if (btnNum) btnNum.classList.add('selected');
+function closeRenewalModal() {
+  clearInterval(paymentPollingTimer);
+  const m = document.getElementById('modal-renewal');
+  if (m) {
+    m.isOpen = false;
+    if (typeof m.dismiss === 'function') m.dismiss();
   }
 }
 
-function copyRenewPayNumber() {
-  const info = gymPaymentSettings[selectedRenewMethod.toLowerCase()] || gymPaymentSettings.gcash;
-  const num = info ? info.number : '0917-888-4961';
-  navigator.clipboard.writeText(num.replace(/-/g, '')).then(() => {
-    showToast('Number copied! Paste it in your GCash/Maya app.');
-  }).catch(() => {
-    showToast(num);
-  });
-}
-
-function renderRenewQR() {
-  const target = document.getElementById('renew-qrcode-target');
-  if (!target) return;
-  target.innerHTML = '';
-  const amt = selectedRenewPlan ? parseFloat(selectedRenewPlan.price).toFixed(2) : '0.00';
-  const amtText = document.getElementById('renew-amount-due-text');
-  if (amtText) amtText.textContent = `₱${amt}`;
-
-  const methodKey = selectedRenewMethod.toLowerCase();
-  const info = gymPaymentSettings[methodKey] || gymPaymentSettings.gcash;
-
-  if (info && info.qr_image) {
-    const baseSiteUrl = API_URL.replace(/\/api\/?$/, '');
-    const imgUrl = info.qr_image.startsWith('http') ? info.qr_image : `${baseSiteUrl}/${info.qr_image}`;
-    target.innerHTML = `<img src="${imgUrl}" alt="${selectedRenewMethod} QR" style="width:160px; height:160px; object-fit:contain; border-radius:8px;" onerror="this.onerror=null; renderFallbackRenewQR();">`;
-  } else {
-    renderFallbackRenewQR();
-  }
-}
-
-function renderFallbackRenewQR() {
-  const target = document.getElementById('renew-qrcode-target');
-  if (!target) return;
-  target.innerHTML = '';
-  const amt = selectedRenewPlan ? parseFloat(selectedRenewPlan.price).toFixed(2) : '0.00';
-  const qrPayload = `00020101021226580010ph.ppmi.qr0111PALMASGYM0215PEG${Date.now()}520459995303608540${amt.length}${amt}5802PH5918PALMAS ELITE GYM6006MANILA6304`;
-  new QRCode(target, {
-    text: qrPayload,
-    width: 160,
-    height: 160,
-    colorDark: '#081c15',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
-  });
-}
-
-function renderRenewPlanCards(plans) {
+function renderCheckoutPlanCards(plans) {
   const container = document.getElementById('renew-plans-container');
   if (!container) return;
   container.innerHTML = '';
+
   if (!selectedRenewPlanId && plans.length > 0) {
     selectedRenewPlanId = plans[0].id;
     selectedRenewPlan = plans[0];
   }
+
   plans.forEach(p => {
     const card = document.createElement('div');
     card.className = `plan-card ${selectedRenewPlanId == p.id ? 'selected' : ''}`;
@@ -2150,86 +2771,83 @@ function renderRenewPlanCards(plans) {
       selectedRenewPlan = p;
       container.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
-      renderRenewQR();
     };
     card.innerHTML = `
       <div class="plan-check"><i class="fa-solid fa-check"></i></div>
-      <h3 style="color:#fff; margin:0 0 4px; font-weight:800; font-size:1.02rem;">${p.name}</h3>
-      <h2 style="color:var(--gym-light); margin:0; font-size:1.35rem; font-weight:900;">₱${parseFloat(p.price).toFixed(2)}</h2>
-      <p style="color:var(--gym-muted); font-size:0.78rem; margin:3px 0 0;">${p.duration_months} Month(s) Gym Access</p>
+      <h3 style="color:#fff; margin:0 0 4px; font-weight:800; font-size:1.05rem;">${p.name}</h3>
+      <h2 style="color:var(--gym-light); margin:0; font-size:1.38rem; font-weight:900;">₱${parseFloat(p.price).toFixed(2)}</h2>
+      <p style="color:var(--gym-muted); font-size:0.8rem; margin:3px 0 0;">${p.duration_months} Month(s) Gym Access</p>
     `;
     container.appendChild(card);
   });
-  renderRenewQR();
 }
 
-async function openRenewalModal() {
-  const m = document.getElementById('modal-renewal');
-  if (m) {
-    m.isOpen = true;
-    if (typeof m.present === 'function') m.present();
+function proceedToCheckoutSummary() {
+  if (!selectedRenewPlanId || !selectedRenewPlan) {
+    return showToast('Please select a membership plan.');
   }
 
-  // Populate immediately with cached/fallback plans
-  if (!availablePlans || availablePlans.length === 0) {
-    availablePlans = [
-      { id: 5, name: '1promo', price: 1.00, duration_months: 1 },
-      { id: 2, name: 'Basic', price: 300.00, duration_months: 1 },
-      { id: 1, name: 'STANDARD', price: 500.00, duration_months: 2 },
-      { id: 3, name: 'Premium', price: 1000.00, duration_months: 6 },
-      { id: 4, name: 'VIP', price: 4000.00, duration_months: 12 }
-    ];
-  }
-  renderRenewPlanCards(availablePlans);
-  selectRenewPaymentMethod(selectedRenewMethod || 'GCash');
+  const p = selectedRenewPlan;
+  const priceFormatted = '₱' + parseFloat(p.price).toFixed(2);
 
-  // Background fetch live plans
-  try {
-    const res = await fetch(`${API_URL}/get_plans.php`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.success && Array.isArray(data.plans) && data.plans.length > 0) {
-        availablePlans = data.plans;
-        if (data.payment_info) {
-          gymPaymentSettings = data.payment_info;
-        }
-        renderRenewPlanCards(availablePlans);
-        selectRenewPaymentMethod(selectedRenewMethod || 'GCash');
-      }
-    }
-  } catch (e) {
-    console.warn("Renewal get_plans live sync:", e);
-  }
+  document.getElementById('summary-plan-name').textContent = p.name;
+  document.getElementById('summary-duration').textContent  = `${p.duration_months} Month(s) Access`;
+  document.getElementById('summary-fee').textContent       = priceFormatted;
+  document.getElementById('summary-total').textContent     = priceFormatted;
+
+  showCheckoutStep('summary');
 }
 
-function closeRenewalModal() {
-  const m = document.getElementById('modal-renewal');
-  if (m) {
-    m.isOpen = false;
-    if (typeof m.dismiss === 'function') m.dismiss();
-  }
+function proceedToPaymentMethodSelection() {
+  selectCheckoutMethod(selectedRenewMethod || 'GCash');
+  showCheckoutStep('method');
 }
 
-async function submitRenewal() {
-  if (!selectedRenewPlanId) return showToast('Please select a membership plan.');
-  if (!selectedRenewMethod) return showToast('Please select a payment method.');
+function selectCheckoutMethod(method) {
+  selectedRenewMethod = method;
+  const cards = {
+    'GCash': 'pm-card-gcash',
+    'Maya': 'pm-card-maya',
+    'Credit Card': 'pm-card-card',
+    'GrabPay': 'pm-card-grab',
+    'Cash': 'pm-card-cash'
+  };
 
-  const planId = selectedRenewPlanId;
-  const method = selectedRenewMethod;
-  const ref    = (document.getElementById('renew-ref-input')?.value || '').trim();
+  Object.entries(cards).forEach(([m, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('selected', m === method);
+  });
 
-  if (method !== 'Cash' && !ref) {
-    return showToast(`Please enter your ${method} transaction Reference Number.`);
-  }
+  const cashNotice = document.getElementById('checkout-cash-notice');
+  if (cashNotice) cashNotice.style.display = (method === 'Cash') ? 'block' : 'none';
+}
 
-  const token = localStorage.getItem('peg_token');
-  if (!token) {
-    showToast('Session expired. Please sign in again.');
-    showScreen('view-login');
+function proceedFromMethodSelection() {
+  if (selectedRenewMethod === 'Cash') {
+    submitCashRenewalRequest();
     return;
   }
 
-  const btn = document.getElementById('btn-proceed-renewal');
+  const p = selectedRenewPlan;
+  const priceFormatted = '₱' + parseFloat(p.price).toFixed(2);
+
+  // Configure GCash / Online Confirmation Screen
+  const amountEl = document.getElementById('confirm-gcash-amount');
+  const methodEl = document.getElementById('confirm-method-label');
+  const planEl   = document.getElementById('confirm-plan-label');
+
+  if (amountEl) amountEl.textContent = priceFormatted;
+  if (methodEl) methodEl.textContent = selectedRenewMethod;
+  if (planEl)   planEl.textContent   = p.name;
+
+  showCheckoutStep('confirm-gcash');
+}
+
+async function submitCashRenewalRequest() {
+  const token = localStorage.getItem('peg_token');
+  if (!token) return showToast('Session expired. Please sign in again.');
+
+  const btn = document.getElementById('btn-method-continue');
   if (btn) {
     btn.disabled = true;
     btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Submitting...';
@@ -2239,67 +2857,329 @@ async function submitRenewal() {
     const res = await fetch(`${API_URL}/member_renew.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ plan_id: planId, payment_method: method, reference_no: ref })
+      body: JSON.stringify({ plan_id: selectedRenewPlanId, payment_method: 'Cash', reference_no: 'FRONT-DESK' })
     });
     const data = await res.json();
     if (data.success) {
-      showToast('Renewal request submitted! Awaiting staff verification.');
+      showToast('Front-desk renewal requested. Please settle at reception.');
       closeRenewalModal();
       refreshDashboard();
+      loadPaymentHistory();
     } else {
-      showToast(data.message || 'Unable to submit renewal.');
+      showToast(data.message || 'Unable to submit cash renewal.');
     }
   } catch {
-    showToast('Connection error. Please try again.');
+    showToast('Network error. Please try again.');
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> SUBMIT FOR STAFF VERIFICATION';
+      btn.innerHTML = 'CONTINUE <i class="fa-solid fa-arrow-right" style="margin-left:6px;"></i>';
     }
   }
 }
 
-async function executeAutoActivation() {
-  if (!currentCheckoutSession) return;
+async function executeGatewayCheckout() {
+  if (!selectedRenewPlanId) return showToast('Please select a membership plan.');
+
   const token = localStorage.getItem('peg_token');
-  const btn = document.querySelector('#renewal-step-checkout .btn-primary');
+  if (!token) return showToast('Session expired. Please sign in again.');
+
+  const btn = document.getElementById('btn-continue-to-gcash');
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Activating Pass...';
+    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Connecting to GCash...';
   }
 
   try {
-    const res = await fetch(`${API_URL}/confirm_auto_payment.php`, {
+    const res = await fetch(`${API_URL}/create_payment_checkout.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
-        plan_id:        currentCheckoutSession.plan_id,
-        payment_method: currentCheckoutSession.payment_method,
-        ref_code:       currentCheckoutSession.ref_code
+        plan_id: selectedRenewPlanId,
+        payment_method: selectedRenewMethod || 'GCash'
       })
     });
+
     const data = await res.json();
-    if (data && (data.success || data.pending)) {
-      showToast('🎉 Membership pass activated successfully!');
-      closeRenewalModal();
-      backToRenewalForm();
-      refreshDashboard();
-    } else {
-      showToast(data.message || 'Payment received! Updating membership.');
-      closeRenewalModal();
-      backToRenewalForm();
-      refreshDashboard();
+
+    if (!data.success || !data.checkout || !data.checkout.checkout_url) {
+      throw new Error(data.message || 'Unable to create payment session.');
     }
-  } catch {
-    showToast('Payment processed. Updating dashboard.');
-    closeRenewalModal();
-    backToRenewalForm();
-    refreshDashboard();
+
+    const checkout = data.checkout;
+    currentPendingRef = checkout.ref_code;
+    currentResultRef  = checkout.ref_code;
+
+    // Open External / PayMongo Gateway Checkout
+    window.open(checkout.checkout_url, '_blank');
+
+    // Switch to Result Screen in Pending Mode
+    renderResultState('pending', {
+      ref_code: checkout.ref_code,
+      amount_formatted: checkout.amount_formatted,
+      plan_name: checkout.plan_name,
+      payment_method: checkout.payment_method
+    });
+
+    showCheckoutStep('result');
+
+    // Start proactive polling for webhook verification
+    startPaymentStatusPolling(checkout.ref_code);
+
+  } catch (err) {
+    showToast(err.message || 'Failed to connect to payment gateway.');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Continue to GCash';
+    }
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-bolt"></i> COMPLETE &amp; ACTIVATE PASS';
+      btn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Continue to GCash';
     }
+  }
+}
+
+function startPaymentStatusPolling(refCode) {
+  clearInterval(paymentPollingTimer);
+  let attempts = 0;
+  paymentPollingTimer = setInterval(async () => {
+    attempts++;
+    const isDone = await pollPaymentStatus(refCode, attempts);
+    if (isDone || attempts >= 20) {
+      clearInterval(paymentPollingTimer);
+    }
+  }, 4000);
+}
+
+async function pollPaymentStatus(refCode, attempt = 1) {
+  if (!refCode) return false;
+  const token = localStorage.getItem('peg_token');
+  if (!token) return false;
+
+  const btnCheck = document.getElementById('btn-check-pending-status');
+  if (btnCheck && attempt === 1) {
+    btnCheck.disabled = true;
+    btnCheck.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> Verifying...';
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/check_status.php?ref=${encodeURIComponent(refCode)}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    if (btnCheck) {
+      btnCheck.disabled = false;
+      btnCheck.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Check Payment Status';
+    }
+
+    if (!data.success) return false;
+
+    if (data.status === 'PAID') {
+      clearInterval(paymentPollingTimer);
+      renderResultState('success', data);
+      refreshDashboard();
+      loadPaymentHistory();
+      return true;
+    } else if (data.status === 'FAILED') {
+      clearInterval(paymentPollingTimer);
+      renderResultState('failed', data);
+      return true;
+    } else if (data.status === 'CANCELLED') {
+      clearInterval(paymentPollingTimer);
+      renderResultState('cancelled', data);
+      return true;
+    } else if (data.status === 'EXPIRED') {
+      clearInterval(paymentPollingTimer);
+      renderResultState('expired', data);
+      return true;
+    }
+
+    return false; // Still pending
+
+  } catch (err) {
+    if (btnCheck) {
+      btnCheck.disabled = false;
+      btnCheck.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Check Payment Status';
+    }
+    return false;
+  }
+}
+
+function renderResultState(state, data = {}) {
+  const states = ['success', 'pending', 'failed', 'cancelled', 'expired'];
+  states.forEach(s => {
+    const el = document.getElementById(`result-state-${s}`);
+    if (el) el.style.display = (s === state) ? 'block' : 'none';
+  });
+
+  currentResultRef = data.reference_code || data.ref_code || currentResultRef;
+
+  if (state === 'success') {
+    const amtEl = document.getElementById('res-success-amount');
+    const mthEl = document.getElementById('res-success-method');
+    const refEl = document.getElementById('res-success-ref');
+    const plnEl = document.getElementById('res-success-plan');
+    const valEl = document.getElementById('res-success-valid');
+
+    if (amtEl) amtEl.textContent = data.amount_formatted || '₱' + parseFloat(data.amount || 0).toFixed(2);
+    if (mthEl) mthEl.textContent = data.payment_method || 'GCash';
+    if (refEl) refEl.textContent = currentResultRef || '--';
+    if (plnEl) plnEl.textContent = data.plan_name || 'Active Membership';
+    if (valEl) valEl.textContent = data.valid_until || 'Active Member';
+  } else if (state === 'pending') {
+    const refEl = document.getElementById('res-pending-ref');
+    if (refEl) refEl.textContent = currentResultRef || '--';
+  }
+}
+
+// ── PAYMENT DETAILS & OFFICIAL RECEIPT MODALS ──────────────────────
+async function openPaymentDetailModal(txIdOrRef) {
+  const m = document.getElementById('modal-payment-detail');
+  const container = document.getElementById('payment-detail-content');
+  if (m) {
+    m.isOpen = true;
+    if (typeof m.present === 'function') m.present();
+  }
+
+  container.innerHTML = `<div style="text-align:center; padding:30px;"><div class="spinner"></div><p style="color:var(--gym-muted); margin-top:10px; font-size:0.8rem;">Loading transaction...</p></div>`;
+
+  const token = localStorage.getItem('peg_token');
+  if (!token) return showToast('Session expired.');
+
+  try {
+    const res = await fetch(`${API_URL}/payment_detail.php?id=${encodeURIComponent(txIdOrRef)}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    if (!data.success || !data.payment) {
+      throw new Error(data.message || 'Transaction details unavailable.');
+    }
+
+    const p = data.payment;
+    container.innerHTML = `
+      <div class="result-screen-card ${p.is_paid ? 'result-success' : 'result-pending'}" style="padding:20px; margin-bottom:14px;">
+        <div class="result-icon-circle" style="width:56px; height:56px; font-size:1.6rem; margin-bottom:10px;">
+          <i class="fa-solid ${p.is_paid ? 'fa-check' : 'fa-hourglass-half'}"></i>
+        </div>
+        <h3 style="color:#fff; margin:0; font-size:1.2rem; font-weight:800;">${p.is_paid ? 'Payment Confirmed' : 'Payment Processing'}</h3>
+        <p style="color:var(--gym-muted); font-size:0.78rem; margin:2px 0 12px;">Status: <strong>${p.status}</strong></p>
+        <div style="font-size:1.8rem; font-weight:900; color:var(--gym-mid); font-family:'Outfit';">${p.amount_formatted}</div>
+      </div>
+
+      <div class="checkout-summary-card" style="padding:14px;">
+        <div class="checkout-row"><span class="lbl">Membership Plan</span><strong class="val">${p.plan.name}</strong></div>
+        <div class="checkout-row"><span class="lbl">Payment Method</span><strong class="val">${p.payment_method}</strong></div>
+        <div class="checkout-row"><span class="lbl">Payment Gateway</span><strong class="val">${p.gateway}</strong></div>
+        <div class="checkout-row"><span class="lbl">Reference Number</span><code class="val" style="font-size:0.76rem;">${p.reference_no}</code></div>
+        <div class="checkout-row"><span class="lbl">Gateway Transaction ID</span><code class="val" style="font-size:0.72rem;">${p.gateway_tx_id}</code></div>
+        <div class="checkout-row"><span class="lbl">Payment Timestamp</span><span class="val">${p.paid_at || p.created_at}</span></div>
+        <div class="checkout-row"><span class="lbl">Membership Period</span><strong class="val" style="font-size:0.8rem;">${p.plan.period_start} &bull; ${p.plan.period_end}</strong></div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
+        <button class="btn-primary" onclick="openReceiptModal('${p.reference_no}')">
+          <i class="fa-solid fa-file-invoice"></i> View Official Receipt
+        </button>
+        <button class="btn-outline" onclick="closePaymentDetailModal()">
+          Back to Payment History
+        </button>
+      </div>
+    `;
+
+  } catch (err) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:24px; color:#ef4444;">
+        <i class="fa-solid fa-triangle-exclamation" style="font-size:2rem; margin-bottom:8px;"></i>
+        <p style="font-size:0.85rem; margin:0 0 12px;">${err.message || 'Error loading transaction.'}</p>
+        <button class="btn-outline" onclick="closePaymentDetailModal()">Close</button>
+      </div>
+    `;
+  }
+}
+
+function closePaymentDetailModal() {
+  const m = document.getElementById('modal-payment-detail');
+  if (m) {
+    m.isOpen = false;
+    if (typeof m.dismiss === 'function') m.dismiss();
+  }
+}
+
+async function openReceiptModal(txIdOrRef) {
+  const m = document.getElementById('modal-payment-receipt');
+  const container = document.getElementById('receipt-modal-content');
+  if (m) {
+    m.isOpen = true;
+    if (typeof m.present === 'function') m.present();
+  }
+
+  container.innerHTML = `<div style="text-align:center; padding:30px;"><div class="spinner"></div></div>`;
+
+  const token = localStorage.getItem('peg_token');
+  if (!token) return showToast('Session expired.');
+
+  try {
+    const res = await fetch(`${API_URL}/payment_detail.php?id=${encodeURIComponent(txIdOrRef)}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!data.success || !data.payment) throw new Error('Receipt not available.');
+
+    const p = data.payment;
+    container.innerHTML = `
+      <div class="receipt-paper" id="printable-receipt">
+        <div class="receipt-header">
+          <div style="width:48px; height:48px; background:#081c15; border-radius:12px; margin:0 auto 8px; display:flex; align-items:center; justify-content:center; color:#52b788; font-size:1.4rem;">
+            <i class="fa-solid fa-dumbbell"></i>
+          </div>
+          <h2 style="font-family:'Outfit'; font-size:1.3rem; margin:0; color:#111827; font-weight:800;">${p.gym.name}</h2>
+          <p style="margin:2px 0 0; font-size:0.75rem; color:#6b7280;">${p.gym.tagline}</p>
+          <p style="margin:2px 0 0; font-size:0.72rem; color:#9ca3af;">${p.gym.contact}</p>
+          <div style="margin-top:10px; display:inline-block; background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46; font-size:0.72rem; font-weight:800; padding:2px 10px; border-radius:12px;">
+            ${p.receipt_no}
+          </div>
+        </div>
+
+        <div class="receipt-row"><span class="r-lbl">Member Name</span><strong class="r-val">${p.member.name}</strong></div>
+        <div class="receipt-row"><span class="r-lbl">Member ID</span><code class="r-val" style="font-size:0.76rem;">${p.member.membership_id}</code></div>
+        <div class="receipt-row"><span class="r-lbl">Reference Code</span><code class="r-val" style="font-size:0.76rem;">${p.reference_no}</code></div>
+        <div class="receipt-row"><span class="r-lbl">Payment Date</span><span class="r-val">${p.paid_at || p.created_at}</span></div>
+        <div class="receipt-row"><span class="r-lbl">Payment Method</span><span class="r-val">${p.payment_method} (${p.gateway})</span></div>
+        <div class="receipt-row"><span class="r-lbl">Plan Covered</span><strong class="r-val">${p.plan.name} (${p.plan.duration})</strong></div>
+        <div class="receipt-row"><span class="r-lbl">Coverage Dates</span><span class="r-val" style="font-size:0.76rem;">${p.plan.period_start} – ${p.plan.period_end}</span></div>
+
+        <div class="receipt-total">
+          <div class="receipt-row">
+            <span class="r-lbl">Total Paid</span>
+            <strong class="r-val">${p.amount_formatted}</strong>
+          </div>
+        </div>
+
+        <div class="receipt-footer">
+          <p style="margin:0 0 4px; font-weight:600; color:#059669;">✓ Verified Official Gym Receipt</p>
+          <p style="margin:0;">Thank you for your dedication to fitness!</p>
+        </div>
+      </div>
+
+      <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
+        <button class="btn-primary" onclick="window.print()"><i class="fa-solid fa-print"></i> Print / Save Receipt</button>
+        <button class="btn-outline" onclick="closeReceiptModal()">Close Receipt</button>
+      </div>
+    `;
+
+  } catch (err) {
+    container.innerHTML = `<div style="text-align:center; padding:20px; color:#ef4444;">${err.message}</div>`;
+  }
+}
+
+function closeReceiptModal() {
+  const m = document.getElementById('modal-payment-receipt');
+  if (m) {
+    m.isOpen = false;
+    if (typeof m.dismiss === 'function') m.dismiss();
   }
 }
 

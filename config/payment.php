@@ -119,12 +119,14 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         try {
             $tx_stmt = $pdo->prepare("
                 INSERT INTO payment_transactions 
-                (member_id, plan_id, reference_code, payment_method, amount, currency, status, paid_at, expires_at)
-                VALUES (?, ?, ?, ?, ?, 'PHP', 'PAID', NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))
-                ON DUPLICATE KEY UPDATE status = 'PAID', paid_at = NOW()
+                (member_id, plan_id, subscription_id, reference_code, payment_method, amount, currency, status, paid_at, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?, 'PHP', 'PAID', NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))
+                ON DUPLICATE KEY UPDATE status = 'PAID', subscription_id = VALUES(subscription_id), paid_at = NOW()
             ");
-            $tx_stmt->execute([$member_id, $plan_id, $ref_code, $std_method, $amount]);
-        } catch (Exception $txEx) {}
+            $tx_stmt->execute([$member_id, $plan_id, $subscription_id, $ref_code, $std_method, $amount]);
+        } catch (Exception $txEx) {
+            error_log("payment_transactions optional insert warning: " . $txEx->getMessage());
+        }
 
         // 7. Update Member Status to Active
         $update_mem = $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved' WHERE id = ?");
@@ -186,6 +188,7 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             'message' => "Payment successful! Your '{$plan['name']}' membership is now active until " . date('M d, Y', strtotime($new_expiry)) . ".",
             'plan_name' => $plan['name'],
             'amount' => $amount,
+            'reference_no' => $ref_code,
             'expiry_date' => $new_expiry,
             'member_status' => 'Active'
         ];
@@ -199,5 +202,92 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             'success' => false,
             'message' => 'An error occurred while activating your subscription: ' . $e->getMessage()
         ];
+    }
+}
+
+/**
+ * Retrieve comprehensive payment receipt details for receipt modal or PDF export
+ */
+function get_payment_receipt_details($pdo, $identifier, int $member_id = 0): ?array {
+    try {
+        $sql = "
+            SELECT 
+                t.id AS transaction_id,
+                t.reference_code,
+                t.gateway,
+                t.gateway_transaction_id,
+                t.payment_method,
+                t.amount,
+                t.currency,
+                t.status,
+                t.created_at,
+                t.paid_at,
+                m.id AS member_id,
+                m.full_name AS member_name,
+                m.membership_id,
+                m.email AS member_email,
+                m.contact_number,
+                p.id AS plan_id,
+                p.name AS plan_name,
+                p.duration_months,
+                s.start_date,
+                s.expiry_date
+            FROM payment_transactions t
+            JOIN members m ON m.id = t.member_id
+            JOIN membership_plans p ON p.id = t.plan_id
+            LEFT JOIN subscriptions s ON s.id = t.subscription_id
+            WHERE (t.id = :id_or_ref OR t.reference_code = :id_or_ref)
+        ";
+        
+        $params = ['id_or_ref' => $identifier];
+        if ($member_id > 0) {
+            $sql .= " AND t.member_id = :member_id";
+            $params['member_id'] = $member_id;
+        }
+        $sql .= " LIMIT 1";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) return null;
+
+        return [
+            'gym' => [
+                'name'    => "Palma's Elite Gym",
+                'tagline' => "Strength & Performance",
+                'address' => "Metro Manila, Philippines",
+                'contact' => "support@palmasgym.com | (02) 8123-4567"
+            ],
+            'receipt_no'       => 'REC-' . strtoupper(substr(md5($row['reference_code']), 0, 10)),
+            'reference_no'     => $row['reference_code'],
+            'gateway'          => $row['gateway'] ?? 'PayMongo',
+            'gateway_tx_id'    => $row['gateway_transaction_id'] ?: 'N/A',
+            'payment_method'   => $row['payment_method'],
+            'amount'           => (float)$row['amount'],
+            'amount_formatted' => '₱' . number_format((float)$row['amount'], 2),
+            'currency'         => $row['currency'],
+            'status'           => $row['status'],
+            'is_paid'          => ($row['status'] === 'PAID'),
+            'paid_at'          => $row['paid_at'] ? date('F j, Y, g:i A', strtotime($row['paid_at'])) : 'Pending',
+            'created_at'       => date('F j, Y, g:i A', strtotime($row['created_at'])),
+            'member' => [
+                'id'            => (int)$row['member_id'],
+                'name'          => $row['member_name'],
+                'membership_id' => $row['membership_id'],
+                'email'         => $row['member_email'],
+                'contact'       => $row['contact_number']
+            ],
+            'plan' => [
+                'id'              => (int)$row['plan_id'],
+                'name'            => $row['plan_name'],
+                'duration'        => $row['duration_months'] . ' Month(s)',
+                'period_start'    => $row['start_date'] ? date('F j, Y', strtotime($row['start_date'])) : date('F j, Y'),
+                'period_end'      => $row['expiry_date'] ? date('F j, Y', strtotime($row['expiry_date'])) : 'Pending'
+            ]
+        ];
+    } catch (Exception $e) {
+        error_log("Error in get_payment_receipt_details: " . $e->getMessage());
+        return null;
     }
 }

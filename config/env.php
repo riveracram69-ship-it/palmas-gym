@@ -127,4 +127,16 @@
     if (!defined('PAYMENT_MODE')) {
         define('PAYMENT_MODE', $get_conf('PAYMENT_MODE', 'demo'));
     }
+
+    // PayMongo Payment Gateway Configuration (GCash, Maya, Card, GrabPay)
+    // Production keys are set in Render Environment Variables or .env
+    if (!defined('PAYMONGO_PUBLIC_KEY')) {
+        define('PAYMONGO_PUBLIC_KEY', $get_conf('PAYMONGO_PUBLIC_KEY', ''));
+    }
+    if (!defined('PAYMONGO_SECRET_KEY')) {
+        define('PAYMONGO_SECRET_KEY', $get_conf('PAYMONGO_SECRET_KEY', ''));
+    }
+    if (!defined('PAYMONGO_WEBHOOK_SECRET')) {
+        define('PAYMONGO_WEBHOOK_SECRET', $get_conf('PAYMONGO_WEBHOOK_SECRET', ''));
+    }
 })();
