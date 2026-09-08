@@ -6,11 +6,13 @@ require_once '../../config/logger.php';
 header('Content-Type: application/json');
 
 // Check for Kiosk API key OR logged in staff/admin
-$kiosk_api_key = KIOSK_API_KEY; // Set this in header X-Kiosk-Key for the public kiosk device
-$is_kiosk = (isset($_SERVER['HTTP_X_KIOSK_KEY']) && $_SERVER['HTTP_X_KIOSK_KEY'] === $kiosk_api_key);
+$kiosk_api_key = defined('KIOSK_API_KEY') ? (string)KIOSK_API_KEY : '';
+$provided_key = isset($_SERVER['HTTP_X_KIOSK_KEY']) ? (string)$_SERVER['HTTP_X_KIOSK_KEY'] : '';
+$is_kiosk = ($kiosk_api_key !== '' && $provided_key !== '' && hash_equals($kiosk_api_key, $provided_key));
 $is_staff = isset($_SESSION['user_id']);
 
 if (!$is_kiosk && !$is_staff) {
+    http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized access.']);
     exit;
 }

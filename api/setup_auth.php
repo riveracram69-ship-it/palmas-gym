@@ -2,12 +2,11 @@
 // api/setup_auth.php
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/response.php';
 
 // Security Guard: Restrict to CLI execution or logged-in administrator
 if (php_sapi_name() !== 'cli' && !is_admin()) {
-    http_response_code(403);
-    echo "403 Forbidden: Administrator privileges required.";
-    exit;
+    ApiResponse::forbidden('Administrator privileges required to execute setup.');
 }
 
 try {
@@ -21,7 +20,7 @@ try {
             FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
-    echo "auth_tokens table created successfully!";
+    ApiResponse::success(['table' => 'auth_tokens'], 'auth_tokens table verified successfully.');
 } catch (Exception $e) {
-    echo "Error: " . $e->getMessage();
+    ApiResponse::error('Setup error: ' . $e->getMessage(), 500);
 }

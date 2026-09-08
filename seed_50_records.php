@@ -1,4 +1,12 @@
-<?php
+﻿<?php
+// Defense-in-Depth: Restrict execution to CLI or authenticated administrator
+if (php_sapi_name() !== 'cli') {
+    require_once __DIR__ . '/config/auth.php';
+    if (!function_exists('is_admin') || !is_admin()) {
+        http_response_code(403);
+        die("403 Forbidden: Maintenance and migration scripts may only be executed via CLI or by an authenticated administrator.");
+    }
+}
 /**
  * Comprehensive Database Seeder — 50 Realistic Records
  * Populates members, subscriptions, attendance, payments, renewal requests, 
@@ -29,7 +37,15 @@ header('Content-Type: text/html; charset=utf-8');
 <div class="card">
     <h1>🌱 Database Seeder (50 Full Records)</h1>
     <?php
-    if (!$pdo) {
+// Defense-in-Depth: Restrict execution to CLI or authenticated administrator
+if (php_sapi_name() !== 'cli') {
+    require_once __DIR__ . '/config/auth.php';
+    if (!function_exists('is_admin') || !is_admin()) {
+        http_response_code(403);
+        die("403 Forbidden: Maintenance and migration scripts may only be executed via CLI or by an authenticated administrator.");
+    }
+}
+if (!$pdo) {
         echo "<div class='log-step' style='border-left-color:#ef4444; color:#ef4444;'>❌ Database connection failed.</div>";
         exit;
     }

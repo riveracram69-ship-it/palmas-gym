@@ -34,7 +34,7 @@ if (empty($rawPayload)) {
 // 1. Signature Verification
 $signatureHeader = $_SERVER['HTTP_PAYMONGO_SIGNATURE'] ?? '';
 $isDemoHeader    = $_SERVER['HTTP_X_DEMO_SIMULATION'] ?? '';
-$paymentMode     = strtolower(defined('PAYMENT_MODE') ? PAYMENT_MODE : 'demo');
+$paymentMode     = get_payment_mode();
 
 $signatureValid = false;
 
@@ -50,8 +50,8 @@ if ($paymentMode === 'live' || !empty(defined('PAYMONGO_WEBHOOK_SECRET') ? PAYMO
     }
 }
 
-// Allow verified demo simulation only in demo mode
-if (!$signatureValid && $paymentMode === 'demo' && $isDemoHeader === 'palmas_demo_sandbox') {
+// Allow verified demo/test simulation header only in demo or test mode
+if (!$signatureValid && in_array($paymentMode, ['demo', 'test'], true) && $isDemoHeader === 'palmas_demo_sandbox') {
     $signatureValid = true;
 }
 
@@ -145,18 +145,23 @@ try {
         $paidAmount = isset($eventAttr['amount']) ? ((float)$eventAttr['amount'] / 100) : (float)$tx['amount'];
         $expectedAmount = (float)$tx['amount'];
 
-        // Strict Amount Check
-        if (abs($paidAmount - $expectedAmount) > 0.05 && $paidAmount > 0) {
-            error_log("Payment Webhook: Amount mismatch for ref {$ref_code}. Expected: {$expectedAmount}, Received: {$paidAmount}");
+        // Verify against DB plan price (Phase 10: Strict Server-Side Amount Validation)
+        $p_check = $pdo->prepare("SELECT price FROM membership_plans WHERE id = ?");
+        $p_check->execute([$tx['plan_id']]);
+        $db_plan_price = (float)$p_check->fetchColumn();
+
+        // Reject if paid amount does not match expected transaction amount OR database plan price
+        if ((abs($paidAmount - $expectedAmount) > 0.05 || abs($paidAmount - $db_plan_price) > 0.05) && $paidAmount > 0) {
+            error_log("Payment Webhook: Amount mismatch for ref {$ref_code}. Expected Tx: {$expectedAmount}, DB Plan: {$db_plan_price}, Received: {$paidAmount}");
             $pdo->prepare("
                 UPDATE payment_transactions 
                 SET status = 'FAILED', failure_reason = ?, gateway_response = ? 
                 WHERE id = ?
-            ")->execute(["Amount mismatch: expected {$expectedAmount}, got {$paidAmount}", $rawPayload, $tx['id']]);
+            ")->execute(["Amount mismatch: expected {$db_plan_price}, got {$paidAmount}", $rawPayload, $tx['id']]);
             $pdo->commit();
             
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Payment amount mismatch']);
+            echo json_encode(['success' => false, 'message' => 'Payment amount mismatch against official plan price']);
             exit;
         }
 
@@ -170,32 +175,38 @@ try {
             elseif ($srcType === 'grab_pay') $methodLabel = 'GrabPay';
         }
 
-        // Execute Subscription Activation Engine
+        // Execute Subscription Activation Engine within the SAME single transaction boundary
         $activationResult = process_automated_subscription_activation(
             $pdo,
             (int)$tx['member_id'],
             (int)$tx['plan_id'],
             $expectedAmount,
             $methodLabel,
-            $ref_code
+            $ref_code,
+            true // Single transaction boundary: caller controls transaction!
         );
 
         if (!$activationResult['success']) {
-            $pdo->rollBack();
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             error_log("Payment Webhook: Activation error for ref {$ref_code}: " . ($activationResult['message'] ?? ''));
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Subscription activation failure']);
             exit;
         }
 
-        // Update payment_transactions record
+        $subId = $activationResult['subscription_id'] ?? $tx['subscription_id'];
+
+        // Update payment_transactions record to PAID
         $updateTx = $pdo->prepare("
             UPDATE payment_transactions 
-            SET status = 'PAID', paid_at = NOW(), gateway_response = ? 
+            SET status = 'PAID', paid_at = NOW(), gateway_response = ?, subscription_id = ?
             WHERE id = ?
         ");
-        $updateTx->execute([$rawPayload, $tx['id']]);
+        $updateTx->execute([$rawPayload, $subId, $tx['id']]);
 
+        // Commit ONE unified transaction
         $pdo->commit();
 
         echo json_encode([

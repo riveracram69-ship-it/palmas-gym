@@ -84,7 +84,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php if ($message): ?>
 <div class="alert alert-<?php echo $msg_type; ?>" style="margin-bottom:1.5rem;">
     <i class="fas fa-<?php echo $msg_type === 'success' ? 'circle-check' : 'circle-exclamation'; ?>"></i>
-    <?php echo htmlspecialchars($message); ?>
+    <?php if (!empty($validation_errors) && count($validation_errors) > 1): ?>
+        <ul style="margin:0; padding-left:1.2rem; display:flex; flex-direction:column; gap:0.25rem;">
+            <?php foreach ($validation_errors as $verr): ?>
+                <li><?php echo htmlspecialchars($verr); ?></li>
+            <?php endforeach; ?>
+        </ul>
+    <?php else: ?>
+        <span><?php echo htmlspecialchars(!empty($validation_errors) ? $validation_errors[0] : $message); ?></span>
+    <?php endif; ?>
     <?php if ($msg_type === 'success'): ?>
     <a href="view-member.php?id=<?php echo $id; ?>" style="margin-left:auto;color:inherit;font-weight:600;">View Profile →</a>
     <?php endif; ?>

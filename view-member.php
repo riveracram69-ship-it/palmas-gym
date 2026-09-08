@@ -3,7 +3,13 @@ $page_title = 'Member Profile';
 include 'includes/header.php';
 include 'includes/sidebar.php';
 
-$id = $_GET['id'] ?? 0;
+// [R-04 FIX] Cast to int to prevent type-juggling attacks. Redirect immediately if no valid ID.
+$id = intval($_GET['id'] ?? 0);
+if ($id <= 0) {
+    header('Location: members.php');
+    exit;
+}
+
 $member = null;
 $attendance = [];
 $payments   = [];
@@ -222,7 +228,7 @@ if (!$member): ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
-const mId = "<?php echo $member['membership_id']; ?>";
+const mId = <?php echo json_encode((string)$member['membership_id']); ?>;
 new QRCode(document.getElementById("side-qr"), { text: mId, width: 120, height: 120 });
 new QRCode(document.getElementById("id-qr-box"), { text: mId, width: 100, height: 100 });
 
@@ -248,7 +254,7 @@ function downloadID() {
     setTimeout(() => {
         html2canvas(captureArea, { scale: 3, useCORS: true }).then(canvas => {
             const link = document.createElement('a');
-            link.download = 'Official_ID_<?php echo $member['membership_id']; ?>.png';
+            link.download = 'Official_ID_' + mId.replace(/[^a-zA-Z0-9_-]/g, '_') + '.png';
             link.href = canvas.toDataURL('image/png');
             link.click();
             btn.innerHTML = '<i class="fas fa-download"></i> Download E-ID';

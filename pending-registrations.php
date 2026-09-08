@@ -268,12 +268,15 @@ try {
                     </td>
                     <td style="text-align:right;">
                         <div style="display:inline-flex;gap:0.5rem;">
-                            <!-- Approve Form -->
-                            <form method="POST" onsubmit="return confirm('Approve registration for <?php echo addslashes($pm['full_name']); ?>? This will activate their account and grant gym access.');" style="display:inline;">
+                            <!-- Approve Button — uses palmasConfirm() for accessibility (Stage 6 fix) -->
+                            <form method="POST" id="approve-form-<?php echo $pm['id']; ?>" style="display:inline;">
                                 <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
                                 <input type="hidden" name="action" value="approve">
                                 <input type="hidden" name="member_id" value="<?php echo $pm['id']; ?>">
-                                <button type="submit" class="btn btn-sm" style="background:#10B981;color:#fff;font-weight:600;border:none;border-radius:8px;padding:6px 14px;cursor:pointer;">
+                                <button type="button" class="btn btn-sm no-loading"
+                                        style="background:#10B981;color:#fff;font-weight:600;border:none;border-radius:8px;padding:6px 14px;cursor:pointer;"
+                                        onclick="confirmApprove(<?php echo $pm['id']; ?>, '<?php echo addslashes(htmlspecialchars($pm['full_name'], ENT_QUOTES)); ?>')"
+                                        aria-label="Approve registration for <?php echo htmlspecialchars($pm['full_name'], ENT_QUOTES); ?>">
                                     <i class="fas fa-check"></i> Approve
                                 </button>
                             </form>
@@ -346,9 +349,9 @@ try {
 </div>
 
 <!-- REJECTION REASON MODAL -->
-<div id="rejectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+<div id="rejectModal" role="dialog" aria-modal="true" aria-labelledby="rejectModalTitle" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px);" onclick="if(event.target===this)closeRejectModal()">
     <div style="background:var(--secondary-bg,#1A202C);border:1px solid var(--border,#2D3748);border-radius:16px;padding:24px;width:90%;max-width:480px;color:var(--text-main,#fff);box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);">
-        <h3 style="margin:0 0 8px 0;color:#EF4444;display:flex;align-items:center;gap:8px;">
+        <h3 id="rejectModalTitle" style="margin:0 0 8px 0;color:#EF4444;display:flex;align-items:center;gap:8px;">
             <i class="fas fa-triangle-exclamation"></i> Reject Registration
         </h3>
         <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 16px 0;">
@@ -379,6 +382,24 @@ try {
 </div>
 
 <script>
+function confirmApprove(memberId, memberName) {
+    if (typeof palmasConfirm === 'function') {
+        palmasConfirm(
+            'Confirm Approval',
+            `Approve registration for <strong style="color:var(--text-main);">${memberName}</strong>? This will activate their account and grant gym access.`,
+            'Approve Member',
+            'var(--accent)',
+            function() {
+                document.getElementById('approve-form-' + memberId).submit();
+            }
+        );
+    } else {
+        if (confirm('Approve registration for ' + memberName + '? This will activate their account and grant gym access.')) {
+            document.getElementById('approve-form-' + memberId).submit();
+        }
+    }
+}
+
 function openRejectModal(memberId, name, code) {
     document.getElementById('rejectInputMemberId').value = memberId;
     document.getElementById('rejectMemberName').innerText = name;
@@ -386,11 +407,21 @@ function openRejectModal(memberId, name, code) {
     document.getElementById('rejectionReasonText').value = '';
     const modal = document.getElementById('rejectModal');
     modal.style.display = 'flex';
+    // Focus trap: move focus into the modal
+    setTimeout(function() {
+        const first = modal.querySelector('textarea, button, input');
+        if (first) first.focus();
+    }, 50);
 }
 
 function closeRejectModal() {
     document.getElementById('rejectModal').style.display = 'none';
 }
+
+// Escape key closes rejection modal
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeRejectModal();
+});
 </script>
 
 <?php include 'includes/footer.php'; ?>

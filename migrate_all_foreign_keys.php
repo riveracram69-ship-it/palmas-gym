@@ -1,4 +1,12 @@
-<?php
+﻿<?php
+// Defense-in-Depth: Restrict execution to CLI or authenticated administrator
+if (php_sapi_name() !== 'cli') {
+    require_once __DIR__ . '/config/auth.php';
+    if (!function_exists('is_admin') || !is_admin()) {
+        http_response_code(403);
+        die("403 Forbidden: Maintenance and migration scripts may only be executed via CLI or by an authenticated administrator.");
+    }
+}
 require_once __DIR__ . '/config/db.php';
 
 header('Content-Type: text/html; charset=utf-8');
@@ -23,7 +31,15 @@ header('Content-Type: text/html; charset=utf-8');
 <div class="card">
     <h1>🔗 Complete Relational Foreign Key Migration</h1>
     <?php
-    if (!$pdo) {
+// Defense-in-Depth: Restrict execution to CLI or authenticated administrator
+if (php_sapi_name() !== 'cli') {
+    require_once __DIR__ . '/config/auth.php';
+    if (!function_exists('is_admin') || !is_admin()) {
+        http_response_code(403);
+        die("403 Forbidden: Maintenance and migration scripts may only be executed via CLI or by an authenticated administrator.");
+    }
+}
+if (!$pdo) {
         echo "<div class='log-step error'>❌ Database connection failed. Please ensure MySQL is running in XAMPP.</div>";
     } else {
         function add_fk_if_missing($pdo, $table, $fk_name, $alter_sql, $cleanup_sql = '') {

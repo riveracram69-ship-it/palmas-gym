@@ -1,15 +1,17 @@
 <?php
 /**
- * Automated Daily Maintenance Worker (Idempotent Cron Job)
+ * Unified Maintenance Worker (Idempotent — Safe to run every minute or daily)
  * 
  * Performs automated gym system maintenance tasks:
- * 1. Member Status Synchronization based on latest subscription (historical records preserved)
- * 2. Idempotent Expiration Reminders (3-day & 1-day alerts, guaranteed 0 duplicates per day)
- * 3. Inactivity Check & Follow-up
- * 4. Stale Auth Tokens & Temp Sessions Cleanup
+ * 1. Member Status Synchronization using DATETIME precision (supports minute-level promos)
+ * 2. Idempotent Expiration Reminders:
+ *    - Standard plans: 3-day & 1-day email/notification alerts
+ *    - 30-min promos : 10-min & 5-min remaining alerts + expired alert
+ *    - 60-min promos : 30-min, 10-min & 5-min remaining alerts + expired alert
+ * 3. Stale Auth Tokens & Rate-Limit Log Cleanup
  * 
  * Execution:
- *   CLI: php cron/daily_maintenance.php
+ *   CLI (recommended every 5 minutes): php cron/daily_maintenance.php
  *   Web: http://localhost/gym/cron/daily_maintenance.php?key=YOUR_CRON_KEY
  */
 
@@ -25,12 +27,12 @@ require_once __DIR__ . '/../config/env.php';
 
 // Security Guard: Restrict web access via CRON_SECRET_KEY or require CLI mode
 $is_cli = (php_sapi_name() === 'cli');
-$cron_key = $_GET['key'] ?? '';
-$expected_key = defined('CRON_SECRET_KEY') && CRON_SECRET_KEY !== '' 
-    ? CRON_SECRET_KEY 
-    : (defined('KIOSK_API_KEY') ? KIOSK_API_KEY : 'palmas_cron_secret_2026');
+$cron_key = (string)($_GET['key'] ?? '');
+$expected_key = defined('CRON_SECRET_KEY') ? (string)CRON_SECRET_KEY : '';
 
-if (!$is_cli && $cron_key !== $expected_key) {
+$key_valid = ($expected_key !== '' && $cron_key !== '' && hash_equals($expected_key, $cron_key));
+
+if (!$is_cli && !$key_valid) {
     // Check if logged in admin
     if (session_status() === PHP_SESSION_NONE) session_start();
     if (!isset($_SESSION['user_role']) || strtolower($_SESSION['user_role']) !== 'admin') {
@@ -60,21 +62,21 @@ log_cron_step("🚀 Starting Palma's Elite Gym Daily Maintenance Worker...");
 ensure_notifications_table($pdo);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. MEMBER STATUS SYNCHRONIZATION (Historical subscriptions preserved)
+// 1. MEMBER STATUS SYNCHRONIZATION (DATETIME Precision — supports minute promos)
 // ─────────────────────────────────────────────────────────────────────────────
-// A member is ACTIVE if their LATEST subscription expiry_date >= CURDATE().
-// A member is EXPIRED only if their LATEST subscription expiry_date < CURDATE() and status != 'Inactive'.
-log_cron_step("🔄 Synchronizing member statuses based on latest subscription dates...");
+// A member is ACTIVE if their LATEST subscription expiry_date >= NOW() (not just today).
+// This critical fix allows 30-min / 60-min test promos to expire at the correct minute.
+log_cron_step("🔄 Synchronizing member statuses based on latest subscription datetimes...");
 
 try {
-    // Find members whose latest subscription has expired but are still marked Active
+    // Expire members whose latest subscription has passed (using DATETIME precision)
     $expired_stmt = $pdo->query("
         SELECT m.id, m.full_name, m.membership_id, MAX(s.expiry_date) as latest_expiry
         FROM members m
         JOIN subscriptions s ON s.member_id = m.id
         WHERE m.status = 'Active'
         GROUP BY m.id
-        HAVING latest_expiry < CURDATE()
+        HAVING latest_expiry < NOW()
     ");
     $to_expire = $expired_stmt->fetchAll(PDO::FETCH_ASSOC);
     $expired_count = 0;
@@ -86,14 +88,14 @@ try {
     }
     log_cron_step("✅ Member Status Sync: Marked {$expired_count} members with past latest expiry as 'Expired'.");
 
-    // Conversely, if a member has a future active subscription but was marked Expired, reactivate them
+    // Reactivate members with a future active subscription
     $reactivate_stmt = $pdo->query("
         SELECT m.id, m.full_name, m.membership_id, MAX(s.expiry_date) as latest_expiry
         FROM members m
         JOIN subscriptions s ON s.member_id = m.id
         WHERE m.status = 'Expired'
         GROUP BY m.id
-        HAVING latest_expiry >= CURDATE()
+        HAVING latest_expiry >= NOW()
     ");
     $to_reactivate = $reactivate_stmt->fetchAll(PDO::FETCH_ASSOC);
     $reactivated_count = 0;
@@ -111,103 +113,157 @@ try {
     log_cron_step("❌ Error in Member Status Sync: " . $e->getMessage());
 }
 
+
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. IDEMPOTENT EXPIRATION REMINDERS (3-Day & 1-Day Windows)
+// 2A. STANDARD PLAN EXPIRATION REMINDERS (Day-level: 3-Day & 1-Day Windows)
 // ─────────────────────────────────────────────────────────────────────────────
-// Guarantees ZERO duplicate emails or notifications per member per day.
-log_cron_step("📧 Processing idempotent expiration email notifications...");
+log_cron_step("📧 Processing standard plan expiration email notifications...");
 
 try {
-    // A. 3-Day Expiry Notice
-    $three_days_target = date('Y-m-d', strtotime('+3 days'));
-    $stmt_3d = $pdo->prepare("
-        SELECT m.id, m.full_name, m.email, m.membership_id, s.expiry_date, p.name as plan_name
+    // Helper: skip minute-promo subscriptions in day-level queries
+    $day_level_sql = "
+        SELECT m.id, m.full_name, m.email, m.membership_id, s.id as sub_id, s.expiry_date, p.name as plan_name, p.duration_minutes
         FROM members m
         JOIN subscriptions s ON s.member_id = m.id
-        LEFT JOIN membership_plans p ON p.id = s.plan_id
-        WHERE s.expiry_date = ?
+        JOIN membership_plans p ON p.id = s.plan_id
+        WHERE DATE(s.expiry_date) = ?
+          AND (p.duration_minutes IS NULL OR p.duration_minutes = 0)
           AND m.status = 'Active'
           AND s.id = (SELECT id FROM subscriptions WHERE member_id = m.id ORDER BY expiry_date DESC LIMIT 1)
           AND NOT EXISTS (
-              SELECT 1 FROM notifications n 
-              WHERE n.member_id = m.id 
-                AND n.type = 'Expiration' 
-                AND DATE(n.sent_at) = CURDATE()
+              SELECT 1 FROM notifications n
+              WHERE n.subscription_id = s.id AND n.stage = ?
           )
-    ");
-    $stmt_3d->execute([$three_days_target]);
-    $expiring_3d = $stmt_3d->fetchAll(PDO::FETCH_ASSOC);
+    ";
 
+    // A. 3-Day Expiry Notice
+    $three_days_target = date('Y-m-d', strtotime('+3 days'));
+    $stmt_3d = $pdo->prepare($day_level_sql);
+    $stmt_3d->execute([$three_days_target, 'STAGE_3DAY']);
+    $expiring_3d = $stmt_3d->fetchAll(PDO::FETCH_ASSOC);
     $sent_3d_cnt = 0;
     foreach ($expiring_3d as $m) {
         $exp_formatted = date('M d, Y', strtotime($m['expiry_date']));
         $subject = "Reminder: Your Gym Membership Expires in 3 Days";
         $body = "Hi {$m['full_name']},\n\nYour {$m['plan_name']} membership (ID: {$m['membership_id']}) will expire in 3 days on {$exp_formatted}.\n\nPlease renew at the front desk or via the mobile app to maintain uninterrupted gym access.\n\nBest regards,\nPalma's Elite Gym Team";
-        
         $delivery = 'Sent';
         if (!empty($m['email']) && filter_var($m['email'], FILTER_VALIDATE_EMAIL)) {
             $mail_ok = send_email_notification($m['email'], $subject, $subject, $body);
             if (!$mail_ok) $delivery = 'Failed';
         }
-
-        create_notification(
-            $pdo, 
-            $m['id'], 
-            'Expiration', 
-            "Membership Expiring in 3 Days ({$exp_formatted})", 
-            $body, 
-            $delivery
-        );
+        create_notification($pdo, $m['id'], 'MEMBERSHIP_EXPIRING', "Membership Expiring in 3 Days ({$exp_formatted})", $body, $delivery, (int)$m['sub_id'], 'STAGE_3DAY');
         $sent_3d_cnt++;
     }
     log_cron_step("✅ 3-Day Expiry Alerts: Sent {$sent_3d_cnt} reminders (0 duplicates).");
 
     // B. 1-Day (Tomorrow) Final Expiry Notice
     $tomorrow_target = date('Y-m-d', strtotime('+1 day'));
-    $stmt_1d = $pdo->prepare("
-        SELECT m.id, m.full_name, m.email, m.membership_id, s.expiry_date, p.name as plan_name
-        FROM members m
-        JOIN subscriptions s ON s.member_id = m.id
-        LEFT JOIN membership_plans p ON p.id = s.plan_id
-        WHERE s.expiry_date = ?
-          AND m.status = 'Active'
-          AND s.id = (SELECT id FROM subscriptions WHERE member_id = m.id ORDER BY expiry_date DESC LIMIT 1)
-          AND NOT EXISTS (
-              SELECT 1 FROM notifications n 
-              WHERE n.member_id = m.id 
-                AND n.type = 'Expiration' 
-                AND DATE(n.sent_at) = CURDATE()
-          )
-    ");
-    $stmt_1d->execute([$tomorrow_target]);
+    $stmt_1d = $pdo->prepare($day_level_sql);
+    $stmt_1d->execute([$tomorrow_target, 'STAGE_1DAY']);
     $expiring_1d = $stmt_1d->fetchAll(PDO::FETCH_ASSOC);
-
     $sent_1d_cnt = 0;
     foreach ($expiring_1d as $m) {
         $exp_formatted = date('M d, Y', strtotime($m['expiry_date']));
         $subject = "Urgent: Your Gym Membership Expires Tomorrow!";
         $body = "Hi {$m['full_name']},\n\nYour membership (ID: {$m['membership_id']}) expires tomorrow on {$exp_formatted}.\n\nRenew today at the reception desk to keep your workout routine on track!\n\nBest regards,\nPalma's Elite Gym Team";
-        
         $delivery = 'Sent';
         if (!empty($m['email']) && filter_var($m['email'], FILTER_VALIDATE_EMAIL)) {
             $mail_ok = send_email_notification($m['email'], $subject, $subject, $body);
             if (!$mail_ok) $delivery = 'Failed';
         }
-
-        create_notification(
-            $pdo, 
-            $m['id'], 
-            'Expiration', 
-            "Urgent: Membership Expires Tomorrow ({$exp_formatted})", 
-            $body, 
-            $delivery
-        );
+        create_notification($pdo, $m['id'], 'MEMBERSHIP_EXPIRING', "Urgent: Membership Expires Tomorrow ({$exp_formatted})", $body, $delivery, (int)$m['sub_id'], 'STAGE_1DAY');
         $sent_1d_cnt++;
     }
     log_cron_step("✅ 1-Day Final Alerts: Sent {$sent_1d_cnt} reminders (0 duplicates).");
 
 } catch (Exception $e) {
-    log_cron_step("❌ Error in Expiration Reminders: " . $e->getMessage());
+    log_cron_step("❌ Error in Standard Expiration Reminders: " . $e->getMessage());
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2B. MINUTE-LEVEL PROMO EXPIRATION ALERTS (30-min & 60-min test memberships)
+// ─────────────────────────────────────────────────────────────────────────────
+// Each stage is recorded with a unique (subscription_id, stage) pair in the
+// notifications table to provide ZERO duplicate alerts even if the cron runs
+// every minute. The stages are: STAGE_30M, STAGE_10M, STAGE_5M, STAGE_EXPIRED.
+log_cron_step("⏱️  Processing minute-level promo subscription alerts...");
+
+try {
+    // Fetch all currently active promo subscriptions (minute-based plans)
+    $promo_stmt = $pdo->query("
+        SELECT s.id as sub_id, s.member_id, s.expiry_date, s.plan_id,
+               m.full_name, m.email, m.membership_id,
+               p.name as plan_name, p.duration_minutes
+        FROM subscriptions s
+        JOIN members m ON m.id = s.member_id
+        JOIN membership_plans p ON p.id = s.plan_id
+        WHERE p.duration_minutes > 0
+          AND s.expiry_date >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+        ORDER BY s.expiry_date ASC
+    ");
+    $promo_subs = $promo_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $promo_notif_count = 0;
+
+    foreach ($promo_subs as $ps) {
+        $now_ts     = time();
+        $expiry_ts  = strtotime($ps['expiry_date']);
+        $mins_left  = ($expiry_ts - $now_ts) / 60;
+        $duration_m = (int)$ps['duration_minutes'];
+        $sub_id     = (int)$ps['sub_id'];
+        $member_id  = (int)$ps['member_id'];
+
+        $exp_formatted = date('g:i A', $expiry_ts);
+
+        // Define stage thresholds based on plan duration
+        $stages_to_check = [];
+        if ($duration_m >= 60) {
+            $stages_to_check['STAGE_30M'] = [25, 35]; // alert when 25–35 min remain
+        }
+        $stages_to_check['STAGE_10M'] = [8, 12];  // alert when 8–12 min remain
+        $stages_to_check['STAGE_5M']  = [3, 6];   // alert when 3–6 min remain
+        $stages_to_check['STAGE_EXPIRED'] = [-999, 0]; // already passed
+
+        foreach ($stages_to_check as $stage => $range) {
+            [$min_range, $max_range] = $range;
+
+            $in_window = ($stage === 'STAGE_EXPIRED')
+                ? ($mins_left <= 0)
+                : ($mins_left >= $min_range && $mins_left <= $max_range);
+
+            if (!$in_window) continue;
+
+            // Check idempotency — stage already sent?
+            $dup_chk = $pdo->prepare("SELECT id FROM notifications WHERE subscription_id = ? AND stage = ? LIMIT 1");
+            $dup_chk->execute([$sub_id, $stage]);
+            if ($dup_chk->fetch()) continue; // Already dispatched
+
+            if ($stage === 'STAGE_EXPIRED') {
+                $notif_type  = 'MEMBERSHIP_EXPIRED';
+                $notif_title = "⏰ Promo Membership Expired";
+                $notif_msg   = "Your {$ps['plan_name']} pass has expired. Renew to continue gym access.";
+            } else {
+                $mins_approx = ($stage === 'STAGE_30M') ? 30 : (($stage === 'STAGE_10M') ? 10 : 5);
+                $notif_type  = 'MEMBERSHIP_EXPIRING';
+                $notif_title = "⏱️ Only {$mins_approx} Minute" . ($mins_approx > 1 ? 's' : '') . " Left!";
+                $notif_msg   = "Your {$ps['plan_name']} pass expires at {$exp_formatted}. Renew before it's too late!";
+            }
+
+            create_notification($pdo, $member_id, $notif_type, $notif_title, $notif_msg, 'Sent', $sub_id, $stage);
+            $promo_notif_count++;
+
+            // Email for expiry stage only (don't spam every minute-interval alert)
+            if ($stage === 'STAGE_EXPIRED' && !empty($ps['email']) && filter_var($ps['email'], FILTER_VALIDATE_EMAIL)) {
+                $email_subject = "Your {$ps['plan_name']} has expired — Renew Now";
+                send_email_notification($ps['email'], $email_subject, $email_subject, $notif_msg);
+            }
+        }
+    }
+
+    log_cron_step("✅ Minute Promo Alerts: Dispatched {$promo_notif_count} staged notifications.");
+
+} catch (Exception $e) {
+    log_cron_step("❌ Error in Minute-Level Promo Alerts: " . $e->getMessage());
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

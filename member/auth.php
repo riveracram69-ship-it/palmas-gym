@@ -1,13 +1,18 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
-    $is_https = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
-        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+    $is_https = (
+        (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off') ||
+        (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443) ||
+        (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
+        (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') ||
+        (!empty($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], '"scheme":"https"') !== false)
+    );
 
     session_start([
         'cookie_lifetime' => 86400,
         'cookie_secure'   => $is_https,
         'cookie_httponly' => true,
-        'cookie_samesite' => 'Lax',
+        'cookie_samesite' => 'Strict', // [R-03 FIX] Changed from Lax to Strict for stronger CSRF defense-in-depth
     ]);
 }
 

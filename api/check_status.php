@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * api/check_status.php
  * Authenticated Real-Time Payment Status & Verification API
@@ -7,9 +7,7 @@
  */
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
-header('Access-Control-Allow-Methods: GET, OPTIONS');
+require_once __DIR__ . '/cors.php'; // [R-02 FIX] Replaced wildcard CORS with origin-allowlist
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -36,7 +34,7 @@ try {
             t.id, t.member_id, t.plan_id, t.subscription_id, t.reference_code,
             t.gateway_transaction_id, t.gateway, t.payment_method, t.amount,
             t.currency, t.status, t.created_at, t.paid_at, t.expires_at,
-            p.name AS plan_name, p.duration_months,
+            p.name AS plan_name, p.duration_months, p.duration_minutes, p.is_test_promo,
             s.expiry_date AS subscription_expiry
         FROM payment_transactions t
         JOIN membership_plans p ON p.id = t.plan_id
@@ -66,7 +64,7 @@ try {
 
     // 3. Live On-Demand Gateway Verification (for PENDING transactions)
     if ($tx['status'] === 'PENDING' && !empty($tx['gateway_transaction_id'])) {
-        $paymentMode = strtolower(defined('PAYMENT_MODE') ? PAYMENT_MODE : 'demo');
+        $paymentMode = get_payment_mode();
         
         if ($paymentMode === 'live' || PayMongoGateway::isConfigured()) {
             $session = PayMongoGateway::getCheckoutSession($tx['gateway_transaction_id']);
@@ -85,7 +83,7 @@ try {
                     }
 
                     if ($hasPaidPayment || $sessionStatus === 'paid') {
-                        // Trigger idempotent activation
+                        // Trigger idempotent activation within single transaction
                         $pdo->beginTransaction();
                         $lockStmt = $pdo->prepare("SELECT status FROM payment_transactions WHERE id = ? FOR UPDATE");
                         $lockStmt->execute([$tx['id']]);
@@ -98,12 +96,13 @@ try {
                                 (int)$tx['plan_id'],
                                 (float)$tx['amount'],
                                 $tx['payment_method'],
-                                $tx['reference_code']
+                                $tx['reference_code'],
+                                true // Single transaction boundary
                             );
 
                             if ($act['success']) {
-                                $pdo->prepare("UPDATE payment_transactions SET status = 'PAID', paid_at = NOW() WHERE id = ?")
-                                    ->execute([$tx['id']]);
+                                $pdo->prepare("UPDATE payment_transactions SET status = 'PAID', paid_at = NOW(), subscription_id = ? WHERE id = ?")
+                                    ->execute([$act['subscription_id'] ?? null, $tx['id']]);
                                 $pdo->commit();
                                 $tx['status']  = 'PAID';
                                 $tx['paid_at'] = date('Y-m-d H:i:s');
@@ -128,10 +127,14 @@ try {
     // 4. Fetch latest subscription expiry if active
     $validUntil = $tx['subscription_expiry'];
     if (empty($validUntil)) {
-        $subStmt = $pdo->prepare("SELECT expiry_date FROM subscriptions WHERE member_id = ? AND expiry_date >= CURDATE() ORDER BY expiry_date DESC LIMIT 1");
+        $subStmt = $pdo->prepare("SELECT expiry_date FROM subscriptions WHERE member_id = ? AND expiry_date >= NOW() ORDER BY expiry_date DESC LIMIT 1");
         $subStmt->execute([$auth_member_id]);
         $validUntil = $subStmt->fetchColumn() ?: null;
     }
+
+    $is_minute_promo = (!empty($tx['duration_minutes']) && (int)$tx['duration_minutes'] > 0);
+    $duration_label = $is_minute_promo ? ($tx['duration_minutes'] . ' Minute(s)') : ($tx['duration_months'] . ' Month(s)');
+    $formatted_valid_until = $validUntil ? ($is_minute_promo ? date('F j, Y, g:i A', strtotime($validUntil)) : date('F j, Y', strtotime($validUntil))) : null;
 
     // 5. Response formatting
     echo json_encode([
@@ -139,11 +142,13 @@ try {
         'status'           => $tx['status'],
         'reference_code'   => $tx['reference_code'],
         'plan_name'        => $tx['plan_name'],
+        'duration'         => $duration_label,
+        'is_test_promo'    => ((int)($tx['is_test_promo'] ?? 0) === 1),
         'amount'           => (float)$tx['amount'],
         'amount_formatted' => '₱' . number_format((float)$tx['amount'], 2),
         'payment_method'   => $tx['payment_method'],
         'gateway'          => $tx['gateway'],
-        'valid_until'      => $validUntil ? date('F j, Y', strtotime($validUntil)) : null,
+        'valid_until'      => $formatted_valid_until,
         'created_at'       => date('F j, Y, g:i A', strtotime($tx['created_at'])),
         'paid_at'          => $tx['paid_at'] ? date('F j, Y, g:i A', strtotime($tx['paid_at'])) : null,
         'is_paid'          => ($tx['status'] === 'PAID')

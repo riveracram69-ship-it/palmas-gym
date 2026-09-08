@@ -1,3 +1,20 @@
+<?php
+$pending_regs_count = 0;
+$pending_renewals_count = 0;
+try {
+    if (isset($pdo) && $pdo) {
+        $counts = $pdo->query("
+            SELECT 
+                (SELECT COUNT(*) FROM members WHERE account_status = 'Pending') AS pending_regs,
+                (SELECT COUNT(*) FROM renewal_requests WHERE status = 'Pending') AS pending_renewals
+        ")->fetch(PDO::FETCH_ASSOC);
+        $pending_regs_count     = (int)($counts['pending_regs'] ?? 0);
+        $pending_renewals_count = (int)($counts['pending_renewals'] ?? 0);
+    }
+} catch (Exception $e) {
+    error_log("Sidebar counts query error: " . $e->getMessage());
+}
+?>
 <aside class="sidebar">
     <div class="brand">
         <div class="sidebar-brand-logo-container">
@@ -26,14 +43,6 @@
                 <i class="fas fa-qrcode"></i> QR Attendance
             </a>
         </li>
-        <?php
-        $pending_regs_count = 0;
-        try {
-            if (isset($pdo)) {
-                $pending_regs_count = (int)$pdo->query("SELECT COUNT(*) FROM members WHERE account_status = 'Pending'")->fetchColumn();
-            }
-        } catch (Exception $e) {}
-        ?>
         <li class="nav-item">
             <a href="pending-registrations.php" class="nav-link <?php echo nav_active('pending-registrations.php'); ?>">
                 <i class="fas fa-user-clock"></i> Pending Approvals
@@ -62,14 +71,6 @@
                 <i class="fas fa-money-bill-wave"></i> Payments
             </a>
         </li>
-        <?php
-        $pending_renewals_count = 0;
-        try {
-            if (isset($pdo)) {
-                $pending_renewals_count = (int)$pdo->query("SELECT COUNT(*) FROM renewal_requests WHERE status = 'Pending'")->fetchColumn();
-            }
-        } catch (Exception $e) {}
-        ?>
         <li class="nav-item">
             <a href="renewal-requests.php" class="nav-link <?php echo nav_active('renewal-requests.php'); ?>">
                 <i class="fas fa-file-invoice-dollar"></i> Renewal Requests
@@ -130,4 +131,4 @@
     </div>
 </div>
 
-<main class="main-content">
+<main class="main-content" id="main-content">

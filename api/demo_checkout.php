@@ -10,7 +10,7 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/env.php';
 
-$paymentMode = strtolower(defined('PAYMENT_MODE') ? PAYMENT_MODE : 'demo');
+$paymentMode = get_payment_mode();
 if ($paymentMode === 'live') {
     http_response_code(403);
     echo "<h1>403 Forbidden</h1><p>Demo checkout simulator is strictly disabled in LIVE production mode.</p>";
@@ -19,7 +19,9 @@ if ($paymentMode === 'live') {
 
 $ref = trim($_GET['ref'] ?? '');
 if (empty($ref)) {
-    die("Error: Missing transaction reference.");
+    http_response_code(400);
+    echo "<!DOCTYPE html><html><head><title>400 Bad Request</title><style>body{font-family:sans-serif;padding:3rem;background:#0d1f18;color:#fff;text-align:center;}</style></head><body><h1>400 Bad Request</h1><p>Missing transaction reference code in request parameter.</p></body></html>";
+    exit;
 }
 
 $stmt = $pdo->prepare("
@@ -34,7 +36,9 @@ $stmt->execute([$ref]);
 $tx = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$tx) {
-    die("Error: Transaction record not found.");
+    http_response_code(404);
+    echo "<!DOCTYPE html><html><head><title>404 Not Found</title><style>body{font-family:sans-serif;padding:3rem;background:#0d1f18;color:#fff;text-align:center;}</style></head><body><h1>404 Not Found</h1><p>The requested transaction record was not found.</p></body></html>";
+    exit;
 }
 
 // Check if action requested (POST simulation)
@@ -42,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     $action = $_POST['action'] ?? 'pay';
 
-    $app_url = defined('APP_URL') ? rtrim(APP_URL, '/') : 'https://palmas-gym-4oxn.onrender.com';
+    $app_url = defined('APP_URL') ? rtrim(APP_URL, '/') : 'http://localhost/gggym/gym';
     $webhook_url = "{$app_url}/api/payment_webhook.php";
 
     $amountCentavos = (int)round($tx['amount'] * 100);
@@ -124,9 +128,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($curlErr) {
         // Local direct execution fallback if loopback curl fails
-        require_once __DIR__ . '/payment.php';
+        require_once __DIR__ . '/../config/payment.php';
         if ($action === 'pay') {
-            process_automated_subscription_activation(
+            $actResult = process_automated_subscription_activation(
                 $pdo,
                 (int)$tx['member_id'],
                 (int)$tx['plan_id'],
@@ -134,7 +138,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $tx['payment_method'],
                 $tx['reference_code']
             );
-            $pdo->prepare("UPDATE payment_transactions SET status = 'PAID', paid_at = NOW() WHERE id = ?")->execute([$tx['id']]);
+            $subId = $actResult['subscription_id'] ?? null;
+            $pdo->prepare("UPDATE payment_transactions SET status = 'PAID', paid_at = NOW(), subscription_id = ? WHERE id = ?")
+                ->execute([$subId, $tx['id']]);
         }
     }
 

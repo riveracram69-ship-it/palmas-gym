@@ -1,4 +1,12 @@
-<?php
+﻿<?php
+// Defense-in-Depth: Restrict execution to CLI or authenticated administrator
+if (php_sapi_name() !== 'cli') {
+    require_once __DIR__ . '/config/auth.php';
+    if (!function_exists('is_admin') || !is_admin()) {
+        http_response_code(403);
+        die("403 Forbidden: Maintenance and migration scripts may only be executed via CLI or by an authenticated administrator.");
+    }
+}
 // perf_check_indexes.php — Temporary diagnostic script
 // Run: php perf_check_indexes.php
 require_once __DIR__ . '/config/db.php';

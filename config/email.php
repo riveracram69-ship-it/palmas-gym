@@ -59,6 +59,7 @@ function send_email_notification($to, $subject, $title, $body_text) {
 
     $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
     $mail_sent = false;
+    $smtp_error = '';
     $status_text = '';
 
     try {
@@ -95,7 +96,10 @@ function send_email_notification($to, $subject, $title, $body_text) {
         $mail_sent = true;
         $status_text = 'DELIVERED (Success)';
     } catch (Exception $e) {
-        $status_text = 'FAILED (SMTP Error: ' . $mail->ErrorInfo . ')';
+        $smtp_error  = $mail->ErrorInfo ?: $e->getMessage();
+        $status_text = 'FAILED (SMTP Error: ' . $smtp_error . ')';
+        // [R-07 FIX] Log SMTP failures to server error log so they appear in Render/cPanel logs
+        error_log('[EMAIL-FAIL] To: ' . $to . ' | Subject: ' . $subject . ' | Error: ' . $smtp_error);
     }
 
     // 4. Accurate logging of success or failure
@@ -142,5 +146,10 @@ function send_email_notification($to, $subject, $title, $body_text) {
         // Fail silently if table doesn't exist yet
     }
 
-    return $mail_sent;
+    return [
+        'sent'  => $mail_sent,
+        'error' => $smtp_error,
+        // Legacy boolean compatibility: cast to bool for callers that use `if (send_email_notification(...))`
+        '__legacy_bool' => $mail_sent,
+    ];
 }

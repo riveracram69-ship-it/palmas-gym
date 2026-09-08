@@ -88,14 +88,32 @@
     if (!defined('DB_PASS')) define('DB_PASS', $db_pass_val);
 
     // Security Keys
+    // IMPORTANT: These MUST be set via environment variables in production.
+    // Defaults are intentionally blank. The production guard below will halt if they are missing.
     if (!defined('QR_SECRET_KEY')) {
-        define('QR_SECRET_KEY', $get_conf('QR_SECRET_KEY', 'palmas_secret_key_987!_change_me_in_prod'));
+        define('QR_SECRET_KEY', $get_conf('QR_SECRET_KEY', ''));
     }
     if (!defined('KIOSK_API_KEY')) {
-        define('KIOSK_API_KEY', $get_conf('KIOSK_API_KEY', 'kiosk_api_12345'));
+        define('KIOSK_API_KEY', $get_conf('KIOSK_API_KEY', ''));
     }
     if (!defined('CRON_SECRET_KEY')) {
-        define('CRON_SECRET_KEY', $get_conf('CRON_SECRET_KEY', 'palmas_cron_secret_2026'));
+        define('CRON_SECRET_KEY', $get_conf('CRON_SECRET_KEY', ''));
+    }
+
+    // [R-01 FIX] Production Security Guard: Halt startup if required secrets are missing.
+    // This prevents a misconfigured deployment from running silently with empty keys.
+    if ($get_conf('APP_ENV', 'development') === 'production') {
+        $missing_secrets = [];
+        if (empty(QR_SECRET_KEY) || strlen(QR_SECRET_KEY) < 20)    $missing_secrets[] = 'QR_SECRET_KEY';
+        if (empty(KIOSK_API_KEY) || strlen(KIOSK_API_KEY) < 10)    $missing_secrets[] = 'KIOSK_API_KEY';
+        if (empty(CRON_SECRET_KEY) || strlen(CRON_SECRET_KEY) < 10) $missing_secrets[] = 'CRON_SECRET_KEY';
+        if (!empty($missing_secrets)) {
+            $msg = '[CRITICAL] Production deployment is missing required secret keys: ' . implode(', ', $missing_secrets) . '. Set them in your environment variables or .env file.';
+            error_log($msg);
+            // Halt the request gracefully — do NOT expose the key names to the browser
+            http_response_code(503);
+            die('<html><body style="font-family:sans-serif;text-align:center;padding:4rem;"><h1>Service Unavailable</h1><p>A required server configuration is missing. Contact the administrator.</p></body></html>');
+        }
     }
 
     // SMTP Email Configuration
@@ -122,10 +140,13 @@
         define('GOOGLE_CLIENT_ID', $get_conf('GOOGLE_CLIENT_ID', ''));
     }
 
-    // Payment Mode: 'demo' allows instant activation without real gateway verification.
-    // Set to 'live' in production when a real payment webhook is configured.
+    // Payment Mode: 'demo', 'test' (sandbox/test promo), or 'live' (production)
     if (!defined('PAYMENT_MODE')) {
-        define('PAYMENT_MODE', $get_conf('PAYMENT_MODE', 'demo'));
+        $mode = strtolower(trim($get_conf('PAYMENT_MODE', 'demo')));
+        if (!in_array($mode, ['demo', 'test', 'live'], true)) {
+            $mode = 'demo';
+        }
+        define('PAYMENT_MODE', $mode);
     }
 
     // PayMongo Payment Gateway Configuration (GCash, Maya, Card, GrabPay)
@@ -140,3 +161,31 @@
         define('PAYMONGO_WEBHOOK_SECRET', $get_conf('PAYMONGO_WEBHOOK_SECRET', ''));
     }
 })();
+
+// Ensure system-wide timezone consistency
+date_default_timezone_set('Asia/Manila');
+
+if (!function_exists('get_payment_mode')) {
+    function get_payment_mode(): string {
+        return defined('PAYMENT_MODE') ? strtolower(PAYMENT_MODE) : 'demo';
+    }
+}
+
+if (!function_exists('is_payment_demo')) {
+    function is_payment_demo(): bool {
+        return get_payment_mode() === 'demo';
+    }
+}
+
+if (!function_exists('is_payment_test')) {
+    function is_payment_test(): bool {
+        return get_payment_mode() === 'test';
+    }
+}
+
+if (!function_exists('is_payment_live')) {
+    function is_payment_live(): bool {
+        return get_payment_mode() === 'live';
+    }
+}
+

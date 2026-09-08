@@ -124,10 +124,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <?php if ($message): ?>
-<div class="alert alert-success"><i class="fas fa-check-circle"></i> <?php echo $message; ?></div>
+<div class="alert alert-success"><i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?></div>
 <?php endif; ?>
-<?php if ($error): ?>
-<div class="alert alert-error"><i class="fas fa-exclamation-triangle"></i> <?php echo $error; ?></div>
+<?php if (!empty($validation_errors)): ?>
+<div class="alert alert-error" style="margin-bottom:1.5rem;">
+    <i class="fas fa-exclamation-triangle"></i>
+    <div style="flex:1;">
+        <strong>Please correct the following errors:</strong>
+        <ul style="margin:0.5rem 0 0 1.2rem; padding:0; display:flex; flex-direction:column; gap:0.25rem;">
+            <?php foreach ($validation_errors as $vErr): ?>
+                <li><?php echo htmlspecialchars($vErr); ?></li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+</div>
+<?php elseif ($error): ?>
+<div class="alert alert-error"><i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?></div>
 <?php endif; ?>
 
 <form method="POST" action="" enctype="multipart/form-data" class="needs-validation" novalidate>
@@ -141,31 +153,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <div class="form-group">
                     <label>Full Name *</label>
-                    <input type="text" name="full_name" class="form-control" placeholder="John Doe" required>
+                    <input type="text" name="full_name" class="form-control" placeholder="John Doe" value="<?php echo htmlspecialchars($_POST['full_name'] ?? ''); ?>" required>
                 </div>
 
                 <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
                     <div class="form-group">
                         <label>Email Address *</label>
-                        <input type="email" name="email" class="form-control" placeholder="john@example.com" required>
+                        <input type="email" name="email" class="form-control" placeholder="john@example.com" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
                     </div>
                     <div class="form-group">
                         <label>Contact Number</label>
-                        <input type="text" name="contact_number" class="form-control" placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}" title="Must be exactly 11 digits starting with 09" required>
+                        <input type="text" name="contact_number" class="form-control" placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}" title="Must be exactly 11 digits starting with 09" value="<?php echo htmlspecialchars($_POST['contact_number'] ?? ''); ?>" required>
                     </div>
                 </div>
 
                 <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
                     <div class="form-group">
                         <label>Age</label>
-                        <input type="number" name="age" class="form-control" placeholder="20" min="1" max="120" required>
+                        <input type="number" name="age" class="form-control" placeholder="20" min="1" max="120" value="<?php echo htmlspecialchars($_POST['age'] ?? ''); ?>" required>
                     </div>
                     <div class="form-group">
                         <label>Gender</label>
                         <select name="gender" class="form-control">
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                            <option value="Other">Other</option>
+                            <?php $selected_gender = $_POST['gender'] ?? 'Male'; ?>
+                            <option value="Male" <?php echo $selected_gender === 'Male' ? 'selected' : ''; ?>>Male</option>
+                            <option value="Female" <?php echo $selected_gender === 'Female' ? 'selected' : ''; ?>>Female</option>
+                            <option value="Other" <?php echo $selected_gender === 'Other' ? 'selected' : ''; ?>>Other</option>
                         </select>
                     </div>
                 </div>
@@ -177,9 +190,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label>Select Membership Plan *</label>
                     <select name="plan_id" class="form-control" required>
-                        <option value="" disabled selected>Choose a plan...</option>
+                        <option value="" disabled <?php echo empty($_POST['plan_id']) ? 'selected' : ''; ?>>Choose a plan...</option>
                         <?php foreach ($plans as $p): ?>
-                        <option value="<?php echo $p['id']; ?>"><?php echo htmlspecialchars($p['name']); ?> — ₱<?php echo number_format($p['price'], 2); ?></option>
+                        <?php $is_sel = ((int)($_POST['plan_id'] ?? 0) === (int)$p['id']); ?>
+                        <option value="<?php echo $p['id']; ?>" <?php echo $is_sel ? 'selected' : ''; ?>><?php echo htmlspecialchars($p['name']); ?> — ₱<?php echo number_format($p['price'], 2); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -195,25 +209,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
                     <div class="form-group">
                         <label>Amount Paid (₱) *</label>
-                        <input type="number" name="amount_paid" id="amount_paid" class="form-control" placeholder="0.00" min="0" step="0.01" required>
+                        <input type="number" name="amount_paid" id="amount_paid" class="form-control" placeholder="0.00" min="0" step="0.01" value="<?php echo htmlspecialchars($_POST['amount_paid'] ?? ''); ?>" required>
                     </div>
                     <div class="form-group">
                         <label>Payment Method *</label>
+                        <?php $selected_pm = $_POST['payment_method'] ?? 'Cash'; ?>
                         <select name="payment_method" id="payment-method-select" class="form-control" required>
-                            <option value="Cash">Cash</option>
-                            <option value="GCash">GCash</option>
-                            <option value="Maya">Maya</option>
+                            <option value="Cash" <?php echo $selected_pm === 'Cash' ? 'selected' : ''; ?>>Cash</option>
+                            <option value="GCash" <?php echo $selected_pm === 'GCash' ? 'selected' : ''; ?>>GCash</option>
+                            <option value="Maya" <?php echo $selected_pm === 'Maya' ? 'selected' : ''; ?>>Maya</option>
                         </select>
                     </div>
                 </div>
                 <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
                     <div class="form-group">
                         <label>Payment Date</label>
-                        <input type="date" name="payment_date" class="form-control" value="<?php echo date('Y-m-d'); ?>">
+                        <input type="date" name="payment_date" class="form-control" value="<?php echo htmlspecialchars($_POST['payment_date'] ?? date('Y-m-d')); ?>">
                     </div>
-                    <div class="form-group" id="ref-number-group" style="display:none;">
+                    <?php $show_ref = in_array($selected_pm, ['GCash', 'Maya', 'Bank Transfer']); ?>
+                    <div class="form-group" id="ref-number-group" style="<?php echo $show_ref ? '' : 'display:none;'; ?>">
                         <label>Reference Number *</label>
-                        <input type="text" name="reference_number" class="form-control" placeholder="e.g. 100239401923" title="Required for online transfers">
+                        <input type="text" name="reference_number" class="form-control" placeholder="e.g. 100239401923" title="Required for online transfers" value="<?php echo htmlspecialchars($_POST['reference_number'] ?? ''); ?>">
                     </div>
                 </div>
             </div>

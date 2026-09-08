@@ -56,17 +56,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ── Form Validation & Loading State ───────────────────────────────────────
-    const forms = document.querySelectorAll('.needs-validation');
+    const forms = document.querySelectorAll('form');
     Array.prototype.slice.call(forms).forEach(function(form) {
         form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            } else {
-                const submitBtn = form.querySelector('button[type="submit"]');
-                if (submitBtn) {
-                    submitBtn.classList.add('is-loading');
+            if (form.classList.contains('needs-validation')) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    form.classList.add('was-validated');
+                    return;
                 }
+            }
+            const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+            if (submitBtn && !submitBtn.classList.contains('no-spin') && !submitBtn.classList.contains('no-loading')) {
+                submitBtn.classList.add('is-loading');
             }
             form.classList.add('was-validated');
         }, false);

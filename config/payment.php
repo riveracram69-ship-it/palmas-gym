@@ -11,17 +11,31 @@ require_once __DIR__ . '/email.php';
 /**
  * Core function to activate or extend a member's subscription instantly upon payment verification.
  */
-function process_automated_subscription_activation($pdo, $member_id, $plan_id, $amount, $payment_method = 'GCash', $ref_no = '') {
-    try {
-        $pdo->beginTransaction();
+/**
+ * Core function to activate or extend a member's subscription instantly upon payment verification.
+ * 
+ * Supports:
+ * - Single transaction boundary (no nested transactions)
+ * - Minute-level test promotions (e.g. 30-min, 60-min) and standard month-based plans
+ * - Active expiration extension
+ * - is_test transaction isolation
+ * - Full idempotency
+ */
+function process_automated_subscription_activation($pdo, $member_id, $plan_id, $amount, $payment_method = 'GCash', $ref_no = '', bool $caller_controls_tx = false) {
+    $should_manage_tx = !$caller_controls_tx && !$pdo->inTransaction();
 
-        // 1. Fetch Member
+    try {
+        if ($should_manage_tx) {
+            $pdo->beginTransaction();
+        }
+
+        // 1. Fetch Member with Row Lock
         $stmt = $pdo->prepare("SELECT id, full_name, email, membership_id, account_status, status FROM members WHERE id = ? FOR UPDATE");
         $stmt->execute([$member_id]);
         $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$member) {
-            $pdo->rollBack();
+            if ($should_manage_tx) $pdo->rollBack();
             return ['success' => false, 'message' => 'Member not found.'];
         }
 
@@ -30,20 +44,24 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             $pdo->prepare("UPDATE members SET account_status = 'Approved' WHERE id = ?")->execute([$member_id]);
         }
 
-        // 2. Fetch Plan & Secure Server-Side Price
-        $plan_stmt = $pdo->prepare("SELECT id, name, duration_months, price FROM membership_plans WHERE id = ?");
+        // 2. Fetch Plan & Secure Server-Side Price & Duration
+        $plan_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes, price, is_test_promo FROM membership_plans WHERE id = ?");
         $plan_stmt->execute([$plan_id]);
         $plan = $plan_stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$plan) {
-            $pdo->rollBack();
+            if ($should_manage_tx) $pdo->rollBack();
             return ['success' => false, 'message' => 'Membership plan not found.'];
         }
 
         // Always enforce server-side pricing from database
         $amount = floatval($plan['price']);
-        $duration_months = intval($plan['duration_months'] ?? 1);
-        if ($duration_months <= 0) $duration_months = 1;
+        $duration_minutes = intval($plan['duration_minutes'] ?? 0);
+        $duration_months = intval($plan['duration_months'] ?? 0);
+        $is_test_promo = intval($plan['is_test_promo'] ?? 0);
+
+        // Determine if this is a test transaction
+        $is_test = ($is_test_promo === 1 || is_payment_demo() || is_payment_test() || (defined('PAYMENT_MODE') && in_array(PAYMENT_MODE, ['demo', 'test']))) ? 1 : 0;
 
         // 3. Check Prior Subscriptions to determine if this is First Activation or Renewal
         $prior_stmt = $pdo->prepare("SELECT COUNT(*) FROM subscriptions WHERE member_id = ?");
@@ -51,30 +69,40 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         $prior_count = (int)$prior_stmt->fetchColumn();
         $is_first_activation = ($prior_count === 0);
 
-        // 4. Calculate Subscription Dates (Extension or New)
+        // 4. Calculate Subscription Dates (Extension from active expiry or new start)
         $sub_stmt = $pdo->prepare("
             SELECT id, expiry_date 
             FROM subscriptions 
-            WHERE member_id = ? AND expiry_date >= CURDATE() 
+            WHERE member_id = ? AND expiry_date >= NOW() 
             ORDER BY expiry_date DESC 
             LIMIT 1
         ");
         $sub_stmt->execute([$member_id]);
         $active_sub = $sub_stmt->fetch(PDO::FETCH_ASSOC);
 
+        $now_str = date('Y-m-d H:i:s');
         if ($active_sub && !empty($active_sub['expiry_date'])) {
-            // Member is still active -> extend from existing expiration date
-            $base_date = $active_sub['expiry_date'];
+            // Member is still active -> extend from existing expiration timestamp
+            $base_datetime = $active_sub['expiry_date'];
             $start_date = $active_sub['expiry_date'];
         } else {
-            // Member is expired or new -> start from today
-            $base_date = date('Y-m-d');
-            $start_date = date('Y-m-d');
+            // Member is expired or new -> start from now
+            $base_datetime = $now_str;
+            $start_date = $now_str;
         }
 
-        $new_expiry = date('Y-m-d', strtotime("{$base_date} + {$duration_months} months"));
+        if ($duration_minutes > 0) {
+            // Temporary-duration promotion (e.g. 30 or 60 minutes)
+            $new_expiry = date('Y-m-d H:i:s', strtotime("{$base_datetime} + {$duration_minutes} minutes"));
+            $duration_label = "{$duration_minutes} Minute" . ($duration_minutes > 1 ? "s" : "");
+        } else {
+            // Month-based plan
+            if ($duration_months <= 0) $duration_months = 1;
+            $new_expiry = date('Y-m-d 23:59:59', strtotime("{$base_datetime} + {$duration_months} months"));
+            $duration_label = "{$duration_months} Month" . ($duration_months > 1 ? "s" : "");
+        }
 
-        // Insert Subscription
+        // Insert Subscription with full DATETIME precision
         $sub_insert = $pdo->prepare("
             INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date) 
             VALUES (?, ?, ?, ?)
@@ -107,23 +135,23 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         $ref_code = $ref_no ?: ('PEG-' . strtoupper(substr(uniqid(), -8)));
 
         // Insert Payment Record
-        $pay_notes = "Payment via {$payment_method}" . ($ref_no ? " (Ref: {$ref_no})" : "");
+        $pay_notes = "Payment via {$payment_method}" . ($ref_no ? " (Ref: {$ref_no})" : "") . ($is_test ? " [TEST]" : "");
         $insert_pay = $pdo->prepare("
-            INSERT INTO payments (member_id, subscription_id, amount, payment_date, payment_method, reference_number, notes) 
-            VALUES (?, ?, ?, NOW(), ?, ?, ?)
+            INSERT INTO payments (member_id, subscription_id, amount, payment_date, payment_method, reference_number, notes, is_test) 
+            VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)
         ");
-        $insert_pay->execute([$member_id, $subscription_id, $amount, $db_method, $ref_code, $pay_notes]);
+        $insert_pay->execute([$member_id, $subscription_id, $amount, $db_method, $ref_code, $pay_notes, $is_test]);
         $payment_id = $pdo->lastInsertId();
 
         // 6. Record in payment_transactions table
         try {
             $tx_stmt = $pdo->prepare("
                 INSERT INTO payment_transactions 
-                (member_id, plan_id, subscription_id, reference_code, payment_method, amount, currency, status, paid_at, expires_at)
-                VALUES (?, ?, ?, ?, ?, ?, 'PHP', 'PAID', NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))
-                ON DUPLICATE KEY UPDATE status = 'PAID', subscription_id = VALUES(subscription_id), paid_at = NOW()
+                (member_id, plan_id, subscription_id, reference_code, payment_method, amount, currency, status, is_test, paid_at, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?, 'PHP', 'PAID', ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))
+                ON DUPLICATE KEY UPDATE status = 'PAID', subscription_id = VALUES(subscription_id), paid_at = NOW(), is_test = VALUES(is_test)
             ");
-            $tx_stmt->execute([$member_id, $plan_id, $subscription_id, $ref_code, $std_method, $amount]);
+            $tx_stmt->execute([$member_id, $plan_id, $subscription_id, $ref_code, $std_method, $amount, $is_test]);
         } catch (Exception $txEx) {
             error_log("payment_transactions optional insert warning: " . $txEx->getMessage());
         }
@@ -140,13 +168,19 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         ");
         $update_req->execute(["Auto-approved via verified {$payment_method} payment", $member_id]);
 
-        $pdo->commit();
+        if ($should_manage_tx) {
+            $pdo->commit();
+        }
 
         // 9. Standardized Activity Log & Notifications
+        $formatted_expiry = ($duration_minutes > 0)
+            ? date('F j, Y, g:i A', strtotime($new_expiry))
+            : date('F j, Y', strtotime($new_expiry));
+
         $action_label = $is_first_activation ? 'Membership Activated' : 'Membership Renewed';
         $log_desc = $is_first_activation
-            ? "Membership activated for {$member['full_name']} ({$member['membership_id']}) on plan '{$plan['name']}' via {$payment_method} (₱" . number_format($amount, 2) . "). Valid until {$new_expiry}"
-            : "Membership renewed for {$member['full_name']} ({$member['membership_id']}) on plan '{$plan['name']}' via {$payment_method} (₱" . number_format($amount, 2) . "). Extended to {$new_expiry}";
+            ? "Membership activated for {$member['full_name']} ({$member['membership_id']}) on plan '{$plan['name']}' via {$payment_method} (₱" . number_format($amount, 2) . "). Valid until {$formatted_expiry}"
+            : "Membership renewed for {$member['full_name']} ({$member['membership_id']}) on plan '{$plan['name']}' via {$payment_method} (₱" . number_format($amount, 2) . "). Extended to {$formatted_expiry}";
 
         log_activity(
             $pdo,
@@ -159,9 +193,9 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
 
         $notif_type = $is_first_activation ? 'MEMBERSHIP_ACTIVATED' : 'MEMBERSHIP_RENEWED';
         $notif_title = $is_first_activation ? 'Membership Activated! 🎉' : 'Membership Renewed! 🔄';
-        $notif_msg = "Your '{$plan['name']}' pass has been processed via {$payment_method}. Valid until " . date('F j, Y', strtotime($new_expiry)) . ".";
+        $notif_msg = "Your '{$plan['name']}' pass has been processed via {$payment_method}. Valid until {$formatted_expiry}.";
 
-        create_notification($pdo, $member_id, $notif_type, $notif_title, $notif_msg);
+        create_notification($pdo, $member_id, $notif_type, $notif_title, $notif_msg, 'Sent', (int)$subscription_id);
 
         // 10. Automated Email Receipt
         if (!empty($member['email'])) {
@@ -177,7 +211,8 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
                 • <strong>Amount Paid:</strong> ₱" . number_format($amount, 2) . "<br>
                 • <strong>Payment Method:</strong> {$payment_method}<br>
                 • <strong>Reference No:</strong> {$ref_code}<br>
-                • <strong>New Expiry Date:</strong> " . date('F j, Y', strtotime($new_expiry)) . "<br><br>
+                • <strong>Duration:</strong> {$duration_label}<br>
+                • <strong>New Expiry Date:</strong> {$formatted_expiry}<br><br>
                 Your Digital QR Pass is now live and ready to use at the gym entrance kiosk. Have a great workout!
             ";
             @send_email_notification($member['email'], $email_subject, $email_title, $email_body);
@@ -185,16 +220,18 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
 
         return [
             'success' => true,
-            'message' => "Payment successful! Your '{$plan['name']}' membership is now active until " . date('M d, Y', strtotime($new_expiry)) . ".",
+            'message' => "Payment successful! Your '{$plan['name']}' membership is now active until {$formatted_expiry}.",
             'plan_name' => $plan['name'],
             'amount' => $amount,
             'reference_no' => $ref_code,
             'expiry_date' => $new_expiry,
-            'member_status' => 'Active'
+            'duration' => $duration_label,
+            'member_status' => 'Active',
+            'subscription_id' => (int)$subscription_id
         ];
 
     } catch (Exception $e) {
-        if ($pdo->inTransaction()) {
+        if ($should_manage_tx && $pdo->inTransaction()) {
             $pdo->rollBack();
         }
         error_log("Error in process_automated_subscription_activation: " . $e->getMessage());
@@ -252,12 +289,30 @@ function get_payment_receipt_details($pdo, $identifier, int $member_id = 0): ?ar
 
         if (!$row) return null;
 
+        // [R-06 FIX] Source gym info from system_settings instead of hardcoded strings
+        $gym_name    = 'Palma\'s Elite Gym';
+        $gym_address = 'Metro Manila, Philippines';
+        $gym_contact = 'Contact your gym administrator';
+        try {
+            $gs = $pdo->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('gym_name','gym_address','gym_phone','gym_email')");
+            $gs_data = [];
+            while ($gr = $gs->fetch(PDO::FETCH_ASSOC)) {
+                $gs_data[$gr['setting_key']] = $gr['setting_value'];
+            }
+            if (!empty($gs_data['gym_name']))    $gym_name    = $gs_data['gym_name'];
+            if (!empty($gs_data['gym_address'])) $gym_address = $gs_data['gym_address'];
+            $contact_parts = [];
+            if (!empty($gs_data['gym_email'])) $contact_parts[] = $gs_data['gym_email'];
+            if (!empty($gs_data['gym_phone'])) $contact_parts[] = $gs_data['gym_phone'];
+            if (!empty($contact_parts)) $gym_contact = implode(' | ', $contact_parts);
+        } catch (Exception $gse) { /* Use fallback values above */ }
+
         return [
             'gym' => [
-                'name'    => "Palma's Elite Gym",
-                'tagline' => "Strength & Performance",
-                'address' => "Metro Manila, Philippines",
-                'contact' => "support@palmasgym.com | (02) 8123-4567"
+                'name'    => $gym_name,
+                'tagline' => 'Strength & Performance',
+                'address' => $gym_address,
+                'contact' => $gym_contact
             ],
             'receipt_no'       => 'REC-' . strtoupper(substr(md5($row['reference_code']), 0, 10)),
             'reference_no'     => $row['reference_code'],

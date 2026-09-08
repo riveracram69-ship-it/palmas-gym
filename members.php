@@ -8,24 +8,26 @@ try {
     if (isset($pdo) && $pdo) {
         $members = $pdo->query(
             "SELECT m.*, 
-                    COALESCE(
-                        (SELECT p.name 
-                         FROM subscriptions s 
-                         LEFT JOIN membership_plans p ON p.id = s.plan_id 
-                         WHERE s.member_id = m.id AND s.expiry_date >= CURDATE()
-                         ORDER BY s.expiry_date DESC, s.id DESC 
-                         LIMIT 1), '—'
-                    ) AS plan_name,
-                    (SELECT s.expiry_date 
-                     FROM subscriptions s 
-                     WHERE s.member_id = m.id AND s.expiry_date >= CURDATE()
-                     ORDER BY s.expiry_date DESC, s.id DESC 
-                     LIMIT 1) AS expiry_date
+                    COALESCE(sub.plan_name, '—') AS plan_name,
+                    sub.expiry_date
              FROM members m
+             LEFT JOIN (
+                 SELECT s.member_id, p.name AS plan_name, s.expiry_date
+                 FROM subscriptions s
+                 JOIN (
+                     SELECT member_id, MAX(id) AS latest_sub_id
+                     FROM subscriptions
+                     WHERE expiry_date >= CURDATE()
+                     GROUP BY member_id
+                 ) latest ON s.id = latest.latest_sub_id
+                 LEFT JOIN membership_plans p ON p.id = s.plan_id
+             ) sub ON sub.member_id = m.id
              ORDER BY m.created_at DESC"
         )->fetchAll();
     }
-} catch (Exception $e) {}
+} catch (Exception $e) {
+    error_log("Members query error: " . $e->getMessage());
+}
 
 $total = count($members);
 $active = array_filter($members, fn($m) => $m['status'] === 'Active');
@@ -74,10 +76,10 @@ $active = array_filter($members, fn($m) => $m['status'] === 'Active');
                 <?php else: ?>
                 <?php foreach ($members as $m): ?>
                 <tr class="member-row"
-                    data-name="<?php echo strtolower($m['full_name']); ?>"
-                    data-email="<?php echo strtolower($m['email']); ?>"
-                    data-id="<?php echo strtolower($m['membership_id']); ?>"
-                    data-status="<?php echo htmlspecialchars($m['account_status'] ?? 'Approved'); ?>">
+                    data-name="<?php echo htmlspecialchars(strtolower($m['full_name']), ENT_QUOTES, 'UTF-8'); ?>"
+                    data-email="<?php echo htmlspecialchars(strtolower($m['email']), ENT_QUOTES, 'UTF-8'); ?>"
+                    data-id="<?php echo htmlspecialchars(strtolower($m['membership_id']), ENT_QUOTES, 'UTF-8'); ?>"
+                    data-status="<?php echo htmlspecialchars($m['account_status'] ?? 'Approved', ENT_QUOTES, 'UTF-8'); ?>">
 
                     <td>
                         <div class="member-cell">

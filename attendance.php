@@ -31,7 +31,7 @@ try {
     </div>
 </div>
 
-<div style="display:grid; grid-template-columns: 1fr 1.5fr; gap: 2rem; align-items: start;">
+<div class="attendance-layout-grid">
 
     <!-- Left: Scanner Section -->
     <div style="display:flex; flex-direction:column; gap:1.5rem;">
@@ -113,12 +113,23 @@ try {
 <script>
 let logCount = <?php echo count($today_logs); ?>;
 
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function processCheckin(membershipId) {
+    const safeInputId = escapeHtml(membershipId);
     const res = document.getElementById('scan-result');
     res.style.display = 'block';
     res.className = 'alert alert-info';
     res.style.background = '#e8f0fe'; res.style.color = 'var(--info)'; res.style.border = '1px solid rgba(26,115,232,0.2)';
-    res.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing ID: ' + membershipId;
+    res.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing ID: ' + safeInputId;
 
     fetch('modules/attendance/log_attendance.php', {
         method: 'POST',
@@ -137,11 +148,19 @@ function processCheckin(membershipId) {
             const border = isCooldown ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(30,142,62,0.2)';
             const icon = isCooldown ? 'fa-clock' : (data.action === 'check-out' ? 'fa-arrow-right-from-bracket' : 'fa-check-circle');
 
+            const safeName = escapeHtml(data.member_name || 'Member');
+            const safeMid = escapeHtml(data.membership_id || '');
+            const safePlan = escapeHtml(data.plan_name || 'Standard');
+            const safeAcc = escapeHtml(data.account_status || 'Approved');
+            const safeMemStatus = escapeHtml(data.membership_status || 'Active');
+            const safeExpiry = escapeHtml(data.expiry_date || '');
+
             let photoHtml = '';
             if (data.photo) {
-                photoHtml = `<img src="${data.photo}" style="width:54px;height:54px;border-radius:12px;object-fit:cover;border:2px solid ${isCooldown ? '#F59E0B' : '#10B981'};">`;
+                const safePhoto = escapeHtml(data.photo);
+                photoHtml = `<img src="${safePhoto}" style="width:54px;height:54px;border-radius:12px;object-fit:cover;border:2px solid ${isCooldown ? '#F59E0B' : '#10B981'};">`;
             } else {
-                photoHtml = `<div style="width:54px;height:54px;border-radius:12px;background:${isCooldown ? '#FEF3C7' : '#D1FAE5'};color:${isCooldown ? '#B45309' : '#047857'};display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;">${data.member_name.charAt(0).toUpperCase()}</div>`;
+                photoHtml = `<div style="width:54px;height:54px;border-radius:12px;background:${isCooldown ? '#FEF3C7' : '#D1FAE5'};color:${isCooldown ? '#B45309' : '#047857'};display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;">${safeName.charAt(0).toUpperCase()}</div>`;
             }
 
             res.style.background = bg;
@@ -154,11 +173,11 @@ function processCheckin(membershipId) {
                         <div style="font-size:0.75rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:${color};margin-bottom:2px;">
                             <i class="fas ${icon}"></i> ${isCooldown ? 'COOLDOWN ACTIVE' : (data.action === 'check-out' ? 'CHECK-OUT SUCCESSFUL' : 'VALID MEMBER • CHECK-IN SUCCESS')}
                         </div>
-                        <div style="font-size:1.05rem;font-weight:700;color:var(--text-main);">${data.member_name}</div>
-                        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">ID: <code>${data.membership_id}</code> • Plan: <strong>${data.plan_name || 'Standard'}</strong></div>
+                        <div style="font-size:1.05rem;font-weight:700;color:var(--text-main);">${safeName}</div>
+                        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">ID: <code>${safeMid}</code> • Plan: <strong>${safePlan}</strong></div>
                         <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
-                            <span class="badge badge-success" style="font-size:0.7rem;padding:2px 8px;"><i class="fas fa-shield-check"></i> ${data.account_status || 'Approved'}</span>
-                            <span class="badge ${data.membership_status === 'Active' ? 'badge-gold' : 'badge-danger'}" style="font-size:0.7rem;padding:2px 8px;">${data.membership_status || 'Active'} (Exp: ${data.expiry_date})</span>
+                            <span class="badge badge-success" style="font-size:0.7rem;padding:2px 8px;"><i class="fas fa-shield-check"></i> ${safeAcc}</span>
+                            <span class="badge ${safeMemStatus === 'Active' ? 'badge-gold' : 'badge-danger'}" style="font-size:0.7rem;padding:2px 8px;">${safeMemStatus} (Exp: ${safeExpiry})</span>
                         </div>
                     </div>
                 </div>
@@ -167,18 +186,18 @@ function processCheckin(membershipId) {
             const noLogs = document.getElementById('no-logs');
             if (noLogs) noLogs.remove();
 
-            const time = data.time || new Date().toLocaleTimeString('en-PH', {hour:'2-digit',minute:'2-digit'});
+            const time = escapeHtml(data.time || new Date().toLocaleTimeString('en-PH', {hour:'2-digit',minute:'2-digit'}));
             
             if (data.action === 'check-in' && !isCooldown) {
                 const row = document.getElementById('logs-body').insertRow(0);
-                row.id = 'member-' + membershipId;
+                row.id = 'member-' + encodeURIComponent(safeMid);
                 row.innerHTML = `
                     <td>
                         <div class="member-cell">
-                            <div class="member-avatar">${data.member_name.charAt(0).toUpperCase()}</div>
+                            <div class="member-avatar">${safeName.charAt(0).toUpperCase()}</div>
                             <div>
-                                <div class="cell-primary">${data.member_name}</div>
-                                <div class="cell-secondary">${data.membership_id}</div>
+                                <div class="cell-primary">${safeName}</div>
+                                <div class="cell-secondary">${safeMid}</div>
                             </div>
                         </div>
                     </td>
@@ -191,16 +210,20 @@ function processCheckin(membershipId) {
                 setTimeout(() => location.reload(), 1500);
             }
         } else {
+            const safeErrName = escapeHtml(data.member_name || 'Unverified ID');
+            const safeErrMsg = escapeHtml(data.message || 'Invalid scan.');
+            const safeType = escapeHtml(data.status_type ? data.status_type.toUpperCase() : '');
+
             res.style.background = '#fce8e6'; 
             res.style.color = '#c5221f'; 
             res.style.border = '1px solid rgba(217,48,37,0.2)';
             res.innerHTML = `
                 <div style="text-align:left;">
                     <div style="font-size:0.8rem;font-weight:800;text-transform:uppercase;color:#c5221f;margin-bottom:4px;">
-                        <i class="fas fa-circle-xmark"></i> ${data.status_type ? 'CHECK-IN BLOCKED (' + data.status_type.toUpperCase() + ')' : 'SCAN FAILED'}
+                        <i class="fas fa-circle-xmark"></i> ${safeType ? 'CHECK-IN BLOCKED (' + safeType + ')' : 'SCAN FAILED'}
                     </div>
-                    <div style="font-weight:700;font-size:0.95rem;color:var(--text-main);">${data.member_name || 'Unverified ID'}</div>
-                    <div style="font-size:0.85rem;color:#c5221f;margin-top:2px;">${data.message || 'Invalid scan.'}</div>
+                    <div style="font-weight:700;font-size:0.95rem;color:var(--text-main);">${safeErrName}</div>
+                    <div style="font-size:0.85rem;color:#c5221f;margin-top:2px;">${safeErrMsg}</div>
                 </div>
             `;
         }

@@ -14,8 +14,12 @@ if (isset($_SESSION['user_id'])) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email    = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $csrf_token = $_POST['csrf_token'] ?? '';
+    if (!verify_csrf_token($csrf_token)) {
+        $error = 'Security session expired. Please refresh the page and try again.';
+    } else {
+        $email    = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
 
     // Check progressive rate limit
     $rate_check = check_rate_limit($pdo, $email, 'admin_staff_login');
@@ -52,6 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Database error. Please make sure the server is running.';
         }
     }
+}
 }
 ?>
 <!DOCTYPE html>
@@ -327,6 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST" action="" class="login-form needs-validation" novalidate>
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token()); ?>">
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <div class="input-wrap">

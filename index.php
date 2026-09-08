@@ -492,6 +492,55 @@ try {
         <?php endif; ?>
     </div>
 
+    <!-- ── QUICK ACTIONS MASTER BAR ───────────────────────────────────────── -->
+    <div class="quick-actions-bar">
+        <a href="add-member.php" class="quick-action-btn">
+            <div class="quick-action-icon" style="background:#d8f3dc; color:#1b4332;">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <div>
+                <div>Register Member</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">New profile &amp; pass</div>
+            </div>
+        </a>
+        <a href="attendance.php" class="quick-action-btn">
+            <div class="quick-action-icon" style="background:#e0f2fe; color:#0284c7;">
+                <i class="fas fa-qrcode"></i>
+            </div>
+            <div>
+                <div>QR Terminal</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Live check-in scan</div>
+            </div>
+        </a>
+        <a href="payments.php" class="quick-action-btn">
+            <div class="quick-action-icon" style="background:#fef3e2; color:#d4a942;">
+                <i class="fas fa-money-bill-wave"></i>
+            </div>
+            <div>
+                <div>Record Payment</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Cash / GCash / Maya</div>
+            </div>
+        </a>
+        <a href="renewal-requests.php" class="quick-action-btn">
+            <div class="quick-action-icon" style="background:#ffebee; color:#e53935;">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <div>
+                <div>Renewals</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Review online requests</div>
+            </div>
+        </a>
+        <a href="reports.php" class="quick-action-btn">
+            <div class="quick-action-icon" style="background:#f3e8ff; color:#9333ea;">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div>
+                <div>Financial Reports</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Export CSV &amp; Excel</div>
+            </div>
+        </a>
+    </div>
+
     <!-- ── MODERN TABBED WORKSPACE NAVIGATION ──────────────────────────────── -->
     <div class="workspace-tabs-bar">
         <button class="ws-tab-btn active" onclick="switchDashboardTab('tab-overview')" data-tab="tab-overview">

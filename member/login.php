@@ -12,8 +12,12 @@ if (isset($_SESSION['member_id'])) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $membership_id = trim($_POST['membership_id'] ?? '');
-    $credential    = trim($_POST['credential'] ?? '');
+    $csrf_token = $_POST['csrf_token'] ?? '';
+    if (!verify_csrf_token($csrf_token)) {
+        $error = "Security session expired. Please refresh the page and try again.";
+    } else {
+        $membership_id = trim($_POST['membership_id'] ?? '');
+        $credential    = trim($_POST['credential'] ?? '');
 
     $rate_check = check_rate_limit($pdo, $membership_id, 'member_portal_login');
     if (!$rate_check['allowed']) {
@@ -76,6 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "A system error occurred. Please try again later.";
         }
     }
+}
 }
 
 $gym_name = htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym");
@@ -379,6 +384,7 @@ img{max-width:100%;display:block}
     <?php endif; ?>
 
     <form action="login.php" method="POST" id="login-form" novalidate>
+      <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token()); ?>">
 
       <!-- Member ID / Email -->
       <div class="fg">

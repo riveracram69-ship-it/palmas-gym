@@ -1239,10 +1239,44 @@
       0%, 100% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.65; transform: scale(0.98); }
     }
+
+    /* ── OFFLINE STATUS BANNER (STAGE 5) ── */
+    .offline-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, #e53935 0%, #b71c1c 100%);
+      color: #ffffff;
+      padding: 10px 16px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      z-index: 999999;
+      box-shadow: 0 4px 16px rgba(229, 57, 53, 0.45);
+      letter-spacing: 0.3px;
+    }
+    .offline-banner.active {
+      display: flex;
+      animation: bannerSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes bannerSlideDown {
+      from { transform: translateY(-100%); }
+      to { transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
 <ion-app>
+
+  <!-- OFFLINE STATUS BANNER (STAGE 5) -->
+  <div id="offline-banner" class="offline-banner">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <span>You are currently offline. Check your internet connection.</span>
+  </div>
 
   <!-- ══════════════════════════════════════════════════════════
        VIEW 0: SPLASH / INITIALIZATION SCREEN
@@ -2418,6 +2452,203 @@ let selectedPlan = null;
 let currentCheckoutSession = null;
 let qrCountdownTimer = null;
 
+// ── Network Status Detection & Offline Banner (Stage 5) ─────────────
+function updateNetworkStatus() {
+  const banner = document.getElementById('offline-banner');
+  if (!banner) return;
+  if (navigator.onLine) {
+    banner.classList.remove('active');
+  } else {
+    banner.classList.add('active');
+    showToast('Offline Mode: Some real-time features may be unavailable.', 3500);
+  }
+}
+window.addEventListener('online', updateNetworkStatus);
+window.addEventListener('offline', updateNetworkStatus);
+document.addEventListener('DOMContentLoaded', updateNetworkStatus);
+
+// ── Centralized Secure API Client with 401 Expiry Interception (Stage 5) ─
+class GymApiClient {
+  constructor(baseUrl) {
+    this.baseUrl = baseUrl;
+  }
+
+  getAuthToken() {
+    return localStorage.getItem('peg_token') || '';
+  }
+
+  async request(endpoint, options = {}) {
+    if (!navigator.onLine) {
+      showToast('You are currently offline. Please check your network connection.');
+      throw new Error('Offline');
+    }
+
+    const token = this.getAuthToken();
+    const isFormData = options.body instanceof FormData;
+    const defaultHeaders = {};
+    if (!isFormData) {
+      defaultHeaders['Content-Type'] = 'application/json';
+    }
+    if (token) {
+      defaultHeaders['Authorization'] = `Bearer ${token}`;
+    }
+
+    const headers = {
+      ...defaultHeaders,
+      ...(options.headers || {})
+    };
+
+    const url = endpoint.startsWith('http') 
+      ? endpoint 
+      : `${this.baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+
+    const response = await authFetch(url, {
+      ...options,
+      headers
+    });
+
+    // Universal HTTP 401 Session Expiration Interceptor
+    if (response.status === 401) {
+      if (!endpoint.includes('member_login.php') && !endpoint.includes('google_auth.php')) {
+        this.handleSessionExpired();
+        throw new Error('Session expired (401 Unauthorized)');
+      }
+    }
+
+    return response;
+  }
+
+  async get(endpoint, options = {}) {
+    return this.request(endpoint, { ...options, method: 'GET' });
+  }
+
+  async post(endpoint, body = null, options = {}) {
+    return this.request(endpoint, {
+      ...options,
+      method: 'POST',
+      body: body instanceof FormData ? body : (body ? JSON.stringify(body) : undefined)
+    });
+  }
+
+  handleSessionExpired() {
+    localStorage.removeItem('peg_token');
+    localStorage.removeItem('peg_member');
+    currentMember = null;
+    if (qrCountdownTimer) {
+      clearInterval(qrCountdownTimer);
+      qrCountdownTimer = null;
+    }
+    showToast('Your session has expired. Please sign in again.', 4000);
+    showScreen('view-login');
+  }
+}
+
+const apiClient = new GymApiClient(API_URL);
+
+// Universal Global authFetch wrapper for fetch calls
+async function authFetch(url, options = {}) {
+  return apiClient.request(url, options);
+}
+
+// ── Capacitor & Ionic Hardware Back Button Navigation (Stage 5) ─────
+let lastBackPressTime = 0;
+
+function handleHardwareBack() {
+  // 1. Check custom sign-out dialog
+  const signoutModal = document.getElementById('custom-signout-modal');
+  if (signoutModal && signoutModal.style.display !== 'none') {
+    closeSignOutDialog();
+    return;
+  }
+
+  // 2. Check notification slide-up drawer
+  const notifPanel = document.getElementById('notif-panel');
+  if (notifPanel && notifPanel.classList.contains('open')) {
+    closeNotifPanel();
+    return;
+  }
+
+  // 3. Check open Ionic modals
+  const openModals = document.querySelectorAll('ion-modal.show-modal, ion-modal[style*="display: block"]');
+  if (openModals.length > 0) {
+    const topModal = openModals[openModals.length - 1];
+    if (typeof topModal.dismiss === 'function') {
+      topModal.dismiss();
+      return;
+    }
+  }
+
+  // 4. Registration wizard back/cancel
+  const regScreen = document.getElementById('view-register');
+  if (regScreen && regScreen.style.display !== 'none') {
+    const step2 = document.getElementById('reg-step-2');
+    const step3 = document.getElementById('reg-step-3');
+    if (step3 && step3.style.display !== 'none') {
+      goToWizardStep(2);
+      return;
+    }
+    if (step2 && step2.style.display !== 'none') {
+      goToWizardStep(1);
+      return;
+    }
+    cancelRegistration();
+    return;
+  }
+
+  // 5. Account status screens
+  const pendingScreen = document.getElementById('view-pending');
+  const rejectedScreen = document.getElementById('view-rejected');
+  const suspendedScreen = document.getElementById('view-suspended');
+  if ((pendingScreen && pendingScreen.style.display !== 'none') ||
+      (rejectedScreen && rejectedScreen.style.display !== 'none') ||
+      (suspendedScreen && suspendedScreen.style.display !== 'none')) {
+    showScreen('view-login');
+    return;
+  }
+
+  // 6. Main screen: if on tab other than pass, return to pass
+  const mainScreen = document.getElementById('view-main');
+  if (mainScreen && mainScreen.style.display !== 'none') {
+    if (typeof currentActiveTab !== 'undefined' && currentActiveTab !== 'tab-pass') {
+      const tabs = document.querySelector('ion-tabs');
+      if (tabs && typeof tabs.select === 'function') {
+        tabs.select('tab-pass');
+        return;
+      }
+      const passBtn = document.querySelector('ion-tab-button[tab="tab-pass"]');
+      if (passBtn) {
+        passBtn.click();
+        return;
+      }
+    }
+  }
+
+  // 7. Exit app confirmation on home pass tab
+  const now = Date.now();
+  if (now - lastBackPressTime < 2000) {
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+      window.Capacitor.Plugins.App.exitApp();
+    }
+  } else {
+    lastBackPressTime = now;
+    showToast('Press back again to exit Palma\'s Elite Gym', 2000);
+  }
+}
+
+// Register Ionic back-button event
+document.addEventListener('ionBackButton', (ev) => {
+  ev.detail.register(10, () => {
+    handleHardwareBack();
+  });
+});
+
+// Register Capacitor App plugin backButton listener if active
+if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+  window.Capacitor.Plugins.App.addListener('backButton', () => {
+    handleHardwareBack();
+  });
+}
+
 // ── Toast Notification ─────────────────────────────────────────────
 function showToast(msg, duration = 3000) {
   const t = document.getElementById('toast-msg');
@@ -2514,7 +2745,7 @@ async function handleGoogleCredential(response) {
   showToast('Verifying Google credentials...');
 
   try {
-    const res = await fetch(`${API_URL}/google_auth.php`, {
+    const res = await authFetch(`${API_URL}/google_auth.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id_token: response.credential })
@@ -2563,7 +2794,7 @@ async function submitTraditionalLogin() {
   btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Signing In...';
 
   try {
-    const res = await fetch(`${API_URL}/member_login.php`, {
+    const res = await authFetch(`${API_URL}/member_login.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: u, password: p })
@@ -2633,7 +2864,7 @@ async function checkPendingApprovalStatus() {
   }
 
   try {
-    const res = await fetch(`${API_URL}/check_status.php`, {
+    const res = await authFetch(`${API_URL}/check_status.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier: identifier })
@@ -2901,7 +3132,7 @@ async function loadPlansForRegistration() {
 
   // Background live sync from database
   try {
-    const res = await fetch(`${API_URL}/get_plans.php`);
+    const res = await authFetch(`${API_URL}/get_plans.php`);
     if (res.ok) {
       const data = await res.json();
       if (data && data.success && Array.isArray(data.plans) && data.plans.length > 0) {
@@ -2956,7 +3187,7 @@ async function submitRegistration() {
   btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Submitting...';
 
   try {
-    const res = await fetch(`${API_URL}/member_register.php`, {
+    const res = await authFetch(`${API_URL}/member_register.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -3048,7 +3279,7 @@ async function loadDashboard(memberId) {
     const token = localStorage.getItem('peg_token');
     if (!token) { showScreen('view-login'); return; }
 
-    const res = await fetch(`${API_URL}/member_dashboard.php`, {
+    const res = await authFetch(`${API_URL}/member_dashboard.php`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
@@ -3301,7 +3532,7 @@ async function loadPaymentHistory(filter = currentHistoryFilter) {
   `;
 
   try {
-    const res = await fetch(`${API_URL}/payment_history.php?status=${encodeURIComponent(filter)}`, {
+    const res = await authFetch(`${API_URL}/payment_history.php?status=${encodeURIComponent(filter)}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
@@ -3440,7 +3671,7 @@ async function openRenewalModal(preselectedPlanId = null) {
 
   // Background fetch live server plans
   try {
-    const res = await fetch(`${API_URL}/get_plans.php`);
+    const res = await authFetch(`${API_URL}/get_plans.php`);
     if (res.ok) {
       const data = await res.json();
       if (data && data.success && Array.isArray(data.plans) && data.plans.length > 0) {
@@ -3564,7 +3795,7 @@ async function submitCashRenewalRequest() {
   }
 
   try {
-    const res = await fetch(`${API_URL}/member_renew.php`, {
+    const res = await authFetch(`${API_URL}/member_renew.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ plan_id: selectedRenewPlanId, payment_method: 'Cash', reference_no: 'FRONT-DESK' })
@@ -3601,7 +3832,7 @@ async function executeGatewayCheckout() {
   }
 
   try {
-    const res = await fetch(`${API_URL}/create_payment_checkout.php`, {
+    const res = await authFetch(`${API_URL}/create_payment_checkout.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
@@ -3674,7 +3905,7 @@ async function pollPaymentStatus(refCode, attempt = 1) {
   }
 
   try {
-    const res = await fetch(`${API_URL}/check_status.php?ref=${encodeURIComponent(refCode)}`, {
+    const res = await authFetch(`${API_URL}/check_status.php?ref=${encodeURIComponent(refCode)}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -3759,7 +3990,7 @@ async function openPaymentDetailModal(txIdOrRef) {
   if (!token) return showToast('Session expired.');
 
   try {
-    const res = await fetch(`${API_URL}/payment_detail.php?id=${encodeURIComponent(txIdOrRef)}`, {
+    const res = await authFetch(`${API_URL}/payment_detail.php?id=${encodeURIComponent(txIdOrRef)}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -3832,7 +4063,7 @@ async function openReceiptModal(txIdOrRef) {
   if (!token) return showToast('Session expired.');
 
   try {
-    const res = await fetch(`${API_URL}/payment_detail.php?id=${encodeURIComponent(txIdOrRef)}`, {
+    const res = await authFetch(`${API_URL}/payment_detail.php?id=${encodeURIComponent(txIdOrRef)}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -3918,7 +4149,7 @@ async function saveProfileChanges() {
 
   try {
     const token = localStorage.getItem('peg_token');
-    const res = await fetch(`${API_URL}/member_profile.php`, {
+    const res = await authFetch(`${API_URL}/member_profile.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ full_name: name, contact_number: phone })
@@ -4052,7 +4283,7 @@ async function savePasswordChange() {
 
   try {
     const token = localStorage.getItem('peg_token');
-    const res = await fetch(`${API_URL}/member_profile.php`, {
+    const res = await authFetch(`${API_URL}/member_profile.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
@@ -4087,7 +4318,7 @@ async function loadNotificationsBadge() {
   try {
     const token = localStorage.getItem('peg_token');
     if (!token) return;
-    const res = await fetch(`${API_URL}/get_notifications.php`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await authFetch(`${API_URL}/get_notifications.php`, { headers: { 'Authorization': `Bearer ${token}` } });
     if (!res.ok) return;
     const data  = await res.json();
     const unread = data.unread || 0;
@@ -4114,7 +4345,7 @@ async function loadNotifications() {
   list.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted);"><div class="spinner"></div></div>';
   try {
     const token = localStorage.getItem('peg_token');
-    const res   = await fetch(`${API_URL}/get_notifications.php`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const res   = await authFetch(`${API_URL}/get_notifications.php`, { headers: { 'Authorization': `Bearer ${token}` } });
     const data  = await res.json();
     allNotifications = data.notifications || [];
     document.getElementById('notif-unread-count').textContent = `${data.unread || 0} unread`;
@@ -4180,7 +4411,7 @@ async function markAllRead() {
   try {
     const token = localStorage.getItem('peg_token');
     if (!token) return;
-    await fetch(`${API_URL}/mark_notifications_read.php`, {
+    await authFetch(`${API_URL}/mark_notifications_read.php`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` }
     });

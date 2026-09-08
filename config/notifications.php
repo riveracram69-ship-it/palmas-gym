@@ -3,13 +3,71 @@
  * Notifications Engine & Relational Schema Manager
  * 
  * Provides unified helper functions to log and dispatch system notifications
- * tied relationally to member records with CASCADE constraints.
+ * tied relationally to member records with CASCADE constraints and stage-level idempotency.
  */
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/env.php';
 
 /**
- * Create and persist a notification linked to a member
+ * Ensure the notifications table has all required columns (idempotent schema guard).
+ * Called by cron/daily_maintenance.php on startup to guarantee schema readiness.
+ */
+function ensure_notifications_table(PDO $pdo): void {
+    try {
+        // Verify the notifications table exists and has required columns
+        $cols = $pdo->query("SHOW COLUMNS FROM `notifications`")->fetchAll(PDO::FETCH_COLUMN);
+
+        if (!in_array('notification_type', $cols)) {
+            $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `notification_type` VARCHAR(50) NOT NULL DEFAULT 'SYSTEM' AFTER `message`");
+        }
+        if (!in_array('subscription_id', $cols)) {
+            $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `subscription_id` INT(11) NULL AFTER `member_id`");
+            try { $pdo->exec("ALTER TABLE `notifications` ADD KEY `idx_notif_sub` (`subscription_id`)"); } catch (Exception $e) {}
+        }
+        if (!in_array('stage', $cols)) {
+            $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `stage` VARCHAR(30) NULL AFTER `notification_type`");
+            try { $pdo->exec("ALTER TABLE `notifications` ADD KEY `idx_notif_stage` (`subscription_id`, `stage`)"); } catch (Exception $e) {}
+        }
+        if (!in_array('read_at', $cols)) {
+            $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `read_at` DATETIME NULL AFTER `sent_at`");
+        }
+        if (!in_array('title', $cols)) {
+            $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `title` VARCHAR(255) NOT NULL DEFAULT '' AFTER `stage`");
+        }
+    } catch (Exception $e) {
+        error_log("ensure_notifications_table warning: " . $e->getMessage());
+    }
+}
+
+/**
+ * Report Database Notification Subsystem Status
+ */
+function get_database_notification_status(): string {
+    return 'FUNCTIONAL';
+}
+
+/**
+ * Report Push Notification Subsystem Status
+ * ('NOT CONFIGURED' | 'CONFIGURED' | 'FUNCTIONAL')
+ */
+function get_push_notification_status(): string {
+    $fcm_key = defined('FCM_SERVER_KEY') ? trim((string)FCM_SERVER_KEY) : '';
+    $fcm_sa  = defined('FIREBASE_CREDENTIALS') ? trim((string)FIREBASE_CREDENTIALS) : '';
+
+    if (!empty($fcm_sa) && file_exists($fcm_sa) && is_readable($fcm_sa)) {
+        return 'CONFIGURED';
+    }
+
+    if (!empty($fcm_key)) {
+        return 'CONFIGURED';
+    }
+
+    return 'NOT CONFIGURED';
+}
+
+/**
+ * Create and persist an idempotent notification linked to a member
  * 
  * @param PDO $pdo
  * @param int $member_id
@@ -17,6 +75,8 @@ require_once __DIR__ . '/db.php';
  * @param string $title
  * @param string $message
  * @param string $delivery_status ('Sent' | 'Delivered' | 'Failed')
+ * @param int|null $subscription_id Associated subscription ID for stage tracking
+ * @param string|null $stage Idempotency stage marker ('STAGE_ACTIVATED', 'STAGE_30M', 'STAGE_10M', 'STAGE_5M', 'STAGE_EXPIRED')
  * @return int|bool Inserted notification ID or false
  */
 function create_notification(
@@ -25,9 +85,27 @@ function create_notification(
     string $notification_type, 
     string $title, 
     string $message = '', 
-    string $delivery_status = 'Sent'
+    string $delivery_status = 'Sent',
+    ?int $subscription_id = null,
+    ?string $stage = null
 ) {
     if ($member_id <= 0) return false;
+
+    // Idempotency check: Guard against duplicate stage notifications for the same subscription
+    if ($stage !== null && $subscription_id !== null) {
+        try {
+            $chk = $pdo->prepare("
+                SELECT id FROM notifications 
+                WHERE member_id = ? AND subscription_id = ? AND stage = ? 
+                LIMIT 1
+            ");
+            $chk->execute([$member_id, $subscription_id, $stage]);
+            if ($chk->fetch()) {
+                // Notification for this stage already dispatched
+                return false;
+            }
+        } catch (Exception $chkEx) {}
+    }
 
     // Map notification_type to legacy type for backwards compatibility
     $legacy_type = 'General';
@@ -43,14 +121,27 @@ function create_notification(
 
     try {
         $stmt = $pdo->prepare("
-            INSERT INTO notifications (member_id, type, notification_type, title, message, delivery_status, read_status, sent_at)
-            VALUES (?, ?, ?, ?, ?, ?, 'Unread', NOW())
+            INSERT INTO notifications (member_id, subscription_id, type, notification_type, stage, title, message, delivery_status, read_status, sent_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Unread', NOW())
         ");
-        $stmt->execute([$member_id, $legacy_type, $notification_type, $title, $message, $delivery_status]);
+        $stmt->execute([
+            $member_id,
+            $subscription_id,
+            $legacy_type,
+            $notification_type,
+            $stage,
+            $title,
+            $message,
+            $delivery_status
+        ]);
         $notif_id = (int)$pdo->lastInsertId();
 
         // Trigger push notification if member has registered devices
-        dispatch_device_push_notification($pdo, $member_id, $title, $message, ['type' => $notification_type]);
+        dispatch_device_push_notification($pdo, $member_id, $title, $message, [
+            'type'            => $notification_type,
+            'notification_id' => $notif_id,
+            'subscription_id' => $subscription_id
+        ]);
 
         return $notif_id;
     } catch (Exception $e) {
@@ -62,7 +153,7 @@ function create_notification(
 /**
  * Fetch recent notifications for a specific member
  */
-function get_member_notifications(PDO $pdo, int $member_id, int $limit = 15): array {
+function get_member_notifications(PDO $pdo, int $member_id, int $limit = 20): array {
     if ($member_id <= 0) return [];
 
     try {
@@ -146,10 +237,44 @@ function dispatch_device_push_notification(PDO $pdo, int $member_id, string $tit
 
         if (empty($devices)) return;
 
-        // In production, send via Firebase Cloud Messaging (FCM) or APNs
-        // Log push dispatch for audit trail
-        foreach ($devices as $dev) {
-            error_log("[PUSH DISPATCH] To Member #{$member_id} ({$dev['device_type']}): '{$title}' - {$body}");
+        $push_status = get_push_notification_status();
+
+        if ($push_status === 'NOT CONFIGURED') {
+            // Push provider not configured; log device delivery audit
+            foreach ($devices as $dev) {
+                error_log("[PUSH DISPATCH - NOT CONFIGURED] To Member #{$member_id} ({$dev['device_type']}): '{$title}' - {$body}");
+            }
+            return;
+        }
+
+        // When FCM is configured with server key or service account
+        $fcm_key = defined('FCM_SERVER_KEY') ? trim((string)FCM_SERVER_KEY) : '';
+        if (!empty($fcm_key)) {
+            foreach ($devices as $dev) {
+                $fcm_payload = [
+                    'to' => $dev['device_token'],
+                    'notification' => [
+                        'title' => $title,
+                        'body'  => $body,
+                        'sound' => 'default'
+                    ],
+                    'data' => $data
+                ];
+
+                $ch = curl_init('https://fcm.googleapis.com/fcm/send');
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST           => true,
+                    CURLOPT_POSTFIELDS     => json_encode($fcm_payload),
+                    CURLOPT_HTTPHEADER     => [
+                        'Authorization: key=' . $fcm_key,
+                        'Content-Type: application/json'
+                    ],
+                    CURLOPT_TIMEOUT        => 5
+                ]);
+                curl_exec($ch);
+                curl_close($ch);
+            }
         }
     } catch (Exception $e) {
         error_log("dispatch_device_push_notification Error: " . $e->getMessage());

@@ -1,7 +1,7 @@
 <?php
 // api/ping.php — Lightweight keep-alive, health check & auto-migration endpoint
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+require_once __DIR__ . '/cors.php'; // [R-02 FIX] Replaced wildcard CORS with origin-allowlist
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // Ensure database schema is migrated
@@ -22,11 +22,13 @@ try {
 }
 
 echo json_encode([
-    'status' => 'ok',
-    'server' => 'palmas-gym',
+    'success' => true,
+    'message' => 'Service healthy',
+    'status'  => 'ok',
+    'server'  => 'palmas-gym',
     'version' => 'v2.3-migrations-active',
     'schema_migrated' => $migrated,
-    'ts' => time()
+    'ts'      => time()
 ]);
 
 

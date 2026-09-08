@@ -34,6 +34,22 @@ function ensure_rate_limit_table(PDO $pdo): void {
 
     try {
         $pdo->exec($sql);
+
+        // [R-05 FIX] Schema migration: The old schema only had (id, ip_address, attempts, last_attempt_at).
+        // If the table already existed with the old schema, CREATE TABLE IF NOT EXISTS was a no-op
+        // and rate limiting would silently fail. We now add any missing columns so both old and new
+        // installations get the correct schema without a manual migration step.
+        $migrations = [
+            "ALTER TABLE login_rate_limits ADD COLUMN IF NOT EXISTS identifier VARCHAR(191) NOT NULL DEFAULT '' AFTER id",
+            "ALTER TABLE login_rate_limits ADD COLUMN IF NOT EXISTS endpoint VARCHAR(50) NOT NULL DEFAULT 'general' AFTER ip_address",
+            "ALTER TABLE login_rate_limits ADD COLUMN IF NOT EXISTS failed_attempts INT NOT NULL DEFAULT 1 AFTER endpoint",
+            "ALTER TABLE login_rate_limits ADD COLUMN IF NOT EXISTS lockout_until DATETIME NULL AFTER failed_attempts",
+            "ALTER TABLE login_rate_limits ADD COLUMN IF NOT EXISTS created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER last_attempt_at",
+        ];
+        foreach ($migrations as $migration) {
+            try { $pdo->exec($migration); } catch (Exception $me) { /* Column already exists — safe to ignore */ }
+        }
+
         $checked = true;
     } catch (Exception $e) {
         error_log("RateLimiter Table Init Error: " . $e->getMessage());
