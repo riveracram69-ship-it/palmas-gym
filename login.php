@@ -64,147 +64,166 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Gym Pro Management</title>
-    <link rel="stylesheet" href="assets/css/main.css">
+    <title>Staff &amp; Admin Sign In | Palma's Elite Gym</title>
+    <link rel="stylesheet" href="assets/css/main.css?v=3.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             min-height: 100vh;
             display: flex;
             font-family: 'Inter', sans-serif;
-            background: #0d0f14;
-            overflow: hidden;
+            background: #f5f8f5;
+            overflow-x: hidden;
         }
         .login-left {
-            flex: 1;
+            flex: 1.1;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 3rem;
+            padding: 3.5rem;
             position: relative;
-            background: linear-gradient(145deg, #111521 0%, #0d0f14 60%, #0b1a14 100%);
+            background: linear-gradient(145deg, #1b4332 0%, #112a1f 60%, #0a1711 100%);
             overflow: hidden;
+            color: #ffffff;
         }
         .login-left::before {
             content: '';
             position: absolute;
-            width: 500px; height: 500px;
+            width: 550px; height: 550px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(45,106,79,0.12) 0%, transparent 70%);
-            top: -100px; right: -100px;
+            background: radial-gradient(circle, rgba(82, 183, 136, 0.16) 0%, transparent 70%);
+            top: -120px; right: -120px;
+            pointer-events: none;
         }
         .login-left::after {
             content: '';
             position: absolute;
-            width: 350px; height: 350px;
+            width: 400px; height: 400px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(45,106,79,0.08) 0%, transparent 70%);
-            bottom: -80px; left: -80px;
+            background: radial-gradient(circle, rgba(62, 130, 65, 0.14) 0%, transparent 70%);
+            bottom: -100px; left: -100px;
+            pointer-events: none;
         }
         .login-brand {
             position: relative;
             z-index: 1;
             text-align: center;
             color: #fff;
-        }
-        @keyframes floatLogo {
-            0%, 100% { transform: translateY(0px); }
-            50%       { transform: translateY(-10px); }
+            max-width: 420px;
         }
         .login-brand-logo-container {
-            width: 130px; height: 130px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 2px solid rgba(45, 106, 79, 0.4);
+            width: 140px; height: 140px;
+            background: #ffffff;
+            border: 4px solid rgba(82, 183, 136, 0.35);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 2rem;
+            margin: 0 auto 1.75rem;
             padding: 10px;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 20px 50px rgba(45,106,79,0.25);
-            animation: floatLogo 3.5s ease-in-out infinite;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(82, 183, 136, 0.2);
+            transition: transform 0.3s ease;
+        }
+        .login-brand-logo-container:hover {
+            transform: scale(1.03);
         }
         .login-brand-logo {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
         }
         .login-brand h1 {
             font-family: 'Outfit', sans-serif;
             font-size: 2.2rem;
-            font-weight: 700;
+            font-weight: 800;
             color: #fff;
-            margin-bottom: 0.6rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
         }
         .login-brand > p {
             font-size: 0.95rem;
-            color: rgba(255,255,255,0.45);
-            max-width: 300px;
+            color: #a3b8aa;
+            line-height: 1.5;
+            margin-bottom: 2rem;
         }
         .login-features {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            margin-top: 2.5rem;
+            gap: 0.9rem;
             width: 100%;
-            max-width: 300px;
+            text-align: left;
         }
         .login-feature {
             display: flex;
             align-items: center;
             gap: 1rem;
-            color: rgba(255,255,255,0.55);
-            font-size: 0.875rem;
+            color: #e2ede4;
+            font-size: 0.88rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
         .login-feature i {
             width: 34px; height: 34px;
-            background: rgba(45,106,79,0.15);
-            border-radius: 9px;
+            background: rgba(82, 183, 136, 0.2);
+            border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
-            color: #2d6a4f;
-            font-size: 0.85rem;
+            color: #8fcfbc;
+            font-size: 0.9rem;
             flex-shrink: 0;
         }
         .login-right {
-            width: 460px;
+            width: 500px;
             flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             background: #ffffff;
-            padding: 2.5rem;
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
+            padding: 3rem 2.5rem;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.03);
         }
         .login-form-wrap {
             width: 100%;
             max-width: 380px;
-            animation: fadeInUp 0.5s ease-out both;
+            animation: fadeInUp 0.4s ease-out both;
         }
-        .login-form-wrap h2 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #1a1d23;
-            margin-bottom: 0.4rem;
-        }
-        .login-form-wrap .subtitle {
-            color: #8a909e;
-            font-size: 0.9rem;
-            margin-bottom: 2rem;
-        }
-        .form-group { margin-bottom: 1.1rem; }
-        .form-group label {
-            display: block;
+        .login-portal-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            background: #edf4ee;
+            color: #2d6a4f;
             font-size: 0.75rem;
             font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 1rem;
+        }
+        .login-form-wrap h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #121a14;
+            margin-bottom: 0.35rem;
+            letter-spacing: -0.5px;
+        }
+        .login-form-wrap .subtitle {
+            color: #617567;
+            font-size: 0.9rem;
+            margin-bottom: 1.75rem;
+        }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label {
+            display: block;
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
             letter-spacing: 0.8px;
-            color: #4a5060;
+            color: #334337;
             margin-bottom: 0.45rem;
         }
         .input-wrap { position: relative; }
@@ -212,61 +231,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             position: absolute;
             left: 1rem; top: 50%;
             transform: translateY(-50%);
-            color: #c0c6d4;
-            font-size: 0.9rem;
+            color: #91a397;
+            font-size: 0.95rem;
             pointer-events: none;
             transition: color 0.2s;
         }
         .input-wrap input {
             width: 100%;
-            padding: 0.8rem 1rem 0.8rem 2.75rem;
-            border: 1.5px solid #e5e9f0;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            color: #1a1d23;
-            background: #fafbfc;
+            padding: 0.85rem 1rem 0.85rem 2.85rem;
+            border: 1.5px solid #dce5dd;
+            border-radius: 12px;
+            font-size: 0.92rem;
+            color: #121a14;
+            background: #fafdfa;
             transition: all 0.2s ease;
             font-family: 'Inter', sans-serif;
         }
         .input-wrap input:focus {
             outline: none;
-            border-color: #2d6a4f;
+            border-color: #3e8241;
             background: #fff;
-            box-shadow: 0 0 0 3px rgba(45,106,79,0.1);
+            box-shadow: 0 0 0 3.5px rgba(62, 130, 65, 0.14);
         }
-        .input-wrap:focus-within .input-icon { color: #2d6a4f; }
+        .input-wrap:focus-within .input-icon { color: #3e8241; }
         .pw-toggle {
             position: absolute;
             right: 1rem; top: 50%;
             transform: translateY(-50%);
             background: none; border: none;
-            color: #c0c6d4; cursor: pointer;
-            padding: 0; font-size: 0.85rem;
+            color: #91a397; cursor: pointer;
+            padding: 0; font-size: 0.9rem;
             transition: color 0.2s;
         }
-        .pw-toggle:hover { color: #2d6a4f; }
+        .pw-toggle:hover { color: #3e8241; }
         .btn-login {
-            width: 100%; padding: 0.9rem;
-            background: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%);
+            width: 100%; padding: 0.95rem;
+            background: linear-gradient(135deg, #3e8241 0%, #1b4332 100%);
             color: #fff; border: none;
-            border-radius: 11px;
+            border-radius: 12px;
             font-size: 0.95rem; font-weight: 700;
             font-family: 'Outfit', sans-serif;
             cursor: pointer; margin-top: 1.5rem;
             transition: all 0.2s ease;
-            box-shadow: 0 6px 20px rgba(45,106,79,0.3);
+            box-shadow: 0 6px 18px rgba(62, 130, 65, 0.3);
             display: flex; align-items: center;
             justify-content: center; gap: 0.5rem;
         }
-        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(45,106,79,0.4); }
+        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(62, 130, 65, 0.4); }
         .btn-login:active { transform: scale(0.98); }
         .login-alert-error {
-            display: flex; align-items: center; gap: 0.6rem;
-            padding: 0.8rem 1rem;
-            background: #ffebee; color: #c62828;
-            border: 1px solid rgba(198,40,40,0.2);
-            border-radius: 10px; font-size: 0.85rem;
-            margin-bottom: 1.25rem;
+            display: flex; align-items: center; gap: 0.65rem;
+            padding: 0.85rem 1rem;
+            background: #fee2e2; color: #991b1b;
+            border: 1px solid #fecaca;
+            border-radius: 12px; font-size: 0.88rem;
+            margin-bottom: 1.5rem;
             animation: shake 0.4s ease;
         }
         @keyframes shake {
@@ -274,19 +293,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             25%       { transform: translateX(-5px); }
             75%       { transform: translateX(5px); }
         }
-        .login-hint {
-            margin-top: 1.5rem; padding: 0.9rem 1rem;
-            background: #fafbfc; border: 1px solid #e5e9f0;
-            border-radius: 10px; font-size: 0.8rem;
-            color: #8a909e; text-align: center; line-height: 1.6;
+        .login-switch {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #ebf0ec;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #617567;
         }
-        .login-hint code {
-            background: #f1f3f4; padding: 0.1rem 0.4rem;
-            border-radius: 4px; color: #4a5060; font-size: 0.78rem;
+        .login-switch a {
+            color: #2d6a4f;
+            font-weight: 700;
+            text-decoration: none;
         }
-        @media (max-width: 768px) {
+        .login-switch a:hover { text-decoration: underline; }
+        @media (max-width: 900px) {
             .login-left { display: none; }
-            .login-right { width: 100%; }
+            .login-right { width: 100%; min-height: 100vh; }
         }
     </style>
 </head>
@@ -297,24 +320,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="login-brand-logo-container">
             <img src="assets/images/palmas-logo.png" alt="Palma's Elite Gym Logo" class="login-brand-logo">
         </div>
-        <h1><?php echo htmlspecialchars($app_settings['gym_name'] ?? 'GYM PRO'); ?></h1>
-        <p>Your all-in-one gym membership and attendance management platform.</p>
+        <h1><?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?></h1>
+        <p>Premium athletic fitness, membership management &amp; operations portal.</p>
         <div class="login-features">
             <div class="login-feature">
                 <i class="fas fa-users"></i>
-                <span>Manage members and subscriptions</span>
+                <span>Member Directory &amp; Subscription Controls</span>
             </div>
             <div class="login-feature">
                 <i class="fas fa-qrcode"></i>
-                <span>QR-based attendance tracking</span>
+                <span>Real-Time QR Attendance &amp; Live Occupancy</span>
             </div>
             <div class="login-feature">
                 <i class="fas fa-chart-line"></i>
-                <span>Revenue reports and analytics</span>
+                <span>Financial Analytics, Ledgers &amp; Exports</span>
             </div>
             <div class="login-feature">
-                <i class="fas fa-bell"></i>
-                <span>Renewal and expiry notifications</span>
+                <i class="fas fa-user-clock"></i>
+                <span>Registration &amp; Renewal Approvals</span>
             </div>
         </div>
     </div>
@@ -322,12 +345,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div class="login-right">
     <div class="login-form-wrap">
-        <h2>Welcome back 👋</h2>
-        <p class="subtitle">Sign in to access your management dashboard.</p>
+        <div class="login-portal-tag">
+            <i class="fas fa-shield-halved"></i> Management Console
+        </div>
+        <h2>Welcome Back</h2>
+        <p class="subtitle">Sign in with your staff or administrator account.</p>
 
         <?php if ($error): ?>
-        <div class="login-alert-error">
-            <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
+        <div class="login-alert-error" role="alert">
+            <i class="fas fa-circle-exclamation"></i> <span><?php echo htmlspecialchars($error); ?></span>
         </div>
         <?php endif; ?>
 
@@ -338,7 +364,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="input-wrap">
                     <i class="fas fa-envelope input-icon"></i>
                     <input type="email" id="email" name="email"
-                        placeholder="you@gym.com"
+                        placeholder="admin@palmaselite.com"
                         value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>"
                         autocomplete="email" required>
                 </div>
@@ -350,15 +376,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="password" id="password" name="password"
                         placeholder="••••••••"
                         autocomplete="current-password" required>
-                    <button type="button" class="pw-toggle" id="togglePw" title="Show/hide password">
+                    <button type="button" class="pw-toggle" id="togglePw" title="Show/hide password" aria-label="Toggle password visibility">
                         <i class="fas fa-eye" id="eyeIcon"></i>
                     </button>
                 </div>
             </div>
-            <button type="submit" class="btn-login">
-                <i class="fas fa-arrow-right-to-bracket"></i> Sign In
+            <button type="submit" class="btn-login" id="submitBtn">
+                <i class="fas fa-arrow-right-to-bracket"></i> Sign In to Dashboard
             </button>
         </form>
+
+        <div class="login-switch">
+            Looking for member access? <br>
+            <a href="member/login.php"><i class="fas fa-arrow-up-right-from-square"></i> Go to Member Portal</a>
+        </div>
     </div>
 </div>
 
@@ -366,11 +397,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     const togglePw = document.getElementById('togglePw');
     const pwInput  = document.getElementById('password');
     const eyeIcon  = document.getElementById('eyeIcon');
-    togglePw.addEventListener('click', () => {
-        const isHidden = pwInput.type === 'password';
-        pwInput.type   = isHidden ? 'text' : 'password';
-        eyeIcon.className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
-    });
+    if (togglePw && pwInput && eyeIcon) {
+        togglePw.addEventListener('click', () => {
+            const isHidden = pwInput.type === 'password';
+            pwInput.type   = isHidden ? 'text' : 'password';
+            eyeIcon.className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
+        });
+    }
 </script>
 </body>
 </html>

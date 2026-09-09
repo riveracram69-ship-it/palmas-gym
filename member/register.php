@@ -128,50 +128,51 @@ $gym_name         = htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Create Account | <?php echo $gym_name; ?></title>
 <meta name="description" content="Register for a membership at <?php echo $gym_name; ?>">
+<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-/* ── TOKENS ── */
+/* ── PALMAS DESIGN TOKENS ── */
 :root{
-  --c-bg:       #F2F5F3;
+  --c-bg:       #F4F7F5;
   --c-card:     #FFFFFF;
-  --c-input:    #F8FAF9;
-  --c-input-f:  #EDF7F2;
-  --c-border:   #E2E8E5;
-  --c-border-f: #3AAA6E;
+  --c-input:    #FAFDFA;
+  --c-input-f:  #FFFFFF;
+  --c-border:   #DCE5DD;
+  --c-border-f: #3E8241;
 
-  --c-p:        #1A5C3A;
-  --c-p-mid:    #2D7A52;
-  --c-p-lt:     #3AAA6E;
-  --c-p-pale:   #E8F5EE;
-  --c-p-glow:   rgba(58,170,110,.18);
+  --c-p:        #3E8241;
+  --c-p-mid:    #2D6A4F;
+  --c-p-lt:     #52B788;
+  --c-p-pale:   #EDF4EE;
+  --c-p-glow:   rgba(62,130,65,.18);
 
-  --c-gold:     #C07A10;
+  --c-gold:     #D4A942;
   --c-gold-p:   #FEF3E2;
 
-  --c-h:        #111827;
-  --c-body:     #374151;
-  --c-muted:    #6B7280;
-  --c-faint:    #9CA3AF;
+  --c-h:        #121A14;
+  --c-body:     #334337;
+  --c-muted:    #617567;
+  --c-faint:    #91A397;
 
   --c-err:      #DC2626;
-  --c-err-p:    #FEF2F2;
+  --c-err-p:    #FEE2E2;
   --c-err-b:    #FECACA;
-  --c-ok:       #16A34A;
-  --c-ok-p:     #F0FDF4;
+  --c-ok:       #2E7D32;
+  --c-ok-p:     #E8F5E9;
 
-  --r-card:  20px;
-  --r-input: 11px;
-  --r-btn:   11px;
-  --r-chip:  9px;
+  --r-card:  22px;
+  --r-input: 12px;
+  --r-btn:   12px;
+  --r-chip:  10px;
 
-  --sh-card: 0 2px 4px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.08);
-  --sh-btn:  0 4px 14px rgba(26,92,58,.28);
-  --sh-fo:   0 0 0 3px rgba(58,170,110,.20);
+  --sh-card: 0 4px 24px rgba(18,26,20,.06), 0 1px 3px rgba(18,26,20,.03);
+  --sh-btn:  0 4px 14px rgba(62,130,65,.28);
+  --sh-fo:   0 0 0 3.5px rgba(62,130,65,.16);
 
-  --tr: all .19s cubic-bezier(.4,0,.2,1);
+  --tr: all .2s cubic-bezier(.4,0,.2,1);
 }
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -179,10 +180,6 @@ html{scroll-behavior:smooth}
 body{
   font-family:'Inter',system-ui,sans-serif;
   background:var(--c-bg);
-  background-image:
-    radial-gradient(ellipse at 0% 0%, rgba(58,170,110,.09) 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, rgba(26,92,58,.07) 0%, transparent 50%);
-  background-attachment:fixed;
   color:var(--c-body);
   min-height:100vh;
   display:flex;
@@ -210,9 +207,9 @@ img{max-width:100%;display:block}
 .logo-ring img{width:100%;height:100%;object-fit:contain}
 .logo-fb{display:none;font-size:2rem;color:var(--c-p)}
 .brand h1{
-  font-family:'Poppins',sans-serif;
-  font-size:1.5rem;font-weight:800;
-  color:var(--c-h);letter-spacing:-.3px;line-height:1.2;
+  font-family:'Outfit',sans-serif;
+  font-size:1.65rem;font-weight:800;
+  color:var(--c-h);letter-spacing:-.4px;line-height:1.2;
 }
 .brand .sub{font-size:.83rem;color:var(--c-muted);margin-top:3px}
 .brand .tag{font-size:.79rem;color:var(--c-p-mid);margin-top:5px;font-style:italic;font-weight:500}

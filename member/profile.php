@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             font-family: 'Outfit', sans-serif;
             font-size: 2.2rem;
             font-weight: 800;
-            color: var(--accent-light);
+            color: #ffffff;
         }
 
         .profile-name {
@@ -208,15 +208,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
 
         .success-banner {
-            background: var(--success-bg);
-            color: var(--accent-light);
-            border: 1px solid rgba(46,125,50,0.25);
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid rgba(62, 130, 65, 0.25);
             padding: 0.85rem 1rem;
             border-radius: var(--radius-md);
-            font-size: 0.82rem;
+            font-size: 0.84rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-weight: 600;
         }
 
         .logout-section {
@@ -276,11 +277,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             </div>
             <div class="info-field">
                 <span class="info-field-label">Membership ID</span>
-                <span class="info-field-value" style="font-family:monospace; color:var(--accent-light);"><?php echo htmlspecialchars($member['membership_id']); ?></span>
+                <span class="info-field-value" style="font-family:monospace; color:var(--palmas-primary); font-weight:700;"><?php echo htmlspecialchars($member['membership_id']); ?></span>
             </div>
             <div class="info-field">
                 <span class="info-field-label">Current Plan</span>
-                <span class="info-field-value" style="color:var(--accent-light);"><?php echo htmlspecialchars($member['plan_name'] ?: 'No Active Plan'); ?></span>
+                <span class="info-field-value" style="color:var(--palmas-primary); font-weight:700;"><?php echo htmlspecialchars($member['plan_name'] ?: 'No Active Plan'); ?></span>
             </div>
             <div class="info-field">
                 <span class="info-field-label">Expiry Date</span>
@@ -320,7 +321,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <label for="photo"><i class="fas fa-image"></i> Select Selfie/Photo *</label>
                     <input type="file" name="photo" id="photo" class="form-control" accept="image/*" required style="padding: 0.5rem 0.75rem;">
                 </div>
-                <button type="submit" class="btn" style="background: var(--accent-gradient);">
+                <button type="submit" class="btn">
                     <i class="fas fa-upload"></i> Upload Photo
                 </button>
             </form>
@@ -381,7 +382,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <label for="confirm_password"><i class="fas fa-check-double"></i> Confirm New Password</label>
                     <input type="password" name="confirm_password" id="confirm_password" class="form-control" placeholder="••••••••" required>
                 </div>
-                <button type="submit" class="btn" style="background: var(--accent-gradient);">
+                <button type="submit" class="btn">
                     <i class="fas fa-shield-halved"></i> Update Password
                 </button>
             </form>
@@ -389,7 +390,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
         <!-- Sign Out -->
         <div class="logout-section fade-up fade-up-d3">
-            <a href="logout.php" class="btn btn-secondary" style="border-color:rgba(211,47,47,0.2); color:#ff6b6b;">
+            <a href="logout.php" class="btn btn-secondary" style="border-color: rgba(220, 38, 38, 0.25); color: #dc2626;">
                 <i class="fas fa-right-from-bracket"></i> Sign Out
             </a>
         </div>

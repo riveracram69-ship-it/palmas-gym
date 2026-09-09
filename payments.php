@@ -252,7 +252,7 @@ try {
                         <!-- Verified By -->
                         <td>
                             <div class="cell-secondary" style="font-size:0.8rem;">
-                                <i class="fas fa-user-check" style="color:var(--accent-light);"></i> <?php echo htmlspecialchars($p['verified_by_name'] ?: 'Admin'); ?>
+                                <i class="fas fa-user-check" style="color:var(--accent);"></i> <?php echo htmlspecialchars($p['verified_by_name'] ?: 'Admin'); ?>
                             </div>
                         </td>
                     </tr>

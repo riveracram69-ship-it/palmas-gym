@@ -125,16 +125,16 @@ try {
 
         <?php if ($pending_request): ?>
             <!-- Pending Renewal Request Banner -->
-            <div class="card pending-renewal-banner fade-up" style="background: rgba(243, 156, 18, 0.08); border: 1.5px dashed rgba(243, 156, 18, 0.45); border-radius: 16px; padding: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; backdrop-filter: blur(8px);">
-                <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(243, 156, 18, 0.15); display: flex; align-items: center; justify-content: center; color: #f39c12; font-size: 1.2rem; flex-shrink: 0;">
+            <div class="card pending-renewal-banner fade-up" style="background: #fffbeb; border: 1.5px dashed #f59e0b; border-radius: 16px; padding: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; box-shadow: var(--shadow-xs);">
+                <div style="width: 42px; height: 42px; border-radius: 12px; background: #fef3c7; display: flex; align-items: center; justify-content: center; color: #d97706; font-size: 1.2rem; flex-shrink: 0;">
                     <i class="fas fa-spinner fa-spin"></i>
                 </div>
                 <div style="flex: 1; min-width: 0;">
-                    <p style="margin: 0; font-size: 0.85rem; font-weight: 700; color: #f1c40f; text-transform: uppercase; letter-spacing: 0.5px;">Renewal Under Review</p>
-                    <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: #e5e8e8; line-height: 1.4;">
+                    <p style="margin: 0; font-size: 0.85rem; font-weight: 700; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px;">Renewal Under Review</p>
+                    <p style="margin: 4px 0 0 0; font-size: 0.84rem; color: #374151; line-height: 1.4;">
                         Your request for <strong><?php echo htmlspecialchars($pending_request['plan_name']); ?></strong> (₱<?php echo number_format($pending_request['plan_price'], 2); ?>) is pending admin approval.
                         <?php if ($pending_request['reference_no']): ?>
-                            <br><span style="font-size: 0.72rem; color: #bdc3c7;">Payment Method: <?php echo htmlspecialchars($pending_request['payment_method']); ?> | Ref: <code><?php echo htmlspecialchars($pending_request['reference_no']); ?></code></span>
+                            <br><span style="font-size: 0.76rem; color: #4b5563;">Payment Method: <?php echo htmlspecialchars($pending_request['payment_method']); ?> | Ref: <code><?php echo htmlspecialchars($pending_request['reference_no']); ?></code></span>
                         <?php endif; ?>
                     </p>
                 </div>
@@ -292,7 +292,7 @@ try {
 <div class="notif-overlay" id="notif-overlay" onclick="closeNotifDrawer()"></div>
 <div class="notif-drawer" id="notif-drawer">
     <div class="notif-drawer-header">
-        <h3><i class="fas fa-bell" style="color:var(--accent-light);"></i> Notifications</h3>
+        <h3><i class="fas fa-bell" style="color:var(--palmas-primary);"></i> Notifications</h3>
         <button class="notif-drawer-close" onclick="closeNotifDrawer()"><i class="fas fa-xmark"></i></button>
     </div>
     <div class="notif-drawer-list" id="notif-drawer-list">
@@ -310,11 +310,11 @@ try {
     <!-- Step 1: Plan Selection -->
     <div id="renew-step-1">
         <div class="notif-drawer-header">
-            <h3><i class="fas fa-rotate-right" style="color:var(--accent-light);"></i> Renew Membership</h3>
+            <h3><i class="fas fa-rotate-right" style="color:var(--palmas-primary);"></i> Renew Membership</h3>
             <button class="notif-drawer-close" onclick="closeRenewModal()"><i class="fas fa-xmark"></i></button>
         </div>
         <div style="padding:1rem; flex:1; overflow-y:auto;">
-            <p style="font-size:0.78rem; color:#8faaa0; margin-bottom:1rem; line-height:1.5;">
+            <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:1rem; line-height:1.5;">
                 Your membership has expired. Choose a plan to reactivate your access.
             </p>
 
@@ -351,22 +351,22 @@ try {
     <!-- Step 2: Payment Method -->
     <div id="renew-step-2" style="display:none;">
         <div class="notif-drawer-header">
-            <h3><i class="fas fa-credit-card" style="color:var(--accent-light);"></i> Payment Method</h3>
+            <h3><i class="fas fa-credit-card" style="color:var(--palmas-primary);"></i> Payment Method</h3>
             <button class="notif-drawer-close" onclick="closeRenewModal()"><i class="fas fa-xmark"></i></button>
         </div>
         <div style="padding:1rem; flex:1; overflow-y:auto;">
 
             <!-- Selected Plan Summary -->
-            <div id="plan-summary-box" style="background:rgba(82,183,136,0.06); border:1px solid rgba(82,183,136,0.15); border-radius:14px; padding:0.9rem 1rem; margin-bottom:1.25rem; display:flex; justify-content:space-between; align-items:center;">
+            <div id="plan-summary-box" style="background:#f0fdf4; border:1px solid rgba(62,130,65,0.2); border-radius:14px; padding:0.9rem 1rem; margin-bottom:1.25rem; display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                    <p style="font-size:0.68rem; color:#8faaa0; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:2px;">Selected Plan</p>
-                    <p id="sum-plan-name" style="font-weight:700; color:#f0f7f3; font-size:0.92rem;"></p>
-                    <p id="sum-plan-dur" style="font-size:0.72rem; color:#8faaa0;"></p>
+                    <p style="font-size:0.68rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:2px; font-weight:700;">Selected Plan</p>
+                    <p id="sum-plan-name" style="font-weight:700; color:var(--text-primary); font-size:0.95rem;"></p>
+                    <p id="sum-plan-dur" style="font-size:0.75rem; color:var(--text-secondary);"></p>
                 </div>
-                <p id="sum-plan-price" style="font-family:'Outfit',sans-serif; font-size:1.3rem; font-weight:800; color:#52b788;"></p>
+                <p id="sum-plan-price" style="font-family:'Outfit',sans-serif; font-size:1.3rem; font-weight:800; color:var(--palmas-primary);"></p>
             </div>
 
-            <p style="font-size:0.72rem; font-weight:700; color:#8faaa0; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:0.75rem;">Choose Payment Method</p>
+            <p style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:0.75rem;">Choose Payment Method</p>
 
             <!-- Payment Instructions Box -->
             <div id="payment-instructions" style="display:none;"></div>
@@ -375,9 +375,9 @@ try {
             <div style="display:flex; flex-direction:column; gap:0.6rem; margin-bottom:1.25rem;">
                 <?php
                 $pmethods = [
-                    ['GCash', 'fa-mobile-screen',   '#60a5fa', 'rgba(59,130,246,0.12)', 'GCash E-Wallet'],
-                    ['Maya',  'fa-wallet',          '#34d399', 'rgba(16,185,129,0.12)', 'Maya E-Wallet'],
-                    ['Cash',  'fa-money-bill-wave', '#52b788', 'rgba(82,183,136,0.12)', 'Cash (Front Desk)'],
+                    ['GCash', 'fa-mobile-screen',   '#2563eb', 'rgba(37,99,235,0.1)', 'GCash E-Wallet'],
+                    ['Maya',  'fa-wallet',          '#059669', 'rgba(5,150,105,0.1)', 'Maya E-Wallet'],
+                    ['Cash',  'fa-money-bill-wave', '#3e8241', 'rgba(62,130,65,0.1)', 'Cash (Front Desk)'],
                 ];
                 foreach($pmethods as [$pm, $icon, $clr, $bg, $label]):
                 ?>
@@ -387,8 +387,8 @@ try {
                         <i class="fas <?php echo $icon; ?>"></i>
                     </div>
                     <div style="flex:1;">
-                        <div style="font-weight:600; font-size:0.88rem; color:#f0f7f3;"><?php echo $pm; ?></div>
-                        <div style="font-size:0.72rem; color:#8faaa0;"><?php echo $label; ?></div>
+                        <div style="font-weight:600; font-size:0.88rem; color:var(--text-primary);"><?php echo $pm; ?></div>
+                        <div style="font-size:0.74rem; color:var(--text-secondary);"><?php echo $label; ?></div>
                     </div>
                     <span class="pay-check"><i class="fas fa-circle-check"></i></span>
                 </label>
@@ -397,13 +397,13 @@ try {
 
             <!-- Reference No (for GCash/Maya) -->
             <div id="ref-group" style="display:none; margin-bottom:1.25rem;">
-                <p style="font-size:0.7rem; font-weight:700; color:#8faaa0; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:0.4rem;">GCash / Maya Reference No. *</p>
+                <p style="font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:0.4rem;">GCash / Maya Reference No. *</p>
                 <input type="text" id="reference-no" placeholder="e.g. 1004582914"
-                    style="width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:0.8rem 1rem;color:#f0f7f3;font-size:0.88rem;font-family:'Inter',sans-serif;">
+                    style="width:100%;background:#ffffff;border:1px solid var(--border);border-radius:12px;padding:0.8rem 1rem;color:var(--text-primary);font-size:0.88rem;font-family:'Inter',sans-serif;box-sizing:border-box;">
             </div>
 
             <div style="display:flex; gap:0.65rem;">
-                <button style="flex:1;padding:0.85rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#8faaa0;font-weight:600;font-size:0.85rem;cursor:pointer;font-family:'Outfit',sans-serif;" onclick="backToPlan()">
+                <button style="flex:1;padding:0.85rem;background:var(--surface-soft);border:1px solid var(--border);border-radius:12px;color:var(--text-secondary);font-weight:600;font-size:0.85rem;cursor:pointer;font-family:'Outfit',sans-serif;" onclick="backToPlan()">
                     <i class="fas fa-arrow-left"></i> Back
                 </button>
                 <button class="renew-btn" style="flex:2;" id="confirm-renew-btn" onclick="submitRenewal()">
@@ -415,11 +415,11 @@ try {
 
     <!-- Step 3: Success -->
     <div id="renew-step-3" style="display:none; flex:1; flex-direction:column; align-items:center; justify-content:center; padding:2rem; text-align:center; gap:1rem;">
-        <div style="width:80px;height:80px;border-radius:50%;background:rgba(82,183,136,0.12);border:2px solid rgba(82,183,136,0.3);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#52b788;">
+        <div style="width:80px;height:80px;border-radius:50%;background:#f0fdf4;border:2px solid rgba(62,130,65,0.3);display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--palmas-primary);">
             <i class="fas fa-circle-check"></i>
         </div>
-        <h3 style="font-family:'Outfit',sans-serif;font-size:1.25rem;font-weight:800;color:#f0f7f3;">Renewal Successful!</h3>
-        <p id="renew-success-msg" style="font-size:0.82rem;color:#8faaa0;line-height:1.6;"></p>
+        <h3 style="font-family:'Outfit',sans-serif;font-size:1.25rem;font-weight:800;color:var(--text-primary);">Renewal Successful!</h3>
+        <p id="renew-success-msg" style="font-size:0.84rem;color:var(--text-secondary);line-height:1.6;"></p>
         <button class="renew-btn" style="margin-top:0.5rem;" onclick="finishRenewal()">
             <i class="fas fa-house"></i> Back to Dashboard
         </button>
@@ -431,68 +431,78 @@ try {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    background: rgba(255,255,255,0.02);
-    border: 1.5px solid rgba(255,255,255,0.06);
+    background: #ffffff;
+    border: 1.5px solid var(--border);
     border-radius: 14px;
     padding: 0.9rem 1rem;
     cursor: pointer;
     transition: all 0.2s;
     position: relative;
+    box-shadow: var(--shadow-xs);
 }
-.plan-option:hover { background: rgba(255,255,255,0.04); }
+.plan-option:hover { border-color: rgba(62,130,65,0.4); background: #fcfdfc; }
 .plan-option input[type=radio] { position: absolute; opacity: 0; }
 .plan-option:has(input:checked) {
-    border-color: rgba(82,183,136,0.45);
-    background: rgba(82,183,136,0.06);
+    border-color: var(--palmas-primary);
+    background: #f0fdf4;
+    box-shadow: 0 0 0 1px var(--palmas-primary);
 }
 .plan-card-inner { display:flex; align-items:center; flex:1; gap:0.5rem; }
-.plan-card-name { font-weight:700; font-size:0.9rem; color:#f0f7f3; }
-.plan-card-duration { font-size:0.72rem; color:#8faaa0; margin-top:2px; }
-.plan-card-benefits { font-size:0.7rem; color:#4d6b5e; margin-top:3px; }
-.plan-card-price { font-family:'Outfit',sans-serif; font-size:1.15rem; font-weight:800; color:#52b788; white-space:nowrap; }
-.plan-check { color:rgba(82,183,136,0); font-size:1.1rem; transition:color 0.2s; flex-shrink:0; }
-.plan-option:has(input:checked) .plan-check { color:#52b788; }
+.plan-card-name { font-weight:700; font-size:0.92rem; color:var(--text-primary); }
+.plan-card-duration { font-size:0.75rem; color:var(--text-secondary); margin-top:2px; }
+.plan-card-benefits { font-size:0.72rem; color:var(--text-muted); margin-top:3px; }
+.plan-card-price { font-family:'Outfit',sans-serif; font-size:1.15rem; font-weight:800; color:var(--palmas-primary); white-space:nowrap; }
+.plan-check { color:transparent; font-size:1.1rem; transition:color 0.2s; flex-shrink:0; }
+.plan-option:has(input:checked) .plan-check { color:var(--palmas-primary); }
 
 .pay-option {
     display: flex;
     align-items: center;
     gap: 0.85rem;
-    background: rgba(255,255,255,0.02);
-    border: 1.5px solid rgba(255,255,255,0.06);
+    background: #ffffff;
+    border: 1.5px solid var(--border);
     border-radius: 14px;
     padding: 0.85rem 1rem;
     cursor: pointer;
     transition: all 0.2s;
     position: relative;
+    box-shadow: var(--shadow-xs);
 }
-.pay-option:hover { background: rgba(255,255,255,0.04); }
+.pay-option:hover { border-color: rgba(62,130,65,0.4); background: #fcfdfc; }
 .pay-option input[type=radio] { position: absolute; opacity: 0; }
 .pay-option:has(input:checked) {
-    border-color: rgba(82,183,136,0.4);
-    background: rgba(82,183,136,0.05);
+    border-color: var(--palmas-primary);
+    background: #f0fdf4;
+    box-shadow: 0 0 0 1px var(--palmas-primary);
 }
-.pay-check { color:rgba(82,183,136,0); font-size:1rem; margin-left:auto; transition:color 0.2s; }
-.pay-option:has(input:checked) .pay-check { color:#52b788; }
+.pay-check { color:transparent; font-size:1rem; margin-left:auto; transition:color 0.2s; }
+.pay-option:has(input:checked) .pay-check { color:var(--palmas-primary); }
 
 .renew-btn {
-    width:100%;
-    padding:0.9rem;
-    background:linear-gradient(135deg,#40916c,#2d6a4f);
-    color:#fff;
-    border:none;
-    border-radius:12px;
-    font-size:0.9rem;
-    font-weight:700;
-    cursor:pointer;
-    font-family:'Outfit',sans-serif;
-    transition:all 0.2s;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:0.5rem;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.9rem;
+    background: linear-gradient(135deg, var(--palmas-primary), var(--palmas-dark));
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Outfit', sans-serif;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 14px rgba(62, 130, 65, 0.25);
 }
-.renew-btn:hover { background:linear-gradient(135deg,#52b788,#40916c); }
-.renew-btn:disabled { opacity:0.5; cursor:not-allowed; }
+.renew-btn:hover {
+    background: linear-gradient(135deg, #48944b, #245840);
+    box-shadow: 0 6px 18px rgba(62, 130, 65, 0.35);
+    transform: translateY(-1px);
+}
+.renew-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
 </style>
 
 <script>
@@ -527,7 +537,7 @@ function renderDrawer() {
             <div style="flex:1;">
                 <div class="notif-item-title">${n.title}</div>
                 <div class="notif-item-msg">${n.message}</div>
-                ${isExpiry ? '<div style="font-size:0.72rem;color:#52b788;font-weight:700;margin-top:5px;"><i class="fas fa-rotate-right"></i> Tap to Renew Now</div>' : ''}
+                ${isExpiry ? '<div style="font-size:0.72rem;color:var(--palmas-primary, #3e8241);font-weight:700;margin-top:5px;"><i class="fas fa-rotate-right"></i> Tap to Renew Now</div>' : ''}
                 <span class="notif-item-time"><i class="far fa-clock"></i> ${n.time}</span>
             </div>
             ${isExpiry ? '<i class="fas fa-chevron-right" style="color:#4d6b5e;font-size:0.8rem;flex-shrink:0;"></i>' : ''}
@@ -547,7 +557,7 @@ function showToast(n) {
         <div class="toast-body">
             <div class="toast-title">${n.title}</div>
             <div class="toast-msg">${n.message}</div>
-            ${isExpiry ? '<div style="font-size:0.7rem;color:#52b788;font-weight:700;margin-top:4px;cursor:pointer;" onclick="openRenewModal()"><i class="fas fa-rotate-right"></i> Renew Now</div>' : ''}
+            ${isExpiry ? '<div style="font-size:0.7rem;color:var(--palmas-primary, #3e8241);font-weight:700;margin-top:4px;cursor:pointer;" onclick="openRenewModal()"><i class="fas fa-rotate-right"></i> Renew Now</div>' : ''}
         </div>
         <button class="toast-close" onclick="dismissToast(this.parentElement)"><i class="fas fa-xmark"></i></button>`;
     container.appendChild(toast);
@@ -658,7 +668,7 @@ function copyPaymentText(text, btn) {
     }
     const origHtml = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-    btn.style.background = '#52b788';
+    btn.style.background = 'var(--palmas-primary, #3e8241)';
     btn.style.color = '#fff';
     setTimeout(() => {
         btn.innerHTML = origHtml;
@@ -683,28 +693,28 @@ function toggleRef(method) {
             </div>` : '';
 
         instructions.innerHTML = `
-            <div style="background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.22); border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.6rem;">
-                    <span style="font-size:0.75rem; font-weight:700; color:#60a5fa; text-transform:uppercase; letter-spacing:0.5px;">
+                    <span style="font-size:0.78rem; font-weight:700; color:#1e40af; text-transform:uppercase; letter-spacing:0.5px;">
                         <i class="fas fa-mobile-screen"></i> GCash Payment Details
                     </span>
-                    <span style="font-size:0.7rem; background:rgba(59,130,246,0.2); color:#93c5fd; padding:2px 8px; border-radius:12px; font-weight:600;">Direct E-Wallet</span>
+                    <span style="font-size:0.7rem; background:#dbeafe; color:#1e40af; padding:2px 8px; border-radius:12px; font-weight:600;">Direct E-Wallet</span>
                 </div>
                 
-                <div style="background:rgba(0,0,0,0.25); border-radius:10px; padding:0.75rem 0.9rem; margin-bottom:0.5rem;">
-                    <div style="font-size:0.7rem; color:#8faaa0;">Account Name:</div>
-                    <div style="font-weight:700; color:#f0f7f3; font-size:0.92rem; margin-bottom:0.4rem;">${name}</div>
+                <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:0.75rem 0.9rem; margin-bottom:0.5rem;">
+                    <div style="font-size:0.72rem; color:#64748b;">Account Name:</div>
+                    <div style="font-weight:700; color:#0f172a; font-size:0.92rem; margin-bottom:0.4rem;">${name}</div>
                     
-                    <div style="font-size:0.7rem; color:#8faaa0;">GCash Mobile Number:</div>
+                    <div style="font-size:0.72rem; color:#64748b;">GCash Mobile Number:</div>
                     <div style="display:flex; align-items:center; justify-content:space-between;">
-                        <span style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:800; color:#60a5fa; letter-spacing:0.5px;">${num}</span>
-                        <button type="button" onclick="copyPaymentText('${num}', this)" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#f0f7f3; font-size:0.72rem; padding:3px 8px; cursor:pointer; transition:all 0.2s;">
+                        <span style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:800; color:#2563eb; letter-spacing:0.5px;">${num}</span>
+                        <button type="button" onclick="copyPaymentText('${num}', this)" style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; color:#334155; font-size:0.72rem; padding:4px 10px; cursor:pointer; transition:all 0.2s; font-weight:600;">
                             <i class="far fa-copy"></i> Copy
                         </button>
                     </div>
                 </div>
                 ${qrHtml}
-                <p style="font-size:0.72rem; color:#93c5fd; margin-top:0.6rem; text-align:center;">
+                <p style="font-size:0.75rem; color:#1d4ed8; margin-top:0.6rem; text-align:center; line-height:1.4;">
                     <i class="fas fa-info-circle"></i> Send payment, then enter the <strong>Reference Number</strong> below.
                 </p>
             </div>`;
@@ -715,33 +725,33 @@ function toggleRef(method) {
         const name = gymPaymentSettings.maya_name || "Palma's Elite Gym";
         const qrHtml = gymPaymentSettings.maya_qr ? `
             <div style="text-align:center; margin-top:0.75rem;">
-                <p style="font-size:0.7rem; color:#8faaa0; margin-bottom:4px;">Scan Maya QR Code:</p>
+                <p style="font-size:0.72rem; color:#065f46; margin-bottom:4px; font-weight:600;">Scan Maya QR Code:</p>
                 <img src="${gymPaymentSettings.maya_qr}" alt="Maya QR" style="max-width:140px; border-radius:10px; border:2px solid #10b981; background:#fff; padding:4px;">
             </div>` : '';
 
         instructions.innerHTML = `
-            <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.22); border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
+            <div style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.6rem;">
-                    <span style="font-size:0.75rem; font-weight:700; color:#34d399; text-transform:uppercase; letter-spacing:0.5px;">
+                    <span style="font-size:0.78rem; font-weight:700; color:#065f46; text-transform:uppercase; letter-spacing:0.5px;">
                         <i class="fas fa-wallet"></i> Maya Payment Details
                     </span>
-                    <span style="font-size:0.7rem; background:rgba(16,185,129,0.2); color:#a7f3d0; padding:2px 8px; border-radius:12px; font-weight:600;">Direct E-Wallet</span>
+                    <span style="font-size:0.7rem; background:#d1fae5; color:#065f46; padding:2px 8px; border-radius:12px; font-weight:600;">Direct E-Wallet</span>
                 </div>
                 
-                <div style="background:rgba(0,0,0,0.25); border-radius:10px; padding:0.75rem 0.9rem; margin-bottom:0.5rem;">
-                    <div style="font-size:0.7rem; color:#8faaa0;">Account Name:</div>
-                    <div style="font-weight:700; color:#f0f7f3; font-size:0.92rem; margin-bottom:0.4rem;">${name}</div>
+                <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:0.75rem 0.9rem; margin-bottom:0.5rem;">
+                    <div style="font-size:0.72rem; color:#64748b;">Account Name:</div>
+                    <div style="font-weight:700; color:#0f172a; font-size:0.92rem; margin-bottom:0.4rem;">${name}</div>
                     
-                    <div style="font-size:0.7rem; color:#8faaa0;">Maya Mobile Number:</div>
+                    <div style="font-size:0.72rem; color:#64748b;">Maya Mobile Number:</div>
                     <div style="display:flex; align-items:center; justify-content:space-between;">
-                        <span style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:800; color:#34d399; letter-spacing:0.5px;">${num}</span>
-                        <button type="button" onclick="copyPaymentText('${num}', this)" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#f0f7f3; font-size:0.72rem; padding:3px 8px; cursor:pointer; transition:all 0.2s;">
+                        <span style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:800; color:#059669; letter-spacing:0.5px;">${num}</span>
+                        <button type="button" onclick="copyPaymentText('${num}', this)" style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; color:#334155; font-size:0.72rem; padding:4px 10px; cursor:pointer; transition:all 0.2s; font-weight:600;">
                             <i class="far fa-copy"></i> Copy
                         </button>
                     </div>
                 </div>
                 ${qrHtml}
-                <p style="font-size:0.72rem; color:#6ee7b7; margin-top:0.6rem; text-align:center;">
+                <p style="font-size:0.75rem; color:#047857; margin-top:0.6rem; text-align:center; line-height:1.4;">
                     <i class="fas fa-info-circle"></i> Send payment, then enter the <strong>Reference Number</strong> below.
                 </p>
             </div>`;
@@ -749,11 +759,11 @@ function toggleRef(method) {
 
     } else {
         instructions.innerHTML = `
-            <div style="background:rgba(82,183,136,0.06); border:1px solid rgba(82,183,136,0.22); border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
-                <div style="display:flex; align-items:center; gap:0.5rem; color:#52b788; font-weight:700; font-size:0.85rem; margin-bottom:0.35rem;">
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem; color:#166534; font-weight:700; font-size:0.88rem; margin-bottom:0.35rem;">
                     <i class="fas fa-hand-holding-dollar"></i> Over-the-Counter Cash Payment
                 </div>
-                <p style="font-size:0.8rem; color:#a7f3d0; line-height:1.5;">
+                <p style="font-size:0.82rem; color:#14532d; line-height:1.5;">
                     Please settle your membership payment in <strong>Cash</strong> at the Front Desk upon your next visit. Our staff will immediately confirm your payment and extend your subscription.
                 </p>
             </div>`;

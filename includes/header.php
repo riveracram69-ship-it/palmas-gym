@@ -26,11 +26,11 @@ function nav_active($page) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Static versioned asset (avoids cache-busting on every request) -->
-    <link rel="stylesheet" href="assets/css/main.css?v=2.6">
+    <link rel="stylesheet" href="assets/css/main.css?v=3.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
     <meta name="csrf-token" content="<?php echo get_csrf_token(); ?>">
-    <script src="assets/js/main.js?v=2.6" defer></script>
+    <script src="assets/js/main.js?v=3.0" defer></script>
 </head>
 <body>
 <!-- Skip Navigation Landmark (WCAG 2.4.1 — Stage 6 Accessibility) -->

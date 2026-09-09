@@ -305,8 +305,8 @@ if (!$member) { header('Location: logout.php'); exit; }
 
         /* Tips card */
         .tip-card {
-            background: rgba(45,106,79,0.06);
-            border: 1px solid rgba(82,183,136,0.15);
+            background: #f0fdf4;
+            border: 1px solid rgba(62,130,65,0.22);
             border-radius: 16px;
             padding: 1rem 1.25rem;
             display: flex;
@@ -317,15 +317,16 @@ if (!$member) { header('Location: logout.php'); exit; }
         }
 
         .tip-card i {
-            color: #52b788;
+            color: #3e8241;
             margin-top: 2px;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
         }
 
         .tip-card p {
-            font-size: 0.78rem;
-            color: #8faaa0;
+            font-size: 0.8rem;
+            color: #1b4332;
             line-height: 1.55;
+            font-weight: 500;
         }
 
         /* Screenshot and copy protection */

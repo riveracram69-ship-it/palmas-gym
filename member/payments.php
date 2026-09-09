@@ -18,10 +18,10 @@ $pay_count   = count($payments);
 $last_payment = $payments[0] ?? null;
 
 $method_icons = [
-    'Cash'         => ['icon' => 'fa-money-bill', 'color' => '#52b788', 'bg' => 'rgba(46,125,50,0.1)'],
-    'GCash'        => ['icon' => 'fa-mobile-screen', 'color' => '#60a5fa', 'bg' => 'rgba(59,130,246,0.1)'],
-    'Credit Card'  => ['icon' => 'fa-credit-card', 'color' => '#a78bfa', 'bg' => 'rgba(139,92,246,0.1)'],
-    'Bank Transfer'=> ['icon' => 'fa-building-columns', 'color' => '#fbbf24', 'bg' => 'rgba(251,191,36,0.1)'],
+    'Cash'         => ['icon' => 'fa-money-bill', 'color' => '#2d6a4f', 'bg' => 'rgba(45,106,79,0.1)'],
+    'GCash'        => ['icon' => 'fa-mobile-screen', 'color' => '#2563eb', 'bg' => 'rgba(37,99,235,0.1)'],
+    'Credit Card'  => ['icon' => 'fa-credit-card', 'color' => '#7c3aed', 'bg' => 'rgba(124,58,237,0.1)'],
+    'Bank Transfer'=> ['icon' => 'fa-building-columns', 'color' => '#d97706', 'bg' => 'rgba(217,119,6,0.1)'],
 ];
 ?>
 <!DOCTYPE html>
@@ -76,7 +76,7 @@ $method_icons = [
         }
 
         .payment-amount-success {
-            color: #52b788;
+            color: var(--palmas-primary);
             font-weight: 700;
         }
 

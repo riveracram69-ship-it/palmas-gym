@@ -83,6 +83,16 @@ function palmasConfirm(title, message, confirmBtnText, confirmBtnColor, callback
     const modal = document.getElementById('global-confirm-modal');
     if (!modal) return;
     
+    // Support overloaded arguments: palmasConfirm(title, message, callback)
+    if (typeof confirmBtnText === 'function') {
+        callback = confirmBtnText;
+        confirmBtnText = 'Confirm';
+        confirmBtnColor = null;
+    } else if (typeof confirmBtnColor === 'function') {
+        callback = confirmBtnColor;
+        confirmBtnColor = null;
+    }
+
     const titleEl = document.getElementById('global-confirm-title');
     const msgEl = document.getElementById('global-confirm-message');
     const confirmBtn = document.getElementById('global-confirm-btn');
@@ -94,6 +104,8 @@ function palmasConfirm(title, message, confirmBtnText, confirmBtnColor, callback
         confirmBtn.textContent = confirmBtnText || 'Confirm';
         if (confirmBtnColor) {
             confirmBtn.style.background = confirmBtnColor;
+        } else {
+            confirmBtn.style.background = '';
         }
         
         globalConfirmCallback = callback;
@@ -118,4 +130,38 @@ function closeGlobalConfirm() {
     if (modal) {
         modal.style.display = 'none';
     }
+}
+
+// ── Global Toast Notification Helper ──────────────────────────────────────────
+function palmasToast(message, type = 'success') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = 'position:fixed;top:1.5rem;right:1.5rem;z-index:99999;display:flex;flex-direction:column;gap:0.5rem;max-width:380px;pointer-events:none;';
+        document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type}`;
+    toast.style.cssText = 'margin:0;pointer-events:all;box-shadow:var(--shadow-lg);animation:fadeInUp 0.25s ease both;';
+    
+    const iconMap = {
+        success: 'fa-circle-check',
+        error: 'fa-circle-exclamation',
+        danger: 'fa-circle-exclamation',
+        warning: 'fa-triangle-exclamation',
+        info: 'fa-circle-info'
+    };
+    
+    const icon = iconMap[type] || 'fa-bell';
+    toast.innerHTML = `<i class="fas ${icon}" style="margin-right:8px;"></i> <span>${message}</span>`;
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+        toast.style.transition = 'all 0.25s ease';
+        setTimeout(() => toast.remove(), 250);
+    }, 3500);
 }

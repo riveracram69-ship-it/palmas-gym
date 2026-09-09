@@ -48,6 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Amount paid cannot be negative.';
     } else {
         try {
+            $pdo->beginTransaction();
+
             // Calculate renewal expiry: if still active, extend from current expiry; otherwise start from today
             $base_date = date('Y-m-d');
             if ($current_sub && !empty($current_sub['expiry_date']) && strtotime($current_sub['expiry_date']) >= strtotime(date('Y-m-d'))) {

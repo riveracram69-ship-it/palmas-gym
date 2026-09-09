@@ -464,7 +464,7 @@ try {
                 <div class="kpi-icon-box kpi-icon-gold"><i class="fas fa-peso-sign"></i></div>
             </div>
             <div class="kpi-number-wrap">
-                <h2 class="kpi-number" style="color:#52b788;">&#8369;<?php echo number_format($monthly_revenue, 2); ?></h2>
+                <h2 class="kpi-number" style="color:var(--accent);">&#8369;<?php echo number_format($monthly_revenue, 2); ?></h2>
                 <span class="kpi-trend-pill positive">
                     <?php echo date('M Y'); ?>
                 </span>
@@ -1088,9 +1088,9 @@ function renderInactiveTable($list, $title) {
     justify-content: center;
     font-size: 1rem;
 }
-.kpi-icon-green { background: rgba(82,183,136,0.12); color: #52b788; }
-.kpi-icon-blue  { background: rgba(56,189,248,0.12); color: #38bdf8; }
-.kpi-icon-gold  { background: rgba(234,179,8,0.12);  color: #eab308; }
+.kpi-icon-green { background: rgba(62,130,65,0.1); color: var(--accent); }
+.kpi-icon-blue  { background: rgba(37,99,235,0.1); color: #2563eb; }
+.kpi-icon-gold  { background: rgba(217,119,6,0.1);  color: #d97706; }
 .kpi-number-wrap {
     display: flex;
     justify-content: space-between;
@@ -1109,7 +1109,7 @@ function renderInactiveTable($list, $title) {
     border-radius: 12px;
     font-weight: 700;
 }
-.kpi-trend-pill.positive { background: rgba(82,183,136,0.15); color: #52b788; }
+.kpi-trend-pill.positive { background: rgba(62,130,65,0.12); color: var(--accent); }
 .kpi-footer-meta {
     font-size: 0.72rem;
     color: var(--text-muted);
@@ -1159,9 +1159,9 @@ function renderInactiveTable($list, $title) {
     background: rgba(0,0,0,0.04);
 }
 .ws-tab-btn.active {
-    background: linear-gradient(135deg, #1b4332, #2d6a4f);
+    background: linear-gradient(135deg, var(--palmas-primary), var(--palmas-dark));
     color: #ffffff;
-    box-shadow: 0 4px 12px rgba(27,67,50,0.25);
+    box-shadow: 0 4px 12px rgba(62,130,65,0.25);
 }
 .ws-tab-badge {
     font-size: 0.7rem;
@@ -1205,8 +1205,8 @@ function renderInactiveTable($list, $title) {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #52b788;
-    box-shadow: 0 0 10px #52b788;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
     animation: pulse 1.5s infinite;
 }
 .feed-filters-bar {

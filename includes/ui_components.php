@@ -40,13 +40,13 @@ function render_status_badge($status) {
     $badge_class = 'badge-gray';
     $icon = 'fas fa-circle';
 
-    if ($s === 'active' || $s === 'approved' || $s === 'paid' || $s === 'completed') {
+    if ($s === 'active' || $s === 'approved' || $s === 'paid' || $s === 'completed' || $s === 'present') {
         $badge_class = 'badge-success';
         $icon = 'fas fa-check-circle';
-    } elseif ($s === 'expired' || $s === 'rejected' || $s === 'failed' || $s === 'cancelled') {
+    } elseif ($s === 'expired' || $s === 'rejected' || $s === 'failed' || $s === 'cancelled' || $s === 'absent' || $s === 'suspended') {
         $badge_class = 'badge-danger';
-        $icon = 'fas fa-times-circle';
-    } elseif ($s === 'pending' || $s === 'pending review') {
+        $icon = ($s === 'suspended') ? 'fas fa-ban' : 'fas fa-times-circle';
+    } elseif ($s === 'pending' || $s === 'pending review' || $s === 'unpaid') {
         $badge_class = 'badge-pending';
         $icon = 'fas fa-clock';
     } elseif ($s === 'expiring' || $s === 'expiring soon') {
@@ -55,6 +55,9 @@ function render_status_badge($status) {
     } elseif ($s === 'vip' || $s === 'premium') {
         $badge_class = 'badge-gold';
         $icon = 'fas fa-crown';
+    } elseif ($s === 'inactive') {
+        $badge_class = 'badge-gray';
+        $icon = 'fas fa-circle-minus';
     }
 
     return '<span class="badge ' . $badge_class . '"><i class="' . $icon . '" style="font-size:0.65rem;"></i> ' . htmlspecialchars($status) . '</span>';

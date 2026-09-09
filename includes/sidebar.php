@@ -47,7 +47,7 @@ try {
             <a href="pending-registrations.php" class="nav-link <?php echo nav_active('pending-registrations.php'); ?>">
                 <i class="fas fa-user-clock"></i> Pending Approvals
                 <?php if ($pending_regs_count > 0): ?>
-                    <span style="background:#f59e0b; color:#ffffff; border-radius:20px; padding:0.18rem 0.55rem; font-size:0.72rem; font-weight:700; margin-left:auto; display:inline-block; line-height:1;"><?php echo $pending_regs_count; ?></span>
+                    <span class="badge badge-warning" style="margin-left:auto; font-size:0.72rem; padding:0.15rem 0.55rem; border-radius:var(--radius-full);"><?php echo $pending_regs_count; ?></span>
                 <?php endif; ?>
             </a>
         </li>
@@ -75,7 +75,7 @@ try {
             <a href="renewal-requests.php" class="nav-link <?php echo nav_active('renewal-requests.php'); ?>">
                 <i class="fas fa-file-invoice-dollar"></i> Renewal Requests
                 <?php if ($pending_renewals_count > 0): ?>
-                    <span style="background:var(--danger); color:#ffffff; border-radius:20px; padding:0.18rem 0.55rem; font-size:0.72rem; font-weight:700; margin-left:auto; display:inline-block; line-height:1;"><?php echo $pending_renewals_count; ?></span>
+                    <span class="badge badge-danger" style="margin-left:auto; font-size:0.72rem; padding:0.15rem 0.55rem; border-radius:var(--radius-full);"><?php echo $pending_renewals_count; ?></span>
                 <?php endif; ?>
             </a>
         </li>

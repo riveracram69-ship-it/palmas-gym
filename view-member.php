@@ -65,7 +65,7 @@ if (!$member): ?>
 <div style="display:grid; grid-template-columns: 1fr 340px; gap: 2rem;">
     <div style="display:flex; flex-direction:column; gap:2rem;">
         <div class="card" style="padding:0; overflow:hidden;">
-            <div style="height:100px; background:var(--accent-gradient);"></div>
+            <div style="height:100px; background:linear-gradient(135deg, var(--palmas-primary) 0%, var(--palmas-dark) 100%);"></div>
             <div style="padding:2rem; margin-top:-60px; display:flex; gap:2rem; align-items:flex-end;">
                 <div style="width:130px; height:130px; border-radius:20px; background:#fff; border:5px solid #fff; box-shadow:var(--shadow-md); overflow:hidden; display:flex; align-items:center; justify-content:center;">
                     <?php if($member['photo']): ?>

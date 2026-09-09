@@ -102,42 +102,42 @@ $gym_name = htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym");
 <!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-/* ── TOKENS ── */
+/* ── PALMAS DESIGN TOKENS ── */
 :root{
-  --c-bg:       #F2F5F3;
+  --c-bg:       #F4F7F5;
   --c-card:     #FFFFFF;
-  --c-input:    #F8FAF9;
-  --c-input-f:  #EDF7F2;
-  --c-border:   #E2E8E5;
-  --c-border-f: #3AAA6E;
+  --c-input:    #FAFDFA;
+  --c-input-f:  #FFFFFF;
+  --c-border:   #DCE5DD;
+  --c-border-f: #3E8241;
 
-  --c-p:        #1A5C3A;
-  --c-p-mid:    #2D7A52;
-  --c-p-lt:     #3AAA6E;
-  --c-p-pale:   #E8F5EE;
-  --c-p-glow:   rgba(58,170,110,.18);
+  --c-p:        #3E8241;
+  --c-p-mid:    #2D6A4F;
+  --c-p-lt:     #52B788;
+  --c-p-pale:   #EDF4EE;
+  --c-p-glow:   rgba(62,130,65,.18);
 
-  --c-h:        #111827;
-  --c-body:     #374151;
-  --c-muted:    #6B7280;
-  --c-faint:    #9CA3AF;
+  --c-h:        #121A14;
+  --c-body:     #334337;
+  --c-muted:    #617567;
+  --c-faint:    #91A397;
 
   --c-err:      #DC2626;
-  --c-err-p:    #FEF2F2;
+  --c-err-p:    #FEE2E2;
   --c-err-b:    #FECACA;
 
   --r-card:  20px;
-  --r-input: 11px;
-  --r-btn:   11px;
+  --r-input: 12px;
+  --r-btn:   12px;
 
-  --sh-card: 0 2px 4px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.08);
-  --sh-btn:  0 4px 14px rgba(26,92,58,.28);
-  --sh-fo:   0 0 0 3px rgba(58,170,110,.20);
+  --sh-card: 0 4px 20px rgba(18,26,20,.06), 0 1px 3px rgba(18,26,20,.03);
+  --sh-btn:  0 4px 14px rgba(62,130,65,.28);
+  --sh-fo:   0 0 0 3.5px rgba(62,130,65,.16);
 
-  --tr: all .19s cubic-bezier(.4,0,.2,1);
+  --tr: all .2s cubic-bezier(.4,0,.2,1);
 }
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -174,9 +174,9 @@ img{max-width:100%;display:block}
 .logo-ring img{width:100%;height:100%;object-fit:contain}
 .logo-fb{display:none;font-size:2rem;color:var(--c-p)}
 .brand h1{
-  font-family:'Poppins',sans-serif;
-  font-size:1.5rem;font-weight:800;
-  color:var(--c-h);letter-spacing:-.3px;line-height:1.2;
+  font-family:'Outfit',sans-serif;
+  font-size:1.65rem;font-weight:800;
+  color:var(--c-h);letter-spacing:-.4px;line-height:1.2;
 }
 .brand .sub{font-size:.83rem;color:var(--c-muted);margin-top:3px}
 .brand .access-lbl{
@@ -269,7 +269,7 @@ img{max-width:100%;display:block}
   background:linear-gradient(135deg,var(--c-p-lt) 0%,var(--c-p) 100%);
   border:none;border-radius:var(--r-btn);
   color:#fff;
-  font-family:'Poppins',sans-serif;font-size:.96rem;font-weight:700;
+  font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;
   letter-spacing:.2px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;gap:9px;
   margin-top:22px;

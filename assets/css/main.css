@@ -19,27 +19,38 @@
     --space-8:  32px;
     --space-10: 40px;
 
-    /* Surface & Canvas Palette */
-    --primary-bg: #f6f8fb;
+    /* Surface & Canvas Palette (PALMAS Crisp Light Workspace) */
+    --primary-bg: #f5f8f5;
     --secondary-bg: #ffffff;
     --card-bg: #ffffff;
-    --card-hover: #fafbfd;
-    --canvas: #f6f8fb;
+    --card-hover: #fafdfa;
+    --canvas: #f5f8f5;
     --surface: #ffffff;
+    --surface-soft: #edf4ee;
+    --surface-muted: #e2ede4;
 
-    /* Brand Primary (Forest Green Identity) */
-    --brand-primary: #2d6a4f;
+    /* Brand Primary (Official PALMAS Logo Green: #3E8241 & Emeralds) */
+    --palmas-primary: #3e8241;
+    --palmas-primary-dark: #2d6a4f;
+    --palmas-primary-deep: #1b4332;
+    --palmas-primary-light: #52b788;
+    --palmas-dark: #1b4332; /* Alias — deep obsidian emerald */
+    --palmas-mint: #8fcfbc;
+    --palmas-black: #070d09;
+    --palmas-white: #ffffff;
+
+    --brand-primary: #3e8241;
     --brand-dark: #1b4332;
     --brand-light: #52b788;
-    --accent: #2d6a4f;
+    --accent: #3e8241;
     --accent-light: #52b788;
-    --accent-mid: #40916c;
+    --accent-mid: #2d6a4f;
     --accent-hover: #1b4332;
-    --accent-dim: rgba(45, 106, 79, 0.08);
-    --accent-glow: rgba(82, 183, 136, 0.18);
-    --accent-border: rgba(45, 106, 79, 0.22);
-    --accent-gradient: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%);
-    --accent-gradient-hover: linear-gradient(135deg, #357a5b 0%, #204e3b 100%);
+    --accent-dim: rgba(62, 130, 65, 0.08);
+    --accent-glow: rgba(82, 183, 136, 0.20);
+    --accent-border: rgba(62, 130, 65, 0.22);
+    --accent-gradient: linear-gradient(135deg, #3e8241 0%, #1b4332 100%);
+    --accent-gradient-hover: linear-gradient(135deg, #4a9c4e 0%, #245841 100%);
 
     /* VIP Gold & Status Accents */
     --gold: #d4a942;
@@ -47,20 +58,20 @@
     --gold-dim: rgba(212, 169, 66, 0.12);
     --gold-border: rgba(212, 169, 66, 0.3);
 
-    --danger: #e53935;
-    --danger-light: #ef5350;
-    --danger-dim: rgba(229, 57, 53, 0.08);
-    --danger-border: rgba(229, 57, 53, 0.25);
+    --danger: #dc2626;
+    --danger-light: #ef4444;
+    --danger-dim: rgba(220, 38, 38, 0.08);
+    --danger-border: rgba(220, 38, 38, 0.25);
 
     --success: #2e7d32;
     --success-light: #4caf50;
     --success-dim: rgba(46, 125, 50, 0.08);
     --success-border: rgba(46, 125, 50, 0.25);
 
-    --warning: #f57c00;
-    --warning-light: #ff9800;
-    --warning-dim: rgba(245, 124, 0, 0.08);
-    --warning-border: rgba(245, 124, 0, 0.25);
+    --warning: #d97706;
+    --warning-light: #f59e0b;
+    --warning-dim: rgba(217, 119, 6, 0.08);
+    --warning-border: rgba(217, 119, 6, 0.25);
 
     --info: #0284c7;
     --info-light: #38bdf8;
@@ -68,34 +79,34 @@
     --info-border: rgba(2, 132, 199, 0.25);
 
     /* Typography & Neutrals */
-    --text: #1a1d23;
-    --text-main: #0f172a;
-    --text-soft: #334155;
-    --text-muted: #64748b;
-    --text-faint: #94a3b8;
-    --muted: #64748b;
-    --border: #e2e8f0;
-    --border-subtle: #edf2f7;
+    --text: #172018;
+    --text-main: #121a14;
+    --text-soft: #334337;
+    --text-muted: #617567;
+    --text-faint: #91a397;
+    --muted: #617567;
+    --border: #dce5dd;
+    --border-subtle: #ebf0ec;
 
-    /* Admin Sidebar (Obsidian Theme) */
-    --sidebar: #0f141c;
-    --sidebar-bg: #0f141c;
-    --sidebar-surface: #161c26;
+    /* Admin Sidebar (Dark Luxury Emerald Obsidian Theme) */
+    --sidebar: #0d1610;
+    --sidebar-bg: #0d1610;
+    --sidebar-surface: #132018;
     --sidebar-hover: rgba(255, 255, 255, 0.06);
-    --sidebar-active-bg: rgba(45, 106, 79, 0.22);
+    --sidebar-active-bg: rgba(62, 130, 65, 0.22);
     --sidebar-active-border: #52b788;
-    --sidebar-text: #94a3b8;
+    --sidebar-text: #a3b8aa;
     --sidebar-text-active: #ffffff;
-    --sidebar-section-label: #475569;
+    --sidebar-section-label: #526b5a;
     --sidebar-width: 265px;
 
     /* Elevation & Shadows */
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
-    --shadow: 0 2px 12px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.03);
-    --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.03);
-    --shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.04);
-    --shadow-accent: 0 8px 22px rgba(45, 106, 79, 0.25);
+    --shadow-xs: 0 1px 2px rgba(18, 26, 20, 0.04);
+    --shadow-sm: 0 2px 8px rgba(18, 26, 20, 0.04), 0 1px 3px rgba(18, 26, 20, 0.02);
+    --shadow: 0 2px 12px rgba(18, 26, 20, 0.05), 0 1px 4px rgba(18, 26, 20, 0.03);
+    --shadow-md: 0 8px 24px rgba(18, 26, 20, 0.07), 0 2px 6px rgba(18, 26, 20, 0.03);
+    --shadow-lg: 0 16px 40px rgba(18, 26, 20, 0.09), 0 4px 12px rgba(18, 26, 20, 0.04);
+    --shadow-accent: 0 8px 22px rgba(62, 130, 65, 0.25);
     --shadow-glow: 0 0 20px rgba(82, 183, 136, 0.25);
 
     /* Radii */

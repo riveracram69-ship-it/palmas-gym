@@ -45,13 +45,13 @@ $attendance_dates = array_column($attendance_records, 'date');
         .cal-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
+            gap: 6px;
             margin-top: 0.75rem;
         }
 
         .cal-day-label {
             text-align: center;
-            font-size: 0.58rem;
+            font-size: 0.62rem;
             font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
@@ -65,28 +65,30 @@ $attendance_dates = array_column($attendance_records, 'date');
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.62rem;
+            font-size: 0.65rem;
             font-weight: 600;
             cursor: default;
         }
 
         .cal-day.present {
-            background: rgba(46,125,50,0.15);
-            color: #52b788;
-            border: 1px solid rgba(82,183,136,0.25);
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+            font-weight: 700;
         }
 
         .cal-day.absent {
-            background: rgba(255,255,255,0.02);
+            background: #f8fafc;
             color: var(--text-muted);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-subtle);
         }
 
         .cal-day.today {
-            background: linear-gradient(135deg, #2d6a4f, #1b4332);
+            background: linear-gradient(135deg, var(--palmas-primary), var(--palmas-dark));
             color: #fff;
             border: none;
-            box-shadow: 0 4px 12px rgba(45,106,79,0.3);
+            box-shadow: 0 4px 12px rgba(62,130,65,0.3);
+            font-weight: 700;
         }
 
         .cal-legend {
@@ -100,8 +102,9 @@ $attendance_dates = array_column($attendance_records, 'date');
             display: flex;
             align-items: center;
             gap: 5px;
-            font-size: 0.65rem;
-            color: var(--text-muted);
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+            font-weight: 500;
         }
 
         .cal-legend-dot {
@@ -110,13 +113,14 @@ $attendance_dates = array_column($attendance_records, 'date');
         }
 
         .streak-banner {
-            background: linear-gradient(135deg, rgba(212,169,66,0.1), rgba(240,201,110,0.06));
-            border: 1px solid rgba(212,169,66,0.2);
+            background: #fffbeb;
+            border: 1px solid #fef3c7;
             border-radius: 16px;
             padding: 1rem 1.25rem;
             display: flex;
             align-items: center;
             gap: 1rem;
+            box-shadow: var(--shadow-xs);
         }
 
         .streak-icon {
@@ -127,14 +131,15 @@ $attendance_dates = array_column($attendance_records, 'date');
             font-family: 'Outfit', sans-serif;
             font-size: 2rem;
             font-weight: 800;
-            color: #d4a942;
+            color: #b45309;
             line-height: 1;
         }
 
         .streak-label {
-            font-size: 0.72rem;
+            font-size: 0.75rem;
             color: var(--text-secondary);
             margin-top: 2px;
+            font-weight: 500;
         }
     </style>
     <link rel="manifest" href="manifest.json">
@@ -219,15 +224,15 @@ $attendance_dates = array_column($attendance_records, 'date');
 
                 <div class="cal-legend">
                     <div class="cal-legend-item">
-                        <div class="cal-legend-dot" style="background:rgba(82,183,136,0.4); border:1px solid rgba(82,183,136,0.4);"></div>
+                        <div class="cal-legend-dot" style="background:#bbf7d0; border:1px solid #86efac;"></div>
                         Present
                     </div>
                     <div class="cal-legend-item">
-                        <div class="cal-legend-dot" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06);"></div>
+                        <div class="cal-legend-dot" style="background:#f1f5f9; border:1px solid #cbd5e1;"></div>
                         Absent
                     </div>
                     <div class="cal-legend-item">
-                        <div class="cal-legend-dot" style="background:linear-gradient(135deg,#2d6a4f,#1b4332);"></div>
+                        <div class="cal-legend-dot" style="background:linear-gradient(135deg,var(--palmas-primary),var(--palmas-dark));"></div>
                         Today
                     </div>
                 </div>
@@ -249,7 +254,7 @@ $attendance_dates = array_column($attendance_records, 'date');
             <?php else: ?>
                 <?php foreach (array_slice($attendance_records, 0, 30) as $i => $rec): ?>
                 <div class="list-item">
-                    <div class="list-item-icon" style="background:var(--success-bg); color:var(--accent-light);">
+                    <div class="list-item-icon" style="background:#f0fdf4; color:var(--palmas-primary);">
                         <i class="fas fa-dumbbell"></i>
                     </div>
                     <div class="list-item-info">
@@ -257,7 +262,7 @@ $attendance_dates = array_column($attendance_records, 'date');
                         <div class="list-item-sub"><?php echo date('l', strtotime($rec['date'])); ?></div>
                     </div>
                     <div class="list-item-right">
-                        <div class="list-item-value" style="color:var(--accent-light); font-size:0.78rem;">
+                        <div class="list-item-value" style="color:var(--palmas-primary); font-size:0.8rem; font-weight:600;">
                             <?php echo date('M d, Y', strtotime($rec['date'])); ?>
                         </div>
                         <?php if (!empty($rec['time_in'])): ?>
