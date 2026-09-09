@@ -23,17 +23,20 @@ if (!defined('APP_URL')) {
  */
 function get_allowed_origins(): array {
     $origins = [
-        // Capacitor Android app (WebView uses null or file:// origin)
+        // Capacitor Android app (WebView uses https://localhost, capacitor://, null or file://)
+        'https://localhost',
+        'http://localhost',
+        'capacitor://localhost',
+        'ionic://localhost',
         'null',
         'file://',
         // Local development origins
-        'http://localhost',
         'http://127.0.0.1',
         'http://localhost:3000',
         'http://localhost:8080',
-        // Ionic DevApp / Capacitor live reload
-        'ionic://localhost',
-        'capacitor://localhost',
+        // Render Production URLs
+        'https://palmas-gym-4oxn.onrender.com',
+        'https://palmas-gym.onrender.com',
     ];
 
     // Add the configured production origin
@@ -65,14 +68,19 @@ function apply_cors_headers(): void {
         return;
     }
 
-    if (in_array($request_origin, $allowed, true)) {
+    $is_allowed = in_array($request_origin, $allowed, true);
+    if (!$is_allowed) {
+        // Match localhost on any port (for dev servers, emulators, etc.)
+        if (preg_match('/^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2)(:[0-9]+)?$/i', $request_origin)) {
+            $is_allowed = true;
+        }
+    }
+
+    if ($is_allowed) {
         header('Access-Control-Allow-Origin: ' . $request_origin);
         header('Vary: Origin');
     } else {
         // Unknown origin — allow the request through but do NOT reflect origin.
-        // The browser will block the response on the client side due to missing CORS header.
-        // We do NOT return 403 here because the legitimate backend request (e.g. from a webhook)
-        // has no Origin header and should not be blocked.
         header('Vary: Origin');
     }
 

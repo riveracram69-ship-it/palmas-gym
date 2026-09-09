@@ -2465,16 +2465,28 @@ let qrCountdownTimer = null;
 function updateNetworkStatus() {
   const banner = document.getElementById('offline-banner');
   if (!banner) return;
-  if (navigator.onLine) {
-    banner.classList.remove('active');
-  } else {
+  if (navigator.onLine === false) {
     banner.classList.add('active');
-    showToast('Offline Mode: Some real-time features may be unavailable.', 3500);
+  } else {
+    banner.classList.remove('active');
   }
 }
 window.addEventListener('online', updateNetworkStatus);
 window.addEventListener('offline', updateNetworkStatus);
 document.addEventListener('DOMContentLoaded', updateNetworkStatus);
+
+// Eager non-blocking warm-up ping for Render sleeping containers
+function warmupBackend() {
+  window.fetch(`${API_URL}/ping.php`, { method: 'GET', cache: 'no-store' })
+    .then(r => {
+      if (r.ok) {
+        const b = document.getElementById('offline-banner');
+        if (b) b.classList.remove('active');
+      }
+    })
+    .catch(() => {});
+}
+window.addEventListener('DOMContentLoaded', warmupBackend);
 
 // ── Centralized Secure API Client with 401 Expiry Interception (Stage 5) ─
 class GymApiClient {
@@ -2487,11 +2499,6 @@ class GymApiClient {
   }
 
   async request(endpoint, options = {}) {
-    if (!navigator.onLine) {
-      showToast('You are currently offline. Please check your network connection.');
-      throw new Error('Offline');
-    }
-
     const token = this.getAuthToken();
     const isFormData = options.body instanceof FormData;
     const defaultHeaders = {};
@@ -2511,20 +2518,40 @@ class GymApiClient {
       ? endpoint 
       : `${this.baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
 
-    const response = await authFetch(url, {
-      ...options,
-      headers
-    });
+    // Resilient timeout with AbortController (35s timeout to gracefully tolerate cold-starts)
+    const timeoutMs = options.timeout || 35000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    // Universal HTTP 401 Session Expiration Interceptor
-    if (response.status === 401) {
-      if (!endpoint.includes('member_login.php') && !endpoint.includes('google_auth.php')) {
-        this.handleSessionExpired();
-        throw new Error('Session expired (401 Unauthorized)');
+    try {
+      // Direct window.fetch call to avoid recursion and maximum call stack errors
+      const response = await window.fetch(url, {
+        ...options,
+        headers,
+        signal: controller.signal
+      });
+
+      // Clear offline banner on successful connection
+      const banner = document.getElementById('offline-banner');
+      if (banner) banner.classList.remove('active');
+
+      // Universal HTTP 401 Session Expiration Interceptor
+      if (response.status === 401) {
+        if (!endpoint.includes('member_login.php') && !endpoint.includes('google_auth.php')) {
+          this.handleSessionExpired();
+          throw new Error('Session expired (401 Unauthorized)');
+        }
       }
-    }
 
-    return response;
+      return response;
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        throw new Error('Server connection timed out. If the server was sleeping, please try again in a moment.');
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   async get(endpoint, options = {}) {
@@ -2788,7 +2815,7 @@ async function handleGoogleCredential(response) {
       showToast(data.message || 'Authentication failed. Please try again.');
     }
   } catch (err) {
-    showToast('Unable to connect to gym authentication server. Check connection.');
+    showToast(err.message || 'Unable to connect to gym authentication server. Check connection.');
   }
 }
 
@@ -2836,7 +2863,7 @@ async function submitTraditionalLogin() {
       showToast(data.message || 'Invalid Member ID, Email, or Password.');
     }
   } catch (err) {
-    showToast('Connection error. Please check your internet connection.');
+    showToast(err.message || 'Connection error. Please check your internet connection.');
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> SIGN IN';

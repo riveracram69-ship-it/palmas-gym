@@ -4,7 +4,20 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/cors.php'; // [R-02 FIX] Replaced wildcard CORS with origin-allowlist
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
-// Ensure database schema is migrated
+// Fast-path: instant health ping response without information_schema table locks
+if (!isset($_GET['migrate'])) {
+    echo json_encode([
+        'success' => true,
+        'message' => 'Service healthy',
+        'status'  => 'ok',
+        'server'  => 'palmas-gym',
+        'version' => 'v2.4-fast-ping',
+        'ts'      => time()
+    ]);
+    exit;
+}
+
+// Ensure database schema is migrated (when ?migrate=1 requested)
 $migrated = false;
 try {
     require_once __DIR__ . '/../config/db.php';
@@ -26,7 +39,7 @@ echo json_encode([
     'message' => 'Service healthy',
     'status'  => 'ok',
     'server'  => 'palmas-gym',
-    'version' => 'v2.3-migrations-active',
+    'version' => 'v2.4-fast-ping',
     'schema_migrated' => $migrated,
     'ts'      => time()
 ]);
