@@ -25,22 +25,31 @@
        PALMA'S ELITE GYM — UNIFIED DESIGN SYSTEM (MOBILE-FIRST)
        ══════════════════════════════════════════════════════════════════ */
     :root {
-      /* Primary Brand Tokens */
-      --background: #061F18;
-      --background-secondary: #092A20;
-      --card: #0D3427;
-      --card-elevated: #123D2E;
+      /* Primary PALMAS Brand Tokens */
+      --palmas-primary: #3E8241;
+      --palmas-primary-dark: #2D6A4F;
+      --palmas-primary-deep: #1B4332;
+      --palmas-primary-light: #52B788;
+      --palmas-dark: #1B4332;
+      --palmas-mint: #8FCFBC;
 
-      --primary: #55D69A;
-      --primary-light: #8BE8B8;
+      /* Mobile Dark Emerald Surfaces */
+      --background: #082119;
+      --background-secondary: #0D2E23;
+      --card: #123B2D;
+      --card-elevated: #184938;
+
+      --primary: #52B788;
+      --primary-light: #8FCFBC;
+      --primary-dark: #3E8241;
 
       --text-primary: #F4FFF9;
-      --text-secondary: #A8C9B8;
-      --text-muted: #6F9685;
+      --text-secondary: #B2D8C7;
+      --text-muted: #7EAA96;
 
-      --border: #1D5944;
+      --border: #205743;
 
-      --success: #55D69A;
+      --success: #52B788;
       --warning: #F4C95D;
       --danger: #F06A6A;
 
@@ -55,7 +64,7 @@
 
       /* Backward-Compatible Aliases */
       --gym-dark: var(--background);
-      --gym-darker: #03140f;
+      --gym-darker: #051610;
       --gym-card: var(--card);
       --gym-card-hover: var(--card-elevated);
       --gym-green: var(--background-secondary);
@@ -169,16 +178,16 @@
 
     .card-elevated {
       background: var(--card-elevated);
-      border-color: rgba(85, 214, 154, 0.25);
+      border-color: rgba(82, 183, 136, 0.28);
     }
 
     /* ── GLOBAL BUTTON SYSTEM ─────────────────────────────────────── */
     .btn-primary {
       width: 100%;
       height: 54px;
-      background: var(--primary);
-      color: #061F18;
-      border: none;
+      background: linear-gradient(135deg, #3E8241 0%, #2D6A4F 100%);
+      color: #FFFFFF;
+      border: 1px solid rgba(82, 183, 136, 0.35);
       border-radius: 14px;
       font-family: 'Outfit', sans-serif;
       font-size: 16px;
@@ -189,13 +198,13 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      box-shadow: 0 4px 16px rgba(85, 214, 154, 0.25);
-      transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 4px 18px rgba(62, 130, 65, 0.4);
+      transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
     }
 
     .btn-primary:active {
       transform: scale(0.98);
-      box-shadow: 0 2px 8px rgba(85, 214, 154, 0.15);
+      box-shadow: 0 2px 8px rgba(62, 130, 65, 0.25);
     }
 
     .btn-primary:disabled {
@@ -382,7 +391,7 @@
     .pill-active,
     .badge-paid,
     .badge-active {
-      background: rgba(85, 214, 154, 0.15);
+      background: rgba(82, 183, 136, 0.15);
       border: 1px solid var(--success);
       color: var(--success);
     }
@@ -532,7 +541,7 @@
       height: 3px;
       background: var(--primary);
       border-radius: 0 0 3px 3px;
-      box-shadow: 0 2px 8px rgba(85, 214, 154, 0.5);
+      box-shadow: 0 2px 8px rgba(82, 183, 136, 0.5);
     }
 
     /* ── SPLASH SCREEN ────────────────────────────────────────────── */
@@ -557,7 +566,7 @@
       align-items: center;
       justify-content: center;
       border: 2px solid var(--primary);
-      box-shadow: 0 0 30px rgba(85, 214, 154, 0.25), 0 8px 24px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 0 30px rgba(82, 183, 136, 0.25), 0 8px 24px rgba(0, 0, 0, 0.5);
     }
 
     /* ── LOGIN SCREEN ─────────────────────────────────────────────── */
@@ -739,7 +748,7 @@
       background: var(--primary);
       border-color: var(--primary);
       color: #061F18;
-      box-shadow: 0 2px 10px rgba(85, 214, 154, 0.3);
+      box-shadow: 0 2px 10px rgba(82, 183, 136, 0.3);
     }
 
     /* ── CHECKOUT & PLAN CARDS ────────────────────────────────────── */
@@ -757,7 +766,7 @@
     .plan-card.selected {
       background: var(--card-elevated);
       border-color: var(--primary);
-      box-shadow: 0 0 20px rgba(85, 214, 154, 0.2);
+      box-shadow: 0 0 20px rgba(82, 183, 136, 0.2);
     }
 
     .plan-check {
@@ -799,7 +808,7 @@
     .payment-method-card.selected {
       background: var(--card-elevated);
       border-color: var(--primary);
-      box-shadow: 0 0 16px rgba(85, 214, 154, 0.2);
+      box-shadow: 0 0 16px rgba(82, 183, 136, 0.2);
     }
 
     .pm-left {
@@ -897,13 +906,13 @@
     }
 
     .result-success {
-      background: rgba(85, 214, 154, 0.08);
-      border: 1px solid rgba(85, 214, 154, 0.35);
+      background: rgba(82, 183, 136, 0.08);
+      border: 1px solid rgba(82, 183, 136, 0.35);
     }
     .result-success .result-icon-circle {
       background: var(--success);
       color: #061F18;
-      box-shadow: 0 0 24px rgba(85, 214, 154, 0.4);
+      box-shadow: 0 0 24px rgba(82, 183, 136, 0.4);
     }
 
     .result-pending {
@@ -976,7 +985,7 @@
       background: var(--primary);
       border-color: var(--primary);
       color: #061F18;
-      box-shadow: 0 0 12px rgba(85, 214, 154, 0.35);
+      box-shadow: 0 0 12px rgba(82, 183, 136, 0.35);
     }
 
     .step-dot.done {
@@ -1078,7 +1087,7 @@
     }
 
     .notif-item.unread {
-      border-color: rgba(85, 214, 154, 0.4);
+      border-color: rgba(82, 183, 136, 0.4);
     }
 
     .notif-item.unread::before {
@@ -1219,7 +1228,7 @@
     .spinner {
       width: 22px;
       height: 22px;
-      border: 2.5px solid rgba(85, 214, 154, 0.25);
+      border: 2.5px solid rgba(82, 183, 136, 0.25);
       border-top-color: var(--primary);
       border-radius: 50%;
       animation: spin 0.75s linear infinite;
@@ -1776,7 +1785,7 @@
           <div class="payments-container">
             <div class="card card-elevated" style="margin-bottom:18px;">
               <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
-                <div style="width:40px; height:40px; border-radius:12px; background:rgba(85,214,154,0.15); border:1px solid var(--primary); display:flex; align-items:center; justify-content:center; color:var(--primary);">
+                <div style="width:40px; height:40px; border-radius:12px; background:rgba(82, 183, 136,0.15); border:1px solid var(--primary); display:flex; align-items:center; justify-content:center; color:var(--primary);">
                   <i class="fa-solid fa-bolt" style="font-size:1.1rem;"></i>
                 </div>
                 <div>
@@ -2179,7 +2188,7 @@
           </div>
 
           <!-- Cash Details Notice -->
-          <div id="checkout-cash-notice" style="display:none; text-align:center; padding:14px; background:rgba(85,214,154,0.1); border:1px solid var(--border); border-radius:16px; margin-bottom:14px; font-size:13px; color:var(--text-secondary);">
+          <div id="checkout-cash-notice" style="display:none; text-align:center; padding:14px; background:rgba(82, 183, 136,0.1); border:1px solid var(--border); border-radius:16px; margin-bottom:14px; font-size:13px; color:var(--text-secondary);">
             <i class="fa-solid fa-circle-info" style="color:var(--primary); margin-right:6px;"></i> Proceed to the gym front desk. Staff will verify and activate your renewal once received.
           </div>
 
@@ -2386,7 +2395,7 @@
         <p style="color:var(--text-muted); font-size:12px; margin:2px 0 0;" id="notif-unread-count">0 unread</p>
       </div>
       <div style="display:flex; gap:8px;">
-        <button onclick="markAllRead()" style="background:rgba(85,214,154,0.15); border:1px solid var(--border); border-radius:10px; color:var(--primary); font-size:12px; font-weight:700; padding:6px 12px; cursor:pointer;">
+        <button onclick="markAllRead()" style="background:rgba(82, 183, 136,0.15); border:1px solid var(--border); border-radius:10px; color:var(--primary); font-size:12px; font-weight:700; padding:6px 12px; cursor:pointer;">
           <i class="fa-solid fa-check-double" style="margin-right:4px;"></i>Mark Read
         </button>
         <button onclick="closeNotifPanel()" style="background:none; border:none; color:var(--text-muted); font-size:1.3rem; cursor:pointer; padding:4px 8px;">✕</button>
@@ -3473,7 +3482,7 @@ function renderAttendance(list) {
   if (!list.length) {
     c.innerHTML = `
       <div style="text-align:center; padding:48px 20px; color:var(--text-muted);">
-        <div style="width:64px; height:64px; border-radius:50%; background:rgba(85,214,154,0.1); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; color:var(--primary); font-size:24px;">
+        <div style="width:64px; height:64px; border-radius:50%; background:rgba(82, 183, 136,0.1); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; color:var(--primary); font-size:24px;">
           <i class="fa-solid fa-calendar-xmark"></i>
         </div>
         <h4 style="color:var(--text-primary); font-size:1rem; font-weight:700; margin:0 0 6px;">No attendance recorded yet</h4>
