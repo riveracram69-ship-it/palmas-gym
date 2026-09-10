@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * api/register_device.php — Mobile Push Notification Device Token Registration
  * 

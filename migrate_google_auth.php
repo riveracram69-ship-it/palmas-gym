@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Defense-in-Depth: Restrict execution to CLI or authenticated administrator
 if (php_sapi_name() !== 'cli') {
     require_once __DIR__ . '/config/auth.php';

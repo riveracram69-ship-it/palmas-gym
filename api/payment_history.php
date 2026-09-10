@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * api/payment_history.php
  * Authenticated Payment History API for Member Mobile Application

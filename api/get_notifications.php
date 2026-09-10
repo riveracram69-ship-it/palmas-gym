@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * api/get_notifications.php — Mobile API Endpoint for Notifications
  * 

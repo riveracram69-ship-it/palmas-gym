@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * api/member_profile.php — Member Profile Management API
  */

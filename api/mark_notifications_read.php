@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * api/mark_notifications_read.php — Mobile API Endpoint
  */

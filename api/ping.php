@@ -19,15 +19,24 @@ if (!isset($_GET['migrate'])) {
 
 // Ensure database schema is migrated (when ?migrate=1 requested)
 $migrated = false;
+$migration_log = [];
 try {
     require_once __DIR__ . '/../config/db.php';
     if ($pdo) {
-        $stmt = $pdo->query("SHOW COLUMNS FROM members LIKE 'account_status'");
-        if (!$stmt->fetch()) {
-            // Self-heal: missing column detected, run migration
-            require_once __DIR__ . '/../migrate_system_v2.php';
+        $stmtPlans = $pdo->query("SHOW COLUMNS FROM membership_plans LIKE 'is_test_promo'");
+        $hasTestPromo = ($stmtPlans && $stmtPlans->fetch());
+
+        $stmtMembers = $pdo->query("SHOW COLUMNS FROM members LIKE 'account_status'");
+        $hasAccountStatus = ($stmtMembers && $stmtMembers->fetch());
+
+        if (!$hasTestPromo || !$hasAccountStatus || isset($_GET['force'])) {
+            define('ALLOW_INTERNAL_MIGRATION', true);
+            ob_start();
+            require_once __DIR__ . '/../migrate_clean_unified.php';
             require_once __DIR__ . '/../migrate_google_auth.php';
+            $logOutput = ob_get_clean();
             $migrated = true;
+            $migration_log = array_filter(explode("\n", trim($logOutput)));
         }
     }
 } catch (Throwable $me) {
@@ -41,6 +50,7 @@ echo json_encode([
     'server'  => 'palmas-gym',
     'version' => 'v2.4-fast-ping',
     'schema_migrated' => $migrated,
+    'migration_log'   => $migration_log,
     'ts'      => time()
 ]);
 

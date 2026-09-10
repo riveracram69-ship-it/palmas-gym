@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * api/member_dashboard.php — High-Resilience Member Dashboard API
  */

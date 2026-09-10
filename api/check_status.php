@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * api/check_status.php
  * Authenticated Real-Time Payment Status & Verification API

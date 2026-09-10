@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * api/payment_detail.php
  * Authenticated Payment Details & Official Receipt API
