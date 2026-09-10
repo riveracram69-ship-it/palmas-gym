@@ -2245,9 +2245,9 @@
               </div>
 
               <div class="input-field-wrap" style="margin-top:6px;">
-                <input type="text" id="reg-ref-no" placeholder="Transaction Reference No. (Required)" />
+                <input type="text" id="reg-ref-no" placeholder="Payment Reference No. (from GCash/Maya receipt)" />
               </div>
-              <span style="display:block; color:var(--gym-muted); font-size:0.72rem; margin-top:5px;">Enter reference number from your payment receipt</span>
+              <span style="display:block; color:var(--gym-muted); font-size:0.72rem; margin-top:5px;">Enter reference number from your payment receipt. If paying upon arrival, select <strong>Cash</strong> above.</span>
             </div>
 
             <div id="reg-cash-info-wrap" style="display:none; text-align:center; padding:14px; background:rgba(82,183,136,0.1); border-radius:12px; font-size:0.82rem; color:var(--gym-light); margin-top:8px;">
@@ -4259,7 +4259,7 @@ function renderPlanCards(plans, container) {
 async function submitRegistration() {
   const refNo = (document.getElementById('reg-ref-no')?.value || '').trim();
   if (selectedRegPaymentMethod !== 'Cash' && !refNo) {
-    return showToast(`Please enter your ${selectedRegPaymentMethod} Reference Number.`);
+    return showToast(`Please enter your ${selectedRegPaymentMethod} Reference Number, or select Cash to pay upon arrival.`);
   }
 
   const btn = document.getElementById('btn-submit-reg');

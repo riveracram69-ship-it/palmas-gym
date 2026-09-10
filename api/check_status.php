@@ -22,7 +22,51 @@ require_once __DIR__ . '/../config/env.php';
 require_once __DIR__ . '/../config/payment.php';
 require_once __DIR__ . '/../config/paymongo.php';
 
-$ref = trim($_GET['ref'] ?? $_GET['reference'] ?? '');
+// ── MEMBER REGISTRATION APPROVAL STATUS CHECK ──────────────────────
+// Supports mobile app polling when a user is on the "Registration Pending" screen
+$raw_input = file_get_contents('php://input');
+$input_data = json_decode($raw_input, true) ?: $_POST;
+$identifier = trim($input_data['identifier'] ?? $_GET['identifier'] ?? '');
+
+if (!empty($identifier)) {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        $stmt = $pdo->prepare("
+            SELECT id, membership_id, full_name, email, contact_number, account_status, status, rejection_reason
+            FROM members 
+            WHERE email = ? OR membership_id = ? OR contact_number = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$identifier, $identifier, $identifier]);
+        $member = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($member) {
+            echo json_encode([
+                'success'          => true,
+                'account_status'   => $member['account_status'] ?? 'Pending',
+                'status'           => $member['status'] ?? 'Inactive',
+                'membership_id'    => $member['membership_id'],
+                'email'            => $member['email'],
+                'full_name'        => $member['full_name'],
+                'rejection_reason' => $member['rejection_reason'] ?? null
+            ]);
+            exit;
+        } else {
+            echo json_encode([
+                'success' => false,
+                'message' => 'No registration record found for this email or Member ID.'
+            ]);
+            exit;
+        }
+    } catch (Throwable $e) {
+        error_log('check_status identifier lookup error: ' . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Database error checking status.']);
+        exit;
+    }
+}
+
+// ── PAYMENT TRANSACTION STATUS CHECK ──────────────────────────────
+$ref = trim($_GET['ref'] ?? $_GET['reference'] ?? $input_data['ref'] ?? $input_data['reference'] ?? '');
 
 if (empty($ref)) {
     if (str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'text/html') || isset($_GET['status'])) {
