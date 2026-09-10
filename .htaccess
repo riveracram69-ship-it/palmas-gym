@@ -17,7 +17,7 @@ Options -Indexes -MultiViews
 </FilesMatch>
 
 # 3. Block Direct HTTP Access to Standalone Migration and Seeder Scripts
-<FilesMatch "(?i)^(migrate_|seed_|refactor_|create_|describe_|inspect_|show_|set_test_).*\.php$">
+<FilesMatch "(?i)^(migrate_|seed_|refactor_|create_tables|create_test|describe_|inspect_|show_|set_test_).*\.php$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
