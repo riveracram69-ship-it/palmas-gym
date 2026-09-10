@@ -1276,6 +1276,277 @@
       from { transform: translateY(-100%); }
       to { transform: translateY(0); }
     }
+
+    /* ── QUICK ACCESS BUTTONS (HOME TAB) ─────────────────────── */
+    .quick-actions-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .quick-action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 8px 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .quick-action-btn:active { transform: scale(0.94); background: var(--card-elevated); }
+    .quick-action-icon {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.15rem;
+    }
+    .quick-action-icon.green { background: rgba(82,183,136,0.15); color: var(--primary); }
+    .quick-action-icon.purple { background: rgba(167,139,250,0.15); color: #a78bfa; }
+    .quick-action-icon.gold { background: rgba(244,201,93,0.15); color: var(--warning); }
+    .quick-action-icon.blue { background: rgba(96,165,250,0.15); color: #60a5fa; }
+    .quick-action-label {
+      font-size: 0.67rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      line-height: 1.2;
+    }
+
+    /* ── PENDING RENEWAL BANNER ───────────────────────────────── */
+    .pending-renewal-banner {
+      background: rgba(244,201,93,0.08);
+      border: 1.5px dashed var(--warning);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .pending-renewal-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: rgba(244,201,93,0.15);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--warning); font-size: 1rem; flex-shrink: 0;
+    }
+
+    /* ── CLUB INFORMATION CARD ────────────────────────────────── */
+    .club-info-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .club-info-header {
+      padding: 14px 18px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .club-info-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(32,87,67,0.3);
+    }
+    .club-info-row:last-child { border-bottom: none; }
+    .club-info-row-icon {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      background: rgba(82,183,136,0.12);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--primary); font-size: 0.85rem; flex-shrink: 0;
+    }
+    .club-info-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.4px; }
+    .club-info-value { font-size: 0.85rem; color: var(--text-primary); font-weight: 600; margin-top: 1px; }
+
+    /* ── ATTENDANCE HEATMAP ───────────────────────────────────── */
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      margin: 10px 0;
+    }
+    .heatmap-day-label {
+      text-align: center;
+      font-size: 0.58rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      padding-bottom: 3px;
+    }
+    .heatmap-day {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      font-weight: 700;
+      cursor: default;
+      transition: transform 0.15s ease;
+    }
+    .heatmap-day.present {
+      background: rgba(82,183,136,0.25);
+      color: var(--primary);
+      border: 1px solid rgba(82,183,136,0.4);
+      font-weight: 800;
+    }
+    .heatmap-day.absent {
+      background: rgba(29,89,68,0.3);
+      color: var(--text-muted);
+      border: 1px solid rgba(32,87,67,0.2);
+    }
+    .heatmap-day.today {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #061F18;
+      border: none;
+      box-shadow: 0 3px 10px rgba(82,183,136,0.4);
+      font-weight: 900;
+    }
+    .heatmap-legend {
+      display: flex; gap: 12px;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+    .heatmap-legend-item {
+      display: flex; align-items: center;
+      gap: 5px;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .heatmap-legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 3px;
+    }
+
+    /* ── STREAK BANNER ────────────────────────────────────────── */
+    .streak-banner {
+      background: rgba(244,201,93,0.08);
+      border: 1px solid rgba(244,201,93,0.25);
+      border-radius: 18px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .streak-emoji { font-size: 2rem; line-height: 1; }
+    .streak-count {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--warning);
+      line-height: 1;
+    }
+    .streak-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    /* ── TOTAL PAID BANNER (PAYMENTS TAB) ────────────────────── */
+    .total-paid-banner {
+      background: linear-gradient(145deg, #1b4332 0%, #0a2218 60%, #060f0a 100%);
+      border-radius: 22px;
+      padding: 22px;
+      border: 1px solid rgba(82,183,136,0.15);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .total-paid-banner::before {
+      content: '';
+      position: absolute;
+      top: -50px; right: -50px;
+      width: 160px; height: 160px;
+      background: radial-gradient(circle, rgba(82,183,136,0.1) 0%, transparent 70%);
+    }
+    .total-paid-label {
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.4);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .total-paid-amount {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.4rem;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+    .total-paid-sub {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.35);
+      margin-top: 5px;
+    }
+
+    /* ── PROFILE PHOTO UPLOAD ─────────────────────────────────── */
+    .photo-upload-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+    .photo-upload-preview {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--card-elevated), var(--card));
+      border: 2px solid var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      margin: 0 auto 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      cursor: pointer;
+      position: relative;
+    }
+    .photo-upload-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-upload-preview .camera-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 1.2rem;
+      opacity: 0; transition: opacity 0.2s ease;
+    }
+    .photo-upload-preview:hover .camera-overlay { opacity: 1; }
+    .photo-upload-btn {
+      width: 100%; height: 44px;
+      background: rgba(82,183,136,0.1);
+      border: 1px solid rgba(82,183,136,0.35);
+      border-radius: 12px;
+      color: var(--primary);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px;
+      font-family: 'Outfit', sans-serif;
+      transition: all 0.2s ease;
+    }
+    .photo-upload-btn:active { background: rgba(82,183,136,0.2); transform: scale(0.98); }
+    #photo-file-input { display: none; }
   </style>
 </head>
 <body>
@@ -1594,9 +1865,17 @@
           <div class="dark-card" style="padding:16px; margin-bottom:16px;">
             <label style="display:block; color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:10px;">Choose Payment Option</label>
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:12px;">
-              <button type="button" class="gender-btn selected" id="reg-pm-gcash" onclick="selectRegPaymentMethod('GCash')">⚡ GCash</button>
-              <button type="button" class="gender-btn" id="reg-pm-maya" onclick="selectRegPaymentMethod('Maya')">⚡ Maya</button>
-              <button type="button" class="gender-btn" id="reg-pm-cash" onclick="selectRegPaymentMethod('Cash')">💵 Cash</button>
+              <button type="button" class="gender-btn selected" id="reg-pm-gcash" onclick="selectRegPaymentMethod('GCash')" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                <svg viewBox="0 0 32 32" width="16" height="16" fill="none"><rect width="32" height="32" rx="6" fill="#007DFE"/><path d="M16 6.5C10.75 6.5 6.5 10.75 6.5 16S10.75 25.5 16 25.5c4.54 0 8.32-3.18 9.22-7.44H16v-3.8h12.87C28.95 14.8 29 15.4 29 16c0 7.18-5.82 13-13 13C8.82 29 3 23.18 3 16S8.82 3 16 3c4.1 0 7.76 1.7 10.33 4.45l-2.68 2.68C21.9 8.3 19.1 6.5 16 6.5z" fill="#FFF"/><circle cx="24.8" cy="10.8" r="2.2" fill="#FFF"/></svg>
+                GCash
+              </button>
+              <button type="button" class="gender-btn" id="reg-pm-maya" onclick="selectRegPaymentMethod('Maya')" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                <svg viewBox="0 0 32 32" width="16" height="16" fill="none"><rect width="32" height="32" rx="6" fill="#0D1117"/><path d="M7 23V14c0-2.76 2.24-5 5-5s5 2.24 5 5v9" stroke="#00D664" stroke-width="3.2" stroke-linecap="round"/><path d="M17 14c0-2.76 2.24-5 5-5s5 2.24 5 5v9" stroke="#00D664" stroke-width="3.2" stroke-linecap="round"/></svg>
+                Maya
+              </button>
+              <button type="button" class="gender-btn" id="reg-pm-cash" onclick="selectRegPaymentMethod('Cash')" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                <i class="fa-solid fa-money-bill-wave" style="color:var(--primary);"></i> Cash
+              </button>
             </div>
 
             <!-- ONLINE QR CHECKOUT CONTAINER -->
@@ -1738,6 +2017,78 @@
               <i class="fa-solid fa-qrcode" style="color:var(--primary); margin-right:4px;"></i> Scan this pass at the entrance kiosk for instant attendance.
             </div>
           </div>
+
+          <!-- Quick Access Buttons -->
+          <div style="padding: 0 16px;">
+            <h4 style="color:var(--text-secondary); font-size:0.72rem; text-transform:uppercase; font-weight:800; margin:0 0 10px; letter-spacing:0.5px;">
+              <i class="fa-solid fa-bolt" style="color:var(--primary); margin-right:5px;"></i>Quick Access
+            </h4>
+            <div class="quick-actions-grid">
+              <div class="quick-action-btn" onclick="switchToTab('tab-attendance')">
+                <div class="quick-action-icon purple"><i class="fa-solid fa-calendar-check"></i></div>
+                <span class="quick-action-label">Attendance</span>
+              </div>
+              <div class="quick-action-btn" onclick="switchToTab('tab-payments')">
+                <div class="quick-action-icon gold"><i class="fa-solid fa-receipt"></i></div>
+                <span class="quick-action-label">Payments</span>
+              </div>
+              <div class="quick-action-btn" onclick="switchToTab('tab-profile')">
+                <div class="quick-action-icon blue"><i class="fa-solid fa-user-circle"></i></div>
+                <span class="quick-action-label">My Profile</span>
+              </div>
+              <div class="quick-action-btn" onclick="openRenewalModal()">
+                <div class="quick-action-icon green"><i class="fa-solid fa-arrows-rotate"></i></div>
+                <span class="quick-action-label">Renew</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pending Renewal Banner -->
+          <div id="home-pending-banner" class="pending-renewal-banner" style="margin:0 16px 14px; display:none;">
+            <div class="pending-renewal-icon"><i class="fa-solid fa-spinner fa-spin"></i></div>
+            <div style="flex:1; min-width:0;">
+              <p style="margin:0; font-size:0.78rem; font-weight:800; color:var(--warning); text-transform:uppercase; letter-spacing:0.5px;">Renewal Under Review</p>
+              <p id="home-pending-text" style="margin:3px 0 0; font-size:0.78rem; color:var(--text-secondary); line-height:1.4;">Your renewal request is pending admin approval.</p>
+            </div>
+          </div>
+
+          <!-- Club Information -->
+          <div style="padding:0 16px; margin-bottom:16px;">
+            <div class="club-info-card">
+              <div class="club-info-header">
+                <i class="fa-solid fa-dumbbell"></i> Club Information
+              </div>
+              <div class="club-info-row">
+                <div class="club-info-row-icon"><i class="fa-solid fa-clock"></i></div>
+                <div>
+                  <div class="club-info-label">Operating Hours</div>
+                  <div class="club-info-value" id="gym-hours">Mon – Sat: 6:00 AM – 9:00 PM</div>
+                </div>
+              </div>
+              <div class="club-info-row">
+                <div class="club-info-row-icon"><i class="fa-solid fa-location-dot"></i></div>
+                <div>
+                  <div class="club-info-label">Location</div>
+                  <div class="club-info-value" id="gym-address">Palma's Elite Gym Building</div>
+                </div>
+              </div>
+              <div class="club-info-row">
+                <div class="club-info-row-icon"><i class="fa-solid fa-phone"></i></div>
+                <div>
+                  <div class="club-info-label">Contact</div>
+                  <div class="club-info-value" id="gym-phone">(02) 8123-4567</div>
+                </div>
+              </div>
+              <div class="club-info-row">
+                <div class="club-info-row-icon"><i class="fa-solid fa-envelope"></i></div>
+                <div>
+                  <div class="club-info-label">Email</div>
+                  <div class="club-info-value" id="gym-email">support@palmaselite.com</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </ion-content>
       </ion-tab>
 
@@ -1753,25 +2104,61 @@
         </ion-header>
         <ion-content fullscreen="true">
           <div class="attendance-container">
-            <!-- Summary Counter Badges -->
+
+            <!-- Stats Row -->
             <div class="stat-cards-row">
+              <div class="stat-card">
+                <div class="lbl">Total Visits</div>
+                <h2 id="att-total-count" class="val" style="color:var(--primary);">0</h2>
+                <span style="font-size:11px; color:var(--text-muted);">all time</span>
+              </div>
               <div class="stat-card">
                 <div class="lbl">This Month</div>
                 <h2 id="att-month-count" class="val">0</h2>
                 <span style="font-size:11px; color:var(--text-muted);">check-ins</span>
               </div>
-              <div class="stat-card">
-                <div class="lbl">This Week</div>
-                <h2 id="att-week-count" class="val" style="color:var(--primary);">0</h2>
-                <span style="font-size:11px; color:var(--text-muted);">check-ins</span>
+            </div>
+
+            <!-- Streak Banner -->
+            <div class="streak-banner">
+              <div class="streak-emoji">🔥</div>
+              <div>
+                <div style="display:flex; align-items:baseline; gap:6px;">
+                  <span id="att-week-count" class="streak-count">0</span>
+                </div>
+                <div class="streak-label">visits this week — keep it up!</div>
               </div>
             </div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; margin:20px 0 12px;">
-              <h4 class="section-title" style="margin:0;">Recent Check-ins</h4>
-              <span style="font-size:12px; color:var(--text-muted);">Turnstile Records</span>
+            <!-- 28-Day Calendar Heatmap -->
+            <div class="card" style="padding:16px; margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <h4 style="color:var(--text-primary); font-size:0.82rem; text-transform:uppercase; font-weight:800; margin:0; letter-spacing:0.5px;">
+                  <i class="fa-solid fa-calendar-days" style="color:var(--primary); margin-right:6px;"></i>Last 28 Days
+                </h4>
+              </div>
+              <div id="attendance-heatmap"></div>
+              <div class="heatmap-legend">
+                <div class="heatmap-legend-item">
+                  <div class="heatmap-legend-dot" style="background:rgba(82,183,136,0.25); border:1px solid rgba(82,183,136,0.4);"></div>
+                  Present
+                </div>
+                <div class="heatmap-legend-item">
+                  <div class="heatmap-legend-dot" style="background:rgba(29,89,68,0.3); border:1px solid rgba(32,87,67,0.2);"></div>
+                  Absent
+                </div>
+                <div class="heatmap-legend-item">
+                  <div class="heatmap-legend-dot" style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));"></div>
+                  Today
+                </div>
+              </div>
             </div>
 
+            <!-- Visit History List -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin:4px 0 12px;">
+              <h4 class="section-title" style="margin:0;">Visit History</h4>
+              <span id="att-history-badge" style="font-size:12px; color:var(--text-muted);"></span>
+            </div>
             <div id="attendance-container"></div>
           </div>
         </ion-content>
@@ -1789,7 +2176,16 @@
         </ion-header>
         <ion-content fullscreen="true">
           <div class="payments-container">
-            <div class="card card-elevated" style="margin-bottom:18px;">
+
+            <!-- Total Paid Banner -->
+            <div class="total-paid-banner">
+              <div class="total-paid-label">Total Amount Paid</div>
+              <div class="total-paid-amount" id="total-paid-amount">₱0.00</div>
+              <div class="total-paid-sub" id="total-paid-sub">0 payments recorded</div>
+            </div>
+
+            <!-- Renew Card -->
+            <div class="card card-elevated" style="margin-bottom:16px;">
               <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
                 <div style="width:40px; height:40px; border-radius:12px; background:rgba(82, 183, 136,0.15); border:1px solid var(--primary); display:flex; align-items:center; justify-content:center; color:var(--primary);">
                   <i class="fa-solid fa-bolt" style="font-size:1.1rem;"></i>
@@ -1807,7 +2203,7 @@
               </button>
             </div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; margin:20px 0 12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin:4px 0 12px;">
               <h4 class="section-title" style="margin:0;">
                 <i class="fa-solid fa-clock-rotate-left" style="color:var(--primary); margin-right:6px;"></i> Payment History
               </h4>
@@ -1846,82 +2242,96 @@
         </ion-header>
         <ion-content fullscreen="true">
           <div style="padding:16px; padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px)); max-width:440px; margin:0 auto;">
-            
-            <!-- Card A: Profile Header Card -->
-            <div class="card card-elevated" style="text-align:center; padding:24px 20px; margin-bottom:14px;">
-              <div id="prof-avatar-wrap" class="member-avatar" style="width:80px; height:80px; font-size:26px; margin:0 auto 12px;">
-                <span id="prof-avatar-initials">PE</span>
+
+            <!-- Profile Hero Card -->
+            <div style="background:linear-gradient(145deg,#1b4332 0%,#0a2218 65%,#060f0a 100%); border-radius:22px; padding:24px 20px 18px; display:flex; flex-direction:column; align-items:center; gap:8px; border:1px solid rgba(82,183,136,0.12); position:relative; overflow:hidden; margin-bottom:14px;">
+              <div style="position:absolute; top:-80px; left:50%; transform:translateX(-50%); width:250px; height:250px; background:radial-gradient(circle,rgba(82,183,136,0.08) 0%,transparent 70%);"></div>
+              <!-- Avatar with upload overlay -->
+              <div class="photo-upload-preview" onclick="triggerPhotoUpload()" style="z-index:2;">
+                <div id="prof-avatar-wrap" class="member-avatar" style="width:80px; height:80px; font-size:26px; margin:0; border:none; box-shadow:none; background:transparent;">
+                  <span id="prof-avatar-initials">PE</span>
+                </div>
+                <div class="camera-overlay"><i class="fa-solid fa-camera"></i></div>
               </div>
-              <h3 id="prof-name" style="margin:0 0 4px; color:var(--text-primary); font-weight:800; font-size:1.3rem;">Palma's Member</h3>
-              <p id="prof-code" style="color:var(--primary); margin:0 0 10px; font-size:0.88rem; font-family:monospace; letter-spacing:0.5px;">--</p>
-              <span id="prof-status-pill" class="status-pill pill-active">● ACTIVE MEMBER</span>
+              <h3 id="prof-name" style="margin:0; color:#fff; font-weight:800; font-size:1.25rem; text-transform:capitalize; z-index:2;">Palma's Member</h3>
+              <p id="prof-code" style="color:rgba(255,255,255,0.4); margin:0; font-size:0.7rem; font-family:monospace; letter-spacing:0.5px; z-index:2;">--</p>
+              <span id="prof-status-pill" class="status-pill pill-active" style="z-index:2;">● ACTIVE MEMBER</span>
+            </div>
+
+            <!-- Photo Upload -->
+            <div class="photo-upload-wrap">
+              <h4 style="color:var(--text-primary); font-size:0.82rem; text-transform:uppercase; font-weight:800; margin:0 0 12px; letter-spacing:0.5px;">
+                <i class="fa-solid fa-camera" style="color:var(--primary); margin-right:6px;"></i> Update Profile Picture
+              </h4>
+              <input type="file" id="photo-file-input" accept="image/*" onchange="handlePhotoSelected(this)" />
+              <button class="photo-upload-btn" onclick="triggerPhotoUpload()">
+                <i class="fa-solid fa-upload"></i> Choose Photo / Take Selfie
+              </button>
+              <div id="photo-upload-status" style="display:none; margin-top:8px; font-size:0.75rem; text-align:center;"></div>
             </div>
 
             <!-- Card B: Personal Information -->
             <div class="card" style="margin-bottom:14px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-                <h4 style="color:var(--text-primary); font-size:0.85rem; text-transform:uppercase; font-weight:800; margin:0; letter-spacing:0.5px;">
-                  <i class="fa-solid fa-address-card" style="color:var(--primary); margin-right:6px;"></i> Personal Information
+                <h4 style="color:var(--text-primary); font-size:0.82rem; text-transform:uppercase; font-weight:800; margin:0; letter-spacing:0.5px;">
+                  <i class="fa-solid fa-address-card" style="color:var(--primary); margin-right:6px;"></i> Personal Info
                 </h4>
                 <button onclick="openEditProfileModal()" style="background:rgba(29,89,68,0.4); border:1px solid var(--border); color:var(--primary-light); font-size:0.75rem; font-weight:700; border-radius:8px; padding:5px 12px; cursor:pointer;">
                   <i class="fa-solid fa-pen-to-square"></i> Edit
                 </button>
               </div>
               <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Full Name:</span>
-                <strong id="prof-full-name" style="color:var(--text-primary);">--</strong>
+                <span style="color:var(--text-muted);">Full Name</span>
+                <strong id="prof-full-name" style="color:var(--text-primary); text-align:right; max-width:60%;">--</strong>
               </div>
               <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Email:</span>
-                <strong id="prof-email" style="color:var(--text-primary);">--</strong>
+                <span style="color:var(--text-muted);">Membership ID</span>
+                <strong id="prof-memid-display" style="color:var(--primary); font-family:monospace; font-size:0.82rem;">--</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
+                <span style="color:var(--text-muted);">Email</span>
+                <strong id="prof-email" style="color:var(--text-primary); text-align:right; max-width:60%; word-break:break-all;">--</strong>
               </div>
               <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Contact:</span>
+                <span style="color:var(--text-muted);">Contact</span>
                 <strong id="prof-phone" style="color:var(--text-primary);">--</strong>
               </div>
             </div>
 
-            <!-- Card C: Membership Information & Progress -->
+            <!-- Card C: Membership Info -->
             <div class="card" style="margin-bottom:14px;">
-              <h4 style="color:var(--text-primary); font-size:0.85rem; text-transform:uppercase; font-weight:800; margin:0 0 14px; border-bottom:1px solid var(--border); padding-bottom:10px; letter-spacing:0.5px;">
-                <i class="fa-solid fa-id-card-clip" style="color:var(--primary); margin-right:6px;"></i> Membership Information
+              <h4 style="color:var(--text-primary); font-size:0.82rem; text-transform:uppercase; font-weight:800; margin:0 0 14px; border-bottom:1px solid var(--border); padding-bottom:10px; letter-spacing:0.5px;">
+                <i class="fa-solid fa-id-card-clip" style="color:var(--primary); margin-right:6px;"></i> Membership
               </h4>
               <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Current Plan:</span>
-                <strong id="prof-plan-name" style="color:var(--text-primary);">--</strong>
+                <span style="color:var(--text-muted);">Current Plan</span>
+                <strong id="prof-plan-name" style="color:var(--primary);">--</strong>
               </div>
               <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Valid Until:</span>
+                <span style="color:var(--text-muted);">Valid Until</span>
                 <strong id="prof-valid-until" style="color:var(--text-primary);">--</strong>
               </div>
-              <div style="display:flex; justify-content:space-between; font-size:0.88rem; margin-bottom:6px;">
-                <span style="color:var(--text-muted);">Time Remaining:</span>
+              <div style="display:flex; justify-content:space-between; font-size:0.88rem; margin-bottom:8px;">
+                <span style="color:var(--text-muted);">Time Remaining</span>
                 <strong id="prof-days-remaining" style="color:var(--primary); font-weight:800;">--</strong>
               </div>
-
-              <!-- Visual Progress Bar -->
               <div class="progress-bar-wrap">
-                <div id="prof-days-bar-fill" class="progress-bar-fill" style="width: 80%;"></div>
+                <div id="prof-days-bar-fill" class="progress-bar-fill" style="width:80%;"></div>
               </div>
-
-              <button onclick="switchToTab('tab-payments')" class="btn-outline" style="height:48px; margin-top:14px; font-size:0.88rem;">
-                <i class="fa-solid fa-clock-rotate-left"></i> View Payment History
+              <button onclick="switchToTab('tab-payments')" class="btn-outline" style="height:44px; margin-top:12px; font-size:0.85rem;">
+                <i class="fa-solid fa-clock-rotate-left"></i> Payment History
               </button>
             </div>
 
             <!-- Card D: Account Settings -->
             <div class="card" style="margin-bottom:20px;">
-              <h4 style="color:var(--text-primary); font-size:0.85rem; text-transform:uppercase; font-weight:800; margin:0 0 14px; border-bottom:1px solid var(--border); padding-bottom:10px; letter-spacing:0.5px;">
-                <i class="fa-solid fa-gear" style="color:var(--primary); margin-right:6px;"></i> Account Settings
+              <h4 style="color:var(--text-primary); font-size:0.82rem; text-transform:uppercase; font-weight:800; margin:0 0 14px; border-bottom:1px solid var(--border); padding-bottom:10px; letter-spacing:0.5px;">
+                <i class="fa-solid fa-gear" style="color:var(--primary); margin-right:6px;"></i> Settings
               </h4>
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                <span style="font-size:0.9rem; color:var(--text-primary);">Push Notifications</span>
-                <ion-toggle checked="true" color="success"></ion-toggle>
-              </div>
-              <button onclick="openChangePasswordModal()" class="btn-outline" style="height:48px; margin-bottom:10px; font-size:0.88rem;">
+              <button onclick="openChangePasswordModal()" class="btn-outline" style="height:46px; margin-bottom:10px; font-size:0.88rem;">
                 <i class="fa-solid fa-key"></i> Change Password
               </button>
-              <button class="btn-danger" style="height:48px; font-size:0.88rem;" onclick="confirmSignOutDialog()">
+              <button class="btn-danger" style="height:46px; font-size:0.88rem;" onclick="confirmSignOutDialog()">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
               </button>
             </div>
@@ -2140,10 +2550,18 @@
           <!-- Payment Method Cards -->
           <div class="payment-method-card selected" id="pm-card-gcash" onclick="selectCheckoutMethod('GCash')">
             <div class="pm-left">
-              <div class="pm-icon-wrap pm-icon-gcash"><i class="fa-solid fa-mobile-screen"></i></div>
+              <div class="pm-icon-wrap" style="background:#007DFE; box-shadow:0 4px 12px rgba(0,125,254,0.35);">
+                <svg viewBox="0 0 32 32" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16 6.5C10.75 6.5 6.5 10.75 6.5 16S10.75 25.5 16 25.5c4.54 0 8.32-3.18 9.22-7.44H16v-3.8h12.87C28.95 14.8 29 15.4 29 16c0 7.18-5.82 13-13 13C8.82 29 3 23.18 3 16S8.82 3 16 3c4.1 0 7.76 1.7 10.33 4.45l-2.68 2.68C21.9 8.3 19.1 6.5 16 6.5z" fill="#FFFFFF"/>
+                  <circle cx="24.8" cy="10.8" r="2.2" fill="#FFFFFF"/>
+                </svg>
+              </div>
               <div>
-                <div class="pm-title">GCash</div>
-                <div class="pm-desc">Instant E-Wallet Checkout • 24/7 Verified</div>
+                <div class="pm-title" style="display:flex; align-items:center; gap:8px;">
+                  GCash
+                  <span style="font-size:10px; font-weight:800; background:rgba(0,125,254,0.2); color:#60a5fa; padding:2px 8px; border-radius:6px; border:1px solid rgba(96,165,250,0.3);">E-WALLET</span>
+                </div>
+                <div class="pm-desc">Instant GCash QR Ph &amp; E-Wallet Transfer</div>
               </div>
             </div>
             <div class="pm-radio"></div>
@@ -2151,10 +2569,20 @@
 
           <div class="payment-method-card" id="pm-card-maya" onclick="selectCheckoutMethod('Maya')">
             <div class="pm-left">
-              <div class="pm-icon-wrap pm-icon-maya"><i class="fa-solid fa-wallet"></i></div>
+              <div class="pm-icon-wrap" style="background:#0D1117; border:1px solid rgba(0,214,100,0.35); box-shadow:0 4px 12px rgba(0,214,100,0.25);">
+                <svg viewBox="0 0 32 32" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7 23V14c0-2.76 2.24-5 5-5s5 2.24 5 5v9" stroke="#00D664" stroke-width="3.2" stroke-linecap="round"/>
+                  <path d="M17 14c0-2.76 2.24-5 5-5s5 2.24 5 5v9" stroke="#00D664" stroke-width="3.2" stroke-linecap="round"/>
+                  <circle cx="12" cy="9.5" r="1.5" fill="#00D664"/>
+                  <circle cx="22" cy="9.5" r="1.5" fill="#00D664"/>
+                </svg>
+              </div>
               <div>
-                <div class="pm-title">Maya</div>
-                <div class="pm-desc">E-Wallet &amp; QR Payment Gateway</div>
+                <div class="pm-title" style="display:flex; align-items:center; gap:8px;">
+                  Maya
+                  <span style="font-size:10px; font-weight:800; background:rgba(0,214,100,0.15); color:#00D664; padding:2px 8px; border-radius:6px; border:1px solid rgba(0,214,100,0.3);">E-WALLET</span>
+                </div>
+                <div class="pm-desc">Maya Wallet, QR Ph &amp; Maya Bank Transfer</div>
               </div>
             </div>
             <div class="pm-radio"></div>
@@ -2162,10 +2590,15 @@
 
           <div class="payment-method-card" id="pm-card-qrph" onclick="selectCheckoutMethod('QR Ph')">
             <div class="pm-left">
-              <div class="pm-icon-wrap" style="background:#b91c1c; color:#ffffff;"><i class="fa-solid fa-qrcode"></i></div>
+              <div class="pm-icon-wrap" style="background:#B91C1C; box-shadow:0 4px 12px rgba(185,28,28,0.35);">
+                <i class="fa-solid fa-qrcode" style="font-size:22px; color:#ffffff;"></i>
+              </div>
               <div>
-                <div class="pm-title">QR Ph</div>
-                <div class="pm-desc">InstaPay / National QR Standard</div>
+                <div class="pm-title" style="display:flex; align-items:center; gap:8px;">
+                  QR Ph (All PH Banks)
+                  <span style="font-size:10px; font-weight:800; background:rgba(185,28,28,0.2); color:#fca5a5; padding:2px 8px; border-radius:6px; border:1px solid rgba(252,165,165,0.3);">NATIONAL QR</span>
+                </div>
+                <div class="pm-desc">BDO, BPI, UnionBank, GoTyme, SeaBank</div>
               </div>
             </div>
             <div class="pm-radio"></div>
@@ -2173,10 +2606,21 @@
 
           <div class="payment-method-card" id="pm-card-card" onclick="selectCheckoutMethod('Credit Card')">
             <div class="pm-left">
-              <div class="pm-icon-wrap pm-icon-card"><i class="fa-solid fa-credit-card"></i></div>
+              <div class="pm-icon-wrap" style="background:#1A1F71; box-shadow:0 4px 12px rgba(26,31,113,0.4); display:flex; align-items:center; justify-content:center;">
+                <svg viewBox="0 0 34 22" width="30" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12.8 16.5L14.4 5.5h2.6l-1.6 11h-2.6zm9.2-10.7c-.6-.2-1.4-.4-2.5-.4-2.8 0-4.7 1.5-4.7 3.6 0 1.6 1.4 2.4 2.5 2.9 1 .5 1.4.9 1.4 1.4 0 .7-.9 1.1-1.7 1.1-1.1 0-1.8-.2-2.7-.6l-.4-.2-.4 2.3c.7.3 1.9.6 3.1.6 2.9 0 4.8-1.4 4.8-3.7 0-1.2-.8-2.2-2.5-3-1-.5-1.6-.9-1.6-1.4 0-.5.5-1 1.5-1 .9 0 1.5.2 2 .4l.3.1.4-2.1zm7.1 0H27c-.7 0-1.1.2-1.4.9l-4 9.8h2.9l.6-1.6h3.5l.3 1.6h2.5L29.1 5.8zm-3.4 6.7l1-2.9.6 2.9h-1.6zM11 5.8l-2.6 7.4-.3-1.5c-.5-1.6-2-3.5-3.8-4.4l2.4 9.5h2.9L14 5.8h-3z" fill="#FFFFFF"/>
+                  <path d="M5.8 5.8H1.2l-.1.2c3.6.9 6 3.2 7 5.7L7.1 5.8H5.8z" fill="#F7B600"/>
+                </svg>
+              </div>
               <div>
-                <div class="pm-title">Visa / Mastercard</div>
-                <div class="pm-desc">Debit or Credit Card Payments</div>
+                <div class="pm-title" style="display:flex; align-items:center; gap:8px;">
+                  <span>Visa / Card</span>
+                  <div style="display:inline-flex; align-items:center; gap:5px;">
+                    <i class="fa-brands fa-cc-visa" style="color:#60a5fa; font-size:18px;"></i>
+                    <i class="fa-brands fa-cc-mastercard" style="color:#f87171; font-size:16px;"></i>
+                  </div>
+                </div>
+                <div class="pm-desc">Visa Debit / Credit Card Payment</div>
               </div>
             </div>
             <div class="pm-radio"></div>
@@ -3646,6 +4090,23 @@ async function loadDashboard(memberId) {
     document.getElementById('prof-plan-name').textContent      = m.plan_name || 'No information available';
     document.getElementById('prof-valid-until').textContent    = m.expiry_date || 'No information available';
 
+    const profMemId = document.getElementById('prof-memid-display');
+    if (profMemId) profMemId.textContent = m.membership_id || 'No information available';
+
+    // Pending Renewal Banner on Home Tab
+    const pendingBanner = document.getElementById('home-pending-banner');
+    const pendingText = document.getElementById('home-pending-text');
+    if (pendingBanner) {
+      if (data.pending_renewal) {
+        pendingBanner.style.display = 'flex';
+        if (pendingText) {
+          pendingText.textContent = `Renewal for ${data.pending_renewal.plan_name || 'Membership Plan'} is currently pending admin review.`;
+        }
+      } else {
+        pendingBanner.style.display = 'none';
+      }
+    }
+
     // Days Remaining Progress
     let daysRemaining = 0;
     if (m.expiry_date) {
@@ -3731,14 +4192,42 @@ function renderAttendance(list) {
   if (!c) return;
   c.innerHTML = '';
 
+  const records = Array.isArray(list) ? list : [];
+
   // Stats
   const now = new Date();
   const curMonth = now.getMonth();
-  const mCount = list.filter(a => new Date(a.date).getMonth() === curMonth).length;
-  document.getElementById('att-month-count').textContent = mCount;
-  document.getElementById('att-week-count').textContent  = Math.min(list.length, 5);
+  const curYear = now.getFullYear();
+  const mCount = records.filter(a => {
+    if (!a.date) return false;
+    const d = new Date(a.date);
+    return d.getMonth() === curMonth && d.getFullYear() === curYear;
+  }).length;
 
-  if (!list.length) {
+  // Streak: visits this week (since Monday)
+  const dayOfWeek = (now.getDay() + 6) % 7; // Monday = 0
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - dayOfWeek);
+  monday.setHours(0, 0, 0, 0);
+  const wCount = records.filter(a => {
+    if (!a.date) return false;
+    return new Date(a.date) >= monday;
+  }).length;
+
+  const totalEl = document.getElementById('att-total-count');
+  if (totalEl) totalEl.textContent = records.length;
+  const monthEl = document.getElementById('att-month-count');
+  if (monthEl) monthEl.textContent = mCount;
+  const weekEl = document.getElementById('att-week-count');
+  if (weekEl) weekEl.textContent = wCount;
+
+  const badgeEl = document.getElementById('att-history-badge');
+  if (badgeEl) badgeEl.textContent = records.length ? `Showing last ${records.length} check-ins` : '';
+
+  // Render 28-day calendar heatmap
+  renderAttendanceHeatmap(records);
+
+  if (!records.length) {
     c.innerHTML = `
       <div style="text-align:center; padding:48px 20px; color:var(--text-muted);">
         <div style="width:64px; height:64px; border-radius:50%; background:rgba(82, 183, 136,0.1); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; color:var(--primary); font-size:24px;">
@@ -3750,7 +4239,7 @@ function renderAttendance(list) {
     return;
   }
 
-  list.forEach(a => {
+  records.forEach(a => {
     const card = document.createElement('div');
     card.className = 'card';
     card.style.cssText = 'padding:16px; margin-bottom:12px;';
@@ -3766,6 +4255,50 @@ function renderAttendance(list) {
     `;
     c.appendChild(card);
   });
+}
+
+function renderAttendanceHeatmap(list) {
+  const container = document.getElementById('attendance-heatmap');
+  if (!container) return;
+
+  const attendanceDates = new Set((list || []).map(a => a.date ? a.date.split(' ')[0] : ''));
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  const calendarDays = [];
+  for (let i = 27; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(today.getDate() - i);
+    calendarDays.push(d.toISOString().split('T')[0]);
+  }
+
+  const firstDay = new Date(calendarDays[0] + 'T00:00:00');
+  const firstDayOfWeek = firstDay.getDay(); // 0 = Sun, 1 = Mon ...
+
+  const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  let html = '<div class="heatmap-grid">';
+  dayLabels.forEach(label => {
+    html += `<div class="heatmap-day-label">${label}</div>`;
+  });
+
+  // Empty placeholder cells for day-of-week alignment
+  for (let b = 0; b < firstDayOfWeek; b++) {
+    html += '<div class="heatmap-day absent" style="opacity:0; pointer-events:none;"></div>';
+  }
+
+  calendarDays.forEach(dStr => {
+    const isToday = (dStr === todayStr);
+    const isPresent = attendanceDates.has(dStr);
+    const dayNum = parseInt(dStr.split('-')[2], 10);
+    const dateObj = new Date(dStr + 'T00:00:00');
+    const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    let cls = isToday ? 'today' : (isPresent ? 'present' : 'absent');
+    html += `<div class="heatmap-day ${cls}" title="${formattedDate}: ${isPresent ? 'Present' : (isToday ? 'Today' : 'Absent')}">${dayNum}</div>`;
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
 }
 
 // ── COMPLETE MEMBERSHIP PAYMENT & BILLING ENGINE ───────────────────
@@ -3841,7 +4374,27 @@ function renderPaymentHistoryCards(list) {
   if (!container) return;
   container.innerHTML = '';
 
-  if (!list || list.length === 0) {
+  const records = Array.isArray(list) ? list : [];
+
+  // Update Total Amount Paid Banner
+  const paidPayments = records.filter(p => (p.status || '').toUpperCase() === 'PAID');
+  const totalPaid = paidPayments.reduce((sum, p) => {
+    let amt = 0;
+    if (typeof p.amount === 'number') amt = p.amount;
+    else if (p.amount) amt = parseFloat(String(p.amount).replace(/[^0-9.-]+/g, '')) || 0;
+    return sum + amt;
+  }, 0);
+
+  const totalPaidEl = document.getElementById('total-paid-amount');
+  if (totalPaidEl) {
+    totalPaidEl.textContent = '₱' + totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  const totalPaidSubEl = document.getElementById('total-paid-sub');
+  if (totalPaidSubEl) {
+    totalPaidSubEl.textContent = `${paidPayments.length} payment${paidPayments.length === 1 ? '' : 's'} recorded`;
+  }
+
+  if (!records || records.length === 0) {
     container.innerHTML = `
       <div style="text-align:center; padding:36px 18px; color:var(--gym-muted);">
         <i class="fa-solid fa-receipt" style="font-size:2.4rem; opacity:0.35; margin-bottom:12px; display:block;"></i>
@@ -3855,7 +4408,7 @@ function renderPaymentHistoryCards(list) {
     return;
   }
 
-  list.forEach(p => {
+  records.forEach(p => {
     const card = document.createElement('div');
     card.className = 'history-card';
     card.onclick = () => openPaymentDetailModal(p.reference_id || p.id);
@@ -3866,25 +4419,121 @@ function renderPaymentHistoryCards(list) {
     else if (p.status === 'CANCELLED') statusBadge = `<span class="badge-failed">CANCELLED</span>`;
     else if (p.status === 'EXPIRED') statusBadge = `<span class="badge-failed">EXPIRED</span>`;
 
+    let methodIcon = '<i class="fa-solid fa-wallet" style="color:var(--primary); margin-right:4px;"></i>';
+    const pm = (p.payment_method || '').toLowerCase();
+    if (pm.includes('gcash')) {
+      methodIcon = '<i class="fa-solid fa-mobile-screen" style="color:#60a5fa; margin-right:4px;"></i>';
+    } else if (pm.includes('maya')) {
+      methodIcon = '<i class="fa-solid fa-wallet" style="color:#00D664; margin-right:4px;"></i>';
+    } else if (pm.includes('qr') || pm.includes('instapay')) {
+      methodIcon = '<i class="fa-solid fa-qrcode" style="color:#f87171; margin-right:4px;"></i>';
+    } else if (pm.includes('card') || pm.includes('visa') || pm.includes('mastercard')) {
+      methodIcon = '<i class="fa-brands fa-cc-visa" style="color:#93c5fd; margin-right:4px;"></i>';
+    } else if (pm.includes('cash')) {
+      methodIcon = '<i class="fa-solid fa-money-bill-wave" style="color:#4ade80; margin-right:4px;"></i>';
+    }
+
     card.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
         <div>
           <h4 style="color:#fff; margin:0; font-size:0.98rem; font-weight:800;">${p.membership_plan || 'Membership Plan'}</h4>
-          <span style="font-size:0.75rem; color:var(--gym-muted);">${p.payment_date} • ${p.payment_time}</span>
+          <span style="font-size:0.75rem; color:var(--gym-muted);">${p.payment_date || ''} • ${p.payment_time || ''}</span>
         </div>
         <div style="text-align:right;">
-          <strong style="color:var(--gym-mid); font-size:1.1rem; font-family:'Outfit'; font-weight:900;">${p.amount_formatted}</strong>
+          <strong style="color:var(--gym-mid); font-size:1.1rem; font-family:'Outfit'; font-weight:900;">${p.amount_formatted || ('₱' + (parseFloat(p.amount) || 0).toFixed(2))}</strong>
         </div>
       </div>
       <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.76rem; border-top:1px solid rgba(82,183,136,0.12); padding-top:8px; margin-top:8px;">
         <span style="color:var(--gym-muted);">
-          <i class="fa-solid fa-wallet" style="margin-right:4px;"></i> ${p.payment_method} &bull; Ref: <code style="color:#fff; font-size:0.72rem;">${p.reference_id}</code>
+          ${methodIcon} ${p.payment_method || 'Payment'} &bull; Ref: <code style="color:#fff; font-size:0.72rem;">${p.reference_id || p.reference_no || '--'}</code>
         </span>
         ${statusBadge}
       </div>
     `;
     container.appendChild(card);
   });
+}
+
+// ── PROFILE PHOTO UPLOAD HANDLERS ──────────────────────────────────
+function triggerPhotoUpload() {
+  const fileInput = document.getElementById('photo-file-input');
+  if (fileInput) fileInput.click();
+}
+
+async function handlePhotoSelected(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('Photo size must be less than 5MB');
+    input.value = '';
+    return;
+  }
+
+  if (!file.type.startsWith('image/')) {
+    showToast('Please select a valid image file');
+    input.value = '';
+    return;
+  }
+
+  const statusEl = document.getElementById('photo-upload-status');
+  if (statusEl) {
+    statusEl.style.display = 'block';
+    statusEl.style.color = 'var(--primary)';
+    statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading photo...';
+  }
+
+  // Instant local preview
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const wrapPass = document.getElementById('member-avatar-wrap');
+    const wrapProf = document.getElementById('prof-avatar-wrap');
+    if (wrapPass) wrapPass.innerHTML = `<img src="${e.target.result}" alt="Member" style="width:100%;height:100%;object-fit:cover;" />`;
+    if (wrapProf) wrapProf.innerHTML = `<img src="${e.target.result}" alt="Member" style="width:100%;height:100%;object-fit:cover;" />`;
+  };
+  reader.readAsDataURL(file);
+
+  try {
+    const token = localStorage.getItem('peg_token');
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    const res = await authFetch(`${API_URL}/member_profile.php`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      if (statusEl) {
+        statusEl.style.color = 'var(--primary)';
+        statusEl.innerHTML = '<i class="fa-solid fa-check"></i> Photo updated successfully!';
+        setTimeout(() => { if (statusEl) statusEl.style.display = 'none'; }, 3000);
+      }
+      showToast('Profile photo updated!');
+      if (currentMember && currentMember.id) {
+        loadDashboard(currentMember.id);
+      }
+    } else {
+      if (statusEl) {
+        statusEl.style.color = 'var(--danger)';
+        statusEl.textContent = data.message || 'Failed to upload photo';
+      }
+      showToast(data.message || 'Failed to upload photo');
+    }
+  } catch (err) {
+    console.error('Photo upload error:', err);
+    if (statusEl) {
+      statusEl.style.color = 'var(--danger)';
+      statusEl.textContent = 'Network error uploading photo';
+    }
+    showToast('Network error uploading photo');
+  } finally {
+    input.value = '';
+  }
 }
 
 function refreshDashboard() {

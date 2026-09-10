@@ -62,7 +62,7 @@ try {
             FROM attendance 
             WHERE member_id = ? 
             ORDER BY date DESC, time_in DESC 
-            LIMIT 15
+            LIMIT 60
         ");
         $att_stmt->execute([$member_id]);
         $attendance = $att_stmt->fetchAll(PDO::FETCH_ASSOC);

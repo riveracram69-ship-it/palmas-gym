@@ -19,8 +19,10 @@ $last_payment = $payments[0] ?? null;
 
 $method_icons = [
     'Cash'         => ['icon' => 'fa-money-bill', 'color' => '#2d6a4f', 'bg' => 'rgba(45,106,79,0.1)'],
-    'GCash'        => ['icon' => 'fa-mobile-screen', 'color' => '#2563eb', 'bg' => 'rgba(37,99,235,0.1)'],
-    'Credit Card'  => ['icon' => 'fa-credit-card', 'color' => '#7c3aed', 'bg' => 'rgba(124,58,237,0.1)'],
+    'GCash'        => ['icon' => 'fa-mobile-screen', 'color' => '#007dfe', 'bg' => 'rgba(0,125,254,0.12)'],
+    'Maya'         => ['icon' => 'fa-wallet', 'color' => '#059669', 'bg' => 'rgba(5,150,105,0.12)'],
+    'Credit Card'  => ['icon' => 'fa-credit-card', 'color' => '#1a1f71', 'bg' => 'rgba(26,31,113,0.12)'],
+    'Visa'         => ['icon' => 'fa-brands fa-cc-visa', 'color' => '#1a1f71', 'bg' => 'rgba(26,31,113,0.12)'],
     'Bank Transfer'=> ['icon' => 'fa-building-columns', 'color' => '#d97706', 'bg' => 'rgba(217,119,6,0.1)'],
 ];
 ?>

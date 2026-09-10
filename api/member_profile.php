@@ -51,6 +51,23 @@ try {
         $params[] = $contact_number;
     }
 
+    // Handle photo upload
+    if (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+        require_once __DIR__ . '/../config/uploader.php';
+        $upload_result = secure_process_image_upload($_FILES['photo'], 'members', 1200, 1200);
+        if ($upload_result['success']) {
+            $db_path = $upload_result['path'];
+            if (!empty($member['photo']) && file_exists(__DIR__ . '/../' . $member['photo'])) {
+                @unlink(__DIR__ . '/../' . $member['photo']);
+            }
+            $updates[] = "photo = ?";
+            $params[] = $db_path;
+        } else {
+            echo json_encode(['success' => false, 'message' => $upload_result['error'] ?? 'Photo upload failed.']);
+            exit;
+        }
+    }
+
     // Optional password change
     if (!empty($new_password)) {
         if (strlen($new_password) < 6) {
