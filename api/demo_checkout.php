@@ -123,10 +123,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         CURLOPT_SSL_VERIFYPEER => false
     ]);
     $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlErr = curl_error($ch);
     curl_close($ch);
 
-    if ($curlErr) {
+    if ($curlErr || $httpCode >= 400 || $res === false) {
         // Local direct execution fallback if loopback curl fails
         require_once __DIR__ . '/../config/payment.php';
         if ($action === 'pay') {

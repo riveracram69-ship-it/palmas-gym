@@ -124,7 +124,7 @@ try {
     } elseif (strpos($upper_m, 'CARD') !== false || strpos($upper_m, 'CREDIT') !== false) {
         $std_method = 'CREDIT_CARD';
     } elseif (strpos($upper_m, 'GRAB') !== false) {
-        $std_method = 'GRAB_PAY';
+        $std_method = 'CREDIT_CARD';
     }
 
     // 5. Generate Unique Reference Number: PEG-YYYYMMDD-XXXXX
