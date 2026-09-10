@@ -1321,7 +1321,7 @@
       <!-- Login Card -->
       <div class="login-card">
         <h2 style="font-weight:800; font-size:1.2rem; color:#fff; text-align:center; margin:0 0 4px;">MEMBER PORTAL</h2>
-        <p style="text-align:center; color: var(--gym-muted); font-size:0.82rem; margin:0 0 20px;">Access your digital gym pass &amp; workout history</p>
+        <p style="text-align:center; color: var(--gym-muted); font-size:0.82rem; margin:0 0 20px;">Access your digital gym pass & membership details</p>
 
         <!-- Primary Option: Google Sign-In -->
         <button class="btn-google" id="btn-google-signin" onclick="initiateGoogleSignIn()">
@@ -1735,71 +1735,6 @@
         </ion-content>
       </ion-tab>
 
-      <!-- ── TAB: WORKOUTS & STREAK ─── -->
-      <ion-tab tab="tab-workouts">
-        <ion-header translucent="true">
-          <ion-toolbar>
-            <ion-title class="brand-font">Workout Tracker</ion-title>
-            <ion-buttons slot="end">
-              <ion-button onclick="openLogWorkoutModal()" style="--color:var(--primary); font-weight:700;">
-                <ion-icon name="add-circle-outline" style="font-size:1.3rem; margin-right:4px;"></ion-icon> Log
-              </ion-button>
-            </ion-buttons>
-          </ion-toolbar>
-        </ion-header>
-
-        <ion-content fullscreen="true">
-          <div class="attendance-container">
-            <!-- Streak and Weekly Goal Summary -->
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
-              <div class="card" style="text-align:center; padding:14px 10px; margin:0;">
-                <div style="font-size:1.6rem; font-weight:900; color:var(--danger); display:flex; align-items:center; justify-content:center; gap:6px;">
-                  <span>🔥</span> <span id="m-workout-streak">0</span>
-                </div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Day Streak</div>
-              </div>
-              <div class="card" style="text-align:center; padding:14px 10px; margin:0;">
-                <div style="font-size:1.6rem; font-weight:900; color:var(--primary); display:flex; align-items:center; justify-content:center; gap:4px;">
-                  <span id="m-workout-week-count">0</span><span style="font-size:1rem; color:var(--text-muted);">/</span><span id="m-workout-week-target" style="font-size:1rem; color:var(--text-muted);">4</span>
-                </div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">This Week</div>
-              </div>
-            </div>
-
-            <!-- Weekly Progress Card -->
-            <div class="card" style="margin-bottom:14px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <span style="font-size:0.85rem; font-weight:700; color:var(--text-primary);">Weekly Goal Progress</span>
-                <span id="m-workout-pct" style="font-size:0.85rem; font-weight:800; color:var(--primary);">0%</span>
-              </div>
-              <div class="progress-bar-wrap" style="height:8px; margin-bottom:12px;">
-                <div id="m-workout-progress-fill" class="progress-bar-fill" style="width:0%;"></div>
-              </div>
-              <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted);">
-                <span>Total Workouts: <strong id="m-workout-total" style="color:var(--text-primary);">0</strong></span>
-                <span>Total Time: <strong id="m-workout-minutes" style="color:var(--text-primary);">0m</strong></span>
-              </div>
-            </div>
-
-            <!-- Quick Action CTA -->
-            <button class="btn-primary" onclick="openLogWorkoutModal()" style="margin-bottom:18px;">
-              <i class="fa-solid fa-plus"></i> LOG TODAY'S WORKOUT
-            </button>
-
-            <!-- Workout History List -->
-            <h4 style="color:var(--text-primary); font-size:0.85rem; text-transform:uppercase; font-weight:800; margin:0 0 10px; letter-spacing:0.5px;">
-              <i class="fa-solid fa-clock-rotate-left" style="color:var(--primary); margin-right:6px;"></i> Recent Sessions
-            </h4>
-            <div id="m-workouts-list">
-              <div style="text-align:center; padding:30px 10px; color:var(--text-muted); font-size:0.88rem;">
-                <i class="fa-solid fa-dumbbell" style="font-size:2rem; margin-bottom:10px; opacity:0.3; display:block;"></i>
-                No workouts logged yet. Tap above to log your first session!
-              </div>
-            </div>
-          </div>
-        </ion-content>
-      </ion-tab>
-
       <!-- ── TAB 2: ATTENDANCE ─── -->
       <ion-tab tab="tab-attendance">
         <ion-header translucent="true">
@@ -1994,10 +1929,6 @@
           <ion-icon name="qr-code-outline"></ion-icon>
           <ion-label>Pass</ion-label>
         </ion-tab-button>
-        <ion-tab-button tab="tab-workouts">
-          <ion-icon name="flame-outline"></ion-icon>
-          <ion-label>Workouts</ion-label>
-        </ion-tab-button>
         <ion-tab-button tab="tab-attendance">
           <ion-icon name="calendar-outline"></ion-icon>
           <ion-label>Attendance</ion-label>
@@ -2124,72 +2055,6 @@
 
         <button class="btn-primary" id="btn-save-password" onclick="savePasswordChange()">
           <i class="fa-solid fa-key"></i> UPDATE PASSWORD
-        </button>
-      </div>
-    </ion-content>
-  </ion-modal>
-
-  <!-- ══════════════════════════════════════════════════════════
-       MODAL: LOG WORKOUT MODAL
-       ══════════════════════════════════════════════════════════ -->
-  <ion-modal id="modal-log-workout">
-    <ion-header>
-      <ion-toolbar style="--background: var(--background-secondary); --color: var(--text-primary); --border-color: var(--border);">
-        <ion-title class="brand-font" style="font-size:18px; font-weight:800;">Log Workout</ion-title>
-        <ion-buttons slot="end">
-          <ion-button onclick="closeLogWorkoutModal()" style="--color: var(--primary);"><ion-icon name="close"></ion-icon></ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
-    <ion-content class="ion-padding" style="--background: var(--background);">
-      <div style="max-width:440px; margin:0 auto; padding-top:10px;">
-        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">WORKOUT TYPE</label>
-        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:16px;" id="m-type-selector">
-          <button type="button" class="btn-outline m-type-btn active" data-type="Strength" onclick="selectMobileWorkoutType('Strength')" style="height:44px; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; padding:0 4px;">
-            <i class="fa-solid fa-dumbbell"></i> Strength
-          </button>
-          <button type="button" class="btn-outline m-type-btn" data-type="Cardio" onclick="selectMobileWorkoutType('Cardio')" style="height:44px; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; padding:0 4px;">
-            <i class="fa-solid fa-person-running"></i> Cardio
-          </button>
-          <button type="button" class="btn-outline m-type-btn" data-type="HIIT" onclick="selectMobileWorkoutType('HIIT')" style="height:44px; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; padding:0 4px;">
-            <i class="fa-solid fa-bolt"></i> HIIT
-          </button>
-          <button type="button" class="btn-outline m-type-btn" data-type="Functional" onclick="selectMobileWorkoutType('Functional')" style="height:44px; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; padding:0 4px;">
-            <i class="fa-solid fa-arrows-spin"></i> Functional
-          </button>
-          <button type="button" class="btn-outline m-type-btn" data-type="Yoga" onclick="selectMobileWorkoutType('Yoga')" style="height:44px; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; padding:0 4px;">
-            <i class="fa-solid fa-spa"></i> Yoga
-          </button>
-          <button type="button" class="btn-outline m-type-btn" data-type="Boxing" onclick="selectMobileWorkoutType('Boxing')" style="height:44px; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; padding:0 4px;">
-            <i class="fa-solid fa-hand-back-fist"></i> Boxing
-          </button>
-        </div>
-        <input type="hidden" id="m-workout-type" value="Strength" />
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
-          <div class="form-group" style="margin:0;">
-            <label>Duration (mins)</label>
-            <div class="input-field-wrap">
-              <input type="number" id="m-workout-duration" min="5" max="360" value="45" />
-            </div>
-          </div>
-          <div class="form-group" style="margin:0;">
-            <label>Calories (approx)</label>
-            <div class="input-field-wrap">
-              <input type="number" id="m-workout-calories" min="0" max="3000" placeholder="Optional" />
-            </div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Notes / PRs</label>
-          <div class="input-field-wrap">
-            <input type="text" id="m-workout-notes" placeholder="e.g. Bench press 4x8 @ 80kg" />
-          </div>
-        </div>
-
-        <button class="btn-primary" id="btn-save-m-workout" onclick="submitMobileWorkoutLog()" style="margin-top:14px;">
-          <i class="fa-solid fa-check"></i> SAVE WORKOUT
         </button>
       </div>
     </ion-content>
@@ -3594,144 +3459,8 @@ function handleTabChange(e) {
   currentActiveTab = e.detail.tab;
   if (currentActiveTab === 'tab-pass' && currentMember) {
     startQRCountdown();
-  } else if (currentActiveTab === 'tab-workouts') {
-    loadMobileWorkouts();
   } else if (currentActiveTab === 'tab-payments') {
     loadPaymentHistory();
-  }
-}
-
-// ── Mobile Workout Tracker Controller ──
-function openLogWorkoutModal() {
-  const m = document.getElementById('modal-log-workout');
-  if (m) m.present();
-}
-
-function closeLogWorkoutModal() {
-  const m = document.getElementById('modal-log-workout');
-  if (m) m.dismiss();
-}
-
-function selectMobileWorkoutType(type) {
-  document.getElementById('m-workout-type').value = type;
-  document.querySelectorAll('.m-type-btn').forEach(b => {
-    if (b.getAttribute('data-type') === type) {
-      b.classList.add('active');
-      b.style.borderColor = 'var(--primary)';
-      b.style.color = 'var(--primary)';
-    } else {
-      b.classList.remove('active');
-      b.style.borderColor = 'var(--border)';
-      b.style.color = 'var(--text-secondary)';
-    }
-  });
-}
-
-async function loadMobileWorkouts() {
-  try {
-    const res = await gymApi.get('member_workouts.php');
-    if (!res.ok) return;
-    const json = await res.json();
-    if (json.success && json.data) {
-      const d = json.data;
-      const elStreak = document.getElementById('m-workout-streak');
-      const elCount  = document.getElementById('m-workout-week-count');
-      const elTarget = document.getElementById('m-workout-week-target');
-      const elPct    = document.getElementById('m-workout-pct');
-      const elFill   = document.getElementById('m-workout-progress-fill');
-      const elTotal  = document.getElementById('m-workout-total');
-      const elMins   = document.getElementById('m-workout-minutes');
-
-      if (elStreak) elStreak.textContent = d.streak || 0;
-      if (elCount)  elCount.textContent  = d.this_week.completed || 0;
-      if (elTarget) elTarget.textContent = d.this_week.target || 4;
-      if (elPct)    elPct.textContent    = `${d.this_week.percentage || 0}%`;
-      if (elFill)   elFill.style.width   = `${d.this_week.percentage || 0}%`;
-      if (elTotal)  elTotal.textContent  = d.totals.total_workouts || 0;
-      if (elMins)   elMins.textContent   = `${d.totals.total_minutes || 0}m`;
-
-      const listContainer = document.getElementById('m-workouts-list');
-      if (listContainer) {
-        if (d.workouts && d.workouts.length > 0) {
-          const iconMap = {
-            'Strength': 'fa-dumbbell',
-            'Cardio': 'fa-person-running',
-            'HIIT': 'fa-bolt',
-            'Functional': 'fa-arrows-spin',
-            'Yoga': 'fa-spa',
-            'Boxing': 'fa-hand-back-fist',
-            'General': 'fa-heart-pulse'
-          };
-          let html = '<div style="display:flex; flex-direction:column; gap:8px;">';
-          d.workouts.forEach(w => {
-            const icon = iconMap[w.workout_type] || 'fa-dumbbell';
-            const dateStr = new Date(w.logged_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-            html += `
-              <div class="card" style="margin:0; padding:12px 14px; display:flex; align-items:center; justify-content:space-between;">
-                <div style="display:flex; align-items:center; gap:12px;">
-                  <div style="width:38px; height:38px; border-radius:50%; background:rgba(85,214,154,0.15); border:1px solid rgba(85,214,154,0.3); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:16px;">
-                    <i class="fa-solid ${icon}"></i>
-                  </div>
-                  <div>
-                    <div style="font-weight:800; color:var(--text-primary); font-size:0.92rem;">${w.workout_type}</div>
-                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
-                      <span>${w.duration_minutes} mins</span>
-                      ${w.calories_burned > 0 ? ` &bull; <span>${w.calories_burned} kcal</span>` : ''}
-                      ${w.notes ? ` &bull; <span style="font-style:italic;">"${w.notes}"</span>` : ''}
-                    </div>
-                  </div>
-                </div>
-                <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">${dateStr}</div>
-              </div>
-            `;
-          });
-          html += '</div>';
-          listContainer.innerHTML = html;
-        } else {
-          listContainer.innerHTML = `
-            <div style="text-align:center; padding:30px 10px; color:var(--text-muted); font-size:0.88rem;">
-              <i class="fa-solid fa-dumbbell" style="font-size:2rem; margin-bottom:10px; opacity:0.3; display:block;"></i>
-              No workouts logged yet. Tap above to log your first session!
-            </div>
-          `;
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Failed to load mobile workouts:', err);
-  }
-}
-
-async function submitMobileWorkoutLog() {
-  const btn = document.getElementById('btn-save-m-workout');
-  const prevHtml = btn.innerHTML;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> SAVING...';
-  btn.disabled = true;
-
-  const payload = {
-    action: 'log_workout',
-    workout_type: document.getElementById('m-workout-type').value,
-    duration_minutes: document.getElementById('m-workout-duration').value,
-    calories_burned: document.getElementById('m-workout-calories').value || 0,
-    notes: document.getElementById('m-workout-notes').value.trim()
-  };
-
-  try {
-    const res = await gymApi.post('member_workouts.php', payload);
-    const data = await res.json();
-    if (data.success) {
-      closeLogWorkoutModal();
-      showToast(data.message || 'Workout logged successfully!');
-      document.getElementById('m-workout-notes').value = '';
-      loadMobileWorkouts();
-    } else {
-      showToast(data.message || 'Failed to save workout.');
-    }
-  } catch (err) {
-    showToast(err.message || 'Error saving workout. Check network connection.');
-  } finally {
-    btn.innerHTML = prevHtml;
-    btn.disabled = false;
   }
 }
 

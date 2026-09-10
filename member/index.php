@@ -224,56 +224,6 @@ try {
             </a>
         </div>
 
-        <!-- Workout & Fitness Streak Tracker Card -->
-        <div class="list-card fade-up fade-up-d4" style="border: 1px solid rgba(62, 130, 65, 0.25); background: linear-gradient(180deg, #ffffff 0%, #f7fbf8 100%);">
-            <div class="list-card-header" style="display:flex; align-items:center; justify-content:space-between; padding: 1.25rem 1.5rem 0.5rem;">
-                <p class="section-title" style="margin:0;"><i class="fas fa-fire" style="color:#e11d48;"></i> Fitness & Streak Tracker</p>
-                <button class="btn btn-sm" onclick="openWorkoutModal()" style="background:var(--palmas-primary); color:#fff; border:none; padding:0.4rem 0.85rem; border-radius:20px; font-size:0.8rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:0.35rem;">
-                    <i class="fas fa-plus"></i> Log Workout
-                </button>
-            </div>
-            <div style="padding: 0.75rem 1.5rem 1.25rem;">
-                <!-- Streak & Weekly Progress Row -->
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
-                    <div style="background:#fff; border:1px solid #e2ede4; border-radius:12px; padding:0.85rem; text-align:center;">
-                        <div style="font-size:1.4rem; font-weight:800; color:#e11d48; display:flex; align-items:center; justify-content:center; gap:0.35rem;">
-                            <span>🔥</span> <span id="dash-workout-streak">0</span>
-                        </div>
-                        <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; margin-top:0.2rem;">Day Streak</div>
-                    </div>
-                    <div style="background:#fff; border:1px solid #e2ede4; border-radius:12px; padding:0.85rem; text-align:center;">
-                        <div style="font-size:1.4rem; font-weight:800; color:var(--palmas-primary); display:flex; align-items:center; justify-content:center; gap:0.35rem;">
-                            <span id="dash-workout-week-count">0</span><span style="font-size:0.9rem; color:#6b7280;">/</span><span id="dash-workout-week-target" style="font-size:0.9rem; color:#6b7280;">4</span>
-                        </div>
-                        <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; margin-top:0.2rem;">This Week</div>
-                    </div>
-                </div>
-
-                <!-- Progress Bar -->
-                <div style="margin-bottom:1rem;">
-                    <div style="display:flex; justify-content:space-between; font-size:0.78rem; font-weight:600; color:var(--text-secondary); margin-bottom:0.35rem;">
-                        <span>Weekly Goal Progress</span>
-                        <span id="dash-workout-progress-pct">0%</span>
-                    </div>
-                    <div style="background:#e5e7eb; border-radius:99px; height:8px; overflow:hidden;">
-                        <div id="dash-workout-progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #52b788, #3e8241); border-radius:99px; transition:width 0.5s ease;"></div>
-                    </div>
-                </div>
-
-                <!-- Recent Workouts Mini-List -->
-                <div style="border-top: 1px dashed #e2ede4; padding-top:0.75rem;">
-                    <div style="font-size:0.78rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.5rem;">
-                        Recent Activity
-                    </div>
-                    <div id="dash-recent-workouts">
-                        <div style="font-size:0.82rem; color:#9ca3af; text-align:center; padding:0.5rem 0;">
-                            Loading workout stats...
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Gym Info -->
         <div class="list-card fade-up fade-up-d4">
             <div class="list-card-header">

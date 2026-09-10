@@ -311,13 +311,6 @@ try {
     }
     echo "  [✓] `members` table verified.\n";
 
-    // -----------------------------------------------------------------
-    // 8. MEMBER WORKOUTS & FITNESS GOALS TRACKER
-    // -----------------------------------------------------------------
-    echo "\n[8/8] Verifying `member_workouts` and `member_fitness_goals` tables...\n";
-    require_once __DIR__ . '/database/migrate_workouts.php';
-    echo "  [✓] Workout tracking tables verified.\n";
-
     echo "\n=======================================================\n";
     echo " [SUCCESS] UNIFIED DATABASE MIGRATION COMPLETED!\n";
     echo "=======================================================\n";

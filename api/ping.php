@@ -19,7 +19,6 @@ if (!isset($_GET['migrate'])) {
 
 // Ensure database schema is migrated (when ?migrate=1 requested)
 $migrated = false;
-$migration_log = [];
 try {
     require_once __DIR__ . '/../config/db.php';
     if ($pdo) {
@@ -34,9 +33,8 @@ try {
             ob_start();
             require_once __DIR__ . '/../migrate_clean_unified.php';
             require_once __DIR__ . '/../migrate_google_auth.php';
-            $logOutput = ob_get_clean();
+            ob_get_clean();
             $migrated = true;
-            $migration_log = array_filter(explode("\n", trim($logOutput)));
         }
     }
 } catch (Throwable $me) {
@@ -50,9 +48,9 @@ echo json_encode([
     'server'  => 'palmas-gym',
     'version' => 'v2.4-fast-ping',
     'schema_migrated' => $migrated,
-    'migration_log'   => $migration_log,
     'ts'      => time()
 ]);
+
 
 
 
