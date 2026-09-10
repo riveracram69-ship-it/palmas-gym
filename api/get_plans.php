@@ -58,14 +58,28 @@ try {
     ");
     $settings = $settings_stmt ? $settings_stmt->fetchAll(PDO::FETCH_KEY_PAIR) : [];
 
-    $app_url = defined('APP_URL') ? rtrim(APP_URL, '/') : '';
+    // Determine accurate base public URL
+    $app_url = '';
+    if (defined('APP_URL') && !empty(APP_URL) && stripos(APP_URL, 'localhost') === false) {
+        $app_url = rtrim(APP_URL, '/');
+    } else {
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'palmas-gym.onrender.com';
+        $app_url = "{$scheme}://{$host}";
+    }
+
     $format_qr_url = function(?string $path) use ($app_url): ?string {
         if (empty($path)) return null;
-        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, 'data:')) {
-            return $path;
+        if (str_starts_with($path, 'data:')) return $path;
+
+        // Strip localhost or relative prefixes if stored in settings
+        $clean = preg_replace('#^https?://(localhost|127\.0\.0\.1|10\.0\.2\.2)(:[0-9]+)?(/gym)?/#i', '', $path);
+        $clean = ltrim($clean, '/');
+
+        if (str_starts_with($clean, 'http://') || str_starts_with($clean, 'https://')) {
+            return $clean;
         }
-        $rel = ltrim($path, '/');
-        return $app_url ? "{$app_url}/{$rel}" : $rel;
+        return $app_url ? "{$app_url}/{$clean}" : $clean;
     };
 
     echo json_encode([

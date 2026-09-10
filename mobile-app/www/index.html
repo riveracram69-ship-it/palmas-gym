@@ -3337,6 +3337,17 @@ function copyRegPayNumber() {
   });
 }
 
+function getValidQrUrl(rawUrl) {
+  if (!rawUrl) return null;
+  const baseSiteUrl = API_URL.replace(/\/api\/?$/, '');
+  let cleaned = rawUrl.replace(/^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2)(:[0-9]+)?(\/gym)?\/?/i, '');
+  cleaned = cleaned.replace(/^\/?gym\/?/, '');
+  if (cleaned.startsWith('http://') || cleaned.startsWith('https://') || cleaned.startsWith('data:')) {
+    return cleaned;
+  }
+  return `${baseSiteUrl}/${cleaned.replace(/^\/+/, '')}`;
+}
+
 function renderRegPaymentQR() {
   const target = document.getElementById('reg-payment-qr-target');
   if (!target) return;
@@ -3348,10 +3359,9 @@ function renderRegPaymentQR() {
   const methodKey = selectedRegPaymentMethod.toLowerCase();
   const info = gymPaymentSettings[methodKey] || gymPaymentSettings.gcash;
 
-  if (info && info.qr_image) {
-    const baseSiteUrl = API_URL.replace(/\/api\/?$/, '');
-    const imgUrl = info.qr_image.startsWith('http') ? info.qr_image : `${baseSiteUrl}/${info.qr_image}`;
-    target.innerHTML = `<img src="${imgUrl}" alt="${selectedRegPaymentMethod} QR" style="width:160px; height:160px; object-fit:contain; border-radius:8px;" onerror="this.onerror=null; renderFallbackRegQR();">`;
+  const validUrl = info && info.qr_image ? getValidQrUrl(info.qr_image) : null;
+  if (validUrl) {
+    target.innerHTML = `<img src="${validUrl}" alt="${selectedRegPaymentMethod} QR" style="width:160px; height:160px; object-fit:contain; border-radius:8px;" onerror="this.onerror=null; renderFallbackRegQR();">`;
   } else {
     renderFallbackRegQR();
   }
@@ -4063,10 +4073,9 @@ function renderRenewPaymentQR(info, plan) {
   if (!target) return;
   target.innerHTML = '';
 
-  if (info && info.qr_image) {
-    const baseSiteUrl = API_URL.replace(/\/api\/?$/, '');
-    const imgUrl = info.qr_image.startsWith('http') ? info.qr_image : `${baseSiteUrl}/${info.qr_image}`;
-    target.innerHTML = `<img src="${imgUrl}" alt="Payment QR" style="width:160px; height:160px; object-fit:contain; border-radius:8px;" onerror="this.onerror=null; renderFallbackRenewQR(selectedRenewPlan);">`;
+  const validUrl = info && info.qr_image ? getValidQrUrl(info.qr_image) : null;
+  if (validUrl) {
+    target.innerHTML = `<img src="${validUrl}" alt="Payment QR" style="width:160px; height:160px; object-fit:contain; border-radius:8px;" onerror="this.onerror=null; renderFallbackRenewQR(selectedRenewPlan);">`;
   } else {
     renderFallbackRenewQR(plan);
   }
