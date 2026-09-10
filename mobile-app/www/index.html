@@ -569,41 +569,333 @@
       box-shadow: 0 0 30px rgba(82, 183, 136, 0.25), 0 8px 24px rgba(0, 0, 0, 0.5);
     }
 
-    /* ── LOGIN SCREEN ─────────────────────────────────────────────── */
+    /* ── PALMAS DESIGN TOKENS & LOGIN SCREEN ────────────────────────── */
+    #view-login.screen {
+      background: #F4F7F5;
+      background-image:
+        radial-gradient(ellipse at 0% 0%, rgba(58,170,110,.14) 0%, transparent 55%),
+        radial-gradient(ellipse at 100% 100%, rgba(26,92,58,.10) 0%, transparent 55%);
+      background-attachment: fixed;
+    }
+
     .login-bg {
-      min-height: 100vh;
-      background: radial-gradient(circle at top, #0D3427 0%, var(--background) 70%);
+      min-height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 32px 20px 48px;
+      padding: 32px 16px 44px;
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
     }
 
-    .login-card {
+    .login-logo-ring {
+      width: 86px;
+      height: 86px;
+      margin: 0 auto 12px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      border: 2.5px solid #C8E6D4;
+      box-shadow: 0 4px 20px rgba(26,92,58,0.16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 6px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .login-logo-ring:active {
+      transform: scale(0.96);
+    }
+    .login-logo-ring img {
       width: 100%;
-      max-width: 400px;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .login-brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.68rem;
+      font-weight: 800;
+      color: #121A14;
+      letter-spacing: -0.4px;
+      line-height: 1.2;
+      margin: 0;
+      text-align: center;
+    }
+
+    .login-brand-sub {
+      font-size: 0.83rem;
+      color: #617567;
+      margin: 3px 0 0;
+      text-align: center;
+    }
+
+    .login-access-badge {
+      display: inline-block;
+      background: #EDF4EE;
+      color: #2D6A4F;
+      font-size: 0.74rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 1px solid #D4E8DC;
+    }
+
+    .login-portal-card {
+      background: #FFFFFF;
+      border-radius: 22px;
+      padding: 28px 22px;
+      box-shadow: 0 6px 24px rgba(18,26,20,0.07), 0 1px 4px rgba(18,26,20,0.04);
+      border: 1px solid #DCE5DD;
+      width: 100%;
       margin-top: 16px;
     }
 
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: var(--text-muted);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin: 20px 0;
-      font-weight: 600;
+    .login-field-group {
+      margin-bottom: 16px;
     }
 
-    .divider::before,
-    .divider::after {
+    .login-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #121A14;
+      margin-bottom: 6px;
+    }
+
+    .login-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .login-input-wrap i.login-icon-left {
+      position: absolute;
+      left: 14px;
+      font-size: 0.92rem;
+      pointer-events: none;
+      transition: color 0.2s ease;
+      z-index: 1;
+    }
+
+    .login-input-field {
+      width: 100%;
+      height: 50px;
+      background: #FAFDFA;
+      border: 1.5px solid #DCE5DD;
+      border-radius: 12px;
+      padding: 0 14px 0 42px;
+      color: #121A14;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.92rem;
+      outline: none;
+      transition: all 0.2s cubic-bezier(.4,0,.2,1);
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .login-input-field::placeholder {
+      color: #91A397;
+      font-size: 0.84rem;
+    }
+
+    .login-input-field:focus {
+      border-color: #3E8241;
+      background: #FFFFFF;
+      box-shadow: 0 0 0 3.5px rgba(62,130,65,0.16);
+    }
+
+    .login-input-wrap:focus-within i.login-icon-left {
+      color: #3E8241 !important;
+    }
+
+    .login-eye-btn {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      color: #91A397;
+      font-size: 0.95rem;
+      cursor: pointer;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      min-height: 36px;
+      transition: color 0.2s ease;
+    }
+
+    .login-eye-btn:hover {
+      color: #2D6A4F;
+    }
+
+    .login-forgot-link {
+      color: #2D6A4F;
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+
+    .login-forgot-link:hover {
+      color: #3E8241;
+      text-decoration: underline;
+    }
+
+    .login-first-time-box {
+      background: #EDF4EE;
+      border: 1px solid #BBF7D0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.78rem;
+      color: #14532D;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 10px;
+      line-height: 1.45;
+    }
+
+    .login-first-time-box i {
+      color: #52B788;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .btn-access-portal {
+      width: 100%;
+      height: 52px;
+      background: linear-gradient(135deg, #52B788 0%, #3E8241 100%);
+      border: none;
+      border-radius: 12px;
+      color: #FFFFFF;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      margin-top: 18px;
+      box-shadow: 0 4px 14px rgba(62,130,65,0.28);
+      transition: all 0.2s cubic-bezier(.4,0,.2,1);
+    }
+
+    .btn-access-portal:hover:not(:disabled) {
+      background: linear-gradient(135deg, #46C47E 0%, #2D6A4F 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 7px 20px rgba(26,92,58,0.34);
+    }
+
+    .btn-access-portal:active:not(:disabled) {
+      transform: scale(0.98);
+      box-shadow: 0 4px 14px rgba(62,130,65,0.28);
+    }
+
+    .btn-access-portal:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .login-trust-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      color: #91A397;
+      margin-top: 12px;
+    }
+
+    .login-trust-line i {
+      color: #52B788;
+      font-size: 0.75rem;
+    }
+
+    .login-divider {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin: 18px 0 14px;
+      color: #91A397;
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .login-divider::before,
+    .login-divider::after {
       content: '';
       flex: 1;
       height: 1px;
-      background: var(--border);
+      background: #DCE5DD;
+    }
+
+    .btn-create-account {
+      width: 100%;
+      height: 48px;
+      background: #FFFFFF;
+      border: 1.5px solid #52B788;
+      border-radius: 12px;
+      color: #3E8241;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-create-account:hover,
+    .btn-create-account:active {
+      background: #EDF4EE;
+      border-color: #3E8241;
+    }
+
+    .btn-google-portal {
+      width: 100%;
+      height: 46px;
+      background: #FFFFFF;
+      border: 1px solid #DCE5DD;
+      border-radius: 12px;
+      color: #334337;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      transition: all 0.2s ease;
+    }
+
+    .btn-google-portal img {
+      width: 18px;
+      height: 18px;
+    }
+
+    .btn-google-portal:hover,
+    .btn-google-portal:active {
+      background: #F4F7F5;
     }
 
     /* ── PALMA'S ELITE PASS TAB ───────────────────────────────────── */
@@ -1580,68 +1872,113 @@
   <div id="view-login" class="screen" style="display:none;">
     <div class="login-bg">
 
-      <!-- Logo + Branding -->
-      <div style="text-align:center; margin-bottom: 12px;">
-        <div class="gym-logo-wrap" onclick="openServerConfigModal()" style="cursor:pointer;" title="Tap to configure server endpoint">
-          <i class="fa-solid fa-dumbbell" style="font-size:40px; color: var(--gym-light);"></i>
+      <!-- Logo + Branding (Matching Web Member Portal) -->
+      <div style="text-align:center; margin-bottom:10px; width:100%;">
+        <div class="login-logo-ring" onclick="openServerConfigModal()" title="Tap to configure server endpoint">
+          <img
+            src="assets/images/palmas-logo.png"
+            alt="Palma's Elite Gym Logo"
+            onerror="this.style.display='none'; document.getElementById('logo-fallback-icon').style.display='flex';"
+          />
+          <span id="logo-fallback-icon" style="display:none; font-size:2rem; color:#3E8241;"><i class="fa-solid fa-dumbbell"></i></span>
         </div>
-        <h1 style="font-weight:900; font-size:1.6rem; color:#fff; margin:0;">PALMA'S ELITE GYM</h1>
-        <p style="color: var(--gym-muted); font-size:0.82rem; margin:4px 0 6px;">Membership &amp; Attendance Management</p>
+        <h1 class="login-brand-title">Palma's Elite Gym</h1>
+        <p class="login-brand-sub">Membership &amp; Attendance Management</p>
         
-        <!-- Live Server Connection Status Indicator -->
-        <div id="backend-status-pill" onclick="checkBackendConnection(true)" style="display:inline-flex; align-items:center; gap:6px; padding:5px 14px; border-radius:20px; font-size:11px; font-weight:700; background:rgba(18, 59, 45, 0.85); border:1px solid var(--border); cursor:pointer; transition:all 0.2s ease;">
-          <span id="backend-status-dot" style="width:8px; height:8px; border-radius:50%; background:#F4C95D; display:inline-block; transition:background 0.3s ease;"></span>
-          <span id="backend-status-text" style="color:var(--text-secondary);">Connecting to server...</span>
+        <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:8px;">
+          <span class="login-access-badge">MEMBER PORTAL</span>
+          <!-- Subtle backend connection status pill -->
+          <div id="backend-status-pill" onclick="checkBackendConnection(true)" style="display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:16px; font-size:10px; font-weight:700; background:#EDF4EE; border:1px solid #D4E8DC; cursor:pointer;" title="Tap to check server">
+            <span id="backend-status-dot" style="width:7px; height:7px; border-radius:50%; background:#10B981; display:inline-block;"></span>
+            <span id="backend-status-text" style="color:#2D6A4F;">Online</span>
+          </div>
         </div>
       </div>
 
-      <!-- Login Card -->
-      <div class="login-card">
-        <h2 style="font-weight:800; font-size:1.2rem; color:#fff; text-align:center; margin:0 0 4px;">MEMBER PORTAL</h2>
-        <p style="text-align:center; color: var(--gym-muted); font-size:0.82rem; margin:0 0 20px;">Access your digital gym pass &amp; workout history</p>
+      <!-- Crisp White Member Portal Card -->
+      <div class="login-portal-card">
 
-        <!-- Primary Option: Google Sign-In -->
-        <button class="btn-google" id="btn-google-signin" onclick="initiateGoogleSignIn()">
+        <!-- Field 1: Member ID or Email -->
+        <div class="login-field-group">
+          <label class="login-label" for="input-username">Member ID or Email</label>
+          <div class="login-input-wrap">
+            <i class="fa-solid fa-id-badge login-icon-left" style="color:#52B788;"></i>
+            <input
+              id="input-username"
+              class="login-input-field"
+              type="text"
+              placeholder="e.g. GYM-9537F6 or your email"
+              autocomplete="username"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Field 2: Password -->
+        <div class="login-field-group" style="margin-bottom:12px;">
+          <div class="login-label">
+            <span>Password</span>
+            <a class="login-forgot-link" onclick="openForgotPasswordModal()">Forgot Password?</a>
+          </div>
+          <div class="login-input-wrap">
+            <i class="fa-solid fa-lock login-icon-left" style="color:#91A397;"></i>
+            <input
+              id="input-password"
+              class="login-input-field"
+              type="password"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+              required
+            />
+            <button
+              class="login-eye-btn"
+              type="button"
+              onclick="togglePasswordVisibility('input-password', this)"
+              aria-label="Show or hide password"
+            >
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+
+          <!-- First-time login callout box -->
+          <div class="login-first-time-box">
+            <i class="fa-solid fa-circle-info"></i>
+            <span><strong>First-time login?</strong> Enter your registered email to set up your password.</span>
+          </div>
+        </div>
+
+        <!-- Primary Button: Access Member Portal -->
+        <button class="btn-access-portal" id="btn-trad-login" onclick="submitTraditionalLogin()">
+          <i class="fa-solid fa-right-to-bracket"></i> Access Member Portal
+        </button>
+
+        <!-- Trust footer -->
+        <div class="login-trust-line">
+          <i class="fa-solid fa-lock"></i>
+          <span>256-bit SSL encrypted connection</span>
+        </div>
+
+        <!-- NEW MEMBER? Divider -->
+        <div class="login-divider">
+          <span>NEW MEMBER?</span>
+        </div>
+
+        <!-- Secondary Button: Create an Account -->
+        <button type="button" class="btn-create-account" onclick="openRegistrationWizard()">
+          <i class="fa-solid fa-user-plus"></i> Create an Account
+        </button>
+
+        <!-- Google Sign-In Option -->
+        <div class="login-divider" style="margin:16px 0 12px;">
+          <span>OR CONTINUE WITH</span>
+        </div>
+
+        <button type="button" class="btn-google-portal" id="btn-google-signin" onclick="initiateGoogleSignIn()">
           <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" />
           Continue with Google
         </button>
-
-        <div class="divider">or sign in with password</div>
-
-        <!-- Username / Member ID -->
-        <div class="input-field-wrap">
-          <i class="fa-solid fa-user" style="color: var(--gym-light); font-size:0.9rem;"></i>
-          <input id="input-username" type="text" placeholder="Member ID or Email" autocomplete="username" />
-        </div>
-
-        <!-- Password with Eye Toggle -->
-        <div class="input-field-wrap">
-          <i class="fa-solid fa-lock" style="color: var(--gym-light); font-size:0.9rem;"></i>
-          <input id="input-password" type="password" placeholder="Password" autocomplete="current-password" />
-          <button class="eye-btn" type="button" onclick="togglePasswordVisibility('input-password', this)">
-            <i class="fa-solid fa-eye"></i>
-          </button>
-        </div>
-
-        <!-- Sign In Button -->
-        <button class="btn-primary" id="btn-trad-login" onclick="submitTraditionalLogin()" style="margin-top:6px;">
-          <i class="fa-solid fa-right-to-bracket"></i> SIGN IN
-        </button>
-
-        <!-- New User Option -->
-        <div style="text-align:center; margin-top:20px; padding-top:16px; border-top:1px solid rgba(82,183,136,0.18);">
-          <p style="color: var(--gym-muted); font-size:0.8rem; margin:0 0 8px;">New to Palma's Elite Gym?</p>
-          <button class="btn-outline" onclick="openRegistrationWizard()" style="padding:10px; font-size:0.85rem;">
-            <i class="fa-solid fa-user-plus"></i> Create a Membership Account
-          </button>
-        </div>
       </div>
 
-      <div style="text-align:center; margin-top:22px;">
-        <span style="color: rgba(82,183,136,0.55); font-size:0.72rem;">
-          <i class="fa-solid fa-shield-halved"></i> Secured with 256-Bit HTTPS &bull; Palma's Elite
-        </span>
-      </div>
     </div>
   </div>
 
@@ -3476,6 +3813,37 @@ async function handleGoogleCredential(response) {
   }
 }
 
+// ── FORGOT PASSWORD MODAL HANDLER ──────────────────────────────────
+function openForgotPasswordModal() {
+  const emailVal = document.getElementById('input-username')?.value.trim() || '';
+  const alert = document.createElement('ion-alert');
+  alert.header = 'Reset Password';
+  alert.subHeader = 'Enter your registered email address to receive password reset instructions.';
+  alert.inputs = [
+    {
+      name: 'email',
+      type: 'email',
+      placeholder: 'your.email@example.com',
+      value: emailVal.includes('@') ? emailVal : ''
+    }
+  ];
+  alert.buttons = [
+    { text: 'Cancel', role: 'cancel' },
+    {
+      text: 'Send Reset Link',
+      handler: (data) => {
+        if (!data.email || !data.email.includes('@')) {
+          showToast('Please enter a valid email address.');
+          return false;
+        }
+        showToast('Password reset instructions sent if email is registered. You can also visit front desk.', 5000);
+      }
+    }
+  ];
+  document.body.appendChild(alert);
+  return alert.present();
+}
+
 // ── TRADITIONAL LOGIN ──────────────────────────────────────────────
 async function submitTraditionalLogin() {
   const u = document.getElementById('input-username').value.trim();
@@ -3484,7 +3852,7 @@ async function submitTraditionalLogin() {
 
   const btn = document.getElementById('btn-trad-login');
   btn.disabled = true;
-  btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Signing In...';
+  btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Accessing Portal...';
 
   // If server was sleeping, update button text so user knows it's actively waking up
   const coldStartTimer = setTimeout(() => {
@@ -3532,7 +3900,7 @@ async function submitTraditionalLogin() {
   } finally {
     clearTimeout(coldStartTimer);
     btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> SIGN IN';
+    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Access Member Portal';
   }
 }
 
