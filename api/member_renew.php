@@ -21,13 +21,15 @@ $plan_id        = intval($data['plan_id'] ?? 0);
 $payment_method = trim($data['payment_method'] ?? 'GCash');
 $reference_no   = trim($data['reference_no'] ?? '');
 
-// Standardize to 3 primary payment methods
-if (stripos($payment_method, 'gcash') !== false) {
-    $payment_method = 'GCash';
-} elseif (stripos($payment_method, 'maya') !== false) {
+// Standardize to primary payment methods
+if (stripos($payment_method, 'maya') !== false) {
     $payment_method = 'Maya';
-} else {
+} elseif (stripos($payment_method, 'qr') !== false || stripos($payment_method, 'gcash') !== false) {
+    $payment_method = 'GCash';
+} elseif (stripos($payment_method, 'cash') !== false) {
     $payment_method = 'Cash';
+} else {
+    $payment_method = 'GCash';
 }
 
 if (!$plan_id) {
@@ -60,11 +62,22 @@ try {
         exit;
     }
 
-    // 3. Check for existing pending request (prevent duplicates)
+    // 3. Check for existing pending request (update instead of blocking)
     $pending_stmt = $pdo->prepare("SELECT id FROM renewal_requests WHERE member_id = ? AND status = 'Pending' LIMIT 1");
     $pending_stmt->execute([$member_id]);
-    if ($pending_stmt->fetch()) {
-        echo json_encode(['success' => false, 'message' => 'You already have a pending renewal request under review by staff.']);
+    $existing = $pending_stmt->fetch(PDO::FETCH_ASSOC);
+    if ($existing) {
+        $update_stmt = $pdo->prepare("
+            UPDATE renewal_requests 
+            SET plan_id = ?, payment_method = ?, reference_no = ?, updated_at = NOW() 
+            WHERE id = ?
+        ");
+        $update_stmt->execute([$plan_id, $payment_method, $reference_no ?: null, $existing['id']]);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Your pending renewal for ' . htmlspecialchars($plan['name']) . ' has been updated with your ' . $payment_method . ' reference number (' . htmlspecialchars($reference_no) . '). Gym staff will verify shortly!'
+        ]);
         exit;
     }
 

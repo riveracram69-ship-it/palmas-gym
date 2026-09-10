@@ -51,8 +51,10 @@ COPY . /var/www/html/gym
 RUN chown -R www-data:www-data /var/www/html/gym \
     && chmod -R 755 /var/www/html/gym \
     && mkdir -p /var/www/html/gym/uploads/members \
+    && mkdir -p /var/www/html/gym/uploads/qr \
     && mkdir -p /var/www/html/gym/backups \
     && chmod 775 /var/www/html/gym/uploads/members \
+    && chmod 775 /var/www/html/gym/uploads/qr \
     && chmod 775 /var/www/html/gym/backups
 
 # Copy and setup entrypoint script

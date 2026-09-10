@@ -2206,40 +2206,72 @@
           </button>
         </div>
 
-        <!-- ── STEP 4: ONLINE GATEWAY CONFIRMATION SCREEN ── -->
+        <!-- ── STEP 4: ONLINE QR PH / EWALLET PAYMENT SCREEN ── -->
         <div id="checkout-step-confirm-gcash" class="checkout-step" style="display:none;">
-          <div class="card card-elevated" style="text-align:center; padding:24px 20px; margin-bottom:18px;">
-            <div class="pm-icon-wrap pm-icon-gcash" style="margin:0 auto 14px; width:56px; height:56px; font-size:26px;">
-              <i class="fa-solid fa-shield-halved"></i>
+          <div class="card card-elevated" style="text-align:center; padding:22px 18px; margin-bottom:18px;">
+            <div class="pm-icon-wrap pm-icon-gcash" style="margin:0 auto 12px; width:52px; height:52px; font-size:24px;">
+              <i class="fa-solid fa-qrcode"></i>
             </div>
-            <h2 style="color:var(--text-primary); font-size:1.35rem; font-weight:800; margin:0 0 6px;">Secure Payment Gateway</h2>
-            <p style="color:var(--text-secondary); font-size:0.86rem; line-height:1.45; margin:0 0 16px;">
-              You will be securely redirected to complete the payment.
+            <h2 style="color:var(--text-primary); font-size:1.3rem; font-weight:800; margin:0 0 4px;" id="renew-modal-title">GCash / Maya QR Ph</h2>
+            <p style="color:var(--text-secondary); font-size:0.84rem; line-height:1.45; margin:0 0 14px;">
+              Scan with <strong style="color:var(--primary-light);">GCash, Maya, or any banking app</strong>, then enter your Reference Number below.
             </p>
 
-            <div style="background:rgba(6,31,24,0.8); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:16px; text-align:left;">
-              <div style="font-size:12px; color:var(--text-muted); text-transform:uppercase; font-weight:700; letter-spacing:0.5px;">Amount to Pay</div>
-              <div style="font-size:2rem; font-weight:900; color:var(--primary); font-family:'Outfit',sans-serif; margin:6px 0;" id="confirm-gcash-amount">₱1,500.00</div>
-              <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">
-                <span style="color:var(--text-muted);">Payment Channel</span>
-                <strong style="color:var(--primary-light);" id="confirm-method-label">GCash</strong>
-              </div>
-              <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:6px;">
-                <span style="color:var(--text-muted);">Membership Plan</span>
-                <strong style="color:var(--text-primary);" id="confirm-plan-label">Standard Membership</strong>
+            <!-- QR Display Container -->
+            <div style="background:#ffffff; border:2px solid var(--border); border-radius:18px; padding:14px; display:inline-block; margin:0 auto 14px; box-shadow:0 8px 24px rgba(0,0,0,0.4);" id="renew-qr-box">
+              <div id="renew-payment-qr-target" style="width:170px; height:170px; display:flex; align-items:center; justify-content:center; margin:0 auto;"></div>
+              <div style="font-size:11px; font-weight:700; color:#1b4332; margin-top:6px; letter-spacing:0.5px;">
+                <i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i> OFFICIAL QR PH
               </div>
             </div>
 
-            <p style="color:var(--text-muted); font-size:12px; margin:0 0 16px; line-height:1.4;">
-              Transactions are encrypted and verified directly by the server.
-            </p>
+            <!-- Amount & Account Details -->
+            <div style="background:rgba(6,31,24,0.85); border:1px solid var(--border); border-radius:16px; padding:14px 16px; margin-bottom:16px; text-align:left;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Amount to Send</div>
+                  <div style="font-size:1.75rem; font-weight:900; color:var(--primary); font-family:'Outfit',sans-serif; margin:2px 0 0;" id="confirm-gcash-amount">₱500.00</div>
+                </div>
+                <button type="button" class="btn-copy-chip" onclick="copyAmountToClipboard()" style="padding:6px 12px; background:rgba(62,130,65,0.2); border:1px solid var(--primary); color:var(--primary-light); border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">
+                  <i class="fa-regular fa-copy"></i> Copy
+                </button>
+              </div>
 
-            <div style="color:var(--primary); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:18px;">
-              <i class="fa-solid fa-lock"></i> 256-Bit Encrypted Secure Payment
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; margin-top:10px; border-top:1px solid var(--border); padding-top:8px;">
+                <div>
+                  <span style="color:var(--text-muted); display:block; font-size:11px;">Account Name</span>
+                  <strong style="color:var(--text-primary); font-size:13px;" id="renew-account-name">Palma's Elite Gym</strong>
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; margin-top:8px;">
+                <div>
+                  <span style="color:var(--text-muted); display:block; font-size:11px;">Account / Mobile Number</span>
+                  <strong style="color:var(--primary-light); font-family:monospace; font-size:14px;" id="renew-account-number">0917-888-4961</strong>
+                </div>
+                <button type="button" class="btn-copy-chip" onclick="copyNumberToClipboard()" style="padding:6px 12px; background:rgba(62,130,65,0.2); border:1px solid var(--primary); color:var(--primary-light); border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">
+                  <i class="fa-regular fa-copy"></i> Copy
+                </button>
+              </div>
             </div>
 
-            <button class="btn-primary" id="btn-continue-to-gcash" onclick="executeGatewayCheckout()" style="margin-bottom:10px;">
-              <i class="fa-solid fa-arrow-up-right-from-square"></i> Continue to Payment
+            <!-- Reference Number Input -->
+            <div style="text-align:left; margin-bottom:16px;">
+              <label for="renew-reference-no" style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px;">
+                GCash / Maya Reference Number <span style="color:var(--primary-light);">*</span>
+              </label>
+              <input type="text" id="renew-reference-no" class="input-field" placeholder="e.g. 1029 3847 5612" style="width:100%; box-sizing:border-box; font-family:monospace; font-size:15px; letter-spacing:1px; padding:12px 14px; background:#082119; border:1.5px solid var(--border); border-radius:12px; color:#fff;" maxlength="25">
+              <p style="color:var(--text-muted); font-size:11px; margin:5px 0 0; line-height:1.35;">
+                Enter the reference number from your payment receipt so staff can verify it.
+              </p>
+            </div>
+
+            <button class="btn-primary" id="btn-submit-qr-payment" onclick="submitPersonalQrRenewal()" style="margin-bottom:10px;">
+              <i class="fa-solid fa-check-circle"></i> Submit Payment for Verification
+            </button>
+
+            <button class="btn-outline" onclick="executeGatewayCheckout()" style="margin-bottom:10px; font-size:12px; padding:10px; border-color:rgba(82,183,136,0.3); color:var(--text-secondary);">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Or Open Direct Gateway Checkout
             </button>
             
             <button class="btn-outline" onclick="showCheckoutStep('method')">
@@ -2273,6 +2305,31 @@
                 <button class="btn-outline" onclick="closeRenewalModal(); openPaymentDetailModal(currentResultRef);"><i class="fa-solid fa-receipt"></i> View Official Receipt</button>
                 <button class="btn-outline" onclick="closeRenewalModal(); refreshDashboard(); loadPaymentHistory();" style="border-color:transparent; color:var(--text-muted);">Done</button>
               </div>
+            </div>
+          </div>
+
+          <!-- SUBMITTED PENDING VERIFICATION STATE -->
+          <div id="result-state-submitted" style="display:none;">
+            <div class="result-screen-card result-pending">
+              <div class="result-icon-circle" style="background:rgba(82, 183, 136, 0.2); border-color:#52B788; color:#52B788;">
+                <i class="fa-solid fa-receipt"></i>
+              </div>
+              <h2 style="color:var(--text-primary); font-size:1.35rem; font-weight:800; margin:0 0 6px;">Payment Submitted</h2>
+              <p style="color:var(--text-secondary); font-size:0.86rem; margin:0 0 16px; line-height:1.5;">
+                Your GCash/Maya reference has been recorded and submitted to gym staff for instant verification.
+              </p>
+              <div style="background:rgba(6,31,24,0.7); border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:16px; text-align:left;">
+                <div class="checkout-row" style="padding:5px 0;"><span class="lbl">Reference Number</span><strong class="val" id="res-sub-ref" style="font-family:monospace; color:var(--primary-light);">--</strong></div>
+                <div class="checkout-row" style="padding:5px 0;"><span class="lbl">Membership Plan</span><strong class="val" id="res-sub-plan">--</strong></div>
+                <div class="checkout-row" style="padding:5px 0;"><span class="lbl">Amount</span><strong class="val" id="res-sub-amount" style="color:var(--primary);">--</strong></div>
+                <div class="checkout-row" style="padding:5px 0;"><span class="lbl">Status</span><span style="color:#f59e0b; font-weight:700; font-size:12px;">● PENDING STAFF APPROVAL</span></div>
+              </div>
+              <p style="color:var(--text-muted); font-size:12px; margin:0 0 16px; line-height:1.4;">
+                💡 <em>Tip: Show this reference or your GCash SMS/receipt at the front desk for instant check-in.</em>
+              </p>
+              <button class="btn-primary" onclick="closeRenewalModal(); refreshDashboard(); loadPaymentHistory();" style="margin-bottom:10px;">
+                <i class="fa-solid fa-house"></i> Return to Dashboard
+              </button>
             </div>
           </div>
 
@@ -3971,18 +4028,150 @@ function proceedFromMethodSelection() {
   }
 
   const p = selectedRenewPlan;
+  if (!p) return showToast('Please select a membership plan.');
   const priceFormatted = '₱' + parseFloat(p.price).toFixed(2);
 
-  // Configure GCash / Online Confirmation Screen
+  // Configure GCash / Maya / QR Ph Confirmation Screen
   const amountEl = document.getElementById('confirm-gcash-amount');
-  const methodEl = document.getElementById('confirm-method-label');
-  const planEl   = document.getElementById('confirm-plan-label');
+  const titleEl  = document.getElementById('renew-modal-title');
+  const nameEl   = document.getElementById('renew-account-name');
+  const numEl    = document.getElementById('renew-account-number');
+  const refInput = document.getElementById('renew-reference-no');
 
   if (amountEl) amountEl.textContent = priceFormatted;
-  if (methodEl) methodEl.textContent = selectedRenewMethod;
-  if (planEl)   planEl.textContent   = p.name;
+  if (refInput) refInput.value = '';
+
+  const isMaya = (selectedRenewMethod === 'Maya');
+  const info = (isMaya && gymPaymentSettings && gymPaymentSettings.maya) ? gymPaymentSettings.maya : ((gymPaymentSettings && gymPaymentSettings.gcash) ? gymPaymentSettings.gcash : {
+    name: "Palma's Elite Gym",
+    number: "0917-888-4961",
+    qr_image: null
+  });
+
+  if (titleEl) titleEl.textContent = isMaya ? 'Pay via Maya QR Ph' : 'Pay via GCash QR Ph';
+  if (nameEl)  nameEl.textContent  = info.name || "Palma's Elite Gym";
+  if (numEl)   numEl.textContent   = info.number || "0917-888-4961";
+
+  // Render QR Code (Uploaded Image or Generated QR Ph)
+  renderRenewPaymentQR(info, p);
 
   showCheckoutStep('confirm-gcash');
+}
+
+function renderRenewPaymentQR(info, plan) {
+  const target = document.getElementById('renew-payment-qr-target');
+  if (!target) return;
+  target.innerHTML = '';
+
+  if (info && info.qr_image) {
+    const baseSiteUrl = API_URL.replace(/\/api\/?$/, '');
+    const imgUrl = info.qr_image.startsWith('http') ? info.qr_image : `${baseSiteUrl}/${info.qr_image}`;
+    target.innerHTML = `<img src="${imgUrl}" alt="Payment QR" style="width:160px; height:160px; object-fit:contain; border-radius:8px;" onerror="this.onerror=null; renderFallbackRenewQR(selectedRenewPlan);">`;
+  } else {
+    renderFallbackRenewQR(plan);
+  }
+}
+
+function renderFallbackRenewQR(plan) {
+  const target = document.getElementById('renew-payment-qr-target');
+  if (!target) return;
+  target.innerHTML = '';
+  const amt = plan ? parseFloat(plan.price).toFixed(2) : '0.00';
+  const qrPayload = `00020101021226580010ph.ppmi.qr0111PALMASGYM0215RNW${Date.now()}520459995303608540${amt.length}${amt}5802PH5918PALMAS ELITE GYM6006MANILA6304`;
+  new QRCode(target, {
+    text: qrPayload,
+    width: 160,
+    height: 160,
+    colorDark: '#081c15',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+function copyAmountToClipboard() {
+  if (!selectedRenewPlan) return;
+  const amt = parseFloat(selectedRenewPlan.price).toFixed(2);
+  copyToClipboardText(amt, 'Amount copied: ₱' + amt);
+}
+
+function copyNumberToClipboard() {
+  const numEl = document.getElementById('renew-account-number');
+  const num = numEl ? numEl.textContent.trim() : '0917-888-4961';
+  copyToClipboardText(num, 'Account number copied: ' + num);
+}
+
+function copyToClipboardText(text, successMsg) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast(successMsg)).catch(() => fallbackCopy(text, successMsg));
+  } else {
+    fallbackCopy(text, successMsg);
+  }
+}
+
+function fallbackCopy(text, successMsg) {
+  const t = document.createElement('textarea');
+  t.value = text;
+  document.body.appendChild(t);
+  t.select();
+  document.execCommand('copy');
+  document.body.removeChild(t);
+  showToast(successMsg);
+}
+
+async function submitPersonalQrRenewal() {
+  if (!selectedRenewPlanId) return showToast('Please select a membership plan.');
+
+  const token = localStorage.getItem('peg_token');
+  if (!token) return showToast('Session expired. Please sign in again.');
+
+  const refInput = document.getElementById('renew-reference-no');
+  const refNo = refInput ? refInput.value.trim() : '';
+
+  if (!refNo) {
+    return showToast('Please enter your transaction Reference Number.');
+  }
+
+  const btn = document.getElementById('btn-submit-qr-payment');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Submitting...';
+  }
+
+  try {
+    const res = await authFetch(`${API_URL}/member_renew.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        plan_id: selectedRenewPlanId,
+        payment_method: selectedRenewMethod || 'GCash',
+        reference_no: refNo
+      })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      currentPendingRef = refNo;
+      currentResultRef  = refNo;
+      renderResultState('submitted_pending', {
+        ref_code: refNo,
+        amount_formatted: '₱' + parseFloat(selectedRenewPlan.price).toFixed(2),
+        plan_name: selectedRenewPlan.name,
+        payment_method: selectedRenewMethod || 'GCash'
+      });
+      showCheckoutStep('result');
+      refreshDashboard();
+      loadPaymentHistory();
+    } else {
+      showToast(data.message || 'Unable to submit payment.');
+    }
+  } catch (err) {
+    showToast('Network error submitting payment. Please try again.');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Submit Payment for Verification';
+    }
+  }
 }
 
 async function submitCashRenewalRequest() {
@@ -4150,15 +4339,23 @@ async function pollPaymentStatus(refCode, attempt = 1) {
 }
 
 function renderResultState(state, data = {}) {
-  const states = ['success', 'pending', 'failed', 'cancelled', 'expired'];
+  const states = ['success', 'pending', 'failed', 'cancelled', 'expired', 'submitted'];
+  const activeState = (state === 'submitted_pending') ? 'submitted' : state;
   states.forEach(s => {
     const el = document.getElementById(`result-state-${s}`);
-    if (el) el.style.display = (s === state) ? 'block' : 'none';
+    if (el) el.style.display = (s === activeState) ? 'block' : 'none';
   });
 
   currentResultRef = data.reference_code || data.ref_code || currentResultRef;
 
-  if (state === 'success') {
+  if (state === 'submitted_pending') {
+    const refEl = document.getElementById('res-sub-ref');
+    const plnEl = document.getElementById('res-sub-plan');
+    const amtEl = document.getElementById('res-sub-amount');
+    if (refEl) refEl.textContent = currentResultRef || '--';
+    if (plnEl) plnEl.textContent = data.plan_name || (selectedRenewPlan ? selectedRenewPlan.name : '--');
+    if (amtEl) amtEl.textContent = data.amount_formatted || '--';
+  } else if (state === 'success') {
     const amtEl = document.getElementById('res-success-amount');
     const mthEl = document.getElementById('res-success-method');
     const refEl = document.getElementById('res-success-ref');

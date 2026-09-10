@@ -58,6 +58,16 @@ try {
     ");
     $settings = $settings_stmt ? $settings_stmt->fetchAll(PDO::FETCH_KEY_PAIR) : [];
 
+    $app_url = defined('APP_URL') ? rtrim(APP_URL, '/') : '';
+    $format_qr_url = function(?string $path) use ($app_url): ?string {
+        if (empty($path)) return null;
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, 'data:')) {
+            return $path;
+        }
+        $rel = ltrim($path, '/');
+        return $app_url ? "{$app_url}/{$rel}" : $rel;
+    };
+
     echo json_encode([
         'success' => true,
         'plans' => $plans,
@@ -65,12 +75,12 @@ try {
             'gcash' => [
                 'name' => $settings['gcash_name'] ?? "Palma's Elite Gym",
                 'number' => $settings['gcash_number'] ?? "0917-888-4961",
-                'qr_image' => !empty($settings['gcash_qr_image']) ? $settings['gcash_qr_image'] : null
+                'qr_image' => $format_qr_url($settings['gcash_qr_image'] ?? null)
             ],
             'maya' => [
                 'name' => $settings['maya_name'] ?? "Palma's Elite Gym",
                 'number' => $settings['maya_number'] ?? "0917-888-4961",
-                'qr_image' => !empty($settings['maya_qr_image']) ? $settings['maya_qr_image'] : null
+                'qr_image' => $format_qr_url($settings['maya_qr_image'] ?? null)
             ]
         ]
     ]);
