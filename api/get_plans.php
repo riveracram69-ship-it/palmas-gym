@@ -17,31 +17,14 @@ require_once __DIR__ . '/../config/db.php';
 try {
     $include_test = isset($_GET['include_test']) ? (int)$_GET['include_test'] : 1;
     
-    // Check available columns on membership_plans to support legacy and upgraded schemas
-    $cols = [];
-    try {
-        $cols = $pdo->query("SHOW COLUMNS FROM membership_plans")->fetchAll(PDO::FETCH_COLUMN);
-    } catch (Throwable $ignore) {}
-
-    $hasPromoCols = in_array('duration_minutes', $cols) && in_array('is_test_promo', $cols);
-
-    if ($hasPromoCols) {
-        $sql = "
-            SELECT id, name, price, duration_months, duration_minutes, benefits, is_test_promo, promo_code 
-            FROM membership_plans 
-        ";
-        if ($include_test === 0) {
-            $sql .= " WHERE is_test_promo = 0 ";
-        }
-        $sql .= " ORDER BY is_test_promo DESC, price ASC";
-    } else {
-        // Fallback for base schema before promo migration runs
-        $sql = "
-            SELECT id, name, price, duration_months, benefits 
-            FROM membership_plans 
-            ORDER BY price ASC
-        ";
+    $sql = "
+        SELECT id, name, price, duration_months, duration_minutes, benefits, is_test_promo, promo_code 
+        FROM membership_plans 
+    ";
+    if ($include_test === 0) {
+        $sql .= " WHERE is_test_promo = 0 ";
     }
+    $sql .= " ORDER BY is_test_promo DESC, price ASC";
 
     $stmt = $pdo->query($sql);
     $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
@@ -91,8 +74,7 @@ try {
             ]
         ]
     ]);
-} catch (Throwable $e) {
-    error_log("get_plans error: " . $e->getMessage());
+} catch (Exception $e) {
     echo json_encode([
         'success' => false, 
         'plans' => [], 
@@ -100,6 +82,6 @@ try {
             'gcash' => ['name' => "Palma's Elite Gym", 'number' => "0917-888-4961", 'qr_image' => null],
             'maya'  => ['name' => "Palma's Elite Gym", 'number' => "0917-888-4961", 'qr_image' => null]
         ],
-        'message' => 'Unable to fetch plans: ' . $e->getMessage()
+        'message' => 'Unable to fetch plans.'
     ]);
 }

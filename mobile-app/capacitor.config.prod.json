@@ -3,7 +3,7 @@
   "appName": "Palma's Elite Gym",
   "webDir": "www",
   "server": {
-    "cleartext": false,
+    "cleartext": true,
     "androidScheme": "https"
   },
   "plugins": {

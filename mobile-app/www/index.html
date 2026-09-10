@@ -1310,18 +1310,24 @@
     <div class="login-bg">
 
       <!-- Logo + Branding -->
-      <div style="text-align:center; margin-bottom: 6px;">
-        <div class="gym-logo-wrap">
+      <div style="text-align:center; margin-bottom: 12px;">
+        <div class="gym-logo-wrap" onclick="openServerConfigModal()" style="cursor:pointer;" title="Tap to configure server endpoint">
           <i class="fa-solid fa-dumbbell" style="font-size:40px; color: var(--gym-light);"></i>
         </div>
         <h1 style="font-weight:900; font-size:1.6rem; color:#fff; margin:0;">PALMA'S ELITE GYM</h1>
-        <p style="color: var(--gym-muted); font-size:0.82rem; margin:4px 0 0;">Membership &amp; Attendance Management</p>
+        <p style="color: var(--gym-muted); font-size:0.82rem; margin:4px 0 6px;">Membership &amp; Attendance Management</p>
+        
+        <!-- Live Server Connection Status Indicator -->
+        <div id="backend-status-pill" onclick="checkBackendConnection(true)" style="display:inline-flex; align-items:center; gap:6px; padding:5px 14px; border-radius:20px; font-size:11px; font-weight:700; background:rgba(18, 59, 45, 0.85); border:1px solid var(--border); cursor:pointer; transition:all 0.2s ease;">
+          <span id="backend-status-dot" style="width:8px; height:8px; border-radius:50%; background:#F4C95D; display:inline-block; transition:background 0.3s ease;"></span>
+          <span id="backend-status-text" style="color:var(--text-secondary);">Connecting to server...</span>
+        </div>
       </div>
 
       <!-- Login Card -->
       <div class="login-card">
         <h2 style="font-weight:800; font-size:1.2rem; color:#fff; text-align:center; margin:0 0 4px;">MEMBER PORTAL</h2>
-        <p style="text-align:center; color: var(--gym-muted); font-size:0.82rem; margin:0 0 20px;">Access your digital gym pass & membership details</p>
+        <p style="text-align:center; color: var(--gym-muted); font-size:0.82rem; margin:0 0 20px;">Access your digital gym pass &amp; workout history</p>
 
         <!-- Primary Option: Google Sign-In -->
         <button class="btn-google" id="btn-google-signin" onclick="initiateGoogleSignIn()">
@@ -2437,6 +2443,43 @@
     </div>
   </div>
 
+  <!-- ══════════════════════════════════════════════════════════
+       SERVER ENDPOINT CONFIGURATION MODAL
+       ══════════════════════════════════════════════════════════ -->
+  <div id="server-config-modal" class="custom-dialog-overlay" style="display:none;" onclick="closeServerConfigModal()">
+    <div class="custom-dialog-card" onclick="event.stopPropagation()" style="max-width:400px;">
+      <div style="width:44px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 18px;"></div>
+      <div style="width:58px; height:58px; border-radius:50%; background:rgba(82, 183, 136, 0.15); border:1.5px solid var(--primary); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:var(--primary); font-size:24px;">
+        <i class="fa-solid fa-server"></i>
+      </div>
+      <h3 style="font-family:'Outfit', sans-serif; font-size:20px; font-weight:800; color:var(--text-primary); margin:0 0 6px; text-align:center;">Server Connection</h3>
+      <p style="font-size:13px; color:var(--text-secondary); margin:0 0 16px; text-align:center;">Choose backend endpoint or enter custom IP for local testing.</p>
+
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+        <button class="btn-outline" style="height:44px; font-size:12px; justify-content:flex-start; padding:0 14px;" onclick="selectEndpoint('https://palmas-gym-4oxn.onrender.com/api')">
+          <i class="fa-solid fa-cloud" style="color:var(--primary); margin-right:8px;"></i> Render Primary (4oxn)
+        </button>
+        <button class="btn-outline" style="height:44px; font-size:12px; justify-content:flex-start; padding:0 14px;" onclick="selectEndpoint('https://palmas-gym.onrender.com/api')">
+          <i class="fa-solid fa-cloud" style="color:var(--primary); margin-right:8px;"></i> Render Secondary (palmas-gym)
+        </button>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="font-size:12px; color:var(--text-muted); font-weight:600; display:block; margin-bottom:4px;">Custom Backend API URL</label>
+        <input id="input-custom-endpoint" type="text" placeholder="http://192.168.x.x/gggym/gym/api" style="width:100%; height:44px; background:var(--card-elevated); border:1px solid var(--border); border-radius:10px; color:#fff; padding:0 12px; font-size:13px;" />
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <button class="btn-primary" style="height:46px; font-size:14px; flex:1;" onclick="applyCustomEndpoint()">
+          <i class="fa-solid fa-check"></i> Save &amp; Test
+        </button>
+        <button class="btn-outline" style="height:46px; font-size:14px; width:90px;" onclick="closeServerConfigModal()">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- TOAST -->
   <div class="toast-wrap">
     <div class="toast" id="toast-msg"></div>
@@ -2448,8 +2491,18 @@
 // ══════════════════════════════════════════════════════════════════
 //  PALMA'S ELITE GYM — Complete Unified Mobile Application Logic
 // ══════════════════════════════════════════════════════════════════
-const API_URL = 'https://palmas-gym-4oxn.onrender.com/api';
+// ── Primary & Failover API Endpoints ────────────────────────────────
+const DEFAULT_ENDPOINTS = [
+  'https://palmas-gym-4oxn.onrender.com/api',
+  'https://palmas-gym.onrender.com/api'
+];
+
+let API_URL = localStorage.getItem('peg_api_endpoint') || DEFAULT_ENDPOINTS[0];
 const GOOGLE_CLIENT_ID = '547166577828-q8asn3pta04j6o779g3vc6sqmvq76n39.apps.googleusercontent.com';
+
+function getFallbackEndpoint() {
+  return API_URL === DEFAULT_ENDPOINTS[0] ? DEFAULT_ENDPOINTS[1] : DEFAULT_ENDPOINTS[0];
+}
 
 let currentMember = null;
 let availablePlans = [];
@@ -2475,20 +2528,99 @@ window.addEventListener('online', updateNetworkStatus);
 window.addEventListener('offline', updateNetworkStatus);
 document.addEventListener('DOMContentLoaded', updateNetworkStatus);
 
-// Eager non-blocking warm-up ping for Render sleeping containers
-function warmupBackend() {
-  window.fetch(`${API_URL}/ping.php`, { method: 'GET', cache: 'no-store' })
-    .then(r => {
-      if (r.ok) {
+// ── Live Backend Connection Health Check & UI Status Pill ───────────
+async function checkBackendConnection(showToastAlert = false) {
+  const dot = document.getElementById('backend-status-dot');
+  const txt = document.getElementById('backend-status-text');
+  if (dot) dot.style.background = '#F4C95D';
+  if (txt) txt.textContent = 'Connecting to server...';
+
+  // 1. Try currently active API_URL
+  try {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 12000);
+    const res = await window.fetch(`${API_URL}/ping.php`, { cache: 'no-store', signal: controller.signal });
+    clearTimeout(tid);
+
+    if (res.ok) {
+      if (dot) dot.style.background = '#52B788';
+      if (txt) txt.textContent = 'Server Online';
+      const b = document.getElementById('offline-banner');
+      if (b) b.classList.remove('active');
+      if (showToastAlert) showToast('Connected to Palma\'s Elite Gym server!', 2500);
+      return true;
+    }
+  } catch (e) {
+    console.warn('Primary endpoint check failed, testing fallback...', e.message);
+  }
+
+  // 2. Try fallback endpoint automatically
+  const fallback = getFallbackEndpoint();
+  if (fallback && fallback !== API_URL) {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 12000);
+      const res = await window.fetch(`${fallback}/ping.php`, { cache: 'no-store', signal: controller.signal });
+      clearTimeout(tid);
+
+      if (res.ok) {
+        console.log('Switched to working fallback endpoint:', fallback);
+        API_URL = fallback;
+        apiClient.baseUrl = fallback;
+        localStorage.setItem('peg_api_endpoint', fallback);
+        if (dot) dot.style.background = '#52B788';
+        if (txt) txt.textContent = 'Server Online (Failover)';
         const b = document.getElementById('offline-banner');
         if (b) b.classList.remove('active');
+        if (showToastAlert) showToast('Connected to Palma\'s Elite Gym server!', 2500);
+        return true;
       }
-    })
-    .catch(() => {});
+    } catch (e2) {}
+  }
+
+  // 3. Both failed (likely Render cold-starting)
+  if (dot) dot.style.background = '#F06A6A';
+  if (txt) txt.textContent = 'Server Sleeping (Tap to Wake)';
+  if (showToastAlert) showToast('Waking up server container. Please wait 15-20s and tap again.', 5000);
+  return false;
+}
+
+function openServerConfigModal() {
+  const inp = document.getElementById('input-custom-endpoint');
+  if (inp) inp.value = API_URL;
+  const m = document.getElementById('server-config-modal');
+  if (m) m.style.display = 'flex';
+}
+
+function closeServerConfigModal() {
+  const m = document.getElementById('server-config-modal');
+  if (m) m.style.display = 'none';
+}
+
+function selectEndpoint(url) {
+  const inp = document.getElementById('input-custom-endpoint');
+  if (inp) inp.value = url;
+}
+
+async function applyCustomEndpoint() {
+  const inp = document.getElementById('input-custom-endpoint');
+  if (!inp || !inp.value.trim()) return;
+  const newUrl = inp.value.trim().replace(/\/+$/, '');
+  API_URL = newUrl;
+  apiClient.baseUrl = newUrl;
+  localStorage.setItem('peg_api_endpoint', newUrl);
+  closeServerConfigModal();
+  showToast('Endpoint saved. Testing connection...', 3000);
+  await checkBackendConnection(true);
+}
+
+// Eager non-blocking warm-up ping for Render sleeping containers
+function warmupBackend() {
+  checkBackendConnection(false);
 }
 window.addEventListener('DOMContentLoaded', warmupBackend);
 
-// ── Centralized Secure API Client with 401 Expiry Interception (Stage 5) ─
+// ── Centralized Secure API Client with 401 Expiry Interception & Failover ─
 class GymApiClient {
   constructor(baseUrl) {
     this.baseUrl = baseUrl;
@@ -2496,6 +2628,21 @@ class GymApiClient {
 
   getAuthToken() {
     return localStorage.getItem('peg_token') || '';
+  }
+
+  async fetchWithTimeout(url, options, headers, timeoutMs = 35000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await window.fetch(url, {
+        ...options,
+        headers,
+        signal: controller.signal
+      });
+      return response;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   async request(endpoint, options = {}) {
@@ -2514,44 +2661,53 @@ class GymApiClient {
       ...(options.headers || {})
     };
 
-    const url = endpoint.startsWith('http') 
+    let targetBase = this.baseUrl || API_URL;
+    let url = endpoint.startsWith('http') 
       ? endpoint 
-      : `${this.baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+      : `${targetBase}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
 
-    // Resilient timeout with AbortController (35s timeout to gracefully tolerate cold-starts)
-    const timeoutMs = options.timeout || 35000;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
+    let response;
     try {
-      // Direct window.fetch call to avoid recursion and maximum call stack errors
-      const response = await window.fetch(url, {
-        ...options,
-        headers,
-        signal: controller.signal
-      });
-
-      // Clear offline banner on successful connection
-      const banner = document.getElementById('offline-banner');
-      if (banner) banner.classList.remove('active');
-
-      // Universal HTTP 401 Session Expiration Interceptor
-      if (response.status === 401) {
-        if (!endpoint.includes('member_login.php') && !endpoint.includes('google_auth.php')) {
-          this.handleSessionExpired();
-          throw new Error('Session expired (401 Unauthorized)');
-        }
-      }
-
-      return response;
+      response = await this.fetchWithTimeout(url, options, headers, options.timeout || 35000);
     } catch (err) {
-      if (err.name === 'AbortError') {
-        throw new Error('Server connection timed out. If the server was sleeping, please try again in a moment.');
+      // Automatic failover on connection error if calling default endpoint
+      const fallback = getFallbackEndpoint();
+      if (!endpoint.startsWith('http') && fallback && fallback !== targetBase) {
+        console.warn('Request failed on primary, retrying with fallback endpoint...', fallback);
+        const fallbackUrl = `${fallback}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+        try {
+          response = await this.fetchWithTimeout(fallbackUrl, options, headers, options.timeout || 35000);
+          // Update active endpoint to the working one
+          API_URL = fallback;
+          this.baseUrl = fallback;
+          localStorage.setItem('peg_api_endpoint', fallback);
+        } catch (err2) {
+          if (err.name === 'AbortError' || err2.name === 'AbortError') {
+            throw new Error('Server connection timed out. The server might be warming up. Please try again.');
+          }
+          throw err;
+        }
+      } else {
+        if (err.name === 'AbortError') {
+          throw new Error('Server connection timed out. The server might be warming up. Please try again.');
+        }
+        throw err;
       }
-      throw err;
-    } finally {
-      clearTimeout(timeoutId);
     }
+
+    // Clear offline banner on successful connection
+    const banner = document.getElementById('offline-banner');
+    if (banner) banner.classList.remove('active');
+
+    // Universal HTTP 401 Session Expiration Interceptor
+    if (response.status === 401) {
+      if (!endpoint.includes('member_login.php') && !endpoint.includes('google_auth.php')) {
+        this.handleSessionExpired();
+        throw new Error('Session expired (401 Unauthorized)');
+      }
+    }
+
+    return response;
   }
 
   async get(endpoint, options = {}) {
@@ -2829,6 +2985,14 @@ async function submitTraditionalLogin() {
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Signing In...';
 
+  // If server was sleeping, update button text so user knows it's actively waking up
+  const coldStartTimer = setTimeout(() => {
+    if (btn && btn.disabled) {
+      btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Waking up cloud server...';
+      showToast('Connecting to server (waking container)... please wait a moment.', 4500);
+    }
+  }, 3500);
+
   try {
     const res = await authFetch(`${API_URL}/member_login.php`, {
       method: 'POST',
@@ -2865,6 +3029,7 @@ async function submitTraditionalLogin() {
   } catch (err) {
     showToast(err.message || 'Connection error. Please check your internet connection.');
   } finally {
+    clearTimeout(coldStartTimer);
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> SIGN IN';
   }

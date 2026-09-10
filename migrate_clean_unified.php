@@ -1,17 +1,10 @@
 <?php
-// Defense-in-Depth: Restrict execution to CLI, internal triggers, CRON_SECRET_KEY, or authenticated administrator
-require_once __DIR__ . '/config/env.php';
-$is_cli = (php_sapi_name() === 'cli');
-$is_internal = (defined('ALLOW_INTERNAL_MIGRATION') && ALLOW_INTERNAL_MIGRATION === true);
-$cron_key = (string)($_GET['key'] ?? '');
-$expected_key = defined('CRON_SECRET_KEY') ? (string)CRON_SECRET_KEY : '';
-$is_key_auth = ($expected_key !== '' && $cron_key !== '' && hash_equals($expected_key, $cron_key));
-
-if (!$is_cli && !$is_internal && !$is_key_auth) {
+// Defense-in-Depth: Restrict execution to CLI or authenticated administrator
+if (php_sapi_name() !== 'cli') {
     require_once __DIR__ . '/config/auth.php';
     if (!function_exists('is_admin') || !is_admin()) {
         http_response_code(403);
-        die("403 Forbidden: Maintenance and migration scripts may only be executed via CLI, authorized key, or by an authenticated administrator.");
+        die("403 Forbidden: Maintenance and migration scripts may only be executed via CLI or by an authenticated administrator.");
     }
 }
 /**

@@ -22,18 +22,11 @@ $migrated = false;
 try {
     require_once __DIR__ . '/../config/db.php';
     if ($pdo) {
-        $stmtPlans = $pdo->query("SHOW COLUMNS FROM membership_plans LIKE 'is_test_promo'");
-        $hasTestPromo = ($stmtPlans && $stmtPlans->fetch());
-
-        $stmtMembers = $pdo->query("SHOW COLUMNS FROM members LIKE 'account_status'");
-        $hasAccountStatus = ($stmtMembers && $stmtMembers->fetch());
-
-        if (!$hasTestPromo || !$hasAccountStatus || isset($_GET['force'])) {
-            define('ALLOW_INTERNAL_MIGRATION', true);
-            ob_start();
-            require_once __DIR__ . '/../migrate_clean_unified.php';
+        $stmt = $pdo->query("SHOW COLUMNS FROM members LIKE 'account_status'");
+        if (!$stmt->fetch()) {
+            // Self-heal: missing column detected, run migration
+            require_once __DIR__ . '/../migrate_system_v2.php';
             require_once __DIR__ . '/../migrate_google_auth.php';
-            ob_get_clean();
             $migrated = true;
         }
     }
@@ -50,7 +43,6 @@ echo json_encode([
     'schema_migrated' => $migrated,
     'ts'      => time()
 ]);
-
 
 
 

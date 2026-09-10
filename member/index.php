@@ -426,7 +426,6 @@ try {
     </div>
 </div>
 
-
 <style>
 .plan-option {
     display: flex;
@@ -817,7 +816,6 @@ function finishRenewal() {
     closeRenewModal();
     location.reload(); // Refresh dashboard to show updated status
 }
-
 </script>
 
 <script>

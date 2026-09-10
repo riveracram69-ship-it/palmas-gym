@@ -531,7 +531,7 @@ $apkUrl = $protocol . $rawHost . (empty($baseDir) ? '' : $baseDir) . '/' . $down
                     <i class="fa-solid fa-chart-line"></i>
                 </div>
                 <h4>Attendance Tracking</h4>
-                <p>Monitor your attendance consistency with complete time-in and time-out activity logs.</p>
+                <p>Monitor your workout consistency with complete time-in and time-out activity logs.</p>
             </div>
 
             <div class="feature-box">
