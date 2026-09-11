@@ -63,21 +63,29 @@ try {
     }
 
     // 2.5 Enforce business rule: renewal is ONLY permitted when expired or expiring soon
+    // Fetch member's latest subscription
     $cur_sub_stmt = $pdo->prepare("
-        SELECT s.expiry_date, p.name as current_plan_name, p.duration_minutes, p.duration_months, p.is_test_promo
+        SELECT s.id, s.expiry_date, s.status as sub_status, 
+               p.name as current_plan_name, p.duration_minutes, p.duration_months, p.is_test_promo
         FROM subscriptions s
         LEFT JOIN membership_plans p ON s.plan_id = p.id
-        WHERE s.member_id = ? AND s.expiry_date > NOW()
-        ORDER BY s.expiry_date DESC
+        WHERE s.member_id = ?
+        ORDER BY s.id DESC
         LIMIT 1
     ");
     $cur_sub_stmt->execute([$member_id]);
     $active_sub = $cur_sub_stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($active_sub && !empty($active_sub['expiry_date'])) {
+    // If member is marked expired or inactive, or latest subscription is expired/cancelled, allow renewal!
+    $is_active_member = (strcasecmp($member['status'] ?? '', 'Active') === 0);
+    $sub_is_active = ($active_sub && strcasecmp($active_sub['sub_status'] ?? 'Active', 'Active') === 0);
+    $sub_has_future_expiry = ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time());
+
+    if ($is_active_member && $sub_is_active && $sub_has_future_expiry) {
         $expiry_ts = strtotime($active_sub['expiry_date']);
         $diff_sec = $expiry_ts - time();
-        $is_minute_promo = (!empty($active_sub['duration_minutes']) && $active_sub['duration_minutes'] > 0);
+        $is_minute_promo = (!empty($active_sub['duration_minutes']) && $active_sub['duration_minutes'] > 0)
+            || preg_match('/(\d+)\s*(?:min|minute)/i', $active_sub['current_plan_name'] ?? '');
 
         // Threshold: 5 minutes (300s) for promos, 3 days (259,200s) for standard plans
         $threshold_sec = $is_minute_promo ? 300 : (3 * 86400);

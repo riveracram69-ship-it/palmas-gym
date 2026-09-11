@@ -96,6 +96,28 @@ try {
         echo "  [✓] Fixed subscription #{$bs['id']} for member #{$bs['member_id']} ({$bs['plan_name']}): Start -> {$corrected_start}, Expiry -> {$corrected_expiry}\n";
     }
 
+    // 5. If member is expired in members table, expire any lingering subscriptions
+    $nExpired = $pdo->exec("
+        UPDATE subscriptions 
+        SET status = 'Expired', expiry_date = DATE_SUB(NOW(), INTERVAL 1 SECOND)
+        WHERE member_id IN (SELECT id FROM members WHERE status = 'Expired')
+          AND expiry_date > NOW()
+    ");
+    if ($nExpired > 0) {
+        echo "  [✓] Retired {$nExpired} lingering active subscriptions for members marked as Expired.\n";
+    }
+
+    // 6. If a member has newer subscription (higher id), mark any older subscriptions as Expired
+    $nOlder = $pdo->exec("
+        UPDATE subscriptions s
+        JOIN subscriptions s_newer ON s_newer.member_id = s.member_id AND s_newer.id > s.id
+        SET s.status = 'Expired', s.expiry_date = LEAST(s.expiry_date, DATE_SUB(NOW(), INTERVAL 1 SECOND))
+        WHERE s.expiry_date > NOW()
+    ");
+    if ($nOlder > 0) {
+        echo "  [✓] Retired {$nOlder} stale older subscriptions superseded by newer records.\n";
+    }
+
     echo "=== REPAIR COMPLETE ===\n";
 
 } catch (Exception $e) {
