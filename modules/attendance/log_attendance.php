@@ -114,7 +114,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sub = $sub_stmt->fetch(PDO::FETCH_ASSOC);
 
         $now_time = time();
-        $is_expired = (!$sub || empty($sub['expiry_date']) || strtotime($sub['expiry_date']) < $now_time);
+        $sub_exp_ts = (!empty($sub['expiry_date'])) 
+            ? ((strpos($sub['expiry_date'], ':') !== false) ? strtotime($sub['expiry_date']) : strtotime($sub['expiry_date'] . ' 23:59:59'))
+            : 0;
+        $is_expired = (!$sub || empty($sub['expiry_date']) || $sub_exp_ts < $now_time);
 
         if ($is_expired) {
             $pdo->prepare("UPDATE members SET status = 'Expired' WHERE id = ?")->execute([$member['id']]);

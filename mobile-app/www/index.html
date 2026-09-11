@@ -4621,12 +4621,15 @@ function getMemberInitials(name) {
 function parseSafeDate(dateStr) {
   if (!dateStr) return null;
   const str = String(dateStr).trim();
-  const normalized = str.replace(' ', 'T');
-  let d = new Date(normalized);
-  if (!isNaN(d.getTime())) return d;
-  d = new Date(str);
-  if (!isNaN(d.getTime())) return d;
-  const parts = str.split(/[- :]/);
+
+  // If date-only format (YYYY-MM-DD), parse to end of local day (23:59:59)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const p = str.split('-').map(Number);
+    return new Date(p[0], p[1] - 1, p[2], 23, 59, 59);
+  }
+
+  // Handle YYYY-MM-DD HH:MM:SS or ISO in local time
+  const parts = str.split(/[- :T]/);
   if (parts.length >= 3) {
     const year = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10) - 1;
@@ -4637,6 +4640,12 @@ function parseSafeDate(dateStr) {
     const manual = new Date(year, month, day, hours, minutes, seconds);
     if (!isNaN(manual.getTime())) return manual;
   }
+
+  const normalized = str.replace(' ', 'T');
+  let d = new Date(normalized);
+  if (!isNaN(d.getTime())) return d;
+  d = new Date(str);
+  if (!isNaN(d.getTime())) return d;
   return null;
 }
 
@@ -4650,11 +4659,11 @@ function formatValidityDisplay(dateStr, isMinutePromo = false) {
   const day = d.getDate();
   const year = d.getFullYear();
 
-  const hoursRaw = d.getHours();
-  const minutesRaw = d.getMinutes();
-  const hasTime = isMinutePromo || (hoursRaw !== 0 || minutesRaw !== 0) || String(dateStr).includes(':');
+  const hasTime = Boolean(isMinutePromo || String(dateStr).includes(':'));
 
   if (hasTime) {
+    const hoursRaw = d.getHours();
+    const minutesRaw = d.getMinutes();
     const ampm = hoursRaw >= 12 ? 'PM' : 'AM';
     const hours = hoursRaw % 12 || 12;
     const minutes = String(minutesRaw).padStart(2, '0');

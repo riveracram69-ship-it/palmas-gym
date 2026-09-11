@@ -54,14 +54,17 @@ try {
     }
 
     $now_time = time();
-    $is_expired = (!empty($member['expiry_date']) && strtotime($member['expiry_date']) < $now_time);
+    $exp_ts = (!empty($member['expiry_date'])) 
+        ? ((strpos($member['expiry_date'], ':') !== false) ? strtotime($member['expiry_date']) : strtotime($member['expiry_date'] . ' 23:59:59'))
+        : 0;
+    $is_expired = (!empty($member['expiry_date']) && $exp_ts < $now_time);
     $member['is_expired'] = $is_expired;
 
     // Determine renewal eligibility (can only renew if expired or expiring soon)
     $can_renew = true;
     $cannot_renew_reason = null;
     if (!empty($member['expiry_date']) && !$is_expired) {
-        $diff_sec = strtotime($member['expiry_date']) - $now_time;
+        $diff_sec = $exp_ts - $now_time;
         $is_minute_promo = (!empty($member['duration_minutes']) && $member['duration_minutes'] > 0)
             || preg_match('/(\d+)\s*(?:min|minute)/i', $member['plan_name'] ?? '');
         $threshold_sec = $is_minute_promo ? 300 : (3 * 86400); // 5 mins for promo, 3 days for regular

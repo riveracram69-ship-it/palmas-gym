@@ -231,8 +231,8 @@ function processCheckin(membershipId) {
     .finally(() => {
         setTimeout(() => { 
             res.style.display = 'none'; 
-            if(scanner) scanner.resume(); 
-        }, 5000);
+            isProcessingCheckin = false;
+        }, 3500);
     });
 }
 
@@ -244,23 +244,22 @@ function manualCheckin() {
 
 document.getElementById('manual-id').addEventListener('keydown', e => { if(e.key === 'Enter') manualCheckin(); });
 
+let isProcessingCheckin = false;
+
+function onScanSuccess(text) {
+    if (isProcessingCheckin) return;
+    if (!text || !text.trim()) return;
+
+    isProcessingCheckin = true;
+    processCheckin(text.trim());
+}
+
 let scanner = new Html5QrcodeScanner('reader', { 
-    fps: 15, 
-    qrbox: function(viewfinderWidth, viewfinderHeight) {
-        let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-        let qrSize = Math.floor(minEdge * 0.75);
-        return { width: Math.max(220, qrSize), height: Math.max(220, qrSize) };
-    },
-    aspectRatio: 1.0,
-    experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true
-    },
-    rememberLastUsedCamera: true,
-    showTorchButtonIfSupported: true
+    fps: 12, 
+    qrbox: { width: 250, height: 250 },
+    rememberLastUsedCamera: true
 });
 scanner.render(onScanSuccess);
-
-function onScanSuccess(text) { scanner.pause(true); processCheckin(text); }
 </script>
 
 <?php include 'includes/footer.php'; ?>
