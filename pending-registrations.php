@@ -32,18 +32,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Pending registration not found or already processed.';
         } else {
             if ($action === 'approve') {
-                $plan_id = $pending_member['selected_plan_id'];
-                $months = intval($pending_member['duration_months'] ?? 1);
+                $plan_id = intval($pending_member['selected_plan_id'] ?? 0);
+                $plan_info = null;
                 if ($plan_id <= 0) {
-                    $first_plan = $pdo->query("SELECT id, duration_months FROM membership_plans ORDER BY price ASC LIMIT 1")->fetch();
+                    $first_plan = $pdo->query("SELECT id, name, duration_months, duration_minutes FROM membership_plans ORDER BY price ASC LIMIT 1")->fetch();
                     if ($first_plan) {
                         $plan_id = (int)$first_plan['id'];
-                        $months = (int)$first_plan['duration_months'];
+                        $plan_info = $first_plan;
                     }
+                } else {
+                    $p_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes FROM membership_plans WHERE id = ?");
+                    $p_stmt->execute([$plan_id]);
+                    $plan_info = $p_stmt->fetch();
                 }
 
-                $start_date = date('Y-m-d');
-                $expiry_date = date('Y-m-d', strtotime("+{$months} months"));
+                $duration_minutes = intval($plan_info['duration_minutes'] ?? 0);
+                $duration_months  = intval($plan_info['duration_months'] ?? 0);
+                if ($duration_minutes <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $plan_info['name'] ?? '', $pm)) {
+                    $duration_minutes = intval($pm[1]);
+                }
+
+                $start_date = date('Y-m-d H:i:s');
+                if ($duration_minutes > 0) {
+                    $expiry_date = date('Y-m-d H:i:s', strtotime("+{$duration_minutes} minutes"));
+                } else {
+                    if ($duration_months <= 0) $duration_months = 1;
+                    $expiry_date = date('Y-m-d H:i:s', strtotime("+{$duration_months} months"));
+                }
 
                 // 1. Update Member status
                 $upd = $pdo->prepare("

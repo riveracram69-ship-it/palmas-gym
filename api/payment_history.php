@@ -83,8 +83,9 @@ try {
             SELECT
                 CONCAT('pay-', py.id)  AS uid,
                 COALESCE($refCol, CONCAT('PAY-', py.id)) AS reference_id,
-                COALESCE($typeCol, 'Membership Payment') AS membership_plan,
-                0                       AS duration_months,
+                COALESCE(p.name, $typeCol, 'Membership Payment') AS membership_plan,
+                COALESCE(p.duration_months, 0) AS duration_months,
+                COALESCE(p.duration_minutes, 0) AS duration_minutes,
                 py.amount,
                 'PHP'                   AS currency,
                 py.payment_method,
@@ -92,11 +93,13 @@ try {
                 'N/A'                   AS gateway_tx_id,
                 'PAID'                  AS status,
                 py.created_at,
-                py.payment_date         AS paid_at,
-                NULL                    AS start_date,
-                NULL                    AS expiry_date,
+                COALESCE(py.created_at, py.payment_date) AS paid_at,
+                s.start_date,
+                s.expiry_date,
                 'legacy'                AS source
             FROM payments py
+            LEFT JOIN subscriptions s ON s.id = py.subscription_id
+            LEFT JOIN membership_plans p ON p.id = s.plan_id
             WHERE py.member_id = ?
         ";
         $lParams = [$member_id];
@@ -117,14 +120,15 @@ try {
     try {
         $rSql = "
             SELECT
-                CONCAT('rnw-', r.id) AS uid,
-                COALESCE(r.reference_no, CONCAT('RNW-', r.id)) AS reference_id,
+                CONCAT('req-', r.id) AS uid,
+                COALESCE(r.reference_no, CONCAT('REQ-', r.id)) AS reference_id,
                 COALESCE(p.name, 'Membership Renewal') AS membership_plan,
-                COALESCE(p.duration_months, 1) AS duration_months,
+                COALESCE(p.duration_months, 0) AS duration_months,
+                COALESCE(p.duration_minutes, 0) AS duration_minutes,
                 COALESCE(p.price, 0) AS amount,
                 'PHP' AS currency,
-                COALESCE(r.payment_method, 'Cash') AS payment_method,
-                'Front Desk / Verification' AS gateway,
+                r.payment_method,
+                'Member Submission' AS gateway,
                 'N/A' AS gateway_tx_id,
                 CASE 
                     WHEN UPPER(r.status) = 'PENDING' THEN 'PENDING'
@@ -178,11 +182,22 @@ try {
         $createdAt = !empty($r['created_at']) ? new DateTime($r['created_at']) : new DateTime();
         $paidAt    = !empty($r['paid_at'])    ? new DateTime($r['paid_at'])    : null;
 
+        $effectiveDate = (!empty($r['created_at']) && strpos($r['created_at'], ':') !== false) 
+            ? $createdAt 
+            : ($paidAt ?? $createdAt);
+
+        $durMins = intval($r['duration_minutes'] ?? 0);
+        $durMonths = intval($r['duration_months'] ?? 0);
+        if ($durMins <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $r['membership_plan'] ?? '', $pm)) {
+            $durMins = intval($pm[1]);
+        }
+        $durLabel = ($durMins > 0) ? "{$durMins} Minute(s)" : (($durMonths > 0) ? "{$durMonths} Month(s)" : '—');
+
         $payments[] = [
             'id'               => $r['uid'],
             'reference_id'     => $r['reference_id'] ?: ('PAY-' . $r['uid']),
             'membership_plan'  => $r['membership_plan'] ?: 'Membership Payment',
-            'duration'         => ($r['duration_months'] > 0) ? ($r['duration_months'] . ' Month(s)') : '—',
+            'duration'         => $durLabel,
             'amount'           => (float)$r['amount'],
             'amount_formatted' => '₱' . number_format((float)$r['amount'], 2),
             'currency'         => $r['currency'] ?: 'PHP',
@@ -191,8 +206,8 @@ try {
             'gateway_tx_id'    => $r['gateway_tx_id'] ?: 'N/A',
             'status'           => strtoupper($r['status'] ?? 'PAID'),
             'is_paid'          => (strtoupper($r['status'] ?? 'PAID') === 'PAID'),
-            'payment_date'     => ($paidAt ?? $createdAt)->format('F j, Y'),
-            'payment_time'     => ($paidAt ?? $createdAt)->format('g:i A'),
+            'payment_date'     => $effectiveDate->format('F j, Y'),
+            'payment_time'     => $effectiveDate->format('g:i A'),
             'created_at_iso'   => $createdAt->format('c'),
             'membership_start' => !empty($r['start_date'])  ? date('F j, Y', strtotime($r['start_date']))  : null,
             'membership_end'   => !empty($r['expiry_date']) ? date('F j, Y', strtotime($r['expiry_date'])) : null,

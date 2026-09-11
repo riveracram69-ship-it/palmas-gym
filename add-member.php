@@ -97,12 +97,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact, $age, $gender, $photo_path, $created_by]);
             $member_id = $pdo->lastInsertId();
 
-            $plan_stmt = $pdo->prepare("SELECT duration_months FROM membership_plans WHERE id = ?");
+            $plan_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes FROM membership_plans WHERE id = ?");
             $plan_stmt->execute([$plan_id]);
             $plan = $plan_stmt->fetch();
             
-            $start_date = date('Y-m-d');
-            $expiry_date = date('Y-m-d', strtotime("+" . ($plan['duration_months'] ?? 1) . " months"));
+            $duration_minutes = intval($plan['duration_minutes'] ?? 0);
+            $duration_months  = intval($plan['duration_months'] ?? 0);
+            if ($duration_minutes <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $plan['name'] ?? '', $pm)) {
+                $duration_minutes = intval($pm[1]);
+            }
+
+            $start_date = date('Y-m-d H:i:s');
+            if ($duration_minutes > 0) {
+                $expiry_date = date('Y-m-d H:i:s', strtotime("+{$duration_minutes} minutes"));
+            } else {
+                if ($duration_months <= 0) $duration_months = 1;
+                $expiry_date = date('Y-m-d H:i:s', strtotime("+{$duration_months} months"));
+            }
 
             $stmt = $pdo->prepare("INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_by) VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([$member_id, $plan_id, $start_date, $expiry_date, $created_by]);

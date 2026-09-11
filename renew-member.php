@@ -65,7 +65,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $duration_minutes = intval($plan['duration_minutes'] ?? 0);
             $duration_months  = intval($plan['duration_months'] ?? 0);
-            $start_date       = $base_datetime;
+            if ($duration_minutes <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $plan['name'] ?? '', $pm)) {
+                $duration_minutes = intval($pm[1]);
+            }
+
+            if ($duration_minutes > 0 && ($base_datetime !== $now_str) && ((strtotime($base_datetime) - time()) > 86400)) {
+                $base_datetime = $now_str;
+            }
+            $start_date = $base_datetime;
 
             if ($duration_minutes > 0) {
                 $expiry_date = date('Y-m-d H:i:s', strtotime("{$base_datetime} + {$duration_minutes} minutes"));

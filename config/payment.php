@@ -58,10 +58,13 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         $amount = floatval($plan['price']);
         $duration_minutes = intval($plan['duration_minutes'] ?? 0);
         $duration_months = intval($plan['duration_months'] ?? 0);
+        if ($duration_minutes <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $plan['name'] ?? '', $pm)) {
+            $duration_minutes = intval($pm[1]);
+        }
         $is_test_promo = intval($plan['is_test_promo'] ?? 0);
 
         // Determine if this is a test transaction
-        $is_test = ($is_test_promo === 1 || is_payment_demo() || is_payment_test() || (defined('PAYMENT_MODE') && in_array(PAYMENT_MODE, ['demo', 'test']))) ? 1 : 0;
+        $is_test = ($is_test_promo === 1 || $duration_minutes > 0 || is_payment_demo() || is_payment_test() || (defined('PAYMENT_MODE') && in_array(PAYMENT_MODE, ['demo', 'test']))) ? 1 : 0;
 
         // 3. Check Prior Subscriptions to determine if this is First Activation or Renewal
         $prior_stmt = $pdo->prepare("SELECT COUNT(*) FROM subscriptions WHERE member_id = ?");
@@ -82,9 +85,16 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
 
         $now_str = date('Y-m-d H:i:s');
         if ($active_sub && !empty($active_sub['expiry_date'])) {
-            // Member is still active -> extend from existing expiration timestamp
-            $base_datetime = $active_sub['expiry_date'];
-            $start_date = $active_sub['expiry_date'];
+            $diff_hours = (strtotime($active_sub['expiry_date']) - time()) / 3600;
+            if ($duration_minutes > 0 && $diff_hours > 24) {
+                // Erroneously far future from a prior bug -> reset base to now
+                $base_datetime = $now_str;
+                $start_date = $now_str;
+            } else {
+                // Member is still active -> extend from existing expiration timestamp
+                $base_datetime = $active_sub['expiry_date'];
+                $start_date = $active_sub['expiry_date'];
+            }
         } else {
             // Member is expired or new -> start from now
             $base_datetime = $now_str;

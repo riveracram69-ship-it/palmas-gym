@@ -46,10 +46,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $duration_minutes = intval($req['duration_minutes'] ?? 0);
                 $duration_months  = intval($req['duration_months'] ?? 0);
+                if ($duration_minutes <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $req['plan_name'] ?? '', $pm)) {
+                    $duration_minutes = intval($pm[1]);
+                }
 
                 if ($active_sub && !empty($active_sub['expiry_date'])) {
-                    $base_time = strtotime($active_sub['expiry_date']);
-                    $start_date = $active_sub['expiry_date'];
+                    $diff_hours = (strtotime($active_sub['expiry_date']) - time()) / 3600;
+                    if ($duration_minutes > 0 && $diff_hours > 24) {
+                        $base_time = time();
+                        $start_date = date('Y-m-d H:i:s', $base_time);
+                    } else {
+                        $base_time = strtotime($active_sub['expiry_date']);
+                        $start_date = $active_sub['expiry_date'];
+                    }
                 } else {
                     $base_time = time();
                     $start_date = date('Y-m-d H:i:s', $base_time);

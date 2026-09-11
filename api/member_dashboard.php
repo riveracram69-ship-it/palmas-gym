@@ -38,7 +38,7 @@ try {
             ON s.id = (
                 SELECT s2.id FROM subscriptions s2 
                 WHERE s2.member_id = m.id 
-                ORDER BY s2.expiry_date DESC LIMIT 1
+                ORDER BY s2.id DESC LIMIT 1
             )
         LEFT JOIN membership_plans p ON p.id = s.plan_id
         WHERE m.id = ?
@@ -130,12 +130,17 @@ try {
         $noteCol = in_array('notes', $payCols) ? 'py.notes' : "'Membership Payment'";
 
         $pay_stmt = $pdo->prepare("
-            SELECT py.payment_date, COALESCE($noteCol, 'Membership Payment') as payment_type, 
+            SELECT COALESCE(py.created_at, py.payment_date) as payment_date, 
+                   COALESCE(p.name, $noteCol, 'Membership Payment') as payment_type, 
+                   COALESCE(p.name, 'Membership Plan') as membership_plan,
                    py.payment_method, py.amount, COALESCE($refCol, CONCAT('PAY-', py.id)) as reference_no, 
-                   'Paid' as status
+                   'Paid' as status,
+                   py.created_at
             FROM payments py
+            LEFT JOIN subscriptions s ON s.id = py.subscription_id
+            LEFT JOIN membership_plans p ON p.id = s.plan_id
             WHERE py.member_id = ? 
-            ORDER BY py.payment_date DESC, py.id DESC 
+            ORDER BY py.id DESC 
             LIMIT 15
         ");
         $pay_stmt->execute([$member_id]);
@@ -148,7 +153,7 @@ try {
     $plans = [];
     try {
         $plans_stmt = $pdo->query("
-            SELECT id, name, price, duration_months, benefits 
+            SELECT id, name, price, duration_months, duration_minutes, is_test_promo, benefits 
             FROM membership_plans 
             WHERE is_active = 1 OR is_active IS NULL
             ORDER BY price ASC

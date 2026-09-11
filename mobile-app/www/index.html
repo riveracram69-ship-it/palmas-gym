@@ -4581,11 +4581,32 @@ function getMemberInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+function parseSafeDate(dateStr) {
+  if (!dateStr) return null;
+  const str = String(dateStr).trim();
+  const normalized = str.replace(' ', 'T');
+  let d = new Date(normalized);
+  if (!isNaN(d.getTime())) return d;
+  d = new Date(str);
+  if (!isNaN(d.getTime())) return d;
+  const parts = str.split(/[- :]/);
+  if (parts.length >= 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    const hours = parts[3] ? parseInt(parts[3], 10) : 0;
+    const minutes = parts[4] ? parseInt(parts[4], 10) : 0;
+    const seconds = parts[5] ? parseInt(parts[5], 10) : 0;
+    const manual = new Date(year, month, day, hours, minutes, seconds);
+    if (!isNaN(manual.getTime())) return manual;
+  }
+  return null;
+}
+
 function formatValidityDisplay(dateStr, isMinutePromo = false) {
   if (!dateStr) return '--';
-  const normalizedStr = dateStr.replace(' ', 'T');
-  const d = new Date(normalizedStr);
-  if (isNaN(d.getTime())) return dateStr;
+  const d = parseSafeDate(dateStr);
+  if (!d) return dateStr;
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const month = months[d.getMonth()];
@@ -4594,7 +4615,7 @@ function formatValidityDisplay(dateStr, isMinutePromo = false) {
 
   const hoursRaw = d.getHours();
   const minutesRaw = d.getMinutes();
-  const hasTime = isMinutePromo || (hoursRaw !== 0 || minutesRaw !== 0) || dateStr.includes(':');
+  const hasTime = isMinutePromo || (hoursRaw !== 0 || minutesRaw !== 0) || String(dateStr).includes(':');
 
   if (hasTime) {
     const ampm = hoursRaw >= 12 ? 'PM' : 'AM';
@@ -4608,9 +4629,9 @@ function formatValidityDisplay(dateStr, isMinutePromo = false) {
 
 function formatTimeRemaining(dateStr) {
   if (!dateStr) return '--';
-  const normalizedStr = dateStr.replace(' ', 'T');
-  const target = new Date(normalizedStr).getTime();
-  if (isNaN(target)) return '--';
+  const d = parseSafeDate(dateStr);
+  if (!d) return '--';
+  const target = d.getTime();
   const now = Date.now();
   const diff = target - now;
 
@@ -4702,12 +4723,11 @@ function handlePlanExpiredRenew() {
 
 function checkCanRenew(m) {
   if (!m || !m.expiry_date) return { canRenew: true };
-  const normalized = (m.expiry_date || '').replace(' ', 'T');
-  const target = new Date(normalized).getTime();
-  if (isNaN(target)) return { canRenew: true };
+  const d = parseSafeDate(m.expiry_date);
+  if (!d) return { canRenew: true };
 
   const now = Date.now();
-  const diffMs = target - now;
+  const diffMs = d.getTime() - now;
   if (diffMs <= 0) {
     return { canRenew: true, reason: 'Plan is expired' };
   }
@@ -4767,8 +4787,9 @@ function checkAndStartTestPromoCountdown(m) {
   }
 
   function updateExpirations() {
-    const normalizedStr = m.expiry_date.replace(' ', 'T');
-    const target = new Date(normalizedStr).getTime();
+    const d = parseSafeDate(m.expiry_date);
+    if (!d) return;
+    const target = d.getTime();
     const now = Date.now();
     const diff = target - now;
 
@@ -4876,7 +4897,7 @@ async function loadDashboard(memberId) {
 
     // Dual Status Indicator (Icon + Text)
     const now = new Date();
-    const expDate = m.expiry_date ? new Date(m.expiry_date.replace(' ', 'T')) : null;
+    const expDate = m.expiry_date ? parseSafeDate(m.expiry_date) : null;
     const isExpired = !expDate || expDate < now;
     let statusText = '● ACTIVE MEMBER';
     let statusClass = 'status-pill pill-active';
@@ -4962,7 +4983,10 @@ async function loadDashboard(memberId) {
     // Progress bar fill
     let daysRemaining = 0;
     if (m.expiry_date) {
-      daysRemaining = Math.max(0, Math.ceil((new Date(m.expiry_date.replace(' ', 'T')) - new Date()) / (1000 * 60 * 60 * 24)));
+      const parsedExp = parseSafeDate(m.expiry_date);
+      if (parsedExp) {
+        daysRemaining = Math.max(0, Math.ceil((parsedExp.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+      }
     }
     const pct = Math.min(100, Math.max(5, (daysRemaining / 30) * 100));
     const fillEl = document.getElementById('prof-days-bar-fill');
