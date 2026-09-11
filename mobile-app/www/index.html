@@ -170,8 +170,7 @@
     .membership-card,
     .login-card,
     .checkout-summary-card,
-    .result-screen-card,
-    .history-card {
+    .result-screen-card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 20px;
@@ -179,6 +178,64 @@
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
       position: relative;
       transition: border-color 0.2s ease, transform 0.15s ease;
+    }
+
+    /* ── PAYMENT & BILLING HISTORY CARDS ──────────────────────────── */
+    .history-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+      position: relative;
+      transition: border-color 0.2s ease, transform 0.15s ease, background 0.15s ease;
+      cursor: pointer;
+      display: block;
+    }
+
+    .history-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .history-card:active {
+      transform: scale(0.985);
+      border-color: var(--primary);
+      background: var(--card-elevated);
+    }
+
+    .btn-toggle-history {
+      width: 100%;
+      padding: 11px 16px;
+      margin-top: 6px;
+      margin-bottom: 14px;
+      background: rgba(29, 89, 68, 0.25);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--primary-light);
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-toggle-history:active {
+      background: rgba(82, 183, 136, 0.2);
+      border-color: var(--primary);
+      color: #ffffff;
+      transform: scale(0.99);
+    }
+
+    .btn-toggle-history.active {
+      background: rgba(29, 89, 68, 0.38);
+      border-color: rgba(82, 183, 136, 0.4);
+      color: #ffffff;
     }
 
     .card-elevated {
@@ -380,14 +437,21 @@
 
     /* ── UNIFIED STATUS BADGES & PILLS ────────────────────────────── */
     .status-pill,
-    .status-badge {
+    .status-badge,
+    .badge-paid,
+    .badge-active,
+    .badge-expiring,
+    .badge-expired,
+    .badge-failed,
+    .badge-pending,
+    .badge-cancelled {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 800;
       letter-spacing: 0.5px;
       text-transform: uppercase;
       white-space: nowrap;
@@ -2614,7 +2678,7 @@
 
       <!-- ── TAB 3: PAYMENTS & RENEWALS ─── -->
       <ion-tab tab="tab-payments">
-        <ion-header translucent="true">
+        <ion-header>
           <ion-toolbar>
             <ion-title class="brand-font">Renewals &amp; Billing</ion-title>
             <ion-buttons slot="end">
@@ -2622,7 +2686,7 @@
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
-        <ion-content fullscreen="true">
+        <ion-content>
           <div class="payments-container">
 
             <!-- Total Paid Banner -->
@@ -2652,8 +2716,9 @@
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin:4px 0 12px;">
-              <h4 class="section-title" style="margin:0;">
+              <h4 class="section-title" style="margin:0; display:flex; align-items:center;">
                 <i class="fa-solid fa-clock-rotate-left" style="color:var(--primary); margin-right:6px;"></i> Payment History
+                <span id="pay-history-count-badge" style="font-size:0.75rem; font-weight:600; color:var(--text-muted); margin-left:6px;"></span>
               </h4>
               <button onclick="loadPaymentHistory()" style="background:rgba(29,89,68,0.3); border:1px solid var(--border); color:var(--primary-light); border-radius:8px; padding:5px 12px; font-size:0.75rem; font-weight:700; cursor:pointer;">
                 <i class="fa-solid fa-arrows-rotate"></i> Refresh
@@ -5167,12 +5232,21 @@ function startQRCountdown() {
 
 
 // ── ATTENDANCE TAB ─────────────────────────────────────────────────
+let isAttendanceExpanded = false;
+let lastAttendanceRecordsList = [];
+
+function toggleAttendanceHistory() {
+  isAttendanceExpanded = !isAttendanceExpanded;
+  renderAttendance(lastAttendanceRecordsList);
+}
+
 function renderAttendance(list) {
   const c = document.getElementById('attendance-container');
   if (!c) return;
   c.innerHTML = '';
 
   const records = Array.isArray(list) ? list : [];
+  lastAttendanceRecordsList = records;
 
   // Stats
   const now = new Date();
@@ -5202,7 +5276,13 @@ function renderAttendance(list) {
   if (weekEl) weekEl.textContent = wCount;
 
   const badgeEl = document.getElementById('att-history-badge');
-  if (badgeEl) badgeEl.textContent = records.length ? `Showing last ${records.length} check-ins` : '';
+  if (badgeEl) {
+    if (records.length > 5) {
+      badgeEl.textContent = isAttendanceExpanded ? `Showing all ${records.length} check-ins` : `Showing 5 of ${records.length} check-ins`;
+    } else {
+      badgeEl.textContent = records.length ? `Showing last ${records.length} check-ins` : '';
+    }
+  }
 
   // Render 28-day calendar heatmap
   renderAttendanceHeatmap(records);
@@ -5219,10 +5299,14 @@ function renderAttendance(list) {
     return;
   }
 
-  records.forEach(a => {
+  const displayRecords = (records.length > 5 && !isAttendanceExpanded)
+    ? records.slice(0, 5)
+    : records;
+
+  displayRecords.forEach(a => {
     const card = document.createElement('div');
     card.className = 'card';
-    card.style.cssText = 'padding:16px; margin-bottom:12px;';
+    card.style.cssText = 'padding:14px 16px; margin-bottom:12px;';
     card.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <strong style="color:var(--text-primary); font-size:0.92rem;"><i class="fa-regular fa-calendar-check" style="color:var(--primary); margin-right:6px;"></i>${a.date || 'No information available'}</strong>
@@ -5235,6 +5319,17 @@ function renderAttendance(list) {
     `;
     c.appendChild(card);
   });
+
+  if (records.length > 5) {
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = `btn-toggle-history ${isAttendanceExpanded ? 'active' : ''}`;
+    toggleBtn.innerHTML = isAttendanceExpanded
+      ? `<i class="fa-solid fa-chevron-up"></i> <span>Show Less (Recent 5)</span>`
+      : `<i class="fa-solid fa-clock-rotate-left"></i> <span>View All Check-ins (${records.length} visits)</span> <i class="fa-solid fa-chevron-down" style="font-size:0.72rem; margin-left:2px;"></i>`;
+    toggleBtn.onclick = toggleAttendanceHistory;
+    c.appendChild(toggleBtn);
+  }
 }
 
 function renderAttendanceHeatmap(list) {
@@ -5289,11 +5384,18 @@ let currentPendingRef = null;
 let currentResultRef = null;
 let paymentPollingTimer = null;
 let currentHistoryFilter = 'ALL';
+let isPaymentHistoryExpanded = false;
+let lastPaymentRecordsList = [];
 
 // ── PAYMENTS & HISTORY TAB ─────────────────────────────────────────
 function renderPayments(list) {
   // Delegate rendering to unified loadPaymentHistory
   loadPaymentHistory(currentHistoryFilter);
+}
+
+function togglePaymentHistory() {
+  isPaymentHistoryExpanded = !isPaymentHistoryExpanded;
+  renderPaymentHistoryCards(lastPaymentRecordsList);
 }
 
 async function loadPaymentHistory(filter = currentHistoryFilter) {
@@ -5341,6 +5443,7 @@ async function loadPaymentHistory(filter = currentHistoryFilter) {
 }
 
 function filterPaymentHistory(status) {
+  isPaymentHistoryExpanded = false;
   currentHistoryFilter = status;
   ['all', 'paid', 'pending', 'failed'].forEach(s => {
     const chip = document.getElementById(`hf-${s}`);
@@ -5355,6 +5458,7 @@ function renderPaymentHistoryCards(list) {
   container.innerHTML = '';
 
   const records = Array.isArray(list) ? list : [];
+  lastPaymentRecordsList = records;
 
   // Update Total Amount Paid Banner
   const paidPayments = records.filter(p => (p.status || '').toUpperCase() === 'PAID');
@@ -5372,6 +5476,18 @@ function renderPaymentHistoryCards(list) {
   const totalPaidSubEl = document.getElementById('total-paid-sub');
   if (totalPaidSubEl) {
     totalPaidSubEl.textContent = `${paidPayments.length} payment${paidPayments.length === 1 ? '' : 's'} recorded`;
+  }
+
+  // Update count badge in section header
+  const countBadgeEl = document.getElementById('pay-history-count-badge');
+  if (countBadgeEl) {
+    if (records.length > 3) {
+      countBadgeEl.textContent = isPaymentHistoryExpanded ? `(${records.length} records)` : `(showing 3 of ${records.length})`;
+    } else if (records.length > 0) {
+      countBadgeEl.textContent = `(${records.length})`;
+    } else {
+      countBadgeEl.textContent = '';
+    }
   }
 
   if (!records || records.length === 0) {
@@ -5405,16 +5521,22 @@ function renderPaymentHistoryCards(list) {
     return;
   }
 
-  records.forEach(p => {
+  // Show only 3 records when collapsed
+  const displayRecords = (records.length > 3 && !isPaymentHistoryExpanded)
+    ? records.slice(0, 3)
+    : records;
+
+  displayRecords.forEach(p => {
     const card = document.createElement('div');
     card.className = 'history-card';
     card.onclick = () => openPaymentDetailModal(p.reference_id || p.id);
 
     let statusBadge = `<span class="badge-paid">● PAID</span>`;
-    if (p.status === 'PENDING') statusBadge = `<span class="badge-pending">⏳ PENDING</span>`;
-    else if (p.status === 'FAILED') statusBadge = `<span class="badge-failed">✕ FAILED</span>`;
-    else if (p.status === 'CANCELLED') statusBadge = `<span class="badge-failed">CANCELLED</span>`;
-    else if (p.status === 'EXPIRED') statusBadge = `<span class="badge-failed">EXPIRED</span>`;
+    const st = (p.status || '').toUpperCase();
+    if (st === 'PENDING') statusBadge = `<span class="badge-pending">⏳ PENDING</span>`;
+    else if (st === 'FAILED') statusBadge = `<span class="badge-failed">✕ FAILED</span>`;
+    else if (st === 'CANCELLED') statusBadge = `<span class="badge-cancelled">CANCELLED</span>`;
+    else if (st === 'EXPIRED') statusBadge = `<span class="badge-expired">EXPIRED</span>`;
 
     let methodIcon = '<i class="fa-solid fa-wallet" style="color:var(--primary); margin-right:4px;"></i>';
     const pm = (p.payment_method || '').toLowerCase();
@@ -5431,24 +5553,38 @@ function renderPaymentHistoryCards(list) {
     }
 
     card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
-        <div>
-          <h4 style="color:#fff; margin:0; font-size:0.98rem; font-weight:800;">${p.membership_plan || 'Membership Plan'}</h4>
-          <span style="font-size:0.75rem; color:var(--gym-muted);">${p.payment_date || ''} • ${p.payment_time || ''}</span>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:8px;">
+        <div style="flex:1; min-width:0;">
+          <h4 style="color:#fff; margin:0 0 3px; font-size:0.95rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${p.membership_plan || 'Membership Plan'}">${p.membership_plan || 'Membership Plan'}</h4>
+          <span style="font-size:0.75rem; color:var(--gym-muted); display:inline-flex; align-items:center; gap:4px;">
+            <i class="fa-regular fa-calendar" style="font-size:0.7rem;"></i> ${p.payment_date || ''} ${p.payment_time ? '• ' + p.payment_time : ''}
+          </span>
         </div>
-        <div style="text-align:right;">
-          <strong style="color:var(--gym-mid); font-size:1.1rem; font-family:'Outfit'; font-weight:900;">${p.amount_formatted || ('₱' + (parseFloat(p.amount) || 0).toFixed(2))}</strong>
+        <div style="text-align:right; flex-shrink:0;">
+          <strong style="color:var(--gym-mid); font-size:1.05rem; font-family:'Outfit',sans-serif; font-weight:900;">${p.amount_formatted || ('₱' + (parseFloat(p.amount) || 0).toFixed(2))}</strong>
         </div>
       </div>
-      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.76rem; border-top:1px solid rgba(82,183,136,0.12); padding-top:8px; margin-top:8px;">
-        <span style="color:var(--gym-muted);">
-          ${methodIcon} ${p.payment_method || 'Payment'} &bull; Ref: <code style="color:#fff; font-size:0.72rem;">${p.reference_id || p.reference_no || '--'}</code>
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; border-top:1px solid rgba(82,183,136,0.12); padding-top:8px; margin-top:6px;">
+        <span style="color:var(--gym-muted); display:inline-flex; align-items:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:65%;">
+          ${methodIcon} <span style="margin-right:4px;">${p.payment_method || 'Payment'}</span> &bull; <span style="margin-left:4px;">Ref:</span> <code style="color:#fff; font-size:0.72rem; margin-left:3px;">${p.reference_id || p.reference_no || '--'}</code>
         </span>
         ${statusBadge}
       </div>
     `;
     container.appendChild(card);
   });
+
+  // Toggle button if there are more than 3 records
+  if (records.length > 3) {
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = `btn-toggle-history ${isPaymentHistoryExpanded ? 'active' : ''}`;
+    toggleBtn.innerHTML = isPaymentHistoryExpanded
+      ? `<i class="fa-solid fa-chevron-up"></i> <span>Show Less (Recent 3)</span>`
+      : `<i class="fa-solid fa-clock-rotate-left"></i> <span>View All History (${records.length} records)</span> <i class="fa-solid fa-chevron-down" style="font-size:0.72rem; margin-left:2px;"></i>`;
+    toggleBtn.onclick = togglePaymentHistory;
+    container.appendChild(toggleBtn);
+  }
 }
 
 // ── PROFILE PHOTO UPLOAD HANDLERS ──────────────────────────────────
