@@ -29,12 +29,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/logger.php';
 require_once __DIR__ . '/../config/duplicate_validator.php';
+require_once __DIR__ . '/../config/uploader.php';
 
 $raw  = file_get_contents('php://input');
 $data = json_decode($raw, true) ?: $_POST;
 
 // ── Field Extraction ──────────────────────────────────────────────────────────
+$first_name     = trim($data['first_name'] ?? '');
+$middle_name    = trim($data['middle_name'] ?? '');
+$last_name      = trim($data['last_name'] ?? '');
+$extension      = trim($data['extension'] ?? '');
 $full_name      = trim($data['full_name'] ?? '');
+
+// Reconstruct full_name or split if only full_name was provided
+if (!empty($first_name) || !empty($last_name)) {
+    $full_name = trim(implode(' ', array_filter([$first_name, $middle_name, $last_name, $extension])));
+} elseif (!empty($full_name)) {
+    $tokens = preg_split('/\s+/', $full_name);
+    if (count($tokens) > 1) {
+        $last_token = strtoupper(rtrim(end($tokens), '.'));
+        if (in_array($last_token, ['JR', 'SR', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'])) {
+            $extension = array_pop($tokens);
+        }
+    }
+    $nt = count($tokens);
+    if ($nt === 1) {
+        $first_name = $tokens[0];
+        $last_name  = $tokens[0];
+    } elseif ($nt === 2) {
+        $first_name = $tokens[0];
+        $last_name  = $tokens[1];
+    } elseif ($nt === 3) {
+        $first_name  = $tokens[0];
+        $middle_name = $tokens[1];
+        $last_name   = $tokens[2];
+    } else {
+        $last_name   = array_pop($tokens);
+        $middle_name = array_pop($tokens);
+        $first_name  = implode(' ', $tokens);
+    }
+}
+
 $email          = strtolower(trim($data['email'] ?? ''));
 $contact_number = trim($data['contact_number'] ?? '');
 $password       = trim($data['password'] ?? '');
@@ -46,7 +81,7 @@ $auth_provider  = !empty($google_id) ? 'google' : 'password';
 
 // ── Validation ────────────────────────────────────────────────────────────────
 if (empty($full_name)) {
-    echo json_encode(['success' => false, 'message' => 'Full Name is required.']);
+    echo json_encode(['success' => false, 'message' => 'Full Name (First and Last name) is required.']);
     exit;
 }
 
@@ -65,8 +100,6 @@ if (!empty($password)) {
     $password_hash = password_hash($password, PASSWORD_DEFAULT);
 }
 
-
-
 if (!empty($contact_number) && !preg_match('/^09[0-9]{9}$/', $contact_number)) {
     echo json_encode(['success' => false, 'message' => 'Contact number must be 11 digits starting with 09 (e.g. 09123456789).']);
     exit;
@@ -75,6 +108,25 @@ if (!empty($contact_number) && !preg_match('/^09[0-9]{9}$/', $contact_number)) {
 $valid_genders = ['Male', 'Female', 'Other'];
 if (!in_array($gender, $valid_genders)) {
     $gender = 'Other';
+}
+
+// ── Photo Processing ──────────────────────────────────────────────────────────
+$photo_path = null;
+$base64_photo = $data['photo_base64'] ?? $data['photo'] ?? '';
+if (!empty($base64_photo) && is_string($base64_photo) && str_starts_with($base64_photo, 'data:image')) {
+    $upRes = secure_process_base64_image_upload($base64_photo, 'members');
+    if ($upRes['success']) {
+        $photo_path = $upRes['path'];
+    }
+}
+if (!$photo_path && isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+    $upRes = secure_process_image_upload($_FILES['photo'], 'members');
+    if ($upRes['success']) {
+        $photo_path = $upRes['path'];
+    }
+}
+if (!$photo_path && !empty($google_picture)) {
+    $photo_path = $google_picture;
 }
 
 // ── Duplicate Detection ───────────────────────────────────────────────────────
@@ -105,21 +157,23 @@ try {
         $id_exists->execute([$membership_id]);
     } while ($id_exists->fetch());
 
-    // Use pre-computed $password_hash
-
-
     $stmt = $pdo->prepare("
         INSERT INTO members 
-            (membership_id, full_name, email, contact_number, gender, photo, google_id, google_picture,
+            (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, gender, photo, google_id, google_picture,
              auth_provider, account_status, status, selected_plan_id, password_hash, created_at)
-        VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, 'Pending', 'Inactive', ?, ?, NOW())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'Inactive', ?, ?, NOW())
     ");
     $stmt->execute([
         $membership_id,
+        $first_name ?: null,
+        $middle_name ?: null,
+        $last_name ?: null,
+        $extension ?: null,
         $full_name,
         $email,
         $contact_number ?: null,
         $gender,
+        $photo_path ?: null,
         $google_id ?: null,
         $google_picture ?: null,
         $auth_provider,

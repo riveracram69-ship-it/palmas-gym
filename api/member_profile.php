@@ -19,12 +19,16 @@ try {
     $data = json_decode($raw, true) ?: $_POST;
 
     $member_id      = $auth_member_id;
+    $first_name     = trim($data['first_name'] ?? '');
+    $middle_name    = trim($data['middle_name'] ?? '');
+    $last_name      = trim($data['last_name'] ?? '');
+    $extension      = trim($data['extension'] ?? '');
     $full_name      = trim($data['full_name'] ?? '');
     $contact_number = trim($data['contact_number'] ?? '');
     $old_password   = trim($data['old_password'] ?? '');
     $new_password   = trim($data['new_password'] ?? '');
 
-    $stmt = $pdo->prepare("SELECT id, membership_id, full_name, email, contact_number, photo, google_picture, auth_provider, status, account_status, password_hash FROM members WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, photo, google_picture, auth_provider, status, account_status, password_hash FROM members WHERE id = ?");
     $stmt->execute([$member_id]);
     $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -37,9 +41,21 @@ try {
     $updates = [];
     $params  = [];
 
-    if (!empty($full_name)) {
+    if (!empty($first_name) || !empty($last_name)) {
+        $full_name = trim(implode(' ', array_filter([$first_name, $middle_name, $last_name, $extension])));
+        $updates[] = "first_name = ?";
+        $params[]  = $first_name ?: null;
+        $updates[] = "middle_name = ?";
+        $params[]  = $middle_name ?: null;
+        $updates[] = "last_name = ?";
+        $params[]  = $last_name ?: null;
+        $updates[] = "extension = ?";
+        $params[]  = $extension ?: null;
         $updates[] = "full_name = ?";
-        $params[] = $full_name;
+        $params[]  = $full_name;
+    } elseif (!empty($full_name)) {
+        $updates[] = "full_name = ?";
+        $params[]  = $full_name;
     }
 
     if (!empty($contact_number)) {
@@ -51,21 +67,34 @@ try {
         $params[] = $contact_number;
     }
 
-    // Handle photo upload
-    if (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
-        require_once __DIR__ . '/../config/uploader.php';
-        $upload_result = secure_process_image_upload($_FILES['photo'], 'members', 1200, 1200);
+    // Handle photo upload (multipart file or base64)
+    require_once __DIR__ . '/../config/uploader.php';
+    $new_photo_path = null;
+    $base64_photo = $data['photo_base64'] ?? $data['photo'] ?? '';
+    if (!empty($base64_photo) && is_string($base64_photo) && str_starts_with($base64_photo, 'data:image')) {
+        $upload_result = secure_process_base64_image_upload($base64_photo, 'members', 1200, 1200);
         if ($upload_result['success']) {
-            $db_path = $upload_result['path'];
-            if (!empty($member['photo']) && file_exists(__DIR__ . '/../' . $member['photo'])) {
-                @unlink(__DIR__ . '/../' . $member['photo']);
-            }
-            $updates[] = "photo = ?";
-            $params[] = $db_path;
+            $new_photo_path = $upload_result['path'];
         } else {
             echo json_encode(['success' => false, 'message' => $upload_result['error'] ?? 'Photo upload failed.']);
             exit;
         }
+    } elseif (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $upload_result = secure_process_image_upload($_FILES['photo'], 'members', 1200, 1200);
+        if ($upload_result['success']) {
+            $new_photo_path = $upload_result['path'];
+        } else {
+            echo json_encode(['success' => false, 'message' => $upload_result['error'] ?? 'Photo upload failed.']);
+            exit;
+        }
+    }
+
+    if ($new_photo_path) {
+        if (!empty($member['photo']) && file_exists(__DIR__ . '/../' . $member['photo'])) {
+            @unlink(__DIR__ . '/../' . $member['photo']);
+        }
+        $updates[] = "photo = ?";
+        $params[]  = $new_photo_path;
     }
 
     // Optional password change
@@ -93,10 +122,10 @@ try {
     }
 
     // Fetch updated member data
-    $stmt = $pdo->prepare("SELECT id, membership_id, full_name, email, contact_number, photo, google_picture, auth_provider, status, account_status FROM members WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, photo, google_picture, auth_provider, status, account_status FROM members WHERE id = ?");
     $stmt->execute([$member_id]);
     $updated_member = $stmt->fetch(PDO::FETCH_ASSOC);
-    $updated_member['photo'] = $updated_member['google_picture'] ?: ($updated_member['photo'] ?? null);
+    $updated_member['photo'] = $updated_member['photo'] ?: ($updated_member['google_picture'] ?? null);
 
     echo json_encode([
         'success' => true,

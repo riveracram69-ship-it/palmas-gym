@@ -23,7 +23,40 @@ $success = '';
 $new_membership_id = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $first_name       = trim($_POST['first_name'] ?? '');
+    $middle_name      = trim($_POST['middle_name'] ?? '');
+    $last_name        = trim($_POST['last_name'] ?? '');
+    $extension        = trim($_POST['extension'] ?? '');
     $full_name        = trim($_POST['full_name'] ?? '');
+
+    if (!empty($first_name) || !empty($last_name)) {
+        $full_name = trim(implode(' ', array_filter([$first_name, $middle_name, $last_name, $extension])));
+    } elseif (!empty($full_name)) {
+        $tokens = preg_split('/\s+/', $full_name);
+        if (count($tokens) > 1) {
+            $last_token = strtoupper(rtrim(end($tokens), '.'));
+            if (in_array($last_token, ['JR', 'SR', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'])) {
+                $extension = array_pop($tokens);
+            }
+        }
+        $nt = count($tokens);
+        if ($nt === 1) {
+            $first_name = $tokens[0];
+            $last_name  = $tokens[0];
+        } elseif ($nt === 2) {
+            $first_name = $tokens[0];
+            $last_name  = $tokens[1];
+        } elseif ($nt === 3) {
+            $first_name  = $tokens[0];
+            $middle_name = $tokens[1];
+            $last_name   = $tokens[2];
+        } else {
+            $last_name   = array_pop($tokens);
+            $middle_name = array_pop($tokens);
+            $first_name  = implode(' ', $tokens);
+        }
+    }
+
     $email            = trim($_POST['email'] ?? '');
     $contact_number   = trim($_POST['contact_number'] ?? '');
     $gender           = trim($_POST['gender'] ?? 'Male');
@@ -33,8 +66,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $validation_errors = [];
 
-    if (empty($full_name)) {
-        $validation_errors[] = "Full Name is required.";
+    if (empty($first_name)) {
+        $validation_errors[] = "First Name is required.";
+    }
+    if (empty($last_name)) {
+        $validation_errors[] = "Last Name is required.";
     }
 
     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -51,6 +87,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($password !== $confirm_password) {
         $validation_errors[] = "Passwords do not match.";
+    }
+
+    // Photo upload handling
+    $photo_path = null;
+    if (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+        require_once __DIR__ . '/../config/uploader.php';
+        $upload_result = secure_process_image_upload($_FILES['photo'], 'members', 1200, 1200);
+        if ($upload_result['success']) {
+            $photo_path = $upload_result['path'];
+        } else {
+            $validation_errors[] = $upload_result['error'];
+        }
     }
 
     if (empty($validation_errors)) {
@@ -76,10 +124,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
             $stmt = $pdo->prepare("
-                INSERT INTO members (membership_id, full_name, email, contact_number, gender, photo, account_status, status, selected_plan_id, password_hash, created_at)
-                VALUES (?, ?, ?, ?, ?, NULL, 'Pending', 'Inactive', ?, ?, NOW())
+                INSERT INTO members (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, gender, photo, account_status, status, selected_plan_id, password_hash, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'Inactive', ?, ?, NOW())
             ");
-            $stmt->execute([$membership_id, $full_name, $email, $contact_number, $gender, ($plan_id > 0 ? $plan_id : null), $password_hash]);
+            $stmt->execute([$membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact_number, $gender, $photo_path, ($plan_id > 0 ? $plan_id : null), $password_hash]);
             $member_id = (int)$pdo->lastInsertId();
 
             // Insert admin notification
@@ -516,20 +564,95 @@ select.if{
     </div>
     <?php endif; ?>
 
-    <form action="register.php" method="POST" id="reg-form" novalidate>
+    <form action="register.php" method="POST" id="reg-form" enctype="multipart/form-data" novalidate>
       <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
 
-      <!-- Full Name -->
-      <div class="fg">
-        <label class="lbl" for="full_name">
-          Full Name <span class="req" aria-hidden="true">*</span>
-        </label>
-        <div class="iw">
-          <i class="fa-solid fa-user ii" aria-hidden="true"></i>
-          <input type="text" name="full_name" id="full_name" class="if"
-            placeholder="e.g. Juan Dela Cruz"
-            value="<?php echo htmlspecialchars($_POST['full_name'] ?? ''); ?>"
-            required autofocus autocomplete="name" aria-required="true">
+      <!-- Profile Photo Upload -->
+      <div class="fg" style="text-align:center; margin-bottom:1.5rem;">
+        <label class="lbl" style="text-align:center; margin-bottom:0.5rem;">Profile Photo / Selfie (Optional)</label>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:0.6rem;">
+          <div id="photo-preview-wrap" style="width:84px; height:84px; border-radius:50%; border:2px dashed var(--accent, #52b788); display:flex; align-items:center; justify-content:center; overflow:hidden; background:rgba(255,255,255,0.04); cursor:pointer;" onclick="document.getElementById('web-reg-photo').click()">
+            <i class="fa-solid fa-camera" id="photo-placeholder-icon" style="font-size:1.8rem; color:var(--accent, #52b788);"></i>
+            <img id="photo-preview-img" src="" alt="Preview" style="display:none; width:100%; height:100%; object-fit:cover;" />
+          </div>
+          <input type="file" name="photo" id="web-reg-photo" accept="image/*" style="display:none;" onchange="
+            if (this.files && this.files[0]) {
+              const r = new FileReader();
+              r.onload = e => {
+                document.getElementById('photo-preview-img').src = e.target.result;
+                document.getElementById('photo-preview-img').style.display = 'block';
+                document.getElementById('photo-placeholder-icon').style.display = 'none';
+              };
+              r.readAsDataURL(this.files[0]);
+            }
+          ">
+          <button type="button" class="btn-ghost" style="padding:4px 14px; font-size:0.8rem; cursor:pointer;" onclick="document.getElementById('web-reg-photo').click()">
+            <i class="fa-solid fa-upload"></i> Choose Photo
+          </button>
+        </div>
+      </div>
+
+      <!-- First Name & Middle Name -->
+      <div class="g2">
+        <div class="fg">
+          <label class="lbl" for="first_name">
+            First Name <span class="req" aria-hidden="true">*</span>
+          </label>
+          <div class="iw">
+            <i class="fa-solid fa-user ii" aria-hidden="true"></i>
+            <input type="text" name="first_name" id="first_name" class="if"
+              placeholder="e.g. Juan"
+              value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>"
+              required autofocus autocomplete="given-name" aria-required="true">
+          </div>
+        </div>
+
+        <div class="fg">
+          <label class="lbl" for="middle_name">
+            Middle Name <span style="font-size:0.75rem; color:#888;">(Optional)</span>
+          </label>
+          <div class="iw">
+            <i class="fa-solid fa-user ii" aria-hidden="true"></i>
+            <input type="text" name="middle_name" id="middle_name" class="if"
+              placeholder="e.g. Santos"
+              value="<?php echo htmlspecialchars($_POST['middle_name'] ?? ''); ?>"
+              autocomplete="additional-name">
+          </div>
+        </div>
+      </div>
+
+      <!-- Last Name & Extension -->
+      <div class="g2">
+        <div class="fg">
+          <label class="lbl" for="last_name">
+            Last Name <span class="req" aria-hidden="true">*</span>
+          </label>
+          <div class="iw">
+            <i class="fa-solid fa-user ii" aria-hidden="true"></i>
+            <input type="text" name="last_name" id="last_name" class="if"
+              placeholder="e.g. Dela Cruz"
+              value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>"
+              required autocomplete="family-name" aria-required="true">
+          </div>
+        </div>
+
+        <div class="fg">
+          <label class="lbl" for="extension">
+            Suffix / Extension <span style="font-size:0.75rem; color:#888;">(Optional)</span>
+          </label>
+          <div class="iw">
+            <i class="fa-solid fa-award ii" aria-hidden="true"></i>
+            <select name="extension" id="extension" class="if" style="cursor:pointer;">
+              <?php $cur_ext = $_POST['extension'] ?? ''; ?>
+              <option value="" <?php echo $cur_ext === '' ? 'selected' : ''; ?>>None</option>
+              <option value="Jr." <?php echo $cur_ext === 'Jr.' ? 'selected' : ''; ?>>Jr.</option>
+              <option value="Sr." <?php echo $cur_ext === 'Sr.' ? 'selected' : ''; ?>>Sr.</option>
+              <option value="II" <?php echo $cur_ext === 'II' ? 'selected' : ''; ?>>II</option>
+              <option value="III" <?php echo $cur_ext === 'III' ? 'selected' : ''; ?>>III</option>
+              <option value="IV" <?php echo $cur_ext === 'IV' ? 'selected' : ''; ?>>IV</option>
+              <option value="V" <?php echo $cur_ext === 'V' ? 'selected' : ''; ?>>V</option>
+            </select>
+          </div>
         </div>
       </div>
 

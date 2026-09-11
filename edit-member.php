@@ -20,7 +20,16 @@ try {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name    = trim($_POST['full_name'] ?? '');
+    $first_name  = trim($_POST['first_name'] ?? '');
+    $middle_name = trim($_POST['middle_name'] ?? '');
+    $last_name   = trim($_POST['last_name'] ?? '');
+    $extension   = trim($_POST['extension'] ?? '');
+    $name        = trim($_POST['full_name'] ?? '');
+
+    if (!empty($first_name) || !empty($last_name)) {
+        $name = trim(implode(' ', array_filter([$first_name, $middle_name, $last_name, $extension])));
+    }
+
     $email   = trim($_POST['email'] ?? '');
     $contact = trim($_POST['contact_number'] ?? '');
     $age     = intval($_POST['age'] ?? 0);
@@ -29,10 +38,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $status  = is_admin() ? ($_POST['status'] ?? $member['status']) : $member['status'];
 
     $validation_errors = [];
-    if (empty($name)) $validation_errors[] = "Full name is required.";
+    if (empty($first_name) && empty($name)) $validation_errors[] = "First name is required.";
+    if (empty($last_name) && empty($name))  $validation_errors[] = "Last name is required.";
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $validation_errors[] = "Invalid email address format.";
     if (!empty($_POST['age']) && ($age <= 0 || $age > 120)) $validation_errors[] = "Age must be between 1 and 120.";
     if (!empty($contact) && !preg_match('/^09[0-9]{9}$/', $contact)) $validation_errors[] = "Contact number must be exactly 11 digits starting with 09.";
+
+    // Handle Photo Upload
+    $photo_path = null;
+    if (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+        require_once __DIR__ . '/config/uploader.php';
+        $upload_result = secure_process_image_upload($_FILES['photo'], 'members', 1200, 1200);
+        if ($upload_result['success']) {
+            $photo_path = $upload_result['path'];
+            if (!empty($member['photo']) && file_exists(__DIR__ . '/' . $member['photo'])) {
+                @unlink(__DIR__ . '/' . $member['photo']);
+            }
+        } else {
+            $validation_errors[] = $upload_result['error'];
+        }
+    }
 
     // Check for duplicate email excluding the current member
     if (empty($validation_errors)) {
@@ -48,11 +73,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $msg_type = 'error';
     } else {
         try {
-            $stmt = $pdo->prepare(
-                "UPDATE members SET full_name=?, email=?, contact_number=?, age=?, gender=?, status=?
-                 WHERE id=?"
-            );
-            $stmt->execute([$name, $email, $contact, $age ?: null, $gender, $status, $id]);
+            if ($photo_path) {
+                $stmt = $pdo->prepare(
+                    "UPDATE members SET first_name=?, middle_name=?, last_name=?, extension=?, full_name=?, email=?, contact_number=?, age=?, gender=?, status=?, photo=?
+                     WHERE id=?"
+                );
+                $stmt->execute([$first_name ?: null, $middle_name ?: null, $last_name ?: null, $extension ?: null, $name, $email, $contact, $age ?: null, $gender, $status, $photo_path, $id]);
+            } else {
+                $stmt = $pdo->prepare(
+                    "UPDATE members SET first_name=?, middle_name=?, last_name=?, extension=?, full_name=?, email=?, contact_number=?, age=?, gender=?, status=?
+                     WHERE id=?"
+                );
+                $stmt->execute([$first_name ?: null, $middle_name ?: null, $last_name ?: null, $extension ?: null, $name, $email, $contact, $age ?: null, $gender, $status, $id]);
+            }
             $message  = 'Member details updated successfully.';
             $msg_type = 'success';
 
@@ -99,15 +132,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 <?php endif; ?>
 
-<form method="POST" action="" id="edit-form" class="needs-validation" novalidate>
+<form method="POST" action="" id="edit-form" class="needs-validation" enctype="multipart/form-data" novalidate>
     <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
     <div class="card" style="max-width:760px;">
         <p class="section-title">Personal Information</p>
+
+        <!-- Profile Photo -->
+        <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:1.5rem; padding-bottom:1.25rem; border-bottom:1px solid var(--border);">
+            <div style="width:80px; height:80px; border-radius:50%; border:2px solid var(--border); overflow:hidden; display:flex; align-items:center; justify-content:center; background:var(--palmas-dark);">
+                <?php if (!empty($member['photo'])): ?>
+                    <img id="edit-photo-preview" src="<?php echo htmlspecialchars($member['photo']); ?>" style="width:100%; height:100%; object-fit:cover;">
+                <?php else: ?>
+                    <i id="edit-photo-icon" class="fas fa-camera" style="font-size:1.8rem; color:var(--text-muted);"></i>
+                    <img id="edit-photo-preview" src="" style="width:100%; height:100%; object-fit:cover; display:none;">
+                <?php endif; ?>
+            </div>
+            <div>
+                <label style="font-weight:600; display:block; margin-bottom:0.35rem;">Member Photo</label>
+                <input type="file" name="photo" id="edit-photo-input" accept="image/*" style="display:none;" onchange="
+                    if (this.files && this.files[0]) {
+                        const r = new FileReader();
+                        r.onload = e => {
+                            const prev = document.getElementById('edit-photo-preview');
+                            const icon = document.getElementById('edit-photo-icon');
+                            prev.src = e.target.result;
+                            prev.style.display = 'block';
+                            if (icon) icon.style.display = 'none';
+                        };
+                        r.readAsDataURL(this.files[0]);
+                    }
+                ">
+                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('edit-photo-input').click()">
+                    <i class="fas fa-upload"></i> Change Photo
+                </button>
+                <span class="cell-secondary" style="font-size:0.75rem; margin-left:0.5rem;">JPG, PNG, max 3MB</span>
+            </div>
+        </div>
+
         <div class="form-grid">
             <div class="form-group">
-                <label for="full_name">Full Name *</label>
-                <input type="text" name="full_name" id="full_name" class="form-control" required
-                       value="<?php echo htmlspecialchars($member['full_name']); ?>">
+                <label for="first_name">First Name *</label>
+                <input type="text" name="first_name" id="first_name" class="form-control" required
+                       value="<?php echo htmlspecialchars($member['first_name'] ?? ''); ?>">
+            </div>
+            <div class="form-group">
+                <label for="middle_name">Middle Name <span style="font-size:0.75rem;color:var(--text-muted);">(Optional)</span></label>
+                <input type="text" name="middle_name" id="middle_name" class="form-control"
+                       value="<?php echo htmlspecialchars($member['middle_name'] ?? ''); ?>">
+            </div>
+            <div class="form-group">
+                <label for="last_name">Last Name *</label>
+                <input type="text" name="last_name" id="last_name" class="form-control" required
+                       value="<?php echo htmlspecialchars($member['last_name'] ?? ''); ?>">
+            </div>
+            <div class="form-group">
+                <label for="extension">Suffix / Extension</label>
+                <select name="extension" id="extension" class="form-control">
+                    <?php $cur_ext = $member['extension'] ?? ''; ?>
+                    <option value="" <?php echo $cur_ext === '' ? 'selected' : ''; ?>>None</option>
+                    <option value="Jr." <?php echo $cur_ext === 'Jr.' ? 'selected' : ''; ?>>Jr.</option>
+                    <option value="Sr." <?php echo $cur_ext === 'Sr.' ? 'selected' : ''; ?>>Sr.</option>
+                    <option value="II" <?php echo $cur_ext === 'II' ? 'selected' : ''; ?>>II</option>
+                    <option value="III" <?php echo $cur_ext === 'III' ? 'selected' : ''; ?>>III</option>
+                    <option value="IV" <?php echo $cur_ext === 'IV' ? 'selected' : ''; ?>>IV</option>
+                    <option value="V" <?php echo $cur_ext === 'V' ? 'selected' : ''; ?>>V</option>
+                </select>
             </div>
             <div class="form-group">
                 <label for="email">Email Address *</label>

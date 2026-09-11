@@ -29,6 +29,12 @@ try {
             require_once __DIR__ . '/../migrate_google_auth.php';
             $migrated = true;
         }
+
+        $stmtName = $pdo->query("SHOW COLUMNS FROM members LIKE 'first_name'");
+        if (!$stmtName->fetch()) {
+            require_once __DIR__ . '/../migrate_split_name_photo.php';
+            $migrated = true;
+        }
     }
 } catch (Throwable $me) {
     error_log("Ping auto-migration error: " . $me->getMessage());

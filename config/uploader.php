@@ -171,3 +171,96 @@ function secure_process_image_upload(
         'error'   => null
     ];
 }
+
+/**
+ * Securely process, re-encode, and save a Base64-encoded image string.
+ * Used for mobile camera selfies and direct client uploads.
+ *
+ * @param string $base64_data Base64 data string (with or without data: URI prefix)
+ * @param string $subfolder Subfolder within uploads/ (default 'members')
+ * @param int $max_width Maximum width for resizing
+ * @param int $max_height Maximum height for resizing
+ * @return array ['success' => bool, 'path' => string|null, 'error' => string|null]
+ */
+function secure_process_base64_image_upload(
+    string $base64_data,
+    string $subfolder = 'members',
+    int $max_width = 1200,
+    int $max_height = 1200
+): array {
+    if (empty($base64_data)) {
+        return ['success' => false, 'path' => null, 'error' => 'No image data provided.'];
+    }
+
+    // Strip Data URI scheme header if present
+    if (preg_match('/^data:image\/(\w+);base64,/', $base64_data, $type)) {
+        $base64_data = substr($base64_data, strpos($base64_data, ',') + 1);
+    }
+
+    $raw_bytes = base64_decode($base64_data, true);
+    if ($raw_bytes === false || strlen($raw_bytes) === 0) {
+        return ['success' => false, 'path' => null, 'error' => 'Invalid base64 image data.'];
+    }
+
+    if (strlen($raw_bytes) > MAX_UPLOAD_SIZE_BYTES) {
+        $max_mb = round(MAX_UPLOAD_SIZE_BYTES / (1024 * 1024));
+        return ['success' => false, 'path' => null, 'error' => "Image exceeds maximum limit of {$max_mb}MB."];
+    }
+
+    // Verify GD is available
+    if (!extension_loaded('gd') || !function_exists('imagecreatefromstring')) {
+        return ['success' => false, 'path' => null, 'error' => 'Server image processing module unavailable.'];
+    }
+
+    $src_img = @imagecreatefromstring($raw_bytes);
+    if ($src_img === false) {
+        return ['success' => false, 'path' => null, 'error' => 'Uploaded data is not a recognized image.'];
+    }
+
+    $orig_w = imagesx($src_img);
+    $orig_h = imagesy($src_img);
+    if ($orig_w <= 0 || $orig_h <= 0) {
+        imagedestroy($src_img);
+        return ['success' => false, 'path' => null, 'error' => 'Invalid image dimensions.'];
+    }
+
+    // Calculate dimensions
+    $target_w = $orig_w;
+    $target_h = $orig_h;
+    if ($orig_w > $max_width || $orig_h > $max_height) {
+        $ratio = min($max_width / $orig_w, $max_height / $orig_h);
+        $target_w = max(1, (int)round($orig_w * $ratio));
+        $target_h = max(1, (int)round($orig_h * $ratio));
+    }
+
+    $clean_subfolder = trim(preg_replace('/[^a-zA-Z0-9_-]/', '', $subfolder), '/');
+    $base_upload_dir = __DIR__ . '/../uploads/' . ($clean_subfolder ? $clean_subfolder . '/' : '');
+    if (!is_dir($base_upload_dir)) {
+        @mkdir($base_upload_dir, 0755, true);
+    }
+
+    $safe_filename = 'mbr_' . bin2hex(random_bytes(16)) . '.jpg';
+    $target_filepath = $base_upload_dir . $safe_filename;
+    $relative_db_path = 'uploads/' . ($clean_subfolder ? $clean_subfolder . '/' : '') . $safe_filename;
+
+    $dst_img = imagecreatetruecolor($target_w, $target_h);
+    $white = imagecolorallocate($dst_img, 255, 255, 255);
+    imagefilledrectangle($dst_img, 0, 0, $target_w, $target_h, $white);
+    imagecopyresampled($dst_img, $src_img, 0, 0, 0, 0, $target_w, $target_h, $orig_w, $orig_h);
+
+    $saved = imagejpeg($dst_img, $target_filepath, 88);
+    imagedestroy($src_img);
+    imagedestroy($dst_img);
+
+    if (!$saved) {
+        return ['success' => false, 'path' => null, 'error' => 'Failed to save processed image.'];
+    }
+
+    @chmod($target_filepath, 0644);
+
+    return [
+        'success' => true,
+        'path'    => $relative_db_path,
+        'error'   => null
+    ];
+}

@@ -49,7 +49,8 @@ try {
 
     // ── 2. Member Lookup Query ──────────────────────────────────────────────────
     $stmt = $pdo->prepare("
-        SELECT id, membership_id, full_name, email, contact_number, photo,
+        SELECT id, membership_id, first_name, middle_name, last_name, extension,
+               full_name, email, contact_number, photo, google_picture,
                account_status, status, rejection_reason, password_hash
         FROM members
         WHERE membership_id = ?
@@ -138,6 +139,7 @@ try {
         if (password_verify($password, $member['password_hash'])) {
             try { clear_rate_limit($pdo, $username, 'api_member_login'); } catch (Throwable $e) {}
             unset($member['password_hash']);
+            $member['photo'] = $member['photo'] ?: ($member['google_picture'] ?? null);
             $token = bin2hex(random_bytes(32));
 
             // Ensure auth_tokens table exists

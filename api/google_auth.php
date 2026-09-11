@@ -52,7 +52,8 @@ try {
 
     // ── 3. Lookup Member ─────────────────────────────────────────────────────────
     $stmt = $pdo->prepare("
-        SELECT id, membership_id, full_name, email, contact_number, photo, google_picture,
+        SELECT id, membership_id, first_name, middle_name, last_name, extension,
+               full_name, email, contact_number, photo, google_picture,
                account_status, status, rejection_reason, auth_provider, google_id
         FROM members
         WHERE google_id = ? OR LOWER(email) = LOWER(?)
@@ -147,10 +148,14 @@ try {
             'member'  => [
                 'id'            => $member['id'],
                 'membership_id' => $member['membership_id'],
+                'first_name'    => $member['first_name'] ?? null,
+                'middle_name'   => $member['middle_name'] ?? null,
+                'last_name'     => $member['last_name'] ?? null,
+                'extension'     => $member['extension'] ?? null,
                 'full_name'     => $member['full_name'],
                 'email'         => $member['email'],
                 'contact_number'=> $member['contact_number'],
-                'photo'         => $member['google_picture'] ?: ($member['photo'] ?? null),
+                'photo'         => $member['photo'] ?: ($member['google_picture'] ?? null),
                 'account_status'=> $member['account_status'],
                 'status'        => $member['status'],
                 'auth_provider' => $member['auth_provider'],

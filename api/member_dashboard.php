@@ -21,7 +21,8 @@ try {
     // ── QUERY 1: Member + Active Subscription (CRITICAL — renders the card) ──
     $stmt = $pdo->prepare("
         SELECT 
-            m.id, m.membership_id, m.full_name, m.email, m.contact_number,
+            m.id, m.membership_id, m.first_name, m.middle_name, m.last_name, m.extension,
+            m.full_name, m.email, m.contact_number,
             m.photo, m.google_picture, m.auth_provider, m.status,
             m.account_status,
             s.expiry_date,
@@ -45,8 +46,8 @@ try {
         exit;
     }
 
-    // Use Google picture if available, fallback to uploaded photo
-    $member['photo'] = $member['google_picture'] ?: ($member['photo'] ?? null);
+    // Prefer uploaded photo if available, fallback to Google picture
+    $member['photo'] = $member['photo'] ?: ($member['google_picture'] ?? null);
 
     // ── DYNAMIC HMAC ROTATING QR TOKEN (15-second window) ──
     $time_slot  = floor(time() / 15);

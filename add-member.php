@@ -15,7 +15,40 @@ $message = '';
 $error   = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $full_name = trim($_POST['full_name'] ?? '');
+    $first_name  = trim($_POST['first_name'] ?? '');
+    $middle_name = trim($_POST['middle_name'] ?? '');
+    $last_name   = trim($_POST['last_name'] ?? '');
+    $extension   = trim($_POST['extension'] ?? '');
+    $full_name   = trim($_POST['full_name'] ?? '');
+
+    if (!empty($first_name) || !empty($last_name)) {
+        $full_name = trim(implode(' ', array_filter([$first_name, $middle_name, $last_name, $extension])));
+    } elseif (!empty($full_name)) {
+        $tokens = preg_split('/\s+/', $full_name);
+        if (count($tokens) > 1) {
+            $last_token = strtoupper(rtrim(end($tokens), '.'));
+            if (in_array($last_token, ['JR', 'SR', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'])) {
+                $extension = array_pop($tokens);
+            }
+        }
+        $nt = count($tokens);
+        if ($nt === 1) {
+            $first_name = $tokens[0];
+            $last_name  = $tokens[0];
+        } elseif ($nt === 2) {
+            $first_name = $tokens[0];
+            $last_name  = $tokens[1];
+        } elseif ($nt === 3) {
+            $first_name  = $tokens[0];
+            $middle_name = $tokens[1];
+            $last_name   = $tokens[2];
+        } else {
+            $last_name   = array_pop($tokens);
+            $middle_name = array_pop($tokens);
+            $first_name  = implode(' ', $tokens);
+        }
+    }
+
     $email     = trim($_POST['email'] ?? '');
     $contact   = trim($_POST['contact_number'] ?? '');
     $age       = intval($_POST['age'] ?? 0);
@@ -37,7 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Validation Rules
-    if (empty($full_name)) $validation_errors[] = "Full name is required.";
+    if (empty($first_name)) $validation_errors[] = "First name is required.";
+    if (empty($last_name)) $validation_errors[] = "Last name is required.";
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $validation_errors[] = "Invalid email address format.";
     if (!empty($_POST['age']) && ($age <= 0 || $age > 120)) $validation_errors[] = "Age must be between 1 and 120.";
     if (!empty($contact) && !preg_match('/^09[0-9]{9}$/', $contact)) $validation_errors[] = "Contact number must be exactly 11 digits starting with 09.";
@@ -59,8 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $created_by = $_SESSION['user_id'] ?? null;
             $membership_id = 'GYM-' . strtoupper(substr(uniqid(), -6));
 
-            $stmt = $pdo->prepare("INSERT INTO members (membership_id, full_name, email, contact_number, age, gender, photo, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', ?)");
-            $stmt->execute([$membership_id, $full_name, $email, $contact, $age, $gender, $photo_path, $created_by]);
+            $stmt = $pdo->prepare("INSERT INTO members (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, age, gender, photo, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?)");
+            $stmt->execute([$membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact, $age, $gender, $photo_path, $created_by]);
             $member_id = $pdo->lastInsertId();
 
             $plan_stmt = $pdo->prepare("SELECT duration_months FROM membership_plans WHERE id = ?");
@@ -151,9 +185,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="card">
                 <h3 class="section-title"><i class="fas fa-user-pen" style="color:var(--accent);"></i> Personal Information</h3>
                 
-                <div class="form-group">
-                    <label>Full Name *</label>
-                    <input type="text" name="full_name" class="form-control" placeholder="John Doe" value="<?php echo htmlspecialchars($_POST['full_name'] ?? ''); ?>" required>
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="form-group">
+                        <label>First Name *</label>
+                        <input type="text" name="first_name" class="form-control" placeholder="Juan" value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Middle Name <span style="font-size:0.75rem; color:#888;">(Optional)</span></label>
+                        <input type="text" name="middle_name" class="form-control" placeholder="Santos" value="<?php echo htmlspecialchars($_POST['middle_name'] ?? ''); ?>">
+                    </div>
+                </div>
+
+                <div class="form-grid" style="grid-template-columns: 2fr 1fr;">
+                    <div class="form-group">
+                        <label>Last Name *</label>
+                        <input type="text" name="last_name" class="form-control" placeholder="Dela Cruz" value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Suffix / Extension</label>
+                        <select name="extension" class="form-control">
+                            <?php $cur_ext = $_POST['extension'] ?? ''; ?>
+                            <option value="" <?php echo $cur_ext === '' ? 'selected' : ''; ?>>None</option>
+                            <option value="Jr." <?php echo $cur_ext === 'Jr.' ? 'selected' : ''; ?>>Jr.</option>
+                            <option value="Sr." <?php echo $cur_ext === 'Sr.' ? 'selected' : ''; ?>>Sr.</option>
+                            <option value="II" <?php echo $cur_ext === 'II' ? 'selected' : ''; ?>>II</option>
+                            <option value="III" <?php echo $cur_ext === 'III' ? 'selected' : ''; ?>>III</option>
+                            <option value="IV" <?php echo $cur_ext === 'IV' ? 'selected' : ''; ?>>IV</option>
+                            <option value="V" <?php echo $cur_ext === 'V' ? 'selected' : ''; ?>>V</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
