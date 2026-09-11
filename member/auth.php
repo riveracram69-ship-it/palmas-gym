@@ -193,6 +193,7 @@ function current_member($pdo) {
         $stmt->execute([$_SESSION['member_id']]);
         $member = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($member) {
+            $member['photo'] = $member['photo'] ?: ($member['google_picture'] ?? null);
             $exp_ts = (!empty($member['expiry_date'])) 
                 ? ((strpos($member['expiry_date'], ':') !== false) ? strtotime($member['expiry_date']) : strtotime($member['expiry_date'] . ' 23:59:59'))
                 : 0;

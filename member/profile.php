@@ -1,12 +1,17 @@
 <?php
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/../config/logger.php';
 require_member_login();
 
 $member = current_member($pdo);
 if (!$member) { header('Location: logout.php'); exit; }
 
-$success = '';
-$error   = '';
+$photo_success = '';
+$photo_error   = '';
+$contact_success = '';
+$contact_error   = '';
+$pw_success    = '';
+$pw_error      = '';
 
 // Handle profile update (email / contact)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_contact') {
@@ -14,15 +19,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $contact = trim($_POST['contact_number'] ?? '');
 
     if (empty($email)) {
-        $error = 'Email cannot be empty.';
+        $contact_error = 'Email cannot be empty.';
     } else {
         try {
             $s = $pdo->prepare("UPDATE members SET email = ?, contact_number = ? WHERE id = ?");
             $s->execute([$email, $contact, $member['id']]);
-            $success = 'Contact info updated successfully.';
+            $contact_success = 'Contact info updated successfully.';
             $member  = current_member($pdo); // refresh
-        } catch (Exception $e) {
-            $error = 'Could not update. Please try again.';
+            if (function_exists('log_activity')) {
+                log_activity($pdo, 'Member Contact Updated', "Member {$member['full_name']} updated their contact info.", 'Member');
+            }
+        } catch (\Throwable $e) {
+            $contact_error = 'Could not update contact info. Please try again.';
         }
     }
 }
@@ -43,17 +51,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 
                 $s = $pdo->prepare("UPDATE members SET photo = ? WHERE id = ?");
                 $s->execute([$db_path, $member['id']]);
-                $success = 'Profile picture updated successfully.';
+                $photo_success = 'Profile picture updated successfully!';
                 $member  = current_member($pdo); // refresh
-                log_activity($pdo, 'Member Photo Uploaded', "Member {$member['full_name']} updated their profile picture.", 'Member');
-            } catch (Exception $e) {
-                $error = 'Could not update database with new photo.';
+                if (function_exists('log_activity')) {
+                    log_activity($pdo, 'Member Photo Uploaded', "Member {$member['full_name']} updated their profile picture.", 'Member');
+                }
+            } catch (\Throwable $e) {
+                $photo_error = 'Could not update database with new photo.';
             }
         } else {
-            $error = $upload_result['error'];
+            $photo_error = $upload_result['error'] ?? 'Photo upload failed.';
         }
     } else {
-        $error = 'Please select a valid image file to upload.';
+        $photo_error = 'Please select a valid image file to upload.';
     }
 }
 
@@ -63,27 +73,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $new_password     = $_POST['new_password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
 
-    if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
-        $error = 'Invalid security token. Please refresh and try again.';
-    } elseif (empty($new_password) || empty($confirm_password)) {
-        $error = 'Please fill in all required password fields.';
+    if (empty($new_password) || empty($confirm_password)) {
+        $pw_error = 'Please fill in all required password fields.';
     } elseif ($new_password !== $confirm_password) {
-        $error = 'New passwords do not match.';
+        $pw_error = 'New passwords do not match.';
     } elseif (strlen($new_password) < 6) {
-        $error = 'New password must be at least 6 characters long.';
+        $pw_error = 'New password must be at least 6 characters long.';
     } elseif (!empty($member['password_hash']) && !password_verify($current_password, $member['password_hash'])) {
-        $error = 'Incorrect current password.';
+        $pw_error = 'Incorrect current password.';
     } else {
         try {
             $hash = password_hash($new_password, PASSWORD_DEFAULT);
             $auth_upd = ($member['auth_provider'] ?? 'password') === 'google' ? ", auth_provider = 'both'" : "";
             $s = $pdo->prepare("UPDATE members SET password_hash = ? {$auth_upd} WHERE id = ?");
             $s->execute([$hash, $member['id']]);
-            $success = 'Password changed successfully!';
+            $pw_success = 'Password changed successfully!';
             $member  = current_member($pdo); // refresh
-            log_activity($pdo, 'Member Password Changed', "Member {$member['full_name']} updated their password.", 'Member');
-        } catch (Exception $e) {
-            $error = 'Could not update password. Please try again.';
+            if (function_exists('log_activity')) {
+                log_activity($pdo, 'Member Password Changed', "Member {$member['full_name']} updated their password.", 'Member');
+            }
+        } catch (\Throwable $e) {
+            $pw_error = 'Could not update password. Please try again.';
         }
     }
 }
@@ -316,14 +326,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         <!-- Update Profile Picture -->
         <div class="edit-section fade-up fade-up-d15" style="margin-bottom: 1.5rem;">
             <p class="section-title" style="margin-bottom:1rem;"><i class="fas fa-camera"></i> Update Profile Picture</p>
-            <form method="POST" enctype="multipart/form-data">
+
+            <?php if ($photo_success): ?>
+                <div class="success-banner" style="margin-bottom:1rem;">
+                    <i class="fas fa-circle-check"></i> <?php echo htmlspecialchars($photo_success); ?>
+                </div>
+            <?php endif; ?>
+            <?php if ($photo_error): ?>
+                <div class="error-banner" style="margin-bottom:1rem;">
+                    <i class="fas fa-triangle-exclamation"></i> <?php echo htmlspecialchars($photo_error); ?>
+                </div>
+            <?php endif; ?>
+
+            <form method="POST" enctype="multipart/form-data" id="photo-form">
                 <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
                 <input type="hidden" name="action" value="upload_photo">
                 <div class="form-group" style="margin-bottom: 1.25rem;">
                     <label for="photo"><i class="fas fa-image"></i> Select Selfie/Photo *</label>
-                    <input type="file" name="photo" id="photo" class="form-control" accept="image/*" required style="padding: 0.5rem 0.75rem;">
+                    <input type="file" name="photo" id="photo" class="form-control" accept="image/*" required style="padding: 0.5rem 0.75rem;" onchange="previewSelectedPhoto(this)">
                 </div>
-                <button type="submit" class="btn">
+                <div id="photo-preview-wrap" style="display:none; margin-bottom:1rem; text-align:center;">
+                    <img id="photo-preview-img" src="" alt="Preview" style="width:90px; height:90px; border-radius:50%; object-fit:cover; border:2.5px solid var(--palmas-primary); margin:0 auto; display:block; box-shadow:var(--shadow-sm);">
+                    <span style="font-size:0.75rem; color:var(--text-muted); margin-top:4px; display:block;">Selected Photo Preview</span>
+                </div>
+                <button type="submit" class="btn" id="btn-upload-photo">
                     <i class="fas fa-upload"></i> Upload Photo
                 </button>
             </form>
@@ -333,14 +359,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         <div class="edit-section fade-up fade-up-d2">
             <p class="section-title" style="margin-bottom:1rem;"><i class="fas fa-pen-to-square"></i> Update Contact Info</p>
 
-            <?php if ($success): ?>
+            <?php if ($contact_success): ?>
                 <div class="success-banner" style="margin-bottom:1rem;">
-                    <i class="fas fa-circle-check"></i> <?php echo htmlspecialchars($success); ?>
+                    <i class="fas fa-circle-check"></i> <?php echo htmlspecialchars($contact_success); ?>
                 </div>
             <?php endif; ?>
-            <?php if ($error): ?>
+            <?php if ($contact_error): ?>
                 <div class="error-banner" style="margin-bottom:1rem;">
-                    <i class="fas fa-triangle-exclamation"></i> <?php echo htmlspecialchars($error); ?>
+                    <i class="fas fa-triangle-exclamation"></i> <?php echo htmlspecialchars($contact_error); ?>
                 </div>
             <?php endif; ?>
 
@@ -367,6 +393,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         <!-- Change Password -->
         <div class="edit-section fade-up fade-up-d25" style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
             <p class="section-title" style="margin-bottom:1rem;"><i class="fas fa-key"></i> Change Password</p>
+
+            <?php if ($pw_success): ?>
+                <div class="success-banner" style="margin-bottom:1rem;">
+                    <i class="fas fa-circle-check"></i> <?php echo htmlspecialchars($pw_success); ?>
+                </div>
+            <?php endif; ?>
+            <?php if ($pw_error): ?>
+                <div class="error-banner" style="margin-bottom:1rem;">
+                    <i class="fas fa-triangle-exclamation"></i> <?php echo htmlspecialchars($pw_error); ?>
+                </div>
+            <?php endif; ?>
+
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
                 <input type="hidden" name="action" value="change_password">
@@ -419,6 +457,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     </nav>
 </div>
 <script>
+function previewSelectedPhoto(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const previewWrap = document.getElementById('photo-preview-wrap');
+            const previewImg = document.getElementById('photo-preview-img');
+            if (previewWrap && previewImg) {
+                previewImg.src = e.target.result;
+                previewWrap.style.display = 'block';
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+document.getElementById('photo-form') && document.getElementById('photo-form').addEventListener('submit', function() {
+    const btn = document.getElementById('btn-upload-photo');
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+        btn.disabled = true;
+    }
+});
+
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js');
