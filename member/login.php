@@ -4,6 +4,11 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/settings.php';
 require_once __DIR__ . '/../config/rate_limiter.php';
 
+// Prevent caching of credentials / member session
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 if (isset($_SESSION['member_id'])) {
     header('Location: index.php');
     exit;
@@ -383,7 +388,7 @@ img{max-width:100%;display:block}
     </div>
     <?php endif; ?>
 
-    <form action="login.php" method="POST" id="login-form" novalidate>
+    <form action="login.php" method="POST" id="login-form" autocomplete="off" novalidate>
       <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token()); ?>">
 
       <!-- Member ID / Email -->
@@ -393,7 +398,7 @@ img{max-width:100%;display:block}
           <i class="fa-solid fa-id-badge ii" aria-hidden="true"></i>
           <input type="text" name="membership_id" id="membership_id" class="if"
             placeholder="e.g. GYM-9537F6 or your email"
-            value="<?php echo htmlspecialchars($_POST['membership_id'] ?? ''); ?>"
+            value="<?php echo !isset($_GET['logged_out']) ? htmlspecialchars($_POST['membership_id'] ?? '') : ''; ?>"
             required autocomplete="off" autofocus aria-required="true">
         </div>
       </div>
@@ -408,7 +413,7 @@ img{max-width:100%;display:block}
           <i class="fa-solid fa-lock ii" aria-hidden="true"></i>
           <input type="password" name="credential" id="credential" class="if has-pw"
             placeholder="Enter your password"
-            required autocomplete="current-password" aria-required="true">
+            required autocomplete="new-password" aria-required="true">
           <button type="button" class="pw-btn" onclick="togglePw('credential',this)" aria-label="Show or hide password">
             <i class="fa-regular fa-eye" aria-hidden="true"></i>
           </button>
@@ -475,6 +480,15 @@ document.getElementById('login-form')&&document.getElementById('login-form').add
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));
 }
+
+window.addEventListener('pageshow', function() {
+  const cred = document.getElementById('credential');
+  if (cred) cred.value = '';
+  if (new URLSearchParams(window.location.search).has('logged_out')) {
+    const mid = document.getElementById('membership_id');
+    if (mid) mid.value = '';
+  }
+});
 </script>
 </body>
 </html>

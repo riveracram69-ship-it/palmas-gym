@@ -1897,7 +1897,7 @@
 
       <!-- Crisp White Member Portal Card -->
       <div class="login-portal-card">
-
+        <form id="mobile-login-form" autocomplete="off" onsubmit="event.preventDefault(); submitTraditionalLogin();">
         <!-- Field 1: Member ID or Email -->
         <div class="login-field-group">
           <label class="login-label" for="input-username">Member ID or Email</label>
@@ -1908,7 +1908,7 @@
               class="login-input-field"
               type="text"
               placeholder="e.g. GYM-9537F6 or your email"
-              autocomplete="username"
+              autocomplete="off"
               required
             />
           </div>
@@ -1927,7 +1927,7 @@
               class="login-input-field"
               type="password"
               placeholder="Enter your password"
-              autocomplete="current-password"
+              autocomplete="new-password"
               required
             />
             <button
@@ -1948,9 +1948,10 @@
         </div>
 
         <!-- Primary Button: Access Member Portal -->
-        <button class="btn-access-portal" id="btn-trad-login" onclick="submitTraditionalLogin()">
+        <button type="submit" class="btn-access-portal" id="btn-trad-login">
           <i class="fa-solid fa-right-to-bracket"></i> Access Member Portal
         </button>
+        </form>
 
         <!-- Trust footer -->
         <div class="login-trust-line">
@@ -3777,6 +3778,16 @@ function showScreen(id) {
     const el = document.getElementById(sid);
     if (el) el.style.display = (sid === id) ? 'block' : 'none';
   });
+  if (id === 'view-login' && !currentMember) {
+    const loginForm = document.getElementById('mobile-login-form');
+    if (loginForm && typeof loginForm.reset === 'function') loginForm.reset();
+    const uInp = document.getElementById('input-username');
+    if (uInp) { uInp.value = ''; uInp.setAttribute('value', ''); }
+    const pInp = document.getElementById('input-password');
+    if (pInp) { pInp.value = ''; pInp.setAttribute('value', ''); pInp.type = 'password'; }
+    const eyeIcon = document.querySelector('.login-eye-btn i');
+    if (eyeIcon) eyeIcon.className = 'fa-regular fa-eye';
+  }
 }
 
 // ── Password Visibility Toggle ──────────────────────────────────────
@@ -3969,6 +3980,18 @@ async function submitTraditionalLogin() {
       currentMember = data.member;
       localStorage.setItem('peg_member', JSON.stringify(data.member));
       localStorage.setItem('peg_token', data.token);
+
+      // Reset login inputs on successful authentication
+      const uInp = document.getElementById('input-username');
+      if (uInp) uInp.value = '';
+      const pInp = document.getElementById('input-password');
+      if (pInp) {
+        pInp.value = '';
+        pInp.type = 'password';
+      }
+      const eyeIcon = document.querySelector('.login-eye-btn i');
+      if (eyeIcon) eyeIcon.className = 'fa-regular fa-eye';
+
       initMainView(data.member.id);
       showToast(`Signed in as ${data.member.full_name}!`);
     } else {
@@ -4494,6 +4517,17 @@ async function submitRegistration() {
 
 // ── MAIN DASHBOARD INITIALIZATION ──────────────────────────────────
 function initMainView(memberId) {
+  // Clear any leftover input credentials
+  const uInp = document.getElementById('input-username');
+  if (uInp) uInp.value = '';
+  const pInp = document.getElementById('input-password');
+  if (pInp) {
+    pInp.value = '';
+    pInp.type = 'password';
+  }
+  const eyeIcon = document.querySelector('.login-eye-btn i');
+  if (eyeIcon) eyeIcon.className = 'fa-regular fa-eye';
+
   showScreen('view-main');
   loadDashboard(memberId);
 }
@@ -6132,10 +6166,31 @@ function logout(silent = false) {
   clearInterval(promoCountdownTimer);
   localStorage.removeItem('peg_member');
   localStorage.removeItem('peg_token');
+  localStorage.removeItem('peg_pending_identifier');
   currentMember = null;
   if (typeof google !== 'undefined' && google.accounts) {
     try { google.accounts.id.disableAutoSelect(); } catch (e) {}
   }
+
+  // Thoroughly reset login form and wipe credentials from DOM and inputs
+  const loginForm = document.getElementById('mobile-login-form');
+  if (loginForm && typeof loginForm.reset === 'function') {
+    loginForm.reset();
+  }
+  const uInp = document.getElementById('input-username');
+  if (uInp) {
+    uInp.value = '';
+    uInp.setAttribute('value', '');
+  }
+  const pInp = document.getElementById('input-password');
+  if (pInp) {
+    pInp.value = '';
+    pInp.setAttribute('value', '');
+    pInp.type = 'password';
+  }
+  const eyeIcon = document.querySelector('.login-eye-btn i');
+  if (eyeIcon) eyeIcon.className = 'fa-regular fa-eye';
+
   showScreen('view-login');
   if (!silent) showToast('Signed out successfully.');
 }

@@ -5,6 +5,11 @@ require_once 'config/logger.php';
 require_once 'config/settings.php';
 require_once 'config/rate_limiter.php';
 
+// Prevent browser caching of login credentials / sensitive pages
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 // If already logged in, redirect to dashboard
 if (isset($_SESSION['user_id'])) {
     header('Location: index.php');
@@ -357,7 +362,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <?php endif; ?>
 
-        <form method="POST" action="" class="login-form needs-validation" novalidate>
+        <form method="POST" action="" class="login-form needs-validation" novalidate autocomplete="off">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token()); ?>">
             <div class="form-group">
                 <label for="email">Email Address</label>
@@ -365,8 +370,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <i class="fas fa-envelope input-icon"></i>
                     <input type="email" id="email" name="email"
                         placeholder="admin@palmaselite.com"
-                        value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>"
-                        autocomplete="email" required>
+                        value="<?php echo !isset($_GET['logged_out']) ? htmlspecialchars($_POST['email'] ?? '') : ''; ?>"
+                        autocomplete="off" required>
                 </div>
             </div>
             <div class="form-group">
@@ -375,7 +380,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <i class="fas fa-lock input-icon"></i>
                     <input type="password" id="password" name="password"
                         placeholder="••••••••"
-                        autocomplete="current-password" required>
+                        autocomplete="new-password" required>
                     <button type="button" class="pw-toggle" id="togglePw" title="Show/hide password" aria-label="Toggle password visibility">
                         <i class="fas fa-eye" id="eyeIcon"></i>
                     </button>
@@ -404,6 +409,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             eyeIcon.className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
         });
     }
+
+    // Ensure email & password fields are reset when landing after sign out or back-navigation
+    window.addEventListener('pageshow', function() {
+        if (pwInput) pwInput.value = '';
+        if (new URLSearchParams(window.location.search).has('logged_out')) {
+            const emailInp = document.getElementById('email');
+            if (emailInp) emailInp.value = '';
+        }
+    });
 </script>
 </body>
 </html>
