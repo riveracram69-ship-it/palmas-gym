@@ -4447,19 +4447,19 @@ async function loadDashboard(memberId) {
 
     // Populate Tab 3: Payments
     renderPayments(data.payments || []);
-    populateRenewPlansSelect(availablePlans);
+    // Pre-populate renewal plan cards with plans already loaded from dashboard
+    if (availablePlans && availablePlans.length > 0) renderCheckoutPlanCards(availablePlans);
 
     // Populate Tab 4: Redesigned Profile
-    document.getElementById('prof-name').textContent           = m.full_name || 'No information available';
-    document.getElementById('prof-code').textContent           = m.membership_id || 'No information available';
-    document.getElementById('prof-full-name').textContent      = m.full_name || 'No information available';
-    document.getElementById('prof-email').textContent          = m.email || 'No information available';
-    document.getElementById('prof-phone').textContent          = m.contact_number || 'No information available';
-    document.getElementById('prof-plan-name').textContent      = m.plan_name || 'No information available';
-    document.getElementById('prof-valid-until').textContent    = m.expiry_date || 'No information available';
-
-    const profMemId = document.getElementById('prof-memid-display');
-    if (profMemId) profMemId.textContent = m.membership_id || 'No information available';
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '--'; };
+    setEl('prof-name',          m.full_name);
+    setEl('prof-code',          m.membership_id);
+    setEl('prof-full-name',     m.full_name);
+    setEl('prof-email',         m.email);
+    setEl('prof-phone',         m.contact_number);
+    setEl('prof-plan-name',     m.plan_name);
+    setEl('prof-valid-until',   m.expiry_date);
+    setEl('prof-memid-display', m.membership_id);
 
     // Pending Renewal Banner on Home Tab
     const pendingBanner = document.getElementById('home-pending-banner');
