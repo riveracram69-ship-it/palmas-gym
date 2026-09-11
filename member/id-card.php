@@ -549,11 +549,11 @@ async function refreshQR() {
             
             new QRCode(qrContainer, {
                 text: data.token,
-                width: 110,
-                height: 110,
-                colorDark: "#0c2219",
+                width: 120,
+                height: 120,
+                colorDark: "#000000",
                 colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.M
+                correctLevel: QRCode.CorrectLevel.H
             });
             if (offlineBadge) offlineBadge.remove();
         }
@@ -564,11 +564,11 @@ async function refreshQR() {
             qrContainer.innerHTML = '';
             new QRCode(qrContainer, {
                 text: cachedToken,
-                width: 110,
-                height: 110,
-                colorDark: "#0c2219",
+                width: 120,
+                height: 120,
+                colorDark: "#000000",
                 colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.M
+                correctLevel: QRCode.CorrectLevel.H
             });
             if (!offlineBadge) {
                 offlineBadge = document.createElement('div');

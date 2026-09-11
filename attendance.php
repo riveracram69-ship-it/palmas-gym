@@ -244,7 +244,20 @@ function manualCheckin() {
 
 document.getElementById('manual-id').addEventListener('keydown', e => { if(e.key === 'Enter') manualCheckin(); });
 
-let scanner = new Html5QrcodeScanner('reader', { fps: 10, qrbox: 240 });
+let scanner = new Html5QrcodeScanner('reader', { 
+    fps: 15, 
+    qrbox: function(viewfinderWidth, viewfinderHeight) {
+        let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+        let qrSize = Math.floor(minEdge * 0.75);
+        return { width: Math.max(220, qrSize), height: Math.max(220, qrSize) };
+    },
+    aspectRatio: 1.0,
+    experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
+    },
+    rememberLastUsedCamera: true,
+    showTorchButtonIfSupported: true
+});
 scanner.render(onScanSuccess);
 
 function onScanSuccess(text) { scanner.pause(true); processCheckin(text); }
