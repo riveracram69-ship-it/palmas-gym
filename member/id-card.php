@@ -405,8 +405,10 @@ if (!$member) { header('Location: logout.php'); exit; }
                     <!-- Avatar -->
                     <div class="eid-avatar-wrap">
                         <div class="eid-avatar-inner">
-                            <?php if ($member['photo']): ?>
-                                <img src="/gym/<?php echo htmlspecialchars($member['photo']); ?>" alt="Photo">
+                            <?php $photo_url = get_member_photo_url($member['photo']); ?>
+                            <?php if ($photo_url): ?>
+                                <img src="<?php echo htmlspecialchars($photo_url); ?>" alt="<?php echo htmlspecialchars($member['full_name']); ?>" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                                <span class="eid-avatar-initial" style="display:none;"><?php echo strtoupper(substr($member['full_name'], 0, 1)); ?></span>
                             <?php else: ?>
                                 <span class="eid-avatar-initial"><?php echo strtoupper(substr($member['full_name'], 0, 1)); ?></span>
                             <?php endif; ?>
@@ -415,12 +417,12 @@ if (!$member) { header('Location: logout.php'); exit; }
                     </div>
 
                     <!-- Name -->
-                    <h2 class="eid-member-name"><?php echo htmlspecialchars(strtolower($member['full_name'])); ?></h2>
+                    <h2 class="eid-member-name"><?php echo htmlspecialchars($member['full_name']); ?></h2>
 
                     <!-- Status badge -->
-                    <?php $is_active = ($member['status'] === 'Active'); ?>
+                    <?php $is_active = !empty($member['is_active']); ?>
                     <div class="eid-status-badge <?php echo $is_active ? 'active' : 'expired'; ?>">
-                        <i class="fas fa-circle-check" style="font-size:0.65rem;"></i>
+                        <i class="fas <?php echo $is_active ? 'fa-circle-check' : 'fa-circle-xmark'; ?>" style="font-size:0.65rem;"></i>
                         <?php echo $is_active ? 'Active Member' : 'Expired Member'; ?>
                     </div>
 

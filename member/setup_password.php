@@ -35,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             session_regenerate_id(true);
             $_SESSION['member_id']   = $member['id'];
             $_SESSION['member_name'] = $member['full_name'];
+            set_member_remember_cookie($member['id'], $pdo);
             unset($_SESSION['setup_member_id']);
             
             header('Location: index.php');

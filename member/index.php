@@ -116,18 +116,20 @@ try {
         <div class="hero-card fade-up">
             <div class="hero-inner">
                 <div class="hero-avatar">
-                    <?php if ($member['photo']): ?>
-                        <img src="/gym/<?php echo htmlspecialchars($member['photo']); ?>" alt="Photo">
+                    <?php $photo_url = get_member_photo_url($member['photo']); ?>
+                    <?php if ($photo_url): ?>
+                        <img src="<?php echo htmlspecialchars($photo_url); ?>" alt="<?php echo htmlspecialchars($member['full_name']); ?>" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                        <span class="avatar-initial" style="display:none;"><?php echo strtoupper(substr($member['full_name'], 0, 1)); ?></span>
                     <?php else: ?>
                         <span class="avatar-initial"><?php echo strtoupper(substr($member['full_name'], 0, 1)); ?></span>
                     <?php endif; ?>
                 </div>
                 <div class="hero-info">
                     <p class="hero-greeting">Welcome back,</p>
-                    <h2 class="hero-name"><?php echo htmlspecialchars(strtolower($member['full_name'])); ?></h2>
+                    <h2 class="hero-name"><?php echo htmlspecialchars($member['full_name']); ?></h2>
                     <p class="hero-id"><?php echo htmlspecialchars($member['membership_id']); ?></p>
                 </div>
-                <?php if ($member['status'] === 'Active' && !$expired): ?>
+                <?php if (!empty($member['is_active'])): ?>
                     <span class="badge badge-active"><i class="fas fa-circle" style="font-size:0.45rem;"></i> Active</span>
                 <?php else: ?>
                     <span class="badge badge-expired"><i class="fas fa-circle-xmark" style="font-size:0.7rem;"></i> Expired</span>
@@ -184,7 +186,7 @@ try {
                     <p class="section-title"><i class="fas fa-award"></i> Membership Plan</p>
                     <p class="plan-name"><?php echo htmlspecialchars($member['plan_name'] ?: 'No Active Plan'); ?></p>
                 </div>
-                <?php if ($member['status'] === 'Active' && !$expired): ?>
+                <?php if (!empty($member['is_active'])): ?>
                     <span class="badge badge-active">Active</span>
                 <?php else: ?>
                     <span class="badge badge-expired">Expired</span>

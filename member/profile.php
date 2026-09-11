@@ -251,15 +251,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         <!-- Profile Hero -->
         <div class="profile-hero fade-up">
             <div class="profile-avatar">
-                <?php if ($member['photo']): ?>
-                    <img src="/gym/<?php echo htmlspecialchars($member['photo']); ?>" alt="Photo">
+                <?php $photo_url = get_member_photo_url($member['photo']); ?>
+                <?php if ($photo_url): ?>
+                    <img src="<?php echo htmlspecialchars($photo_url); ?>" alt="<?php echo htmlspecialchars($member['full_name']); ?>" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                    <span class="avatar-initial" style="display:none;"><?php echo strtoupper(substr($member['full_name'], 0, 1)); ?></span>
                 <?php else: ?>
                     <span class="avatar-initial"><?php echo strtoupper(substr($member['full_name'], 0, 1)); ?></span>
                 <?php endif; ?>
             </div>
-            <h2 class="profile-name"><?php echo htmlspecialchars(strtolower($member['full_name'])); ?></h2>
+            <h2 class="profile-name"><?php echo htmlspecialchars($member['full_name']); ?></h2>
             <p class="profile-id"><?php echo htmlspecialchars($member['membership_id']); ?></p>
-            <?php if ($member['status'] === 'Active'): ?>
+            <?php if (!empty($member['is_active'])): ?>
                 <span class="badge badge-active"><i class="fas fa-circle" style="font-size:0.4rem;"></i> Active Member</span>
             <?php else: ?>
                 <span class="badge badge-expired"><i class="fas fa-circle-xmark" style="font-size:0.7rem;"></i> Expired</span>
@@ -290,7 +292,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <div class="info-field">
                 <span class="info-field-label">Status</span>
                 <span class="info-field-value">
-                    <?php if ($member['status'] === 'Active'): ?>
+                    <?php if (!empty($member['is_active'])): ?>
                         <span class="badge badge-active">Active</span>
                     <?php else: ?>
                         <span class="badge badge-expired">Expired</span>

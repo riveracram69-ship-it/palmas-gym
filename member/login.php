@@ -9,6 +9,10 @@ header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
+if (empty($_SESSION['member_id']) && !isset($_GET['logged_out']) && isset($pdo)) {
+    restore_member_session_from_cookie($pdo);
+}
+
 if (isset($_SESSION['member_id'])) {
     header('Location: index.php');
     exit;
@@ -69,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             session_regenerate_id(true);
                             $_SESSION['member_id']   = $member['id'];
                             $_SESSION['member_name'] = $member['full_name'];
+                            set_member_remember_cookie($member['id'], $pdo);
                             header('Location: index.php');
                             exit;
                         } else {
@@ -472,6 +477,10 @@ function togglePw(id,btn){
 }
 
 document.getElementById('login-form')&&document.getElementById('login-form').addEventListener('submit',function(){
+  const mid = document.getElementById('membership_id');
+  if (mid && mid.value.trim()) {
+    localStorage.setItem('peg_saved_login_id', mid.value.trim());
+  }
   const b=document.getElementById('sub-btn');
   b.innerHTML='<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Verifying\u2026';
   b.disabled=true;
@@ -484,9 +493,14 @@ if('serviceWorker' in navigator){
 window.addEventListener('pageshow', function() {
   const cred = document.getElementById('credential');
   if (cred) cred.value = '';
-  if (new URLSearchParams(window.location.search).has('logged_out')) {
-    const mid = document.getElementById('membership_id');
+  const mid = document.getElementById('membership_id');
+  const isLoggedOut = new URLSearchParams(window.location.search).has('logged_out');
+  if (isLoggedOut) {
     if (mid) mid.value = '';
+    localStorage.removeItem('peg_saved_login_id');
+  } else if (mid && !mid.value) {
+    const saved = localStorage.getItem('peg_saved_login_id');
+    if (saved) mid.value = saved;
   }
 });
 </script>

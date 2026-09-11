@@ -8,6 +8,9 @@ if (ini_get("session.use_cookies")) {
         $params["secure"], $params["httponly"]
     );
 }
+if (function_exists('clear_member_remember_cookie')) {
+    clear_member_remember_cookie();
+}
 session_destroy();
 
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
