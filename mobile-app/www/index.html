@@ -2777,7 +2777,7 @@
       <div style="width:72px; height:72px; border-radius:50%; background:rgba(16,185,129,0.15); border:2px solid rgba(16,185,129,0.4); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:var(--primary, #10b981); font-size:32px;">
         <i class="fa-solid fa-shield-halved"></i>
       </div>
-      <h3 style="color:#ffffff; font-size:1.25rem; font-weight:800; margin:0 0 8px; letter-spacing:0.3px;">Plan Still Active!</h3>
+      <h3 id="cannot-renew-title" style="color:#ffffff; font-size:1.25rem; font-weight:800; margin:0 0 8px; letter-spacing:0.3px;">Notice</h3>
       <p id="cannot-renew-msg" style="color:var(--text-secondary, #a7bfae); font-size:0.88rem; line-height:1.55; margin:0 0 24px;">
         Hindi pa maaaring mag-renew dahil aktibo pa ang iyong kasalukuyang membership. Maaari lamang mag-renew kapag expired na o malapit nang ma-expire.
       </p>
@@ -4747,9 +4747,11 @@ function checkCanRenew(m) {
   return { canRenew: false, message: msg, remainingStr };
 }
 
-function showCannotRenewModal(msg) {
+function showCannotRenewModal(msg, title = 'Renewal Notice') {
   const modal = document.getElementById('cannot-renew-modal');
   const msgEl = document.getElementById('cannot-renew-msg');
+  const titleEl = document.getElementById('cannot-renew-title');
+  if (titleEl) titleEl.textContent = title;
   if (msgEl && msg) msgEl.textContent = msg;
   if (modal) modal.style.display = 'flex';
 }
@@ -5027,6 +5029,10 @@ function handleTabChange(e) {
   currentActiveTab = e.detail.tab;
   if (currentActiveTab === 'tab-payments') {
     loadPaymentHistory();
+  } else if (currentActiveTab === 'tab-attendance') {
+    if (currentMember && currentMember.id) {
+      loadDashboard(currentMember.id);
+    }
   }
 }
 

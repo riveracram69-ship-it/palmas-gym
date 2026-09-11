@@ -109,14 +109,18 @@ try {
     $attendance = [];
     try {
         $att_stmt = $pdo->prepare("
-            SELECT date, time_in, time_out, status 
+            SELECT id, date, time_in, time_out 
             FROM attendance 
             WHERE member_id = ? 
             ORDER BY date DESC, time_in DESC 
             LIMIT 60
         ");
         $att_stmt->execute([$member_id]);
-        $attendance = $att_stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $att_stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as $ar) {
+            $ar['status'] = (!empty($ar['time_out'])) ? 'Completed' : 'Present';
+            $attendance[] = $ar;
+        }
     } catch (Throwable $e) {
         error_log("Dashboard attendance query warning: " . $e->getMessage());
     }

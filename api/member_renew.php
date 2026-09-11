@@ -45,7 +45,7 @@ if (in_array($payment_method, ['GCash', 'Maya']) && empty($reference_no)) {
 
 try {
     // 1. Verify Member exists
-    $stmt = $pdo->prepare("SELECT id, full_name, email, membership_id FROM members WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, full_name, email, membership_id, status FROM members WHERE id = ?");
     $stmt->execute([$member_id]);
     $member = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$member) {
@@ -65,7 +65,7 @@ try {
     // 2.5 Enforce business rule: renewal is ONLY permitted when expired or expiring soon
     // Fetch member's latest subscription
     $cur_sub_stmt = $pdo->prepare("
-        SELECT s.id, s.expiry_date, s.status as sub_status, 
+        SELECT s.id, s.expiry_date, 
                p.name as current_plan_name, p.duration_minutes, p.duration_months, p.is_test_promo
         FROM subscriptions s
         LEFT JOIN membership_plans p ON s.plan_id = p.id
@@ -76,12 +76,11 @@ try {
     $cur_sub_stmt->execute([$member_id]);
     $active_sub = $cur_sub_stmt->fetch(PDO::FETCH_ASSOC);
 
-    // If member is marked expired or inactive, or latest subscription is expired/cancelled, allow renewal!
+    // If member is marked expired or inactive, or latest subscription is expired, allow renewal!
     $is_active_member = (strcasecmp($member['status'] ?? '', 'Active') === 0);
-    $sub_is_active = ($active_sub && strcasecmp($active_sub['sub_status'] ?? 'Active', 'Active') === 0);
     $sub_has_future_expiry = ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time());
 
-    if ($is_active_member && $sub_is_active && $sub_has_future_expiry) {
+    if ($is_active_member && $sub_has_future_expiry) {
         $expiry_ts = strtotime($active_sub['expiry_date']);
         $diff_sec = $expiry_ts - time();
         $is_minute_promo = (!empty($active_sub['duration_minutes']) && $active_sub['duration_minutes'] > 0)

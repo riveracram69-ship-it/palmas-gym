@@ -45,14 +45,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             SELECT m.*, 
                    (SELECT s.expiry_date 
                     FROM subscriptions s 
-                    WHERE s.member_id = m.id AND s.expiry_date >= CURDATE()
-                    ORDER BY s.expiry_date DESC, s.id DESC 
+                    WHERE s.member_id = m.id 
+                    ORDER BY s.id DESC 
                     LIMIT 1) as expiry_date,
                    (SELECT p.name 
                     FROM subscriptions s 
                     LEFT JOIN membership_plans p ON p.id = s.plan_id 
-                    WHERE s.member_id = m.id AND s.expiry_date >= CURDATE()
-                    ORDER BY s.expiry_date DESC, s.id DESC 
+                    WHERE s.member_id = m.id 
+                    ORDER BY s.id DESC 
                     LIMIT 1) as plan_name
             FROM members m 
             WHERE m.membership_id = ? OR REPLACE(UPPER(m.membership_id), '-', '') = REPLACE(UPPER(?), '-', '')
@@ -109,11 +109,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // 3. Check Subscription Expiry
-        $sub_stmt = $pdo->prepare("SELECT expiry_date, plan_id FROM subscriptions WHERE member_id = ? ORDER BY expiry_date DESC LIMIT 1");
+        $sub_stmt = $pdo->prepare("SELECT expiry_date, plan_id FROM subscriptions WHERE member_id = ? ORDER BY id DESC LIMIT 1");
         $sub_stmt->execute([$member['id']]);
         $sub = $sub_stmt->fetch(PDO::FETCH_ASSOC);
 
-        $is_expired = (!$sub || strtotime($sub['expiry_date']) < strtotime(date('Y-m-d')));
+        $now_time = time();
+        $is_expired = (!$sub || empty($sub['expiry_date']) || strtotime($sub['expiry_date']) < $now_time);
 
         if ($is_expired) {
             $pdo->prepare("UPDATE members SET status = 'Expired' WHERE id = ?")->execute([$member['id']]);
