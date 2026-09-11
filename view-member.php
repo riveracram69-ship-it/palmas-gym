@@ -41,6 +41,16 @@ try {
             $payments_stmt = $pdo->prepare("SELECT * FROM payments WHERE member_id = ? ORDER BY payment_date DESC, created_at DESC");
             $payments_stmt->execute([$id]);
             $payments = $payments_stmt->fetchAll();
+
+            $pending_stmt = $pdo->prepare("
+                SELECT r.*, p.name as plan_name, p.price as plan_price
+                FROM renewal_requests r
+                LEFT JOIN membership_plans p ON p.id = r.plan_id
+                WHERE r.member_id = ? AND r.status = 'Pending'
+                ORDER BY r.created_at DESC
+            ");
+            $pending_stmt->execute([$id]);
+            $pending_renewals = $pending_stmt->fetchAll();
         }
     }
 } catch (Exception $e) {}
@@ -96,16 +106,37 @@ if (!$member): ?>
             <h3 class="section-title"><i class="fas fa-credit-card" style="color:var(--accent); margin-right:8px;"></i> Payment History</h3>
             <div class="table-container">
                 <table>
-                    <thead><tr><th>Date</th><th>Amount</th><th>Method</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
                     <tbody>
-                        <?php if(empty($payments)): ?>
+                        <?php if(empty($payments) && empty($pending_renewals)): ?>
                         <?php render_empty_state('fas fa-receipt', 'No payments recorded.', '', true); ?>
                         <?php else: ?>
+                        <?php if (!empty($pending_renewals)): ?>
+                            <?php foreach($pending_renewals as $pr): ?>
+                            <tr style="background:rgba(245,158,11,0.06);">
+                                <td class="cell-secondary"><?php echo date('M d, Y', strtotime($pr['created_at'])); ?></td>
+                                <td style="font-weight:700; color:#d97706;">₱<?php echo number_format($pr['plan_price'], 2); ?></td>
+                                <td class="cell-primary">
+                                    <?php echo htmlspecialchars($pr['payment_method']); ?>
+                                    <?php if(!empty($pr['reference_no'])): ?>
+                                        <code style="font-size:0.7rem; color:var(--text-muted);">(<?php echo htmlspecialchars($pr['reference_no']); ?>)</code>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <span class="badge badge-warning" style="font-size:0.7rem; padding:2px 7px;">
+                                        <i class="fas fa-clock"></i> Pending
+                                    </span>
+                                    <a href="renewal-requests.php?status=Pending" style="font-size:0.72rem; margin-left:6px; color:#d97706; text-decoration:underline;">Review</a>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                         <?php foreach($payments as $p): ?>
                         <tr>
                             <td class="cell-secondary"><?php echo date('M d, Y', strtotime($p['payment_date'])); ?></td>
                             <td style="font-weight:700; color:var(--success);">₱<?php echo number_format($p['amount'], 2); ?></td>
                             <td class="cell-primary"><?php echo htmlspecialchars($p['payment_method']); ?></td>
+                            <td><span class="badge badge-success" style="font-size:0.7rem; padding:2px 7px;"><i class="fas fa-check"></i> Paid</span></td>
                         </tr>
                         <?php endforeach; ?>
                         <?php endif; ?>

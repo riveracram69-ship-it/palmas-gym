@@ -111,8 +111,60 @@ try {
         error_log("payment_history legacy query warn: " . $le->getMessage());
     }
 
+    // ── QUERY 3: Renewal & Pending Requests (renewal_requests table) ──────────
+    // Captures all pending/rejected member renewal submissions (GCash, Maya, QR Ph, Cash)
+    $renewalRows = [];
+    try {
+        $rSql = "
+            SELECT
+                CONCAT('rnw-', r.id) AS uid,
+                COALESCE(r.reference_no, CONCAT('RNW-', r.id)) AS reference_id,
+                COALESCE(p.name, 'Membership Renewal') AS membership_plan,
+                COALESCE(p.duration_months, 1) AS duration_months,
+                COALESCE(p.price, 0) AS amount,
+                'PHP' AS currency,
+                COALESCE(r.payment_method, 'Cash') AS payment_method,
+                'Front Desk / Verification' AS gateway,
+                'N/A' AS gateway_tx_id,
+                CASE 
+                    WHEN UPPER(r.status) = 'PENDING' THEN 'PENDING'
+                    WHEN UPPER(r.status) = 'APPROVED' THEN 'PAID'
+                    WHEN UPPER(r.status) = 'REJECTED' THEN 'FAILED'
+                    ELSE UPPER(r.status)
+                END AS status,
+                r.created_at,
+                NULL AS paid_at,
+                NULL AS start_date,
+                NULL AS expiry_date,
+                'renewal_request' AS source
+            FROM renewal_requests r
+            LEFT JOIN membership_plans p ON p.id = r.plan_id
+            WHERE r.member_id = ?
+        ";
+        // To prevent duplication with payments when already Approved:
+        // Only fetch Pending and Rejected renewal requests, since Approved ones already have an entry in `payments`.
+        $rSql .= " AND UPPER(r.status) IN ('PENDING', 'REJECTED')";
+        $rParams = [$member_id];
+
+        if ($status_filter !== 'ALL') {
+            if ($status_filter === 'PENDING') {
+                $rSql .= " AND UPPER(r.status) = 'PENDING'";
+            } elseif ($status_filter === 'FAILED') {
+                $rSql .= " AND UPPER(r.status) = 'REJECTED'";
+            } else {
+                // For PAID filter, excluded because approved requests are logged in payments table
+                $rSql .= " AND 1=0";
+            }
+        }
+        $rStmt = $pdo->prepare($rSql);
+        $rStmt->execute($rParams);
+        $renewalRows = $rStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $re) {
+        error_log("payment_history renewal query warn: " . $re->getMessage());
+    }
+
     // ── MERGE & SORT newest-first ────────────────────────────────────────────────
-    $allRows = array_merge($gatewayRows, $legacyRows);
+    $allRows = array_merge($gatewayRows, $legacyRows, $renewalRows);
     usort($allRows, function ($a, $b) {
         return strtotime($b['created_at'] ?? '0') <=> strtotime($a['created_at'] ?? '0');
     });
@@ -148,9 +200,10 @@ try {
         ];
     }
 
-    // ── SUMMARY: totals across both tables ───────────────────────────────────────
-    $totalSpent     = 0;
-    $totalPaidCount = 0;
+    // ── SUMMARY: totals across all tables ───────────────────────────────────────
+    $totalSpent        = 0;
+    $totalPaidCount    = 0;
+    $totalPendingCount = 0;
     try {
         $sumGateway = $pdo->prepare("SELECT COALESCE(SUM(amount),0), COUNT(*) FROM payment_transactions WHERE member_id = ? AND status = 'PAID'");
         $sumGateway->execute([$member_id]);
@@ -162,6 +215,17 @@ try {
 
         $totalSpent     = (float)$gAmt + (float)$lAmt;
         $totalPaidCount = (int)$gCnt   + (int)$lCnt;
+
+        // Pending count across gateway and renewal requests
+        $pGate = $pdo->prepare("SELECT COUNT(*) FROM payment_transactions WHERE member_id = ? AND status = 'PENDING'");
+        $pGate->execute([$member_id]);
+        $cntPGate = (int)$pGate->fetchColumn();
+
+        $pRnw = $pdo->prepare("SELECT COUNT(*) FROM renewal_requests WHERE member_id = ? AND status = 'Pending'");
+        $pRnw->execute([$member_id]);
+        $cntPRnw = (int)$pRnw->fetchColumn();
+
+        $totalPendingCount = $cntPGate + $cntPRnw;
     } catch (Throwable $se) {
         error_log("payment_history summary warn: " . $se->getMessage());
     }
@@ -179,6 +243,7 @@ try {
             'total_spent'           => $totalSpent,
             'total_spent_formatted' => '₱' . number_format($totalSpent, 2),
             'total_paid_count'      => $totalPaidCount,
+            'total_pending_count'   => $totalPendingCount,
         ],
     ]);
 

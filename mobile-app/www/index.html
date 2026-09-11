@@ -4954,11 +4954,28 @@ function renderPaymentHistoryCards(list) {
   }
 
   if (!records || records.length === 0) {
+    let emptyTitle = 'No payment history yet';
+    let emptyMsg = 'Your completed membership payments will appear here.';
+    let emptyIcon = 'fa-receipt';
+    if (currentHistoryFilter === 'PENDING') {
+      emptyTitle = 'No pending payments';
+      emptyMsg = 'You have no renewals or transactions currently awaiting verification.';
+      emptyIcon = 'fa-hourglass-half';
+    } else if (currentHistoryFilter === 'PAID') {
+      emptyTitle = 'No completed payments';
+      emptyMsg = 'No approved or verified payments recorded yet.';
+      emptyIcon = 'fa-circle-check';
+    } else if (currentHistoryFilter === 'FAILED') {
+      emptyTitle = 'No failed payments';
+      emptyMsg = 'You have no failed or cancelled transactions.';
+      emptyIcon = 'fa-circle-xmark';
+    }
+
     container.innerHTML = `
       <div style="text-align:center; padding:36px 18px; color:var(--gym-muted);">
-        <i class="fa-solid fa-receipt" style="font-size:2.4rem; opacity:0.35; margin-bottom:12px; display:block;"></i>
-        <h4 style="color:#fff; font-size:0.95rem; margin:0 0 4px; font-weight:700;">No payment history yet</h4>
-        <p style="font-size:0.8rem; margin:0 0 16px; line-height:1.4;">Your completed membership payments will appear here.</p>
+        <i class="fa-solid ${emptyIcon}" style="font-size:2.4rem; opacity:0.35; margin-bottom:12px; display:block;"></i>
+        <h4 style="color:#fff; font-size:0.95rem; margin:0 0 4px; font-weight:700;">${emptyTitle}</h4>
+        <p style="font-size:0.8rem; margin:0 0 16px; line-height:1.4;">${emptyMsg}</p>
         <button class="btn-outline" onclick="openRenewalModal()" style="padding:8px 16px; font-size:0.8rem; width:auto; display:inline-block;">
           View Membership Plans
         </button>
@@ -5615,14 +5632,22 @@ async function openPaymentDetailModal(txIdOrRef) {
     }
 
     const p = data.payment;
+    const isPending = (p.status === 'PENDING');
+    const isFailed = (p.status === 'FAILED' || p.status === 'REJECTED' || p.status === 'CANCELLED');
+
+    let titleText = p.is_paid ? 'Payment Confirmed' : (isPending ? 'Awaiting Verification' : 'Payment Failed');
+    let cardClass = p.is_paid ? 'result-success' : (isPending ? 'result-pending' : 'result-failed');
+    let iconClass = p.is_paid ? 'fa-check' : (isPending ? 'fa-hourglass-half' : 'fa-xmark');
+
     container.innerHTML = `
-      <div class="result-screen-card ${p.is_paid ? 'result-success' : 'result-pending'}" style="padding:20px; margin-bottom:14px;">
+      <div class="result-screen-card ${cardClass}" style="padding:20px; margin-bottom:14px;">
         <div class="result-icon-circle" style="width:56px; height:56px; font-size:1.6rem; margin-bottom:10px;">
-          <i class="fa-solid ${p.is_paid ? 'fa-check' : 'fa-hourglass-half'}"></i>
+          <i class="fa-solid ${iconClass}"></i>
         </div>
-        <h3 style="color:#fff; margin:0; font-size:1.2rem; font-weight:800;">${p.is_paid ? 'Payment Confirmed' : 'Payment Processing'}</h3>
-        <p style="color:var(--gym-muted); font-size:0.78rem; margin:2px 0 12px;">Status: <strong>${p.status}</strong></p>
+        <h3 style="color:#fff; margin:0; font-size:1.2rem; font-weight:800;">${titleText}</h3>
+        <p style="color:var(--gym-muted); font-size:0.78rem; margin:2px 0 12px;">Status: <strong style="color:${p.is_paid ? 'var(--gym-green)' : (isPending ? '#fbbf24' : '#ef4444')};">${p.status}</strong></p>
         <div style="font-size:1.8rem; font-weight:900; color:var(--gym-mid); font-family:'Outfit';">${p.amount_formatted}</div>
+        ${isPending ? `<p style="margin:10px 0 0; font-size:0.75rem; color:#fde68a; line-height:1.4;">Awaiting gym staff verification. Present your reference code at the front desk if settling in cash.</p>` : ''}
       </div>
 
       <div class="checkout-summary-card" style="padding:14px;">
@@ -5637,7 +5662,7 @@ async function openPaymentDetailModal(txIdOrRef) {
 
       <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
         <button class="btn-primary" onclick="openReceiptModal('${p.reference_no}')">
-          <i class="fa-solid fa-file-invoice"></i> View Official Receipt
+          <i class="fa-solid fa-file-invoice"></i> ${p.is_paid ? 'View Official Receipt' : 'View Transaction Summary'}
         </button>
         <button class="btn-outline" onclick="closePaymentDetailModal()">
           Back to Payment History

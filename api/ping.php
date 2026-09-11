@@ -35,6 +35,9 @@ try {
             require_once __DIR__ . '/../migrate_split_name_photo.php';
             $migrated = true;
         }
+
+        require_once __DIR__ . '/../migrate_backfill_missing_payments.php';
+        $migrated = true;
     }
 } catch (Throwable $me) {
     error_log("Ping auto-migration error: " . $me->getMessage());

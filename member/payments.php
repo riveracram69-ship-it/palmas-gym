@@ -13,8 +13,22 @@ try {
     $payments = $s->fetchAll();
 } catch (Exception $e) {}
 
-$total_paid  = array_sum(array_column($payments, 'amount'));
-$pay_count   = count($payments);
+// Fetch any pending renewal requests
+$pending_renewals = [];
+try {
+    $pr_stmt = $pdo->prepare("
+        SELECT r.*, p.name as plan_name, p.price as plan_price, p.duration_months
+        FROM renewal_requests r
+        LEFT JOIN membership_plans p ON p.id = r.plan_id
+        WHERE r.member_id = ? AND r.status = 'Pending'
+        ORDER BY r.created_at DESC
+    ");
+    $pr_stmt->execute([$member['id']]);
+    $pending_renewals = $pr_stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {}
+
+$total_paid   = array_sum(array_column($payments, 'amount'));
+$pay_count    = count($payments);
 $last_payment = $payments[0] ?? null;
 
 $method_icons = [
@@ -139,21 +153,93 @@ $method_icons = [
             </div>
         </div>
 
+        <?php if (!empty($pending_renewals)): ?>
+            <!-- Active Pending Renewal Requests -->
+            <?php foreach ($pending_renewals as $pr): 
+                $p_method = $pr['payment_method'] ?? 'Cash';
+                $pm_data  = $method_icons[$p_method] ?? $method_icons['Cash'];
+            ?>
+            <div class="fade-up" style="background:#fffbeb; border:1px solid #fde68a; border-radius:18px; padding:1.25rem; margin-bottom:1.25rem;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; font-weight:800; font-size:0.68rem; padding:3px 9px; border-radius:20px;">
+                            <i class="fas fa-hourglass-half"></i> Pending Staff Verification
+                        </span>
+                        <h4 style="margin:8px 0 2px; font-size:1.05rem; font-weight:800; color:#1f2937;">
+                            <?php echo htmlspecialchars($pr['plan_name'] ?: 'Membership Renewal'); ?>
+                        </h4>
+                        <p style="margin:0; font-size:0.78rem; color:#6b7280;">
+                            <?php echo htmlspecialchars($p_method); ?> 
+                            <?php if (!empty($pr['reference_no'])): ?>
+                                • Ref: <code style="font-weight:700; color:#1f2937;"><?php echo htmlspecialchars($pr['reference_no']); ?></code>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:1.2rem; font-weight:900; color:#d97706; font-family:'Outfit',sans-serif;">
+                            ₱<?php echo number_format($pr['plan_price'], 2); ?>
+                        </div>
+                        <div style="font-size:0.72rem; color:#9ca3af; margin-top:2px;">
+                            <?php echo date('M d, g:i A', strtotime($pr['created_at'])); ?>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #fcd34d; font-size:0.75rem; color:#92400e; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-info-circle"></i> Awaiting gym front-desk review. Your digital pass will automatically update once verified.
+                </div>
+            </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+
         <!-- Payment History -->
         <div class="list-card fade-up fade-up-d2">
             <div class="list-card-header">
                 <p class="section-title"><i class="fas fa-clock-rotate-left"></i> History</p>
-                <?php if ($pay_count > 0): ?>
-                    <span class="badge badge-success"><?php echo $pay_count; ?> records</span>
+                <?php if ($pay_count > 0 || !empty($pending_renewals)): ?>
+                    <span class="badge badge-success"><?php echo $pay_count + count($pending_renewals); ?> records</span>
                 <?php endif; ?>
             </div>
 
-            <?php if (empty($payments)): ?>
+            <?php if (empty($payments) && empty($pending_renewals)): ?>
                 <div class="empty-state">
                     <i class="fas fa-receipt"></i>
                     <p>No payment records found.<br>Your history will appear here after your first payment.</p>
                 </div>
             <?php else: ?>
+                <?php foreach ($pending_renewals as $pr): 
+                    $method  = $pr['payment_method'] ?? 'Cash';
+                    $mdata   = $method_icons[$method] ?? $method_icons['Cash'];
+                ?>
+                <div class="list-item" style="background:rgba(245,158,11,0.05); border-left:3px solid #f59e0b;">
+                    <div class="list-item-icon" style="background:rgba(245,158,11,0.15); color:#d97706;">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div class="list-item-info">
+                        <div class="list-item-title" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                            <span><?php echo htmlspecialchars($pr['plan_name'] ?: 'Membership Renewal'); ?></span>
+                            <span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; font-size:0.6rem; padding:1px 6px;">⏳ Pending</span>
+                        </div>
+                        <div class="list-item-sub" style="margin-top:4px;">
+                            <span class="method-badge" style="background:<?php echo $mdata['bg']; ?>; color:<?php echo $mdata['color']; ?>;">
+                                <i class="fas <?php echo $mdata['icon']; ?>" style="font-size:0.55rem;"></i>
+                                <?php echo htmlspecialchars($method); ?>
+                            </span>
+                            <?php if (!empty($pr['reference_no'])): ?>
+                                <code style="font-size:0.7rem; color:var(--text-muted);">Ref: <?php echo htmlspecialchars($pr['reference_no']); ?></code>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="list-item-right">
+                        <div class="list-item-value" style="color:#d97706; font-weight:700;">
+                            ₱<?php echo number_format($pr['plan_price'], 2); ?>
+                        </div>
+                        <div class="list-item-date">
+                            <?php echo date('M d, Y', strtotime($pr['created_at'])); ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+
                 <?php foreach ($payments as $p):
                     $method  = $p['payment_method'] ?? 'Cash';
                     $mdata   = $method_icons[$method] ?? $method_icons['Cash'];

@@ -139,6 +139,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $notif_stmt->execute([$member_id, "New member registration submitted by {$full_name} ({$membership_id}). Please review and approve."]);
             } catch (Exception $nEx) {}
 
+            // Record initial registration payment request (visible in Pending Payment History)
+            if ($plan_id > 0) {
+                try {
+                    $pdo->prepare("
+                        INSERT INTO renewal_requests (member_id, plan_id, payment_method, reference_no, status, notes, created_at)
+                        VALUES (?, ?, 'Cash', ?, 'Pending', 'Initial Membership Registration Fee', NOW())
+                    ")->execute([$member_id, $plan_id, 'REG-' . $membership_id]);
+                } catch (Exception $payEx) {}
+            }
+
             $pdo->commit();
 
             log_activity($pdo, 'Member Registration', "New member registered (Pending Review): {$full_name} ({$membership_id})", 'Member');

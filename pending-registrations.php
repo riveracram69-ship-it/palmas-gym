@@ -64,6 +64,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         VALUES (?, ?, ?, ?, ?)
                     ");
                     $sub_stmt->execute([$member_id, $plan_id, $start_date, $expiry_date, $admin_id]);
+                    $subscription_id = $pdo->lastInsertId();
+
+                    // 2b. Record Payment in payments table so it appears in Payment History
+                    $plan_price = floatval($pending_member['plan_price'] ?? 0);
+                    if ($plan_price <= 0) {
+                        $p_fetch = $pdo->prepare("SELECT price FROM membership_plans WHERE id = ?");
+                        $p_fetch->execute([$plan_id]);
+                        $plan_price = floatval($p_fetch->fetchColumn() ?: 0);
+                    }
+
+                    $rr = $pdo->prepare("SELECT payment_method, reference_no FROM renewal_requests WHERE member_id = ? ORDER BY id DESC LIMIT 1");
+                    $rr->execute([$member_id]);
+                    $rr_row = $rr->fetch(PDO::FETCH_ASSOC);
+                    $pay_method = $rr_row['payment_method'] ?? 'Cash';
+                    $pay_ref = !empty($rr_row['reference_no']) ? $rr_row['reference_no'] : ('REG-' . $pending_member['membership_id']);
+
+                    $pay_stmt = $pdo->prepare("
+                        INSERT INTO payments (member_id, subscription_id, amount, payment_method, reference_number, payment_date, verified_by, notes, created_at)
+                        VALUES (?, ?, ?, ?, ?, CURDATE(), ?, 'Registration Fee Approved by Staff', NOW())
+                    ");
+                    $pay_stmt->execute([
+                        $member_id,
+                        $subscription_id,
+                        $plan_price,
+                        $pay_method,
+                        $pay_ref,
+                        $admin_id
+                    ]);
+
+                    // Close any open renewal/registration request
+                    $pdo->prepare("UPDATE renewal_requests SET status = 'Approved', processed_by = ?, notes = 'Approved along with registration', updated_at = NOW() WHERE member_id = ? AND status = 'Pending'")
+                        ->execute([$admin_id, $member_id]);
                 }
 
                 // 3. Log Activity

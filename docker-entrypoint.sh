@@ -14,6 +14,7 @@ php /var/www/html/gym/migrate_system_v2.php || true
 php /var/www/html/gym/migrate_google_auth.php || true
 php /var/www/html/gym/migrate_database_indexes.php || true
 php /var/www/html/gym/migrate_split_name_photo.php || true
+php /var/www/html/gym/migrate_backfill_missing_payments.php || true
 
 # Execute Apache in foreground
 exec apache2-foreground

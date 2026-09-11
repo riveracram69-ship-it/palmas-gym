@@ -74,11 +74,19 @@ try {
     // ── QUERY 3: Payments (Safe Fallback) ──
     $payments = [];
     try {
+        $payColsStmt = $pdo->query("SHOW COLUMNS FROM `payments`");
+        $payCols     = array_column($payColsStmt->fetchAll(PDO::FETCH_ASSOC), 'Field');
+
+        $refCol = in_array('reference_number', $payCols) ? 'py.reference_number' : (in_array('reference_no', $payCols) ? 'py.reference_no' : 'NULL');
+        $noteCol = in_array('notes', $payCols) ? 'py.notes' : "'Membership Payment'";
+
         $pay_stmt = $pdo->prepare("
-            SELECT payment_date, payment_type, payment_method, amount, reference_no, status
-            FROM payments 
-            WHERE member_id = ? 
-            ORDER BY payment_date DESC, id DESC 
+            SELECT py.payment_date, COALESCE($noteCol, 'Membership Payment') as payment_type, 
+                   py.payment_method, py.amount, COALESCE($refCol, CONCAT('PAY-', py.id)) as reference_no, 
+                   'Paid' as status
+            FROM payments py
+            WHERE py.member_id = ? 
+            ORDER BY py.payment_date DESC, py.id DESC 
             LIMIT 15
         ");
         $pay_stmt->execute([$member_id]);
@@ -105,7 +113,9 @@ try {
     $pending_renewal = null;
     try {
         $pending_stmt = $pdo->prepare("
-            SELECT r.id, r.status, p.name AS plan_name, p.price AS plan_price 
+            SELECT r.id, r.status, r.payment_method, r.reference_no, r.created_at,
+                   COALESCE(p.name, 'Membership Renewal') AS plan_name, 
+                   COALESCE(p.price, 0) AS plan_price 
             FROM renewal_requests r
             LEFT JOIN membership_plans p ON p.id = r.plan_id
             WHERE r.member_id = ? AND r.status = 'Pending'

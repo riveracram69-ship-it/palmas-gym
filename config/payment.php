@@ -287,6 +287,94 @@ function get_payment_receipt_details($pdo, $identifier, int $member_id = 0): ?ar
         $stmt->execute($params);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        // ── FALLBACK 1: Search payments table (Staff / Registration payments) ──
+        if (!$row) {
+            $clean_pay_id = preg_replace('/^pay[-_]?/i', '', $identifier);
+            $pay_sql = "
+                SELECT 
+                    py.id AS transaction_id,
+                    COALESCE(py.reference_number, CONCAT('PAY-', py.id)) AS reference_code,
+                    'Staff / Registration' AS gateway,
+                    'N/A' AS gateway_transaction_id,
+                    py.payment_method,
+                    py.amount,
+                    'PHP' AS currency,
+                    'PAID' AS status,
+                    py.created_at,
+                    py.payment_date AS paid_at,
+                    m.id AS member_id,
+                    m.full_name AS member_name,
+                    m.membership_id,
+                    m.email AS member_email,
+                    m.contact_number,
+                    COALESCE(p.id, 0) AS plan_id,
+                    COALESCE(p.name, 'Membership Payment') AS plan_name,
+                    COALESCE(p.duration_months, 1) AS duration_months,
+                    s.start_date,
+                    s.expiry_date
+                FROM payments py
+                JOIN members m ON m.id = py.member_id
+                LEFT JOIN subscriptions s ON s.id = py.subscription_id
+                LEFT JOIN membership_plans p ON p.id = s.plan_id
+                WHERE (py.id = :clean_id OR py.reference_number = :id_or_ref)
+            ";
+            $pay_params = ['clean_id' => is_numeric($clean_pay_id) ? (int)$clean_pay_id : 0, 'id_or_ref' => $identifier];
+            if ($member_id > 0) {
+                $pay_sql .= " AND py.member_id = :member_id";
+                $pay_params['member_id'] = $member_id;
+            }
+            $pay_sql .= " LIMIT 1";
+            $pStmt = $pdo->prepare($pay_sql);
+            $pStmt->execute($pay_params);
+            $row = $pStmt->fetch(PDO::FETCH_ASSOC);
+        }
+
+        // ── FALLBACK 2: Search renewal_requests table (Pending / Rejected renewals) ──
+        if (!$row) {
+            $clean_rnw_id = preg_replace('/^rnw[-_]?/i', '', $identifier);
+            $rnw_sql = "
+                SELECT 
+                    r.id AS transaction_id,
+                    COALESCE(r.reference_no, CONCAT('RNW-', r.id)) AS reference_code,
+                    'Front Desk / Verification' AS gateway,
+                    'N/A' AS gateway_transaction_id,
+                    COALESCE(r.payment_method, 'Cash') AS payment_method,
+                    COALESCE(p.price, 0) AS amount,
+                    'PHP' AS currency,
+                    CASE 
+                        WHEN UPPER(r.status) = 'PENDING' THEN 'PENDING'
+                        WHEN UPPER(r.status) = 'APPROVED' THEN 'PAID'
+                        WHEN UPPER(r.status) = 'REJECTED' THEN 'FAILED'
+                        ELSE UPPER(r.status)
+                    END AS status,
+                    r.created_at,
+                    NULL AS paid_at,
+                    m.id AS member_id,
+                    m.full_name AS member_name,
+                    m.membership_id,
+                    m.email AS member_email,
+                    m.contact_number,
+                    COALESCE(p.id, 0) AS plan_id,
+                    COALESCE(p.name, 'Membership Renewal') AS plan_name,
+                    COALESCE(p.duration_months, 1) AS duration_months,
+                    NULL AS start_date,
+                    NULL AS expiry_date
+                FROM renewal_requests r
+                JOIN members m ON m.id = r.member_id
+                LEFT JOIN membership_plans p ON p.id = r.plan_id
+                WHERE (r.id = :clean_id OR r.reference_no = :id_or_ref)
+            ";
+            $rnw_params = ['clean_id' => is_numeric($clean_rnw_id) ? (int)$clean_rnw_id : 0, 'id_or_ref' => $identifier];
+            if ($member_id > 0) {
+                $rnw_sql .= " AND r.member_id = :member_id";
+                $rnw_params['member_id'] = $member_id;
+            }
+            $rnw_sql .= " LIMIT 1";
+            $rStmt = $pdo->prepare($rnw_sql);
+            $rStmt->execute($rnw_params);
+            $row = $rStmt->fetch(PDO::FETCH_ASSOC);
+        }
+
         if (!$row) return null;
 
         // [R-06 FIX] Source gym info from system_settings instead of hardcoded strings
@@ -307,6 +395,11 @@ function get_payment_receipt_details($pdo, $identifier, int $member_id = 0): ?ar
             if (!empty($contact_parts)) $gym_contact = implode(' | ', $contact_parts);
         } catch (Exception $gse) { /* Use fallback values above */ }
 
+        $is_paid = (strtoupper($row['status'] ?? '') === 'PAID');
+        $paid_at_str = $row['paid_at'] 
+            ? date('F j, Y, g:i A', strtotime($row['paid_at'])) 
+            : ($is_paid ? date('F j, Y, g:i A', strtotime($row['created_at'])) : 'Pending Verification');
+
         return [
             'gym' => [
                 'name'    => $gym_name,
@@ -314,17 +407,17 @@ function get_payment_receipt_details($pdo, $identifier, int $member_id = 0): ?ar
                 'address' => $gym_address,
                 'contact' => $gym_contact
             ],
-            'receipt_no'       => 'REC-' . strtoupper(substr(md5($row['reference_code']), 0, 10)),
+            'receipt_no'       => 'REC-' . strtoupper(substr(md5($row['reference_code'] ?: $row['transaction_id']), 0, 10)),
             'reference_no'     => $row['reference_code'],
-            'gateway'          => $row['gateway'] ?? 'PayMongo',
+            'gateway'          => $row['gateway'] ?? 'Staff / Front Desk',
             'gateway_tx_id'    => $row['gateway_transaction_id'] ?: 'N/A',
             'payment_method'   => $row['payment_method'],
             'amount'           => (float)$row['amount'],
             'amount_formatted' => '₱' . number_format((float)$row['amount'], 2),
             'currency'         => $row['currency'],
-            'status'           => $row['status'],
-            'is_paid'          => ($row['status'] === 'PAID'),
-            'paid_at'          => $row['paid_at'] ? date('F j, Y, g:i A', strtotime($row['paid_at'])) : 'Pending',
+            'status'           => strtoupper($row['status']),
+            'is_paid'          => $is_paid,
+            'paid_at'          => $paid_at_str,
             'created_at'       => date('F j, Y, g:i A', strtotime($row['created_at'])),
             'member' => [
                 'id'            => (int)$row['member_id'],
@@ -338,7 +431,7 @@ function get_payment_receipt_details($pdo, $identifier, int $member_id = 0): ?ar
                 'name'            => $row['plan_name'],
                 'duration'        => $row['duration_months'] . ' Month(s)',
                 'period_start'    => $row['start_date'] ? date('F j, Y', strtotime($row['start_date'])) : date('F j, Y'),
-                'period_end'      => $row['expiry_date'] ? date('F j, Y', strtotime($row['expiry_date'])) : 'Pending'
+                'period_end'      => $row['expiry_date'] ? date('F j, Y', strtotime($row['expiry_date'])) : ($is_paid ? 'Active' : 'Pending Verification')
             ]
         ];
     } catch (Exception $e) {

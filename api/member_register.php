@@ -201,21 +201,25 @@ try {
         $reference_no = 'REG-' . strtoupper(substr($payment_method, 0, 2)) . '-' . strtoupper(bin2hex(random_bytes(3)));
     }
 
-    // Record initial payment entry
-    try {
-        $pay_stmt = $pdo->prepare("
-            INSERT INTO payments 
-            (member_id, amount, payment_method, payment_type, reference_no, payment_date, created_at)
-            VALUES (?, ?, ?, ?, ?, CURDATE(), NOW())
-        ");
-        $pay_stmt->execute([
-            $member_id,
-            $plan_price,
-            $payment_method,
-            "Registration - {$plan_name}",
-            $reference_no ?: null
-        ]);
-    } catch (Exception $payEx) {}
+    // Record initial registration payment request (visible in Pending Payment History)
+    if ($plan_id > 0) {
+        try {
+            $req_stmt = $pdo->prepare("
+                INSERT INTO renewal_requests 
+                (member_id, plan_id, payment_method, reference_no, status, notes, created_at)
+                VALUES (?, ?, ?, ?, 'Pending', ?, NOW())
+            ");
+            $req_stmt->execute([
+                $member_id,
+                $plan_id,
+                $payment_method,
+                $reference_no ?: null,
+                "Initial Registration Fee — {$plan_name}"
+            ]);
+        } catch (Exception $payEx) {
+            error_log("Failed to insert initial registration renewal request: " . $payEx->getMessage());
+        }
+    }
 
     // Admin notification
     try {

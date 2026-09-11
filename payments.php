@@ -15,40 +15,97 @@ $cash_total = 0;
 $method_filter = $_GET['method'] ?? 'all';
 $date_start    = $_GET['start_date'] ?? '';
 $date_end      = $_GET['end_date'] ?? '';
+$status_tab    = strtolower(trim($_GET['status'] ?? 'all'));
+if (!in_array($status_tab, ['all', 'paid', 'pending'], true)) {
+    $status_tab = 'all';
+}
+
+$count_paid_payments    = 0;
+$count_pending_requests = 0;
+$count_all              = 0;
 
 try {
     if (isset($pdo) && $pdo) {
-        $sql = "
-            SELECT p.*, m.full_name, m.membership_id, plan.name as plan_name, u.name as verified_by_name
-            FROM payments p 
-            JOIN members m ON p.member_id = m.id 
-            LEFT JOIN subscriptions s ON p.subscription_id = s.id
-            LEFT JOIN membership_plans plan ON s.plan_id = plan.id
-            LEFT JOIN users u ON p.verified_by = u.id
-            WHERE 1=1
-        ";
-        $params = [];
+        $count_paid_payments    = (int)$pdo->query("SELECT COUNT(*) FROM payments")->fetchColumn();
+        $count_pending_requests = (int)$pdo->query("SELECT COUNT(*) FROM renewal_requests WHERE status = 'Pending'")->fetchColumn();
+        $count_all              = $count_paid_payments + $count_pending_requests;
 
-        if ($method_filter !== 'all' && !empty($method_filter)) {
-            $sql .= " AND p.payment_method = :method";
-            $params['method'] = $method_filter;
+        $paid_rows = [];
+        if ($status_tab !== 'pending') {
+            $sql = "
+                SELECT p.*, m.full_name, m.membership_id, plan.name as plan_name, u.name as verified_by_name, 'Paid' as txn_status
+                FROM payments p 
+                JOIN members m ON p.member_id = m.id 
+                LEFT JOIN subscriptions s ON p.subscription_id = s.id
+                LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+                LEFT JOIN users u ON p.verified_by = u.id
+                WHERE 1=1
+            ";
+            $params = [];
+
+            if ($method_filter !== 'all' && !empty($method_filter)) {
+                $sql .= " AND p.payment_method = :method";
+                $params['method'] = $method_filter;
+            }
+
+            if (!empty($date_start)) {
+                $sql .= " AND p.payment_date >= :start_date";
+                $params['start_date'] = $date_start;
+            }
+
+            if (!empty($date_end)) {
+                $sql .= " AND p.payment_date <= :end_date";
+                $params['end_date'] = $date_end;
+            }
+
+            $sql .= " ORDER BY p.payment_date DESC, p.created_at DESC";
+
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $paid_rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
-        if (!empty($date_start)) {
-            $sql .= " AND p.payment_date >= :start_date";
-            $params['start_date'] = $date_start;
+        $pending_rows = [];
+        if ($status_tab !== 'paid') {
+            $rSql = "
+                SELECT r.id, r.member_id, r.reference_no as reference_number, r.payment_method, 
+                       COALESCE(p.price, 0) as amount, r.created_at, r.created_at as payment_date,
+                       m.full_name, m.membership_id, COALESCE(p.name, 'Membership Renewal') as plan_name,
+                       'Pending' as txn_status, NULL as verified_by_name
+                FROM renewal_requests r
+                JOIN members m ON r.member_id = m.id
+                LEFT JOIN membership_plans p ON p.id = r.plan_id
+                WHERE r.status = 'Pending'
+            ";
+            $rParams = [];
+            if ($method_filter !== 'all' && !empty($method_filter)) {
+                $rSql .= " AND r.payment_method = :method";
+                $rParams['method'] = $method_filter;
+            }
+            if (!empty($date_start)) {
+                $rSql .= " AND r.created_at >= :start_date";
+                $rParams['start_date'] = $date_start . ' 00:00:00';
+            }
+            if (!empty($date_end)) {
+                $rSql .= " AND r.created_at <= :end_date";
+                $rParams['end_date'] = $date_end . ' 23:59:59';
+            }
+            $rSql .= " ORDER BY r.created_at DESC";
+            $rStmt = $pdo->prepare($rSql);
+            $rStmt->execute($rParams);
+            $pending_rows = $rStmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
-        if (!empty($date_end)) {
-            $sql .= " AND p.payment_date <= :end_date";
-            $params['end_date'] = $date_end;
+        if ($status_tab === 'paid') {
+            $payments = $paid_rows;
+        } elseif ($status_tab === 'pending') {
+            $payments = $pending_rows;
+        } else {
+            $payments = array_merge($pending_rows, $paid_rows);
+            usort($payments, function ($a, $b) {
+                return strtotime($b['created_at'] ?? '0') <=> strtotime($a['created_at'] ?? '0');
+            });
         }
-
-        $sql .= " ORDER BY p.payment_date DESC, p.created_at DESC";
-
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        $payments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Fetch KPI stats
         $stats_stmt = $pdo->query("
@@ -107,9 +164,23 @@ try {
     </div>
 </div>
 
+<!-- Status Tabs -->
+<div class="tab-nav" style="margin-bottom:1.25rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+    <a href="?status=all<?php echo $method_filter !== 'all' ? '&method=' . urlencode($method_filter) : ''; ?>" class="btn <?php echo $status_tab === 'all' ? 'btn-primary' : 'btn-outline'; ?>">
+        All Records <span class="tab-count"><?php echo $count_all; ?></span>
+    </a>
+    <a href="?status=paid<?php echo $method_filter !== 'all' ? '&method=' . urlencode($method_filter) : ''; ?>" class="btn <?php echo $status_tab === 'paid' ? 'btn-primary' : 'btn-outline'; ?>">
+        Completed / Paid <span class="tab-count"><?php echo $count_paid_payments; ?></span>
+    </a>
+    <a href="?status=pending<?php echo $method_filter !== 'all' ? '&method=' . urlencode($method_filter) : ''; ?>" class="btn <?php echo $status_tab === 'pending' ? 'btn-primary' : 'btn-outline'; ?>">
+        ⏳ Pending Verification <span class="tab-count"><?php echo $count_pending_requests; ?></span>
+    </a>
+</div>
+
 <!-- Filter & Search Toolbar -->
 <div class="card" style="margin-bottom:1.5rem; padding:1.25rem;">
     <form method="GET" action="" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end;">
+        <input type="hidden" name="status" value="<?php echo htmlspecialchars($status_tab); ?>">
         <div style="flex:1; min-width:200px;">
             <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Search Member / Ref</label>
             <input type="text" id="txn-search-input" placeholder="Type member name, ID, or Ref No..." class="form-control" style="margin-top:4px;">
@@ -138,7 +209,7 @@ try {
         <div>
             <button type="submit" class="btn btn-primary" style="height:42px;"><i class="fas fa-filter"></i> Filter</button>
             <?php if ($method_filter !== 'all' || !empty($date_start) || !empty($date_end)): ?>
-                <a href="payments.php" class="btn btn-outline" style="height:42px;"><i class="fas fa-rotate-left"></i> Reset</a>
+                <a href="payments.php?status=<?php echo urlencode($status_tab); ?>" class="btn btn-outline" style="height:42px;"><i class="fas fa-rotate-left"></i> Reset</a>
             <?php endif; ?>
         </div>
     </form>
@@ -149,7 +220,7 @@ try {
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
         <h3 class="section-title" style="margin:0;"><i class="fas fa-receipt" style="color:var(--accent);"></i> Official Transaction Ledger</h3>
         <div style="font-size:0.85rem; color:var(--text-muted);">
-            Showing <strong id="txn-count"><?php echo count($payments); ?></strong> verified transactions
+            Showing <strong id="txn-count"><?php echo count($payments); ?></strong> transaction<?php echo count($payments) === 1 ? '' : 's'; ?>
         </div>
     </div>
 
@@ -165,24 +236,29 @@ try {
                     <th>Amount Paid</th>
                     <th>Reference No.</th>
                     <th>Status</th>
-                    <th>Verified By</th>
+                    <th>Verified By / Action</th>
                 </tr>
             </thead>
             <tbody id="txn-table-body">
                 <?php if (empty($payments)): ?>
-                    <?php render_empty_state('fas fa-money-bill-transfer', 'No payment records found.', '', true); ?>
+                    <?php render_empty_state('fas fa-money-bill-transfer', 'No payment records found in this view.', '', true); ?>
                 <?php else: ?>
                     <?php foreach ($payments as $p): ?>
-                    <?php $txn_code = 'TXN-' . str_pad($p['id'], 5, '0', STR_PAD_LEFT); ?>
+                    <?php 
+                        $is_pending = (($p['txn_status'] ?? 'Paid') === 'Pending');
+                        $prefix = $is_pending ? 'REQ-' : 'TXN-';
+                        $txn_code = $prefix . str_pad($p['id'], 5, '0', STR_PAD_LEFT); 
+                    ?>
                     <tr class="txn-row" 
                         data-name="<?php echo strtolower(htmlspecialchars($p['full_name'])); ?>" 
                         data-id="<?php echo strtolower(htmlspecialchars($p['membership_id'])); ?>"
                         data-ref="<?php echo strtolower(htmlspecialchars($p['reference_number'] ?? '')); ?>"
-                        data-txn="<?php echo strtolower($txn_code); ?>">
+                        data-txn="<?php echo strtolower($txn_code); ?>"
+                        <?php if ($is_pending): ?>style="background:rgba(245,158,11,0.03);"<?php endif; ?>>
                         
                         <!-- Transaction ID -->
                         <td>
-                            <code style="background:var(--primary-bg); border:1px solid var(--border); padding:3px 8px; border-radius:6px; font-weight:700; color:var(--text-main); font-size:0.8rem;">
+                            <code style="background:<?php echo $is_pending ? 'rgba(245,158,11,0.1)' : 'var(--primary-bg)'; ?>; border:1px solid <?php echo $is_pending ? 'rgba(245,158,11,0.3)' : 'var(--border)'; ?>; padding:3px 8px; border-radius:6px; font-weight:700; color:<?php echo $is_pending ? '#d97706' : 'var(--text-main)'; ?>; font-size:0.8rem;">
                                 <?php echo $txn_code; ?>
                             </code>
                         </td>
@@ -196,7 +272,7 @@ try {
                         <!-- Member Name & ID -->
                         <td>
                             <div class="member-cell">
-                                <div class="member-avatar"><?php echo strtoupper(substr($p['full_name'], 0, 1)); ?></div>
+                                <div class="member-avatar" <?php if ($is_pending): ?>style="background:rgba(245,158,11,0.2); color:#d97706;"<?php endif; ?>><?php echo strtoupper(substr($p['full_name'], 0, 1)); ?></div>
                                 <div>
                                     <div class="cell-primary" style="font-weight:600;"><?php echo htmlspecialchars($p['full_name']); ?></div>
                                     <code class="cell-secondary" style="font-size:0.72rem;"><?php echo htmlspecialchars($p['membership_id']); ?></code>
@@ -230,7 +306,7 @@ try {
 
                         <!-- Amount -->
                         <td>
-                            <span style="font-weight:800; color:var(--success); font-size:0.95rem;">₱<?php echo number_format($p['amount'], 2); ?></span>
+                            <span style="font-weight:800; color:<?php echo $is_pending ? '#d97706' : 'var(--success)'; ?>; font-size:0.95rem;">₱<?php echo number_format($p['amount'], 2); ?></span>
                         </td>
 
                         <!-- Reference No. -->
@@ -246,14 +322,26 @@ try {
 
                         <!-- Status -->
                         <td>
-                            <span class="badge badge-success"><i class="fas fa-circle-check"></i> Paid</span>
+                            <?php if ($is_pending): ?>
+                                <span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; font-weight:800; font-size:0.7rem; padding:3px 8px; border-radius:20px;">
+                                    <i class="fas fa-clock"></i> Pending
+                                </span>
+                            <?php else: ?>
+                                <span class="badge badge-success"><i class="fas fa-circle-check"></i> Paid</span>
+                            <?php endif; ?>
                         </td>
 
-                        <!-- Verified By -->
+                        <!-- Verified By / Actions -->
                         <td>
-                            <div class="cell-secondary" style="font-size:0.8rem;">
-                                <i class="fas fa-user-check" style="color:var(--accent);"></i> <?php echo htmlspecialchars($p['verified_by_name'] ?: 'Admin'); ?>
-                            </div>
+                            <?php if ($is_pending): ?>
+                                <a href="renewal-requests.php?status=Pending" class="btn btn-sm btn-outline" style="padding:3px 10px; font-size:0.74rem; border-color:#f59e0b; color:#d97706; text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-weight:700;">
+                                    <i class="fas fa-check"></i> Review & Approve
+                                </a>
+                            <?php else: ?>
+                                <div class="cell-secondary" style="font-size:0.8rem;">
+                                    <i class="fas fa-user-check" style="color:var(--accent);"></i> <?php echo htmlspecialchars($p['verified_by_name'] ?: 'Admin'); ?>
+                                </div>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>
