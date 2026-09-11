@@ -54,12 +54,51 @@ try {
     }
 
     // 2. Verify Plan exists & fetch official price
-    $plan_stmt = $pdo->prepare("SELECT id, name, price, duration_months FROM membership_plans WHERE id = ?");
+    $plan_stmt = $pdo->prepare("SELECT id, name, price, duration_months, duration_minutes, is_test_promo FROM membership_plans WHERE id = ?");
     $plan_stmt->execute([$plan_id]);
     $plan = $plan_stmt->fetch(PDO::FETCH_ASSOC);
     if (!$plan) {
         echo json_encode(['success' => false, 'message' => 'Selected plan not found.']);
         exit;
+    }
+
+    // 2.5 Enforce business rule: renewal is ONLY permitted when expired or expiring soon
+    $cur_sub_stmt = $pdo->prepare("
+        SELECT s.expiry_date, p.name as current_plan_name, p.duration_minutes, p.duration_months, p.is_test_promo
+        FROM subscriptions s
+        LEFT JOIN membership_plans p ON s.plan_id = p.id
+        WHERE s.member_id = ? AND s.expiry_date > NOW()
+        ORDER BY s.expiry_date DESC
+        LIMIT 1
+    ");
+    $cur_sub_stmt->execute([$member_id]);
+    $active_sub = $cur_sub_stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($active_sub && !empty($active_sub['expiry_date'])) {
+        $expiry_ts = strtotime($active_sub['expiry_date']);
+        $diff_sec = $expiry_ts - time();
+        $is_minute_promo = (!empty($active_sub['duration_minutes']) && $active_sub['duration_minutes'] > 0);
+
+        // Threshold: 5 minutes (300s) for promos, 3 days (259,200s) for standard plans
+        $threshold_sec = $is_minute_promo ? 300 : (3 * 86400);
+
+        if ($diff_sec > $threshold_sec) {
+            $rem_text = '';
+            if ($is_minute_promo || $diff_sec < 86400) {
+                $rem_mins = ceil($diff_sec / 60);
+                $rem_text = "{$rem_mins} minuto(s)";
+            } else {
+                $rem_days = ceil($diff_sec / 86400);
+                $rem_text = "{$rem_days} araw";
+            }
+            $rule_text = $is_minute_promo ? '5 minuto bago mag-expire' : '3 araw bago mag-expire';
+
+            echo json_encode([
+                'success' => false,
+                'message' => "Hindi pa maaaring mag-renew! Aktibo pa ang iyong kasalukuyang plano ({$rem_text} natitira). Maaari lamang mag-renew kapag expired na o {$rule_text}."
+            ]);
+            exit;
+        }
     }
 
     // 3. Check for existing pending request (update instead of blocking)

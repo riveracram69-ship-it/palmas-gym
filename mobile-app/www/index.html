@@ -2773,6 +2773,24 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════════
+       MODAL: CANNOT RENEW YET NOTICE MODAL
+       ══════════════════════════════════════════════════════════ -->
+  <div id="cannot-renew-modal" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
+    <div style="background:var(--card, #122b22); border:1px solid rgba(16,185,129,0.3); border-radius:24px; padding:28px 24px; max-width:380px; width:100%; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.6); animation:modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+      <div style="width:72px; height:72px; border-radius:50%; background:rgba(16,185,129,0.15); border:2px solid rgba(16,185,129,0.4); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:var(--primary, #10b981); font-size:32px;">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <h3 style="color:#ffffff; font-size:1.25rem; font-weight:800; margin:0 0 8px; letter-spacing:0.3px;">Plan Still Active!</h3>
+      <p id="cannot-renew-msg" style="color:var(--text-secondary, #a7bfae); font-size:0.88rem; line-height:1.55; margin:0 0 24px;">
+        Hindi pa maaaring mag-renew dahil aktibo pa ang iyong kasalukuyang membership. Maaari lamang mag-renew kapag expired na o malapit nang ma-expire.
+      </p>
+      <button onclick="closeCannotRenewModal()" class="btn-primary" style="background:linear-gradient(135deg, #10b981, #059669); font-weight:800; padding:14px; font-size:0.95rem; border-radius:12px; width:100%;">
+        <i class="fa-solid fa-check"></i> Naintindihan Ko
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
        MODAL 1: EDIT PROFILE MODAL
        ══════════════════════════════════════════════════════════ -->
   <ion-modal id="modal-edit-profile">
@@ -4682,6 +4700,45 @@ function handlePlanExpiredRenew() {
   openRenewalModal();
 }
 
+function checkCanRenew(m) {
+  if (!m || !m.expiry_date) return { canRenew: true };
+  const normalized = (m.expiry_date || '').replace(' ', 'T');
+  const target = new Date(normalized).getTime();
+  if (isNaN(target)) return { canRenew: true };
+
+  const now = Date.now();
+  const diffMs = target - now;
+  if (diffMs <= 0) {
+    return { canRenew: true, reason: 'Plan is expired' };
+  }
+
+  const isMinutePromo = (m.plan_name && /test|promo/i.test(m.plan_name)) || (m.duration_minutes && m.duration_minutes > 0) || (m.duration_months === 0 && m.expiry_date && m.expiry_date.includes(':'));
+  // Threshold: 5 minutes for minute promos, 3 days for regular plans
+  const thresholdMs = isMinutePromo ? (5 * 60 * 1000) : (3 * 24 * 60 * 60 * 1000);
+
+  if (diffMs <= thresholdMs) {
+    return { canRenew: true, reason: 'Expiring soon' };
+  }
+
+  const remainingStr = formatTimeRemaining(m.expiry_date);
+  const ruleStr = isMinutePromo ? '5 minuto bago mag-expire' : '3 araw bago mag-expire';
+  const msg = `Hindi pa maaaring mag-renew dahil aktibo pa ang iyong kasalukuyang plano (${remainingStr} natitira). Maaari lamang mag-renew kapag expired na o ${ruleStr}.`;
+
+  return { canRenew: false, message: msg, remainingStr };
+}
+
+function showCannotRenewModal(msg) {
+  const modal = document.getElementById('cannot-renew-modal');
+  const msgEl = document.getElementById('cannot-renew-msg');
+  if (msgEl && msg) msgEl.textContent = msg;
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeCannotRenewModal() {
+  const modal = document.getElementById('cannot-renew-modal');
+  if (modal) modal.style.display = 'none';
+}
+
 let promoCountdownTimer = null;
 let hasDispatchedExpiredAlert = false;
 
@@ -5373,6 +5430,13 @@ function showCheckoutStep(step) {
 }
 
 async function openRenewalModal(preselectedPlanId = null) {
+  const check = checkCanRenew(currentMember);
+  if (!check.canRenew) {
+    showToast(check.message, 4500);
+    showCannotRenewModal(check.message);
+    return;
+  }
+
   const m = document.getElementById('modal-renewal');
   if (m) {
     m.isOpen = true;
@@ -5631,7 +5695,8 @@ async function submitPersonalQrRenewal() {
       refreshDashboard();
       loadPaymentHistory();
     } else {
-      showToast(data.message || 'Unable to submit payment.');
+      showToast(data.message || 'Unable to submit payment.', 4000);
+      showCannotRenewModal(data.message);
     }
   } catch (err) {
     showToast('Network error submitting payment. Please try again.');
@@ -5666,7 +5731,8 @@ async function submitCashRenewalRequest() {
       refreshDashboard();
       loadPaymentHistory();
     } else {
-      showToast(data.message || 'Unable to submit cash renewal.');
+      showToast(data.message || 'Unable to submit cash renewal.', 4000);
+      showCannotRenewModal(data.message);
     }
   } catch {
     showToast('Network error. Please try again.');

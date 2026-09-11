@@ -57,6 +57,24 @@ try {
     $is_expired = (!empty($member['expiry_date']) && strtotime($member['expiry_date']) < $now_time);
     $member['is_expired'] = $is_expired;
 
+    // Determine renewal eligibility (can only renew if expired or expiring soon)
+    $can_renew = true;
+    $cannot_renew_reason = null;
+    if (!empty($member['expiry_date']) && !$is_expired) {
+        $diff_sec = strtotime($member['expiry_date']) - $now_time;
+        $is_minute_promo = (!empty($member['duration_minutes']) && $member['duration_minutes'] > 0);
+        $threshold_sec = $is_minute_promo ? 300 : (3 * 86400); // 5 mins for promo, 3 days for regular
+
+        if ($diff_sec > $threshold_sec) {
+            $can_renew = false;
+            $rem_text = ($is_minute_promo || $diff_sec < 86400) ? ceil($diff_sec / 60) . ' min(s)' : ceil($diff_sec / 86400) . ' day(s)';
+            $rule_text = $is_minute_promo ? 'within 5 minutes of expiration' : 'within 3 days of expiration';
+            $cannot_renew_reason = "Your plan is still active ({$rem_text} remaining). Renewal is available when expired or {$rule_text}.";
+        }
+    }
+    $member['can_renew'] = $can_renew;
+    $member['cannot_renew_reason'] = $cannot_renew_reason;
+
     // Idempotently dispatch MEMBERSHIP_EXPIRED notification if subscription has elapsed
     if ($is_expired) {
         try {

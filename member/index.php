@@ -24,9 +24,21 @@ if ($member['expiry_date']) {
     // estimate progress based on a 30-day plan window
     $plan_days  = 30;
     $elapsed    = $plan_days - max(0, $days_left);
-    $progress   = max(0, min(100, round(($elapsed / $plan_days) * 100)));
+    $is_minute_promo = (!empty($member['duration_minutes']) && $member['duration_minutes'] > 0);
 }
-$can_renew = $expired || ($days_left !== null && $days_left <= 7);
+
+$can_renew = true;
+$cannot_renew_reason = '';
+if (!empty($member['expiry_date']) && !$expired) {
+    $diff_sec = $expiry_ts - $now_ts;
+    $threshold_sec = (!empty($is_minute_promo)) ? 300 : (3 * 86400);
+    if ($diff_sec > $threshold_sec) {
+        $can_renew = false;
+        $rem_text = (!empty($is_minute_promo) || $diff_sec < 86400) ? ceil($diff_sec / 60) . ' minuto(s)' : ceil($diff_sec / 86400) . ' araw';
+        $rule_text = (!empty($is_minute_promo)) ? '5 minuto bago mag-expire' : '3 araw bago mag-expire';
+        $cannot_renew_reason = "Hindi pa maaaring mag-renew! Aktibo pa ang iyong kasalukuyang plano ({$rem_text} natitira). Maaari lamang mag-renew kapag expired na o {$rule_text}.";
+    }
+}
 
 // Recent attendance count (last 30 days)
 $attendance_count = 0;
@@ -599,11 +611,12 @@ setInterval(fetchNotifications, 60000);
 // ── Renewal Modal ────────────────────────────────────────────────
 const hasPendingRenewal = <?php echo $pending_request ? 'true' : 'false'; ?>;
 const canRenew = <?php echo $can_renew ? 'true' : 'false'; ?>;
+const cannotRenewReason = <?php echo json_encode($cannot_renew_reason); ?>;
 
 function openRenewModal() {
     closeNotifDrawer();
     if (!canRenew) {
-        alert("Your membership is active and does not require renewal at this time.");
+        alert(cannotRenewReason || "Hindi pa maaaring mag-renew dahil aktibo pa ang iyong plano.");
         return;
     }
     if (hasPendingRenewal) {
