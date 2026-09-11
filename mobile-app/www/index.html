@@ -2750,6 +2750,29 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════════
+       MODAL: PLAN EXPIRED ALERT MODAL
+       ══════════════════════════════════════════════════════════ -->
+  <div id="plan-expired-modal" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
+    <div style="background:var(--card, #122b22); border:1px solid rgba(239,68,68,0.4); border-radius:24px; padding:28px 24px; max-width:380px; width:100%; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.6); animation:modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+      <div style="width:72px; height:72px; border-radius:50%; background:rgba(239,68,68,0.15); border:2px solid rgba(239,68,68,0.4); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:#ef4444; font-size:32px;">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+      </div>
+      <h3 style="color:#ffffff; font-size:1.3rem; font-weight:800; margin:0 0 8px; letter-spacing:0.3px;">Plan Expired!</h3>
+      <p id="plan-expired-msg" style="color:var(--text-secondary, #a7bfae); font-size:0.9rem; line-height:1.5; margin:0 0 24px;">
+        Your gym membership plan has expired. Renew your plan now to continue accessing Palma's Elite Gym.
+      </p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button onclick="handlePlanExpiredRenew()" class="btn-primary" style="background:linear-gradient(135deg, #10b981, #059669); font-weight:800; padding:14px; font-size:0.95rem; border-radius:12px; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <i class="fa-solid fa-arrows-rotate"></i> RENEW PLAN NOW
+        </button>
+        <button onclick="closePlanExpiredModal()" style="background:transparent; border:none; color:var(--text-secondary, #94a3b8); font-size:0.85rem; padding:10px; cursor:pointer; font-weight:600;">
+          Remind Me Later
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
        MODAL 1: EDIT PROFILE MODAL
        ══════════════════════════════════════════════════════════ -->
   <ion-modal id="modal-edit-profile">
@@ -4540,42 +4563,199 @@ function getMemberInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+function formatValidityDisplay(dateStr, isMinutePromo = false) {
+  if (!dateStr) return '--';
+  const normalizedStr = dateStr.replace(' ', 'T');
+  const d = new Date(normalizedStr);
+  if (isNaN(d.getTime())) return dateStr;
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[d.getMonth()];
+  const day = d.getDate();
+  const year = d.getFullYear();
+
+  const hoursRaw = d.getHours();
+  const minutesRaw = d.getMinutes();
+  const hasTime = isMinutePromo || (hoursRaw !== 0 || minutesRaw !== 0) || dateStr.includes(':');
+
+  if (hasTime) {
+    const ampm = hoursRaw >= 12 ? 'PM' : 'AM';
+    const hours = hoursRaw % 12 || 12;
+    const minutes = String(minutesRaw).padStart(2, '0');
+    return `${month} ${day}, ${year}, ${hours}:${minutes} ${ampm}`;
+  }
+
+  return `${month} ${day}, ${year}`;
+}
+
+function formatTimeRemaining(dateStr) {
+  if (!dateStr) return '--';
+  const normalizedStr = dateStr.replace(' ', 'T');
+  const target = new Date(normalizedStr).getTime();
+  if (isNaN(target)) return '--';
+  const now = Date.now();
+  const diff = target - now;
+
+  if (diff <= 0) return 'Expired';
+
+  const totalSeconds = Math.floor(diff / 1000);
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  const totalHours   = Math.floor(totalMinutes / 60);
+  const totalDays    = Math.floor(totalHours / 24);
+
+  if (totalDays >= 2) {
+    return `${totalDays} Days Remaining`;
+  } else if (totalDays === 1) {
+    const remHours = totalHours % 24;
+    return `1 Day, ${remHours}h Remaining`;
+  } else if (totalHours >= 1) {
+    const remMinutes = totalMinutes % 60;
+    return `${totalHours}h ${remMinutes}m Remaining`;
+  } else if (totalMinutes >= 1) {
+    const remSeconds = totalSeconds % 60;
+    return `${totalMinutes}m ${remSeconds}s Remaining`;
+  } else {
+    return `${totalSeconds}s Remaining`;
+  }
+}
+
+function triggerExpirationAlert(planName) {
+  const pName = planName || 'gym';
+
+  // 1. Phone / Native Notification
+  if ('Notification' in window) {
+    if (Notification.permission === 'granted') {
+      try {
+        new Notification("Palma's Elite Gym - Plan Expired", {
+          body: `Your ${pName} plan has expired. Tap to renew now!`,
+          icon: "assets/icon/favicon.png",
+          badge: "assets/icon/favicon.png"
+        });
+      } catch (e) {
+        console.warn('Native notification error:', e);
+      }
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') {
+          try {
+            new Notification("Palma's Elite Gym - Plan Expired", {
+              body: `Your ${pName} plan has expired. Tap to renew now!`,
+              icon: "assets/icon/favicon.png"
+            });
+          } catch(e) {}
+        }
+      }).catch(() => {});
+    }
+  }
+
+  // 2. Hardware Vibration
+  if ('vibrate' in navigator) {
+    try {
+      navigator.vibrate([200, 100, 200, 100, 400]);
+    } catch(e) {}
+  }
+
+  // 3. In-App Modal Alert
+  showPlanExpiredModal(pName);
+}
+
+function showPlanExpiredModal(planName) {
+  const modal = document.getElementById('plan-expired-modal');
+  const msg = document.getElementById('plan-expired-msg');
+  if (msg && planName) {
+    msg.textContent = `Your ${planName} plan has reached its expiration. Renew your plan now to keep your gym access active and uninterrupted!`;
+  }
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function closePlanExpiredModal() {
+  const modal = document.getElementById('plan-expired-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+function handlePlanExpiredRenew() {
+  closePlanExpiredModal();
+  openRenewalModal();
+}
+
 let promoCountdownTimer = null;
+let hasDispatchedExpiredAlert = false;
+
 function checkAndStartTestPromoCountdown(m) {
   clearInterval(promoCountdownTimer);
   const banner = document.getElementById('test-promo-banner-wrap');
   const timerText = document.getElementById('promo-countdown-text');
   const nameText = document.getElementById('test-promo-name');
-  if (!banner || !timerText) return;
+  const cardTimeRemaining = document.getElementById('card-time-remaining');
+  const profDaysRemaining = document.getElementById('prof-days-remaining');
 
-  const isTestPromo = (m.plan_name && /test|promo/i.test(m.plan_name)) || m.is_test_promo || m.duration_minutes > 0 || m.price == 1;
-
-  if (!isTestPromo || !m.expiry_date) {
-    banner.style.display = 'none';
+  if (!m || !m.expiry_date) {
+    if (banner) banner.style.display = 'none';
     return;
   }
 
-  banner.style.display = 'flex';
-  if (nameText) nameText.textContent = (m.plan_name || 'TEST PROMO').toUpperCase();
+  const isTestPromo = (m.plan_name && /test|promo/i.test(m.plan_name)) || m.is_test_promo || (m.duration_minutes && m.duration_minutes > 0) || m.price == 1;
 
-  function tick() {
-    const target = new Date(m.expiry_date).getTime();
+  if (banner) {
+    if (isTestPromo) {
+      banner.style.display = 'flex';
+      if (nameText) nameText.textContent = (m.plan_name || 'TEST PROMO').toUpperCase();
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  function updateExpirations() {
+    const normalizedStr = m.expiry_date.replace(' ', 'T');
+    const target = new Date(normalizedStr).getTime();
     const now = Date.now();
     const diff = target - now;
 
+    const formattedTime = formatTimeRemaining(m.expiry_date);
+    if (cardTimeRemaining) cardTimeRemaining.textContent = formattedTime;
+    if (profDaysRemaining) profDaysRemaining.textContent = formattedTime;
+
     if (diff <= 0) {
-      timerText.textContent = '00:00 (EXPIRED)';
+      if (timerText) timerText.textContent = '00:00 (EXPIRED)';
+      if (cardTimeRemaining) cardTimeRemaining.textContent = 'Expired';
+      if (profDaysRemaining) profDaysRemaining.textContent = 'Expired';
+
+      // Dual status pills update
+      const pillPass = document.getElementById('card-status-pill');
+      if (pillPass) {
+        pillPass.textContent = '! EXPIRED';
+        pillPass.className = 'status-pill pill-expired';
+      }
+      const pillProf = document.getElementById('prof-status-pill');
+      if (pillProf) {
+        pillProf.textContent = '! EXPIRED';
+        pillProf.className = 'status-pill pill-expired';
+      }
+
+      // Trigger notification and alert dialog
+      if (!hasDispatchedExpiredAlert) {
+        hasDispatchedExpiredAlert = true;
+        triggerExpirationAlert(m.plan_name);
+      }
+
       clearInterval(promoCountdownTimer);
       return;
     }
 
-    const minutes = Math.floor(diff / 60000);
-    const seconds = Math.floor((diff % 60000) / 1000);
-    timerText.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    // Still active
+    if (isTestPromo && timerText) {
+      const minutes = Math.floor(diff / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      timerText.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
   }
 
-  tick();
-  promoCountdownTimer = setInterval(tick, 1000);
+  updateExpirations();
+  promoCountdownTimer = setInterval(updateExpirations, 1000);
 }
 
 async function loadDashboard(memberId) {
@@ -4606,11 +4786,22 @@ async function loadDashboard(memberId) {
     currentMember = m;
     availablePlans = data.plans || [];
 
+    // Request notification permission if supported
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+
+    const isMinutePromo = (m.plan_name && /test|promo/i.test(m.plan_name)) || (m.duration_minutes && m.duration_minutes > 0) || (m.duration_months === 0 && m.expiry_date && m.expiry_date.includes(':'));
+    const formattedExpiry = formatValidityDisplay(m.expiry_date, isMinutePromo);
+    const timeRemainingStr = formatTimeRemaining(m.expiry_date);
+
     // Populate Tab 1: Pass
     document.getElementById('card-name').textContent   = m.full_name || 'No information available';
     document.getElementById('card-code').textContent   = m.membership_id || 'No information available';
     document.getElementById('card-plan').textContent   = m.plan_name || 'No information available';
-    document.getElementById('card-expiry').textContent = m.expiry_date || 'No information available';
+    document.getElementById('card-expiry').textContent = formattedExpiry;
+    const cardTimeEl = document.getElementById('card-time-remaining');
+    if (cardTimeEl) cardTimeEl.textContent = timeRemainingStr;
 
     // Initials & Avatar
     const initials = getMemberInitials(m.full_name);
@@ -4628,7 +4819,7 @@ async function loadDashboard(memberId) {
 
     // Dual Status Indicator (Icon + Text)
     const now = new Date();
-    const expDate = m.expiry_date ? new Date(m.expiry_date) : null;
+    const expDate = m.expiry_date ? new Date(m.expiry_date.replace(' ', 'T')) : null;
     const isExpired = !expDate || expDate < now;
     let statusText = '● ACTIVE MEMBER';
     let statusClass = 'status-pill pill-active';
@@ -4661,6 +4852,16 @@ async function loadDashboard(memberId) {
       pillProf.className = statusClass;
     }
 
+    // Reset alert trigger if active, or trigger once if already expired on launch
+    if (!isExpired) {
+      hasDispatchedExpiredAlert = false;
+      sessionStorage.removeItem('expired_modal_seen_' + m.membership_id);
+    } else if (isExpired && !sessionStorage.getItem('expired_modal_seen_' + m.membership_id)) {
+      sessionStorage.setItem('expired_modal_seen_' + m.membership_id, '1');
+      hasDispatchedExpiredAlert = true;
+      triggerExpirationAlert(m.plan_name);
+    }
+
     // Dynamic Test Promo Countdown
     checkAndStartTestPromoCountdown(m);
 
@@ -4683,8 +4884,9 @@ async function loadDashboard(memberId) {
     setEl('prof-email',         m.email);
     setEl('prof-phone',         m.contact_number);
     setEl('prof-plan-name',     m.plan_name);
-    setEl('prof-valid-until',   m.expiry_date);
+    setEl('prof-valid-until',   formattedExpiry);
     setEl('prof-memid-display', m.membership_id);
+    setEl('prof-days-remaining', timeRemainingStr);
 
     // Pending Renewal Banner on Home Tab
     const pendingBanner = document.getElementById('home-pending-banner');
@@ -4700,12 +4902,11 @@ async function loadDashboard(memberId) {
       }
     }
 
-    // Days Remaining Progress
+    // Progress bar fill
     let daysRemaining = 0;
     if (m.expiry_date) {
-      daysRemaining = Math.max(0, Math.ceil((new Date(m.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)));
+      daysRemaining = Math.max(0, Math.ceil((new Date(m.expiry_date.replace(' ', 'T')) - new Date()) / (1000 * 60 * 60 * 24)));
     }
-    document.getElementById('prof-days-remaining').textContent = daysRemaining > 0 ? `${daysRemaining} Days Remaining` : 'Expired';
     const pct = Math.min(100, Math.max(5, (daysRemaining / 30) * 100));
     const fillEl = document.getElementById('prof-days-bar-fill');
     if (fillEl) fillEl.style.width = isExpired ? '0%' : `${pct}%`;

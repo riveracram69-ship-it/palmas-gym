@@ -16,10 +16,10 @@ $progress  = 0;
 
 if ($member['expiry_date']) {
     $expiry_ts  = strtotime($member['expiry_date']);
-    $today_ts   = strtotime(date('Y-m-d'));
-    $diff       = $expiry_ts - $today_ts;
-    $days_left  = (int) round($diff / 86400);
-    $expired    = ($days_left < 0);
+    $now_ts     = time();
+    $diff       = $expiry_ts - $now_ts;
+    $days_left  = (int) ceil($diff / 86400);
+    $expired    = ($diff <= 0);
 
     // estimate progress based on a 30-day plan window
     $plan_days  = 30;
@@ -194,7 +194,14 @@ try {
             <div class="sub-meta">
                 <div class="sub-meta-item">
                     <p>Expiry Date</p>
-                    <p><?php echo $member['expiry_date'] ? date('M d, Y', strtotime($member['expiry_date'])) : '—'; ?></p>
+                    <p><?php 
+                        if ($member['expiry_date']) {
+                            $has_time = (!empty($member['duration_minutes']) && $member['duration_minutes'] > 0) || (date('H:i:s', strtotime($member['expiry_date'])) !== '00:00:00');
+                            echo date($has_time ? 'M d, Y h:i A' : 'M d, Y', strtotime($member['expiry_date']));
+                        } else {
+                            echo '—';
+                        }
+                    ?></p>
                 </div>
                 <div class="sub-meta-item" style="text-align:right;">
                     <p>Last Payment</p>

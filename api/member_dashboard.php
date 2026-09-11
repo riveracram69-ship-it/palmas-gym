@@ -18,23 +18,30 @@ try {
     $member_id = $auth_member_id;
     $t_start   = microtime(true);
 
-    // ── QUERY 1: Member + Active Subscription (CRITICAL — renders the card) ──
+    // ── QUERY 1: Member + Latest Subscription (CRITICAL — renders the card) ──
     $stmt = $pdo->prepare("
         SELECT 
             m.id, m.membership_id, m.first_name, m.middle_name, m.last_name, m.extension,
             m.full_name, m.email, m.contact_number,
             m.photo, m.google_picture, m.auth_provider, m.status,
             m.account_status,
+            s.id    AS subscription_id,
             s.expiry_date,
+            s.start_date,
             p.name  AS plan_name,
-            p.id    AS plan_id
+            p.id    AS plan_id,
+            p.duration_months,
+            p.duration_minutes,
+            p.is_test_promo
         FROM members m
         LEFT JOIN subscriptions s 
-            ON s.member_id = m.id 
-            AND s.expiry_date >= CURDATE()
+            ON s.id = (
+                SELECT s2.id FROM subscriptions s2 
+                WHERE s2.member_id = m.id 
+                ORDER BY s2.expiry_date DESC LIMIT 1
+            )
         LEFT JOIN membership_plans p ON p.id = s.plan_id
         WHERE m.id = ?
-        ORDER BY s.expiry_date DESC
         LIMIT 1
     ");
     $stmt->execute([$member_id]);
@@ -44,6 +51,30 @@ try {
         http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'Member not found.']);
         exit;
+    }
+
+    $now_time = time();
+    $is_expired = (!empty($member['expiry_date']) && strtotime($member['expiry_date']) < $now_time);
+    $member['is_expired'] = $is_expired;
+
+    // Idempotently dispatch MEMBERSHIP_EXPIRED notification if subscription has elapsed
+    if ($is_expired) {
+        try {
+            require_once __DIR__ . '/../config/notifications.php';
+            ensure_notifications_table($pdo);
+            create_notification(
+                $pdo,
+                (int)$member_id,
+                'MEMBERSHIP_EXPIRED',
+                'Membership Plan Expired',
+                'Your ' . ($member['plan_name'] ? htmlspecialchars($member['plan_name']) : 'gym') . ' plan has expired. Renew your plan now to continue uninterrupted access.',
+                'Sent',
+                $member['subscription_id'] ? (int)$member['subscription_id'] : null,
+                'STAGE_EXPIRED'
+            );
+        } catch (Throwable $notifEx) {
+            error_log("Dashboard expired notification error: " . $notifEx->getMessage());
+        }
     }
 
     // Prefer uploaded photo if available, fallback to Google picture

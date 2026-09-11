@@ -68,18 +68,19 @@ function current_member($pdo) {
     
     try {
         $stmt = $pdo->prepare("SELECT m.*, 
-                                      (SELECT s.expiry_date 
-                                       FROM subscriptions s 
-                                       WHERE s.member_id = m.id AND s.expiry_date >= CURDATE()
-                                       ORDER BY s.expiry_date DESC, s.id DESC 
-                                       LIMIT 1) as expiry_date,
-                                      (SELECT p.name 
-                                       FROM subscriptions s 
-                                       LEFT JOIN membership_plans p ON p.id = s.plan_id 
-                                       WHERE s.member_id = m.id AND s.expiry_date >= CURDATE()
-                                       ORDER BY s.expiry_date DESC, s.id DESC 
-                                       LIMIT 1) as plan_name 
+                                      s.expiry_date,
+                                      s.start_date,
+                                      p.name as plan_name,
+                                      p.duration_months,
+                                      p.duration_minutes,
+                                      p.is_test_promo
                                FROM members m 
+                               LEFT JOIN subscriptions s ON s.id = (
+                                   SELECT s2.id FROM subscriptions s2 
+                                   WHERE s2.member_id = m.id 
+                                   ORDER BY s2.expiry_date DESC LIMIT 1
+                               )
+                               LEFT JOIN membership_plans p ON p.id = s.plan_id
                                WHERE m.id = ?");
         $stmt->execute([$_SESSION['member_id']]);
         return $stmt->fetch(PDO::FETCH_ASSOC);

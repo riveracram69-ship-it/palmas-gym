@@ -14,7 +14,7 @@ try {
         $stmt->execute([$member_id]);
         $member = $stmt->fetch();
 
-        $plans = $pdo->query("SELECT id, name, price, duration_months FROM membership_plans ORDER BY price ASC")->fetchAll();
+        $plans = $pdo->query("SELECT id, name, price, duration_months, duration_minutes, is_test_promo FROM membership_plans ORDER BY price ASC")->fetchAll();
 
         $sub_stmt = $pdo->prepare(
             "SELECT s.*, p.name as plan_name FROM subscriptions s
@@ -50,20 +50,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pdo->beginTransaction();
 
-            // Calculate renewal expiry: if still active, extend from current expiry; otherwise start from today
-            $base_date = date('Y-m-d');
-            if ($current_sub && !empty($current_sub['expiry_date']) && strtotime($current_sub['expiry_date']) >= strtotime(date('Y-m-d'))) {
-                $base_date = $current_sub['expiry_date'];
+            // Calculate renewal expiry: if still active, extend from current expiry; otherwise start from now
+            $now_str = date('Y-m-d H:i:s');
+            if ($current_sub && !empty($current_sub['expiry_date']) && strtotime($current_sub['expiry_date']) > time()) {
+                $base_datetime = $current_sub['expiry_date'];
+            } else {
+                $base_datetime = $now_str;
             }
 
             // Get plan duration
-            $p_stmt = $pdo->prepare("SELECT duration_months, name FROM membership_plans WHERE id = ?");
+            $p_stmt = $pdo->prepare("SELECT duration_months, duration_minutes, name FROM membership_plans WHERE id = ?");
             $p_stmt->execute([$plan_id]);
             $plan = $p_stmt->fetch();
 
-            $duration_months = intval($plan['duration_months'] ?? 1);
-            $start_date  = $base_date;
-            $expiry_date = date('Y-m-d', strtotime("{$base_date} + {$duration_months} months"));
+            $duration_minutes = intval($plan['duration_minutes'] ?? 0);
+            $duration_months  = intval($plan['duration_months'] ?? 0);
+            $start_date       = $base_datetime;
+
+            if ($duration_minutes > 0) {
+                $expiry_date = date('Y-m-d H:i:s', strtotime("{$base_datetime} + {$duration_minutes} minutes"));
+            } else {
+                if ($duration_months <= 0) $duration_months = 1;
+                $expiry_date = date('Y-m-d 23:59:59', strtotime("{$base_datetime} + {$duration_months} months"));
+            }
 
             // Insert new subscription
             $stmt = $pdo->prepare("INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_by) VALUES (?, ?, ?, ?, ?)");
@@ -157,11 +166,15 @@ if ($current_sub && $current_sub['expiry_date']) {
                     <label>Membership Plan *</label>
                     <select name="plan_id" id="plan-select" class="form-control" required>
                         <option value="" disabled selected>Choose a plan…</option>
-                        <?php foreach ($plans as $p): ?>
+                        <?php foreach ($plans as $p): 
+                            $is_min = intval($p['duration_minutes'] ?? 0) > 0;
+                            $dur_label = $is_min ? ($p['duration_minutes'] . ' min') : ($p['duration_months'] . ' mo.');
+                        ?>
                         <option value="<?php echo $p['id']; ?>"
                                 data-price="<?php echo $p['price']; ?>"
-                                data-months="<?php echo $p['duration_months']; ?>">
-                            <?php echo htmlspecialchars($p['name']); ?> — ₱<?php echo number_format($p['price'], 2); ?> / <?php echo $p['duration_months']; ?> mo.
+                                data-months="<?php echo $p['duration_months']; ?>"
+                                data-minutes="<?php echo $p['duration_minutes']; ?>">
+                            <?php echo htmlspecialchars($p['name']); ?> — ₱<?php echo number_format($p['price'], 2); ?> / <?php echo $dur_label; ?>
                         </option>
                         <?php endforeach; ?>
                     </select>
@@ -248,15 +261,25 @@ const preview     = document.getElementById('plan-preview');
 
 planSelect.addEventListener('change', function () {
     const opt = this.options[this.selectedIndex];
-    const price  = parseFloat(opt.dataset.price)  || 0;
-    const months = parseInt(opt.dataset.months)   || 1;
+    const price   = parseFloat(opt.dataset.price)   || 0;
+    const months  = parseInt(opt.dataset.months)    || 0;
+    const minutes = parseInt(opt.dataset.minutes)   || 0;
 
     amountInput.value = price.toFixed(2);
 
-    const expiry = new Date();
-    expiry.setMonth(expiry.getMonth() + months);
-    document.getElementById('preview-months').textContent = months + ' Month' + (months > 1 ? 's' : '');
-    document.getElementById('preview-expiry').textContent = expiry.toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+    const baseExpiry = <?php echo ($current_sub && !empty($current_sub['expiry_date']) && strtotime($current_sub['expiry_date']) > time()) ? json_encode($current_sub['expiry_date']) : 'null'; ?>;
+    const expiry = baseExpiry ? new Date(baseExpiry) : new Date();
+
+    if (minutes > 0) {
+        expiry.setMinutes(expiry.getMinutes() + minutes);
+        document.getElementById('preview-months').textContent = minutes + ' Minute' + (minutes > 1 ? 's' : '');
+        document.getElementById('preview-expiry').textContent = expiry.toLocaleString('en-PH', { year:'numeric', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+    } else {
+        const m = months > 0 ? months : 1;
+        expiry.setMonth(expiry.getMonth() + m);
+        document.getElementById('preview-months').textContent = m + ' Month' + (m > 1 ? 's' : '');
+        document.getElementById('preview-expiry').textContent = expiry.toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+    }
     preview.style.display = 'block';
 });
 

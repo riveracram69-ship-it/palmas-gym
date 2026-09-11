@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // 1. Fetch request details with ROW LOCK to prevent concurrent double-approvals
         $stmt = $pdo->prepare("
-            SELECT r.*, m.full_name, m.email, m.status as member_status, p.name as plan_name, p.price as plan_price, p.duration_months 
+            SELECT r.*, m.full_name, m.email, m.status as member_status, p.name as plan_name, p.price as plan_price, p.duration_months, p.duration_minutes, p.is_test_promo 
             FROM renewal_requests r
             JOIN members m ON r.member_id = m.id
             JOIN membership_plans p ON r.plan_id = p.id
@@ -35,20 +35,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $admin_id = $_SESSION['user_id'] ?? null;
 
             if ($action === 'approve') {
-                // 1. Fetch active subscription expiry date if any
+                // 1. Fetch active subscription expiry date if any (only extend if still strictly active in the future)
                 $cur_sub_stmt = $pdo->prepare("
                     SELECT expiry_date FROM subscriptions 
-                    WHERE member_id = ? AND expiry_date >= CURDATE() 
+                    WHERE member_id = ? AND expiry_date > NOW() 
                     ORDER BY expiry_date DESC LIMIT 1
                 ");
                 $cur_sub_stmt->execute([$req['member_id']]);
                 $active_sub = $cur_sub_stmt->fetch(PDO::FETCH_ASSOC);
 
-                $base_date = ($active_sub && !empty($active_sub['expiry_date'])) ? $active_sub['expiry_date'] : date('Y-m-d');
-                $start_date = $base_date;
-                $months = intval($req['duration_months'] ?? 1);
-                if ($months <= 0) $months = 1;
-                $expiry_date = date('Y-m-d', strtotime("{$base_date} + {$months} months"));
+                $duration_minutes = intval($req['duration_minutes'] ?? 0);
+                $duration_months  = intval($req['duration_months'] ?? 0);
+
+                if ($active_sub && !empty($active_sub['expiry_date'])) {
+                    $base_time = strtotime($active_sub['expiry_date']);
+                    $start_date = $active_sub['expiry_date'];
+                } else {
+                    $base_time = time();
+                    $start_date = date('Y-m-d H:i:s', $base_time);
+                }
+
+                if ($duration_minutes > 0) {
+                    $expiry_date = date('Y-m-d H:i:s', strtotime("+{$duration_minutes} minutes", $base_time));
+                } else {
+                    if ($duration_months <= 0) $duration_months = 1;
+                    $expiry_date = date('Y-m-d H:i:s', strtotime("+{$duration_months} months", $base_time));
+                }
 
                 // 2. Insert new active subscription
                 $sub_stmt = $pdo->prepare("
@@ -207,7 +219,7 @@ try {
     $query = "
         SELECT r.*, m.full_name, m.membership_id, m.status as member_status,
                (SELECT expiry_date FROM subscriptions WHERE member_id = m.id ORDER BY expiry_date DESC LIMIT 1) as current_expiry,
-               p.name as plan_name, p.price as plan_price, p.duration_months,
+               p.name as plan_name, p.price as plan_price, p.duration_months, p.duration_minutes, p.is_test_promo,
                u.name as admin_name
         FROM renewal_requests r
         JOIN members m ON r.member_id = m.id
@@ -300,17 +312,26 @@ try {
                             <td>
                                 <div class="cell-primary" style="font-weight:600;"><?php echo htmlspecialchars($r['plan_name']); ?></div>
                                 <div style="font-weight:700; color:var(--success); font-size:0.95rem;">₱<?php echo number_format($r['plan_price'], 2); ?></div>
-                                <div class="cell-secondary" style="font-size:0.72rem;"><?php echo $r['duration_months']; ?> month(s)</div>
+                                <div class="cell-secondary" style="font-size:0.72rem;">
+                                    <?php 
+                                    if (!empty($r['duration_minutes']) && $r['duration_minutes'] > 0) {
+                                        echo $r['duration_minutes'] . ' minute(s)';
+                                    } else {
+                                        echo $r['duration_months'] . ' month(s)';
+                                    }
+                                    ?>
+                                </div>
                             </td>
 
                             <!-- Current Expiration -->
                             <td>
                                 <?php if (!empty($r['current_expiry'])): ?>
                                     <?php 
-                                    $is_expired = (strtotime($r['current_expiry']) < strtotime(date('Y-m-d')));
+                                    $is_expired = (strtotime($r['current_expiry']) < time());
+                                    $has_time = (!empty($r['duration_minutes']) && $r['duration_minutes'] > 0) || date('H:i:s', strtotime($r['current_expiry'])) !== '00:00:00';
                                     ?>
                                     <div style="font-size:0.85rem; font-weight:600; color:<?php echo $is_expired ? 'var(--danger)' : 'var(--text-main)'; ?>;">
-                                        <?php echo date('M d, Y', strtotime($r['current_expiry'])); ?>
+                                        <?php echo date($has_time ? 'M d, Y h:i A' : 'M d, Y', strtotime($r['current_expiry'])); ?>
                                     </div>
                                     <div style="font-size:0.72rem; color:<?php echo $is_expired ? 'var(--danger)' : 'var(--text-muted)'; ?>;">
                                         <?php echo $is_expired ? '● Expired' : '● Active'; ?>
