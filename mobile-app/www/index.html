@@ -1468,7 +1468,7 @@
       bottom: 0;
       left: 0;
       right: 0;
-      max-height: 80vh;
+      max-height: 82vh;
       background: var(--card);
       border-top: 1px solid var(--border);
       border-radius: 24px 24px 0 0;
@@ -1477,48 +1477,177 @@
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       flex-direction: column;
-      padding: 20px;
-      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6);
+      padding: 16px 18px;
+      box-shadow: 0 -8px 36px rgba(0, 0, 0, 0.7);
     }
 
     .notif-panel.open {
       transform: translateY(0);
     }
 
-    .notif-item {
-      background: var(--card-elevated);
-      border-radius: 16px;
-      padding: 14px 16px;
-      margin-bottom: 10px;
+    .notif-drag-bar {
+      width: 40px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 auto 14px;
+      opacity: 0.8;
+      flex-shrink: 0;
+    }
+
+    .notif-filter-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 2px 2px 10px 2px;
+      margin-bottom: 12px;
+      -webkit-overflow-scrolling: touch;
+      flex-shrink: 0;
+    }
+
+    .notif-filter-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .notif-filter-chip {
+      background: rgba(29, 89, 68, 0.2);
       border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 0 14px;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 16px;
+      white-space: nowrap;
+      cursor: pointer;
+      flex-shrink: 0;
+      line-height: 1;
+      transition: all 0.2s ease;
+    }
+
+    .notif-filter-chip.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #061F18;
+      box-shadow: 0 2px 8px rgba(82, 183, 136, 0.35);
+    }
+
+    .notif-card {
+      background: var(--card-elevated);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 13px 15px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+      transition: border-color 0.2s ease, background 0.2s ease;
       position: relative;
     }
 
-    .notif-item.unread {
-      border-color: rgba(82, 183, 136, 0.4);
+    .notif-card:last-child {
+      margin-bottom: 0;
     }
 
-    .notif-item.unread::before {
-      content: '';
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      width: 8px;
-      height: 8px;
+    .notif-card.unread {
+      background: rgba(18, 61, 46, 0.65);
+      border-color: rgba(82, 183, 136, 0.45);
+    }
+
+    .notif-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .notif-title-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .notif-icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .notif-icon-box.success {
+      background: rgba(82, 183, 136, 0.16);
+      border: 1px solid rgba(82, 183, 136, 0.35);
+      color: var(--primary);
+    }
+
+    .notif-icon-box.danger,
+    .notif-icon-box.warning {
+      background: rgba(240, 106, 106, 0.16);
+      border: 1px solid rgba(240, 106, 106, 0.35);
+      color: #f87171;
+    }
+
+    .notif-icon-box.info {
+      background: rgba(96, 165, 250, 0.16);
+      border: 1px solid rgba(96, 165, 250, 0.35);
+      color: #60a5fa;
+    }
+
+    .notif-title-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .notif-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .notif-title {
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .notif-unread-dot {
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: var(--primary);
-      box-shadow: 0 0 8px var(--primary);
+      box-shadow: 0 0 6px var(--primary);
+      flex-shrink: 0;
     }
 
-    .notif-badge-tag {
-      font-size: 11px;
-      font-weight: 800;
-      padding: 2px 8px;
-      border-radius: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      display: inline-block;
-      margin-bottom: 4px;
+    .notif-time {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-top: 2px;
+      letter-spacing: 0.2px;
+    }
+
+    .notif-body {
+      color: var(--text-secondary);
+      font-size: 0.82rem;
+      line-height: 1.45;
+      margin: 4px 0 0 42px;
+      word-break: break-word;
     }
 
     /* ── CUSTOM DIALOGS & BOTTOM SHEETS ───────────────────────────── */
@@ -3479,30 +3608,31 @@
        ══════════════════════════════════════════════════════════ -->
   <div class="notif-overlay" id="notif-overlay" onclick="closeNotifPanel()"></div>
   <div class="notif-panel" id="notif-panel">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+    <div class="notif-drag-bar"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-shrink:0;">
       <div>
-        <h3 style="font-weight:800; margin:0; color:var(--text-primary); font-size:1.15rem;">Notifications</h3>
+        <h3 style="font-weight:800; margin:0; color:var(--text-primary); font-size:1.15rem; font-family:'Outfit',sans-serif;">Notifications</h3>
         <p style="color:var(--text-muted); font-size:12px; margin:2px 0 0;" id="notif-unread-count">0 unread</p>
       </div>
-      <div style="display:flex; gap:8px;">
-        <button onclick="markAllRead()" style="background:rgba(82, 183, 136,0.15); border:1px solid var(--border); border-radius:10px; color:var(--primary); font-size:12px; font-weight:700; padding:6px 12px; cursor:pointer;">
-          <i class="fa-solid fa-check-double" style="margin-right:4px;"></i>Mark Read
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button onclick="markAllRead()" style="background:rgba(82, 183, 136,0.15); border:1px solid var(--border); border-radius:10px; color:var(--primary); font-size:12px; font-weight:700; padding:6px 12px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+          <i class="fa-solid fa-check-double"></i> Mark Read
         </button>
-        <button onclick="closeNotifPanel()" style="background:none; border:none; color:var(--text-muted); font-size:1.3rem; cursor:pointer; padding:4px 8px;">✕</button>
+        <button onclick="closeNotifPanel()" style="background:rgba(255,255,255,0.06); border:1px solid var(--border); color:var(--text-muted); font-size:1rem; cursor:pointer; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;">✕</button>
       </div>
     </div>
 
     <!-- Notification Category Filter Chips -->
-    <div class="history-filter-scroll" style="margin-bottom:10px;">
-      <button type="button" class="history-filter-chip active" id="ncat-all" onclick="filterNotifications('ALL')">All</button>
-      <button type="button" class="history-filter-chip" id="ncat-payment" onclick="filterNotifications('Payment')">Payment</button>
-      <button type="button" class="history-filter-chip" id="ncat-membership" onclick="filterNotifications('Membership')">Membership</button>
-      <button type="button" class="history-filter-chip" id="ncat-expiration" onclick="filterNotifications('Expiration')">Expiration</button>
-      <button type="button" class="history-filter-chip" id="ncat-attendance" onclick="filterNotifications('Attendance')">Attendance</button>
-      <button type="button" class="history-filter-chip" id="ncat-account" onclick="filterNotifications('Account')">Account</button>
+    <div class="notif-filter-scroll">
+      <button type="button" class="notif-filter-chip active" id="ncat-all" onclick="filterNotifications('ALL')">All</button>
+      <button type="button" class="notif-filter-chip" id="ncat-payment" onclick="filterNotifications('Payment')">Payment</button>
+      <button type="button" class="notif-filter-chip" id="ncat-membership" onclick="filterNotifications('Membership')">Membership</button>
+      <button type="button" class="notif-filter-chip" id="ncat-expiration" onclick="filterNotifications('Expiration')">Expiration</button>
+      <button type="button" class="notif-filter-chip" id="ncat-attendance" onclick="filterNotifications('Attendance')">Attendance</button>
+      <button type="button" class="notif-filter-chip" id="ncat-account" onclick="filterNotifications('Account')">Account</button>
     </div>
 
-    <div id="notif-list" style="flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;"></div>
+    <div id="notif-list" style="flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:calc(20px + env(safe-area-inset-bottom, 0px));"></div>
   </div>
 
   <!-- ══════════════════════════════════════════════════════════
@@ -6279,14 +6409,15 @@ async function openReceiptModal(txIdOrRef) {
     container.innerHTML = `
       <div class="receipt-paper" id="printable-receipt">
         <div class="receipt-header">
-          <div style="width:48px; height:48px; background:#081c15; border-radius:12px; margin:0 auto 8px; display:flex; align-items:center; justify-content:center; color:#52b788; font-size:1.4rem;">
-            <i class="fa-solid fa-dumbbell"></i>
+          <div style="width:68px; height:68px; border-radius:18px; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; background:#081c15; border:1.5px solid rgba(82,183,136,0.35); box-shadow:0 4px 14px rgba(0,0,0,0.12); padding:6px; overflow:hidden;">
+            <img src="assets/images/palmas-logo.png" alt="Palma's Elite Gym" style="width:100%; height:100%; object-fit:contain;" onerror="this.parentElement.innerHTML='<i class=\'fa-solid fa-dumbbell\' style=\'color:#52b788; font-size:1.8rem;\'></i>';" />
           </div>
-          <h2 style="font-family:'Outfit'; font-size:1.3rem; margin:0; color:#111827; font-weight:800;">${p.gym.name}</h2>
-          <p style="margin:2px 0 0; font-size:0.75rem; color:#6b7280;">${p.gym.tagline}</p>
-          <p style="margin:2px 0 0; font-size:0.72rem; color:#9ca3af;">${p.gym.contact}</p>
-          <div style="margin-top:10px; display:inline-block; background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46; font-size:0.72rem; font-weight:800; padding:2px 10px; border-radius:12px;">
-            ${p.receipt_no}
+          <h2 style="font-family:'Outfit',sans-serif; font-size:1.35rem; margin:0; color:#111827; font-weight:800; letter-spacing:0.3px;">${p.gym.name || "Palma's Elite Gym"}</h2>
+          <p style="margin:3px 0 0; font-size:0.75rem; color:#4b5563; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Official Digital Receipt</p>
+          <p style="margin:2px 0 0; font-size:0.72rem; color:#6b7280;">${p.gym.tagline || 'Excellence in Every Rep'}</p>
+          <div style="margin-top:10px; display:inline-flex; align-items:center; gap:6px; background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46; font-size:0.74rem; font-weight:800; padding:3px 12px; border-radius:12px;">
+            <i class="fa-solid fa-circle-check" style="color:#10b981;"></i>
+            <span>${p.receipt_no || p.reference_no}</span>
           </div>
         </div>
 
@@ -6306,14 +6437,15 @@ async function openReceiptModal(txIdOrRef) {
         </div>
 
         <div class="receipt-footer">
-          <p style="margin:0 0 4px; font-weight:600; color:#059669;">✓ Verified Official Gym Receipt</p>
-          <p style="margin:0;">Thank you for your dedication to fitness!</p>
+          <p style="margin:0 0 4px; font-weight:700; color:#059669;"><i class="fa-solid fa-shield-halved"></i> Verified Official Gym Receipt</p>
+          <p style="margin:0;">Thank you for being part of Palma's Elite Gym!</p>
         </div>
       </div>
 
-      <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
-        <button class="btn-primary" onclick="window.print()"><i class="fa-solid fa-print"></i> Print / Save Receipt</button>
-        <button class="btn-outline" onclick="closeReceiptModal()">Close Receipt</button>
+      <div style="margin-top:16px; display:flex; flex-direction:column; gap:10px;">
+        <button class="btn-primary" onclick="closeReceiptModal()" style="height:50px;">
+          <i class="fa-solid fa-check"></i> Done (Close Receipt)
+        </button>
       </div>
     `;
 
@@ -6643,18 +6775,43 @@ function renderFilteredNotifications() {
   }
 
   list.innerHTML = filtered.map(n => {
-    const isUnread = n.is_unread || n.status === 'unread';
+    const isUnread = n.is_unread || n.status === 'unread' || n.unread;
+
+    let iconClass = 'fa-bell';
+    let iconTheme = 'info';
+    const titleLower = (n.title || '').toLowerCase();
+    const typeLower = (n.type || '').toLowerCase();
+
+    if (titleLower.includes('expir') || titleLower.includes('reject') || titleLower.includes('warning') || typeLower === 'danger') {
+      iconClass = 'fa-triangle-exclamation';
+      iconTheme = 'danger';
+    } else if (titleLower.includes('approv') || titleLower.includes('paid') || titleLower.includes('renew') || titleLower.includes('activat') || typeLower === 'success') {
+      iconClass = 'fa-circle-check';
+      iconTheme = 'success';
+    } else if (titleLower.includes('attend') || titleLower.includes('check-in') || titleLower.includes('visit')) {
+      iconClass = 'fa-calendar-check';
+      iconTheme = 'info';
+    } else if (n.icon) {
+      iconClass = n.icon.replace('fa-solid ', '');
+    }
+
     return `
-      <div class="card" style="padding:14px; margin-bottom:10px; background:${isUnread ? 'rgba(18, 61, 46, 0.95)' : 'var(--card)'}; border-left: 3px solid ${isUnread ? 'var(--primary)' : 'var(--border)'};">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <strong style="color:var(--text-primary); font-size:0.88rem; display:flex; align-items:center; gap:6px;">
-            <i class="fa-solid ${n.icon || 'fa-bell'}" style="color:var(--primary);"></i>
-            ${n.title}
-            ${isUnread ? '<span style="width:7px; height:7px; background:var(--primary); border-radius:50%; display:inline-block;"></span>' : ''}
-          </strong>
-          <span style="color:var(--text-muted); font-size:0.72rem;">${n.time || ''}</span>
+      <div class="notif-card ${isUnread ? 'unread' : ''}">
+        <div class="notif-header">
+          <div class="notif-title-wrap">
+            <div class="notif-icon-box ${iconTheme}">
+              <i class="fa-solid ${iconClass}"></i>
+            </div>
+            <div class="notif-title-text">
+              <div class="notif-title-row">
+                <span class="notif-title">${n.title || 'Notification'}</span>
+                ${isUnread ? '<span class="notif-unread-dot" title="Unread"></span>' : ''}
+              </div>
+            </div>
+          </div>
+          <span class="notif-time">${n.time || ''}</span>
         </div>
-        <p style="color:var(--text-secondary); font-size:0.82rem; margin:6px 0 0; line-height:1.4;">${n.message || ''}</p>
+        <p class="notif-body">${n.message || ''}</p>
       </div>
     `;
   }).join('');
