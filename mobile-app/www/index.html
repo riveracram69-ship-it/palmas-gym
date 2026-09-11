@@ -2374,13 +2374,10 @@
                 <span id="card-status-pill" class="status-pill pill-active">● ACTIVE MEMBER</span>
               </div>
 
-              <!-- QR Countdown Bar -->
-              <div style="max-width:220px; margin:0 auto 12px;">
-                <div class="progress-bar-wrap" style="height:5px;">
-                  <div id="qr-countdown-fill" class="progress-bar-fill" style="width:100%;"></div>
-                </div>
-                <p style="font-size:0.72rem; color:var(--text-muted); margin:4px 0 0; letter-spacing:0.3px;">
-                  <i class="fa-solid fa-shield-halved" style="color:var(--primary); margin-right:4px;"></i>Dynamic HMAC Security Pass
+              <!-- Fixed Member QR Pass Info -->
+              <div style="max-width:220px; margin:0 auto 12px; text-align:center;">
+                <p style="font-size:0.75rem; color:var(--text-muted); margin:4px 0 0; letter-spacing:0.3px;">
+                  <i class="fa-solid fa-qrcode" style="color:var(--primary); margin-right:4px;"></i>Official Member Pass QR Code
                 </p>
               </div>
 
@@ -4570,6 +4567,9 @@ function initMainView(memberId) {
   if (eyeIcon) eyeIcon.className = 'fa-regular fa-eye';
 
   showScreen('view-main');
+  switchToTab('tab-pass');
+  setTimeout(() => switchToTab('tab-pass'), 100);
+  setTimeout(() => switchToTab('tab-pass'), 350);
   loadDashboard(memberId);
 }
 
@@ -4943,8 +4943,8 @@ async function loadDashboard(memberId) {
     // Dynamic Test Promo Countdown
     checkAndStartTestPromoCountdown(m);
 
-    renderQRCode(data.qr_token || m.membership_id);
-    startQRCountdown();
+    // Fixed permanent Member Pass QR Code
+    renderQRCode(m.membership_id);
 
     // Populate Tab 2: Attendance
     renderAttendance(data.attendance || []);
@@ -5025,39 +5025,21 @@ let currentActiveTab = 'tab-pass';
 
 function handleTabChange(e) {
   currentActiveTab = e.detail.tab;
-  if (currentActiveTab === 'tab-pass' && currentMember) {
-    startQRCountdown();
-  } else if (currentActiveTab === 'tab-payments') {
+  if (currentActiveTab === 'tab-payments') {
     loadPaymentHistory();
   }
 }
 
 function switchToTab(tabName) {
+  currentActiveTab = tabName;
   const tabs = document.querySelector('ion-tabs');
   if (tabs && typeof tabs.select === 'function') {
     tabs.select(tabName);
   }
 }
 
-
 function startQRCountdown() {
   clearInterval(qrCountdownTimer);
-  const bar = document.getElementById('qr-countdown-fill');
-  let seconds = 15;
-  qrCountdownTimer = setInterval(() => {
-    seconds--;
-    if (bar) bar.style.width = `${(seconds / 15) * 100}%`;
-    if (seconds <= 0) {
-      seconds = 15;
-      // Only refresh QR token if user is actively on Pass tab
-      if (currentActiveTab === 'tab-pass' && currentMember) {
-        // Regenerate local rotating time-slot token or light refresh
-        const timeSlot = Math.floor(Date.now() / 15000);
-        const dynamicToken = `${currentMember.membership_id}:${timeSlot}`;
-        renderQRCode(dynamicToken);
-      }
-    }
-  }, 1000);
 }
 
 
@@ -6459,6 +6441,7 @@ function logout(silent = false) {
   localStorage.removeItem('peg_token');
   localStorage.removeItem('peg_pending_identifier');
   currentMember = null;
+  switchToTab('tab-pass');
   if (typeof google !== 'undefined' && google.accounts) {
     try { google.accounts.id.disableAutoSelect(); } catch (e) {}
   }

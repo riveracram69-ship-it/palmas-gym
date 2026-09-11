@@ -62,7 +62,8 @@ try {
     $cannot_renew_reason = null;
     if (!empty($member['expiry_date']) && !$is_expired) {
         $diff_sec = strtotime($member['expiry_date']) - $now_time;
-        $is_minute_promo = (!empty($member['duration_minutes']) && $member['duration_minutes'] > 0);
+        $is_minute_promo = (!empty($member['duration_minutes']) && $member['duration_minutes'] > 0)
+            || preg_match('/(\d+)\s*(?:min|minute)/i', $member['plan_name'] ?? '');
         $threshold_sec = $is_minute_promo ? 300 : (3 * 86400); // 5 mins for promo, 3 days for regular
 
         if ($diff_sec > $threshold_sec) {

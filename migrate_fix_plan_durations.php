@@ -57,14 +57,19 @@ try {
         }
     }
 
-    // 4. Correct erroneously long subscriptions (e.g. 60-minute promo set to 1 month)
+    // 4. Correct erroneously scheduled or long subscriptions for minute-level promos
+    // Catches: 1) expiry > 24 hours from start_date, 2) start_date scheduled in far future, 3) expiry in far future
     $sub_stmt = $pdo->query("
         SELECT s.id, s.member_id, s.plan_id, s.start_date, s.expiry_date, s.created_at,
                p.name as plan_name, p.duration_minutes
         FROM subscriptions s
         JOIN membership_plans p ON s.plan_id = p.id
         WHERE (p.duration_minutes > 0 OR p.name LIKE '%MINUTE%')
-          AND TIMESTAMPDIFF(HOUR, s.start_date, s.expiry_date) > 24
+          AND (
+            s.expiry_date > DATE_ADD(NOW(), INTERVAL 1 DAY)
+            OR s.start_date > DATE_ADD(NOW(), INTERVAL 1 DAY)
+            OR TIMESTAMPDIFF(HOUR, s.start_date, s.expiry_date) > 24
+          )
     ");
     $bad_subs = $sub_stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -73,14 +78,22 @@ try {
         if ($mins <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $bs['plan_name'], $m)) {
             $mins = intval($m[1]);
         }
-        if ($mins <= 0) $mins = 60; // fallback to 60 minutes
+        if ($mins <= 0) $mins = 30;
 
-        $start_ts = !empty($bs['start_date']) ? strtotime($bs['start_date']) : (!empty($bs['created_at']) ? strtotime($bs['created_at']) : time());
-        $corrected_expiry = date('Y-m-d H:i:s', strtotime("+{$mins} minutes", $start_ts));
+        // Base the start date on actual creation time
+        $created_ts = !empty($bs['created_at']) ? strtotime($bs['created_at']) : 0;
+        if ($created_ts > 0) {
+            $base_ts = $created_ts;
+        } else {
+            $base_ts = time();
+        }
 
-        $pdo->prepare("UPDATE subscriptions SET expiry_date = ? WHERE id = ?")
-            ->execute([$corrected_expiry, $bs['id']]);
-        echo "  [✓] Fixed subscription #{$bs['id']} for member #{$bs['member_id']} ({$bs['plan_name']}): Expiry corrected to {$corrected_expiry}\n";
+        $corrected_start = date('Y-m-d H:i:s', $base_ts);
+        $corrected_expiry = date('Y-m-d H:i:s', strtotime("+{$mins} minutes", $base_ts));
+
+        $pdo->prepare("UPDATE subscriptions SET start_date = ?, expiry_date = ? WHERE id = ?")
+            ->execute([$corrected_start, $corrected_expiry, $bs['id']]);
+        echo "  [✓] Fixed subscription #{$bs['id']} for member #{$bs['member_id']} ({$bs['plan_name']}): Start -> {$corrected_start}, Expiry -> {$corrected_expiry}\n";
     }
 
     echo "=== REPAIR COMPLETE ===\n";

@@ -50,23 +50,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $duration_minutes = intval($pm[1]);
                 }
 
-                if ($active_sub && !empty($active_sub['expiry_date'])) {
-                    $diff_hours = (strtotime($active_sub['expiry_date']) - time()) / 3600;
-                    if ($duration_minutes > 0 && $diff_hours > 24) {
-                        $base_time = time();
-                        $start_date = date('Y-m-d H:i:s', $base_time);
-                    } else {
-                        $base_time = strtotime($active_sub['expiry_date']);
-                        $start_date = $active_sub['expiry_date'];
-                    }
-                } else {
-                    $base_time = time();
-                    $start_date = date('Y-m-d H:i:s', $base_time);
-                }
-
                 if ($duration_minutes > 0) {
+                    // Minute-based test promos always start NOW unless currently active and expiring within 5 minutes
+                    $base_time = time();
+                    if ($active_sub && !empty($active_sub['expiry_date'])) {
+                        $active_ts = strtotime($active_sub['expiry_date']);
+                        $diff_sec = $active_ts - time();
+                        if ($diff_sec > 0 && $diff_sec <= 300) {
+                            $base_time = $active_ts;
+                        }
+                    }
+                    $start_date = date('Y-m-d H:i:s', $base_time);
                     $expiry_date = date('Y-m-d H:i:s', strtotime("+{$duration_minutes} minutes", $base_time));
                 } else {
+                    if ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time()) {
+                        $base_time = strtotime($active_sub['expiry_date']);
+                        $start_date = $active_sub['expiry_date'];
+                    } else {
+                        $base_time = time();
+                        $start_date = date('Y-m-d H:i:s', $base_time);
+                    }
                     if ($duration_months <= 0) $duration_months = 1;
                     $expiry_date = date('Y-m-d H:i:s', strtotime("+{$duration_months} months", $base_time));
                 }

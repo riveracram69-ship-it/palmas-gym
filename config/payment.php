@@ -84,29 +84,27 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         $active_sub = $sub_stmt->fetch(PDO::FETCH_ASSOC);
 
         $now_str = date('Y-m-d H:i:s');
-        if ($active_sub && !empty($active_sub['expiry_date'])) {
-            $diff_hours = (strtotime($active_sub['expiry_date']) - time()) / 3600;
-            if ($duration_minutes > 0 && $diff_hours > 24) {
-                // Erroneously far future from a prior bug -> reset base to now
-                $base_datetime = $now_str;
-                $start_date = $now_str;
-            } else {
-                // Member is still active -> extend from existing expiration timestamp
-                $base_datetime = $active_sub['expiry_date'];
-                $start_date = $active_sub['expiry_date'];
-            }
-        } else {
-            // Member is expired or new -> start from now
-            $base_datetime = $now_str;
-            $start_date = $now_str;
-        }
-
         if ($duration_minutes > 0) {
             // Temporary-duration promotion (e.g. 30 or 60 minutes)
+            // Only extend if active sub is expiring within 5 minutes; otherwise start now
+            $base_datetime = $now_str;
+            if ($active_sub && !empty($active_sub['expiry_date'])) {
+                $diff_sec = strtotime($active_sub['expiry_date']) - time();
+                if ($diff_sec > 0 && $diff_sec <= 300) {
+                    $base_datetime = $active_sub['expiry_date'];
+                }
+            }
+            $start_date = $base_datetime;
             $new_expiry = date('Y-m-d H:i:s', strtotime("{$base_datetime} + {$duration_minutes} minutes"));
             $duration_label = "{$duration_minutes} Minute" . ($duration_minutes > 1 ? "s" : "");
         } else {
             // Month-based plan
+            if ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time()) {
+                $base_datetime = $active_sub['expiry_date'];
+            } else {
+                $base_datetime = $now_str;
+            }
+            $start_date = $base_datetime;
             if ($duration_months <= 0) $duration_months = 1;
             $new_expiry = date('Y-m-d 23:59:59', strtotime("{$base_datetime} + {$duration_months} months"));
             $duration_label = "{$duration_months} Month" . ($duration_months > 1 ? "s" : "");

@@ -50,13 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pdo->beginTransaction();
 
-            // Calculate renewal expiry: if still active, extend from current expiry; otherwise start from now
             $now_str = date('Y-m-d H:i:s');
-            if ($current_sub && !empty($current_sub['expiry_date']) && strtotime($current_sub['expiry_date']) > time()) {
-                $base_datetime = $current_sub['expiry_date'];
-            } else {
-                $base_datetime = $now_str;
-            }
 
             // Get plan duration
             $p_stmt = $pdo->prepare("SELECT duration_months, duration_minutes, name FROM membership_plans WHERE id = ?");
@@ -69,14 +63,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $duration_minutes = intval($pm[1]);
             }
 
-            if ($duration_minutes > 0 && ($base_datetime !== $now_str) && ((strtotime($base_datetime) - time()) > 86400)) {
-                $base_datetime = $now_str;
-            }
-            $start_date = $base_datetime;
-
             if ($duration_minutes > 0) {
+                // Minute promos start now unless actively expiring within 5 minutes
+                $base_datetime = $now_str;
+                if ($current_sub && !empty($current_sub['expiry_date'])) {
+                    $diff_sec = strtotime($current_sub['expiry_date']) - time();
+                    if ($diff_sec > 0 && $diff_sec <= 300) {
+                        $base_datetime = $current_sub['expiry_date'];
+                    }
+                }
+                $start_date = $base_datetime;
                 $expiry_date = date('Y-m-d H:i:s', strtotime("{$base_datetime} + {$duration_minutes} minutes"));
             } else {
+                if ($current_sub && !empty($current_sub['expiry_date']) && strtotime($current_sub['expiry_date']) > time()) {
+                    $base_datetime = $current_sub['expiry_date'];
+                } else {
+                    $base_datetime = $now_str;
+                }
+                $start_date = $base_datetime;
                 if ($duration_months <= 0) $duration_months = 1;
                 $expiry_date = date('Y-m-d 23:59:59', strtotime("{$base_datetime} + {$duration_months} months"));
             }
