@@ -363,9 +363,6 @@ try {
                 </select>
             </form>
 
-            <a href="attendance.php" class="btn btn-outline btn-action">
-                <i class="fas fa-qrcode"></i> Kiosk Scanner
-            </a>
             <a href="add-member.php" class="btn btn-primary btn-action">
                 <i class="fas fa-user-plus"></i> Add Member
             </a>
@@ -502,13 +499,22 @@ try {
                 <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">New profile &amp; pass</div>
             </div>
         </a>
-        <a href="attendance.php" class="quick-action-btn">
+        <a href="members.php" class="quick-action-btn">
             <div class="quick-action-icon" style="background:#e0f2fe; color:#0284c7;">
+                <i class="fas fa-users"></i>
+            </div>
+            <div>
+                <div>Members Directory</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Search &amp; manage passes</div>
+            </div>
+        </a>
+        <a href="attendance.php" class="quick-action-btn">
+            <div class="quick-action-icon" style="background:#e8f5e9; color:#2e7d32;">
                 <i class="fas fa-qrcode"></i>
             </div>
             <div>
-                <div>QR Terminal</div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Live check-in scan</div>
+                <div>QR Kiosk Scanner</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Turnstile &amp; check-in</div>
             </div>
         </a>
         <a href="payments.php" class="quick-action-btn">
@@ -517,25 +523,25 @@ try {
             </div>
             <div>
                 <div>Record Payment</div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Cash / GCash / Maya</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Cash &amp; transactions</div>
             </div>
         </a>
-        <a href="renewal-requests.php" class="quick-action-btn">
-            <div class="quick-action-icon" style="background:#ffebee; color:#e53935;">
-                <i class="fas fa-file-invoice-dollar"></i>
+        <a href="plans.php" class="quick-action-btn">
+            <div class="quick-action-icon" style="background:#f3e8ff; color:#7e22ce;">
+                <i class="fas fa-tags"></i>
             </div>
             <div>
-                <div>Renewals</div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Review online requests</div>
+                <div>Gym Packages</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Plans &amp; pricing</div>
             </div>
         </a>
         <a href="reports.php" class="quick-action-btn">
-            <div class="quick-action-icon" style="background:#f3e8ff; color:#9333ea;">
+            <div class="quick-action-icon" style="background:#fce7f3; color:#be185d;">
                 <i class="fas fa-chart-line"></i>
             </div>
             <div>
                 <div>Financial Reports</div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Export CSV &amp; Excel</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Export &amp; analytics</div>
             </div>
         </a>
     </div>

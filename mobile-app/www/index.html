@@ -2659,38 +2659,20 @@
             </div>
           </div>
 
-          <!-- Quick Access Buttons -->
-          <div style="padding: 0 16px;">
-            <h4 style="color:var(--text-secondary); font-size:0.72rem; text-transform:uppercase; font-weight:800; margin:0 0 10px; letter-spacing:0.5px;">
-              <i class="fa-solid fa-bolt" style="color:var(--primary); margin-right:5px;"></i>Quick Access
-            </h4>
-            <div class="quick-actions-grid">
-              <div class="quick-action-btn" onclick="switchToTab('tab-attendance')">
-                <div class="quick-action-icon purple"><i class="fa-solid fa-calendar-check"></i></div>
-                <span class="quick-action-label">Attendance</span>
+          <!-- Context-Aware Pass Action Card (Renew / Extend) -->
+          <div id="pass-renew-prompt-card" style="display:none; margin:0 16px 14px; background:linear-gradient(135deg, rgba(82,183,136,0.14) 0%, rgba(27,67,50,0.4) 100%); border:1px solid rgba(82,183,136,0.35); border-radius:18px; padding:14px 16px; align-items:center; justify-content:space-between; gap:12px;">
+            <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+              <div style="width:38px; height:38px; border-radius:10px; background:rgba(82,183,136,0.2); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">
+                <i class="fa-solid fa-arrows-rotate"></i>
               </div>
-              <div class="quick-action-btn" onclick="switchToTab('tab-payments')">
-                <div class="quick-action-icon gold"><i class="fa-solid fa-receipt"></i></div>
-                <span class="quick-action-label">Payments</span>
-              </div>
-              <div class="quick-action-btn" onclick="switchToTab('tab-profile')">
-                <div class="quick-action-icon blue"><i class="fa-solid fa-user-circle"></i></div>
-                <span class="quick-action-label">My Profile</span>
-              </div>
-              <div class="quick-action-btn" onclick="openRenewalModal()">
-                <div class="quick-action-icon green"><i class="fa-solid fa-arrows-rotate"></i></div>
-                <span class="quick-action-label">Renew</span>
+              <div style="min-width:0;">
+                <p id="pass-renew-title" style="margin:0; font-size:0.88rem; font-weight:800; color:#fff;">Membership Due for Renewal</p>
+                <p id="pass-renew-sub" style="margin:2px 0 0; font-size:0.75rem; color:var(--text-secondary);">Instant automated pass activation via GCash/Maya</p>
               </div>
             </div>
-          </div>
-
-          <!-- Pending Renewal Banner -->
-          <div id="home-pending-banner" class="pending-renewal-banner" style="margin:0 16px 14px; display:none;">
-            <div class="pending-renewal-icon"><i class="fa-solid fa-spinner fa-spin"></i></div>
-            <div style="flex:1; min-width:0;">
-              <p style="margin:0; font-size:0.78rem; font-weight:800; color:var(--warning); text-transform:uppercase; letter-spacing:0.5px;">Renewal Under Review</p>
-              <p id="home-pending-text" style="margin:3px 0 0; font-size:0.78rem; color:var(--text-secondary); line-height:1.4;">Your renewal request is pending admin approval.</p>
-            </div>
+            <button type="button" class="btn-primary" onclick="openRenewalModal()" style="padding:9px 16px; font-size:0.8rem; font-weight:800; height:auto; width:auto; border-radius:10px; white-space:nowrap;">
+              Renew Now
+            </button>
           </div>
 
           <!-- Club Information -->
@@ -5148,17 +5130,30 @@ async function loadDashboard(memberId) {
     setEl('prof-memid-display', m.membership_id);
     setEl('prof-days-remaining', timeRemainingStr);
 
-    // Pending Renewal Banner on Home Tab
-    const pendingBanner = document.getElementById('home-pending-banner');
-    const pendingText = document.getElementById('home-pending-text');
-    if (pendingBanner) {
-      if (data.pending_renewal) {
-        pendingBanner.style.display = 'flex';
-        if (pendingText) {
-          pendingText.textContent = `Renewal for ${data.pending_renewal.plan_name || 'Membership Plan'} is currently pending admin review.`;
-        }
+    // Context-Aware Pass Renewal Prompt Card
+    const renewCard = document.getElementById('pass-renew-prompt-card');
+    const renewTitle = document.getElementById('pass-renew-title');
+    const renewSub = document.getElementById('pass-renew-sub');
+    if (renewCard) {
+      if (isExpired) {
+        renewCard.style.display = 'flex';
+        if (renewTitle) renewTitle.textContent = 'Membership Expired';
+        if (renewSub) renewSub.textContent = 'Renew now for instant gym access';
       } else {
-        pendingBanner.style.display = 'none';
+        let remDays = 999;
+        if (m.expiry_date) {
+          const parsedExp = parseSafeDate(m.expiry_date);
+          if (parsedExp) {
+            remDays = Math.max(0, Math.ceil((parsedExp.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+          }
+        }
+        if (remDays <= 7) {
+          renewCard.style.display = 'flex';
+          if (renewTitle) renewTitle.textContent = 'Membership Due for Renewal';
+          if (renewSub) renewSub.textContent = `${remDays} day${remDays > 1 ? 's' : ''} remaining • Tap to renew`;
+        } else {
+          renewCard.style.display = 'none';
+        }
       }
     }
 

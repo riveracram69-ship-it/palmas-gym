@@ -221,25 +221,43 @@ try {
             </div>
         </div>
 
-        <!-- Quick Actions -->
-        <p class="section-title fade-up fade-up-d3" style="padding:0 0.25rem;"><i class="fas fa-bolt"></i> Quick Access</p>
-        <div class="quick-actions fade-up fade-up-d3">
-            <a href="id-card.php" class="action-btn">
-                <div class="action-btn-icon green"><i class="fas fa-id-card"></i></div>
-                <span class="action-btn-label">My E-ID Card</span>
-            </a>
-            <a href="attendance.php" class="action-btn">
-                <div class="action-btn-icon purple"><i class="fas fa-calendar-check"></i></div>
-                <span class="action-btn-label">Attendance Log</span>
-            </a>
-            <a href="payments.php" class="action-btn">
-                <div class="action-btn-icon gold"><i class="fas fa-receipt"></i></div>
-                <span class="action-btn-label">Payment History</span>
-            </a>
-            <a href="profile.php" class="action-btn">
-                <div class="action-btn-icon blue"><i class="fas fa-user-circle"></i></div>
-                <span class="action-btn-label">My Profile</span>
-            </a>
+        <!-- Digital Pass & Quick Actions -->
+        <div class="card fade-up fade-up-d3" style="background:linear-gradient(135deg, rgba(45,106,79,0.08) 0%, rgba(82,183,136,0.04) 100%); border:1px solid rgba(82,183,136,0.25); border-radius:18px; padding:1.2rem; margin-bottom:1.25rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:38px; height:38px; border-radius:10px; background:#d8f3dc; color:#1b4332; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <div>
+                        <p style="margin:0; font-weight:700; font-size:0.95rem; color:var(--text-primary);">Entrance Pass</p>
+                        <p style="margin:0; font-size:0.75rem; color:var(--text-secondary);">Ready for turnstile scanner</p>
+                    </div>
+                </div>
+                <a href="id-card.php" class="btn" style="background:#2d6a4f; color:#fff; font-size:0.8rem; font-weight:700; padding:7px 15px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                    <i class="fas fa-id-card"></i> View Pass
+                </a>
+            </div>
+
+            <?php if ($expired || ($days_left !== null && $days_left <= 7)): ?>
+            <div style="padding-top:10px; border-top:1px dashed rgba(82,183,136,0.25); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <span style="font-size:0.82rem; font-weight:700; color:<?php echo $expired ? '#ef4444' : '#b45309'; ?>;">
+                    <i class="fas <?php echo $expired ? 'fa-circle-xmark' : 'fa-clock'; ?>"></i>
+                    <?php echo $expired ? 'Pass is currently expired' : "Expires in {$days_left} day" . ($days_left > 1 ? 's' : ''); ?>
+                </span>
+                <button type="button" class="renew-btn" style="padding:7px 16px; font-size:0.82rem; border-radius:10px;" onclick="openRenewModal()">
+                    <i class="fas fa-arrows-rotate"></i> Renew Pass Now
+                </button>
+            </div>
+            <?php else: ?>
+            <div style="padding-top:8px; border-top:1px dashed rgba(82,183,136,0.25); display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.78rem; color:var(--text-muted);">
+                    <i class="fas fa-circle-check" style="color:#2d6a4f;"></i> Subscription in good standing
+                </span>
+                <button type="button" style="background:transparent; border:none; color:var(--palmas-primary); font-weight:700; font-size:0.8rem; cursor:pointer; padding:4px;" onclick="openRenewModal()">
+                    Extend Pass <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+                </button>
+            </div>
+            <?php endif; ?>
         </div>
 
         <!-- Gym Info -->
