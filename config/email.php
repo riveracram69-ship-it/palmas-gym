@@ -64,6 +64,11 @@ function send_email_notification($to, $subject, $title, $body_text) {
 
     try {
         // SMTP Configuration
+        if (defined('SMTP_PASS') && (empty(SMTP_PASS) || str_contains(SMTP_PASS, 'REPLACE'))) {
+            // Local development or placeholder credentials: skip SMTP network connection
+            return true;
+        }
+
         $mail->isSMTP();
         $mail->Host       = SMTP_HOST;
         $mail->SMTPAuth   = true;
@@ -71,6 +76,7 @@ function send_email_notification($to, $subject, $title, $body_text) {
         $mail->Password   = SMTP_PASS;
         $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = SMTP_PORT;
+        $mail->Timeout    = 5;
 
         // SSL options for local environment / Windows OpenSSL compatibility
         $mail->SMTPOptions = array(
