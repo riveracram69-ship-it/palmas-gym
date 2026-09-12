@@ -6077,7 +6077,12 @@ function openCheckoutUrl(url) {
   if (!url) return;
   try {
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
-      window.Capacitor.Plugins.Browser.open({ url: url });
+      window.Capacitor.Plugins.Browser.open({
+        url: url,
+        windowName: '_blank',
+        presentationStyle: 'popover',
+        toolbarColor: '#082119'
+      });
       return;
     }
   } catch (e) {
@@ -6086,6 +6091,65 @@ function openCheckoutUrl(url) {
   const w = window.open(url, '_blank');
   if (!w || w.closed || typeof w.closed === 'undefined') {
     window.location.href = url;
+  }
+}
+
+// ── DEEP LINK & PAYMENT RETURN HANDLER ────────────────────────────
+async function handlePaymentReturn(urlStr) {
+  console.log('[PalmasGym] Payment return received:', urlStr);
+  let ref = null;
+  let status = null;
+
+  if (urlStr) {
+    try {
+      const normalizedUrl = urlStr.replace('palmasgym://', 'https://palmasgym.internal/');
+      const parsed = new URL(normalizedUrl);
+      ref = parsed.searchParams.get('ref');
+      status = parsed.searchParams.get('status');
+    } catch (e) {
+      const matchRef = urlStr.match(/[?&]ref=([^&#]+)/);
+      const matchStatus = urlStr.match(/[?&]status=([^&#]+)/);
+      if (matchRef) ref = decodeURIComponent(matchRef[1]);
+      if (matchStatus) status = decodeURIComponent(matchStatus[1]);
+    }
+  }
+
+  if (!ref) ref = currentPendingRef || currentResultRef;
+
+  // Dismiss in-app browser tab if still open
+  try {
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+      await window.Capacitor.Plugins.Browser.close();
+    }
+  } catch (e) {
+    console.warn('[PalmasGym] Browser close failed:', e);
+  }
+
+  if (!ref) {
+    refreshDashboard();
+    return;
+  }
+
+  // Ensure result step is shown on renewal modal
+  const m = document.getElementById('modal-renewal');
+  if (m && !m.isOpen) {
+    m.isOpen = true;
+  }
+  showCheckoutStep('result');
+
+  showToast('Verifying payment confirmation...');
+  const isDone = await pollPaymentStatus(ref, 1);
+  if (isDone) {
+    showToast('🎉 Payment confirmed! Your membership has been activated.', 5000);
+    setTimeout(() => {
+      closeRenewalModal();
+      switchToTab('tab-pass');
+    }, 2000);
+  } else if (status === 'cancelled') {
+    renderResultState('cancelled', { reference_code: ref });
+    showToast('Payment checkout was cancelled.');
+  } else {
+    startPaymentStatusPolling(ref);
   }
 }
 
@@ -6880,6 +6944,43 @@ window.addEventListener('DOMContentLoaded', async () => {
       });
     } catch (e) {}
   }
+
+  // ── CAPACITOR DEEP LINK & IN-APP BROWSER EVENT LISTENERS ─────────
+  try {
+    if (window.Capacitor && window.Capacitor.Plugins) {
+      const { App, Browser } = window.Capacitor.Plugins;
+
+      // Handle deep links when returning from PayMongo: palmasgym://checkout/result?ref=...&status=...
+      if (App && typeof App.addListener === 'function') {
+        App.addListener('appUrlOpen', (data) => {
+          console.log('[PalmasGym] Deep link received via appUrlOpen:', data);
+          if (data && data.url && (data.url.includes('palmasgym://') || data.url.includes('checkout/result'))) {
+            handlePaymentReturn(data.url);
+          }
+        });
+      }
+
+      // Handle in-app browser close/dismissal event
+      if (Browser && typeof Browser.addListener === 'function') {
+        Browser.addListener('browserFinished', () => {
+          console.log('[PalmasGym] Browser dismissed or closed');
+          if (currentPendingRef) {
+            handlePaymentReturn(null);
+          }
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('[PalmasGym] Error initializing appUrlOpen/Browser listeners:', err);
+  }
+
+  // Listen for window postMessage in case checkout opened in popup window
+  window.addEventListener('message', (evt) => {
+    if (evt && evt.data && evt.data.type === 'PALMAS_PAYMENT_RESULT') {
+      console.log('[PalmasGym] Window postMessage payment result:', evt.data);
+      handlePaymentReturn(`palmasgym://checkout/result?ref=${encodeURIComponent(evt.data.ref)}&status=${encodeURIComponent(evt.data.status)}`);
+    }
+  });
 });
 </script>
 </body>

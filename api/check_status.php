@@ -395,10 +395,71 @@ try {
                 <a href="<?= htmlspecialchars($appUrl) ?>/member/index.php" class="btn-action">
                     <i class="fa-solid fa-id-card"></i> VIEW DIGITAL PASS
                 </a>
-                <a href="palmasgym://checkout/result?ref=<?= urlencode($tx['reference_code']) ?>&status=<?= urlencode($tx['status']) ?>" class="btn-secondary">
+                <button type="button" id="btn-return-app" onclick="returnToMobileApp()" class="btn-secondary" style="cursor:pointer; width:100%;">
                     <i class="fa-solid fa-mobile-screen"></i> Return to Mobile App
-                </a>
+                </button>
+                <div id="auto-return-status" style="margin-top:12px; font-size:12px; color:#7EAA96; min-height:18px;"></div>
             </div>
+
+            <script>
+            function returnToMobileApp() {
+                var ref = <?= json_encode($tx['reference_code']) ?>;
+                var status = <?= json_encode($tx['status']) ?>;
+                var deepScheme = "palmasgym://checkout/result?ref=" + encodeURIComponent(ref) + "&status=" + encodeURIComponent(status);
+                var androidIntent = "intent://checkout/result?ref=" + encodeURIComponent(ref) + "&status=" + encodeURIComponent(status) + "#Intent;scheme=palmasgym;package=com.palmaselite.gymmember;end;";
+                var webFallback = <?= json_encode(htmlspecialchars($appUrl) . '/member/index.php') ?>;
+
+                var btn = document.getElementById('btn-return-app');
+                if (btn) {
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Returning to app...';
+                }
+
+                // If opened as popup/tab with opener, post message and close
+                try {
+                    if (window.opener && !window.opener.closed) {
+                        window.opener.postMessage({ type: 'PALMAS_PAYMENT_RESULT', ref: ref, status: status }, '*');
+                        window.close();
+                        return;
+                    }
+                } catch(e) {}
+
+                var isAndroid = /Android/i.test(navigator.userAgent);
+                var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+                if (isAndroid) {
+                    // Try Android Intent syntax first (native handling for Chrome Custom Tabs)
+                    window.location.href = androidIntent;
+                    setTimeout(function() {
+                        window.location.href = deepScheme;
+                    }, 500);
+                } else if (isMobile) {
+                    window.location.href = deepScheme;
+                } else {
+                    // Desktop browser fallback
+                    window.location.href = webFallback;
+                }
+            }
+
+            // Auto-trigger return countdown on mobile devices
+            (function() {
+                var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                var statusEl = document.getElementById('auto-return-status');
+                if (!isMobile || !statusEl) return;
+
+                var seconds = 3;
+                statusEl.textContent = 'Auto-returning to mobile app in ' + seconds + 's...';
+                var countdownInterval = setInterval(function() {
+                    seconds--;
+                    if (seconds > 0) {
+                        statusEl.textContent = 'Auto-returning to mobile app in ' + seconds + 's...';
+                    } else {
+                        clearInterval(countdownInterval);
+                        statusEl.textContent = 'Returning to app...';
+                        returnToMobileApp();
+                    }
+                }, 1000);
+            })();
+            </script>
         </body>
         </html>
         <?php
