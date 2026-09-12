@@ -13,7 +13,7 @@ if (isset($_SESSION['member_id'])) {
 $plans = [];
 try {
     if (isset($pdo) && $pdo) {
-        $stmt = $pdo->query("SELECT id, name, price, duration_months, benefits FROM membership_plans ORDER BY price ASC");
+        $stmt = $pdo->query("SELECT id, name, price, duration_months, duration_minutes, is_test_promo, benefits FROM membership_plans ORDER BY price ASC");
         $plans = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 } catch (Exception $e) {}
@@ -727,7 +727,14 @@ select.if{
               <div class="radio-dot" aria-hidden="true"></div>
               <div>
                 <div class="plan-name"><?php echo htmlspecialchars($p['name']); ?></div>
-                <div class="plan-dur"><i class="fa-regular fa-clock" aria-hidden="true"></i> <?php echo $p['duration_months']; ?> month<?php echo $p['duration_months']!=1?'s':''; ?></div>
+                <div class="plan-dur"><i class="fa-regular fa-clock" aria-hidden="true"></i> <?php 
+                  if (!empty($p['duration_minutes']) && (int)$p['duration_minutes'] > 0) {
+                      echo (int)$p['duration_minutes'] . ' minute' . ((int)$p['duration_minutes'] != 1 ? 's' : '');
+                  } else {
+                      $d_m = max(1, (int)($p['duration_months'] ?? 1));
+                      echo $d_m . ' month' . ($d_m != 1 ? 's' : '');
+                  }
+                ?></div>
               </div>
             </div>
             <div class="plan-price">&#8369;<?php echo number_format($p['price'],2); ?></div>

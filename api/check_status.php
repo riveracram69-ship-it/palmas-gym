@@ -384,10 +384,23 @@ try {
                         <span class="lbl">Payment Method</span>
                         <span class="val"><?= htmlspecialchars($tx['payment_method']) ?> (<?= htmlspecialchars($tx['gateway']) ?>)</span>
                     </div>
-                    <?php if ($formatted_valid_until): ?>
+                    <?php if ($formatted_valid_until): 
+                        $is_extended = false;
+                        if (!empty($validUntil) && !empty($tx['duration_months']) && (int)$tx['duration_months'] > 0) {
+                            $expected_max_ts = time() + ((int)$tx['duration_months'] * 31 * 86400) + (3 * 86400);
+                            if (strtotime($validUntil) > $expected_max_ts) {
+                                $is_extended = true;
+                            }
+                        }
+                    ?>
                     <div class="info-row">
                         <span class="lbl">Valid Until</span>
-                        <span class="val" style="color:#52B788;"><?= htmlspecialchars($formatted_valid_until) ?></span>
+                        <span class="val" style="color:#52B788;">
+                            <?= htmlspecialchars($formatted_valid_until) ?>
+                            <?php if ($is_extended): ?>
+                            <small style="display:block; font-size:11px; color:#7EAA96; font-weight:normal;">(Includes remaining days from previous active pass)</small>
+                            <?php endif; ?>
+                        </span>
                     </div>
                     <?php endif; ?>
                 </div>

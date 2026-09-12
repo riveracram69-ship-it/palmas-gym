@@ -57,7 +57,13 @@ try {
         
         <h3 class="section-title" style="margin-bottom:0.25rem;"><?php echo htmlspecialchars($p['name']); ?></h3>
         <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1.5rem;">
-            <i class="far fa-clock"></i> Duration: <?php echo $p['duration_months']; ?> Month<?php echo $p['duration_months'] > 1 ? 's' : ''; ?>
+            <i class="far fa-clock"></i> Duration: <?php 
+            if (!empty($p['duration_minutes']) && (int)$p['duration_minutes'] > 0) {
+                echo (int)$p['duration_minutes'] . ' Minute' . ((int)$p['duration_minutes'] > 1 ? 's' : '');
+            } else {
+                echo (int)$p['duration_months'] . ' Month' . ((int)$p['duration_months'] > 1 ? 's' : '');
+            }
+            ?>
         </p>
 
         <div style="margin-bottom:1.5rem;">

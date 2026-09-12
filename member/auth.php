@@ -183,11 +183,11 @@ function current_member($pdo) {
                                       p.duration_minutes,
                                       p.is_test_promo
                                FROM members m 
-                               LEFT JOIN subscriptions s ON s.id = (
-                                   SELECT s2.id FROM subscriptions s2 
-                                   WHERE s2.member_id = m.id 
-                                   ORDER BY s2.id DESC LIMIT 1
-                               )
+                                LEFT JOIN subscriptions s ON s.id = (
+                                    SELECT s2.id FROM subscriptions s2 
+                                    WHERE s2.member_id = m.id 
+                                    ORDER BY (s2.expiry_date >= NOW()) DESC, s2.expiry_date DESC, s2.id DESC LIMIT 1
+                                )
                                LEFT JOIN membership_plans p ON p.id = s.plan_id
                                WHERE m.id = ?");
         $stmt->execute([$_SESSION['member_id']]);
