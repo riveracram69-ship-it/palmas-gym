@@ -3515,7 +3515,7 @@
                 We could not confirm your payment.<br>
                 No membership activation has been made.
               </p>
-              <button class="btn-primary" onclick="showCheckoutStep('confirm-gcash')" style="margin-bottom:10px;">
+              <button class="btn-primary" onclick="retryRenewalPayment()" style="margin-bottom:10px;">
                 <i class="fa-solid fa-rotate-right"></i> Try Again
               </button>
               <button class="btn-outline" onclick="showCheckoutStep('method')">
@@ -6332,6 +6332,14 @@ function renderResultState(state, data = {}) {
   } else if (state === 'pending') {
     const refEl = document.getElementById('res-pending-ref');
     if (refEl) refEl.textContent = currentResultRef || '--';
+  }
+}
+
+function retryRenewalPayment() {
+  if (selectedRenewMethod === 'PayMongo' || selectedRenewMethod === 'Credit Card') {
+    showCheckoutStep('method');
+  } else {
+    showCheckoutStep('confirm-gcash');
   }
 }
 
