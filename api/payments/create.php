@@ -267,6 +267,16 @@ try {
             'id'    => (int)$plan['id'],
             'name'  => $plan['name'],
             'price' => $amount
+        ],
+        'checkout' => [
+            'ref_code'         => $ref_code,
+            'checkout_url'     => $checkout_url,
+            'amount'           => $amount,
+            'amount_formatted' => '₱' . number_format($amount, 2),
+            'plan_name'        => $plan['name'],
+            'payment_method'   => $payment_method,
+            'mode'             => $payment_mode,
+            'is_test'          => (bool)$is_test
         ]
     ]);
 

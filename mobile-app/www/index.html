@@ -3259,8 +3259,35 @@
             <p style="color:var(--text-muted); font-size:13px; margin:0;">Choose your preferred secure payment channel:</p>
           </div>
 
+          <!-- Test Mode Banner -->
+          <div id="checkout-test-mode-banner" style="display:none; background:rgba(245,158,11,0.12); border:1px dashed #f59e0b; color:#b45309; padding:10px 14px; border-radius:14px; margin-bottom:14px; font-size:0.75rem; font-weight:700; align-items:center; gap:8px;">
+            <i class="fa-solid fa-flask" style="color:#d97706; font-size:1rem; flex-shrink:0;"></i>
+            <div>
+              <div>PAYMONGO TEST MODE ACTIVE</div>
+              <div style="font-weight:400; font-size:0.7rem; color:#92400e; margin-top:2px;">Simulated sandbox environment &bull; No real money charged</div>
+            </div>
+          </div>
+
           <!-- Payment Method Cards -->
-          <div class="payment-method-card selected" id="pm-card-gcash" onclick="selectCheckoutMethod('GCash')">
+          <!-- 1. PayMongo Online Checkout (Instant Activation) -->
+          <div class="payment-method-card selected" id="pm-card-paymongo" onclick="selectCheckoutMethod('PayMongo')">
+            <div class="pm-left">
+              <div class="pm-icon-wrap" style="background:#4F46E5; box-shadow:0 4px 12px rgba(79,70,229,0.35); display:flex; align-items:center; justify-content:center;">
+                <i class="fa-solid fa-shield-halved" style="font-size:20px; color:#ffffff;"></i>
+              </div>
+              <div>
+                <div class="pm-title" style="display:flex; align-items:center; gap:8px;">
+                  <span>Pay Online (PayMongo)</span>
+                  <span style="font-size:10px; font-weight:800; background:rgba(79,70,229,0.2); color:#818cf8; padding:2px 8px; border-radius:6px; border:1px solid rgba(129,140,248,0.3);">INSTANT ACTIVATION</span>
+                </div>
+                <div class="pm-desc">GCash, Maya, Visa/Mastercard, QR Ph</div>
+              </div>
+            </div>
+            <div class="pm-radio"></div>
+          </div>
+
+          <!-- 2. Manual GCash Transfer -->
+          <div class="payment-method-card" id="pm-card-gcash" onclick="selectCheckoutMethod('GCash')">
             <div class="pm-left">
               <div class="pm-icon-wrap" style="background:#007DFE; box-shadow:0 4px 12px rgba(0,125,254,0.35);">
                 <svg viewBox="0 0 32 32" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -3270,15 +3297,16 @@
               </div>
               <div>
                 <div class="pm-title" style="display:flex; align-items:center; gap:8px;">
-                  GCash
-                  <span style="font-size:10px; font-weight:800; background:rgba(0,125,254,0.2); color:#60a5fa; padding:2px 8px; border-radius:6px; border:1px solid rgba(96,165,250,0.3);">E-WALLET</span>
+                  GCash (Manual Transfer)
+                  <span style="font-size:10px; font-weight:800; background:rgba(0,125,254,0.2); color:#60a5fa; padding:2px 8px; border-radius:6px; border:1px solid rgba(96,165,250,0.3);">STAFF REVIEW</span>
                 </div>
-                <div class="pm-desc">Instant GCash QR Ph &amp; E-Wallet Transfer</div>
+                <div class="pm-desc">Direct GCash transfer &bull; Staff verification required</div>
               </div>
             </div>
             <div class="pm-radio"></div>
           </div>
 
+          <!-- 3. Manual Maya Transfer -->
           <div class="payment-method-card" id="pm-card-maya" onclick="selectCheckoutMethod('Maya')">
             <div class="pm-left">
               <div class="pm-icon-wrap" style="background:#0D1117; border:1px solid rgba(0,214,100,0.35); box-shadow:0 4px 12px rgba(0,214,100,0.25);">
@@ -3291,53 +3319,16 @@
               </div>
               <div>
                 <div class="pm-title" style="display:flex; align-items:center; gap:8px;">
-                  Maya
-                  <span style="font-size:10px; font-weight:800; background:rgba(0,214,100,0.15); color:#00D664; padding:2px 8px; border-radius:6px; border:1px solid rgba(0,214,100,0.3);">E-WALLET</span>
+                  Maya (Manual Transfer)
+                  <span style="font-size:10px; font-weight:800; background:rgba(0,214,100,0.15); color:#00D664; padding:2px 8px; border-radius:6px; border:1px solid rgba(0,214,100,0.3);">STAFF REVIEW</span>
                 </div>
-                <div class="pm-desc">Maya Wallet, QR Ph &amp; Maya Bank Transfer</div>
+                <div class="pm-desc">Direct Maya transfer &bull; Staff verification required</div>
               </div>
             </div>
             <div class="pm-radio"></div>
           </div>
 
-          <div class="payment-method-card" id="pm-card-qrph" onclick="selectCheckoutMethod('QR Ph')">
-            <div class="pm-left">
-              <div class="pm-icon-wrap" style="background:#B91C1C; box-shadow:0 4px 12px rgba(185,28,28,0.35);">
-                <i class="fa-solid fa-qrcode" style="font-size:22px; color:#ffffff;"></i>
-              </div>
-              <div>
-                <div class="pm-title" style="display:flex; align-items:center; gap:8px;">
-                  QR Ph (All PH Banks)
-                  <span style="font-size:10px; font-weight:800; background:rgba(185,28,28,0.2); color:#fca5a5; padding:2px 8px; border-radius:6px; border:1px solid rgba(252,165,165,0.3);">NATIONAL QR</span>
-                </div>
-                <div class="pm-desc">BDO, BPI, UnionBank, GoTyme, SeaBank</div>
-              </div>
-            </div>
-            <div class="pm-radio"></div>
-          </div>
-
-          <div class="payment-method-card" id="pm-card-card" onclick="selectCheckoutMethod('Credit Card')">
-            <div class="pm-left">
-              <div class="pm-icon-wrap" style="background:#1A1F71; box-shadow:0 4px 12px rgba(26,31,113,0.4); display:flex; align-items:center; justify-content:center;">
-                <svg viewBox="0 0 34 22" width="30" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12.8 16.5L14.4 5.5h2.6l-1.6 11h-2.6zm9.2-10.7c-.6-.2-1.4-.4-2.5-.4-2.8 0-4.7 1.5-4.7 3.6 0 1.6 1.4 2.4 2.5 2.9 1 .5 1.4.9 1.4 1.4 0 .7-.9 1.1-1.7 1.1-1.1 0-1.8-.2-2.7-.6l-.4-.2-.4 2.3c.7.3 1.9.6 3.1.6 2.9 0 4.8-1.4 4.8-3.7 0-1.2-.8-2.2-2.5-3-1-.5-1.6-.9-1.6-1.4 0-.5.5-1 1.5-1 .9 0 1.5.2 2 .4l.3.1.4-2.1zm7.1 0H27c-.7 0-1.1.2-1.4.9l-4 9.8h2.9l.6-1.6h3.5l.3 1.6h2.5L29.1 5.8zm-3.4 6.7l1-2.9.6 2.9h-1.6zM11 5.8l-2.6 7.4-.3-1.5c-.5-1.6-2-3.5-3.8-4.4l2.4 9.5h2.9L14 5.8h-3z" fill="#FFFFFF"/>
-                  <path d="M5.8 5.8H1.2l-.1.2c3.6.9 6 3.2 7 5.7L7.1 5.8H5.8z" fill="#F7B600"/>
-                </svg>
-              </div>
-              <div>
-                <div class="pm-title" style="display:flex; align-items:center; gap:8px;">
-                  <span>Visa / Card</span>
-                  <div style="display:inline-flex; align-items:center; gap:5px;">
-                    <i class="fa-brands fa-cc-visa" style="color:#60a5fa; font-size:18px;"></i>
-                    <i class="fa-brands fa-cc-mastercard" style="color:#f87171; font-size:16px;"></i>
-                  </div>
-                </div>
-                <div class="pm-desc">Visa Debit / Credit Card Payment</div>
-              </div>
-            </div>
-            <div class="pm-radio"></div>
-          </div>
-
+          <!-- 4. Front Desk Cash -->
           <div class="payment-method-card" id="pm-card-cash" onclick="selectCheckoutMethod('Cash')">
             <div class="pm-left">
               <div class="pm-icon-wrap pm-icon-cash"><i class="fa-solid fa-store"></i></div>
@@ -3355,7 +3346,7 @@
           </div>
 
           <button class="btn-primary" id="btn-method-continue" onclick="proceedFromMethodSelection()" style="margin-top:8px; margin-bottom:10px;">
-            CONTINUE <i class="fa-solid fa-arrow-right" style="margin-left:6px;"></i>
+            <i class="fa-solid fa-lock"></i> PROCEED TO PAYMONGO CHECKOUT
           </button>
           <button class="btn-outline" onclick="showCheckoutStep('summary')">
             <i class="fa-solid fa-arrow-left"></i> Back to Summary
@@ -3502,7 +3493,11 @@
                 <span style="font-size:12px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Payment Reference:</span>
                 <div style="font-size:1.1rem; font-weight:800; color:var(--primary); font-family:monospace; margin-top:4px;" id="res-pending-ref">--</div>
               </div>
-              <button class="btn-primary" id="btn-check-pending-status" onclick="pollPaymentStatus(currentResultRef)" style="margin-bottom:10px;">
+              <!-- Re-open PayMongo checkout button if closed -->
+              <button class="btn-primary" id="btn-reopen-checkout" onclick="openCheckoutUrl(currentCheckoutUrl)" style="margin-bottom:10px; background:linear-gradient(135deg, #4f46e5, #4338ca);">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Open PayMongo Checkout Page
+              </button>
+              <button class="btn-outline" id="btn-check-pending-status" onclick="pollPaymentStatus(currentResultRef)" style="margin-bottom:10px;">
                 <i class="fa-solid fa-arrows-rotate"></i> Check Payment Status
               </button>
               <button class="btn-outline" onclick="closeRenewalModal(); refreshDashboard();">
@@ -5865,6 +5860,10 @@ async function openRenewalModal(preselectedPlanId = null) {
         availablePlans = data.plans;
         renderCheckoutPlanCards(availablePlans);
       }
+      const tb = document.getElementById('checkout-test-mode-banner');
+      if (tb) {
+        tb.style.display = (data && (data.is_test_mode || data.payment_mode === 'test')) ? 'flex' : 'none';
+      }
     }
   } catch (e) {
     console.warn("get_plans sync:", e);
@@ -5926,18 +5925,16 @@ function proceedToCheckoutSummary() {
 }
 
 function proceedToPaymentMethodSelection() {
-  selectCheckoutMethod(selectedRenewMethod || 'GCash');
+  selectCheckoutMethod(selectedRenewMethod || 'PayMongo');
   showCheckoutStep('method');
 }
 
 function selectCheckoutMethod(method) {
   selectedRenewMethod = method;
   const cards = {
+    'PayMongo': 'pm-card-paymongo',
     'GCash': 'pm-card-gcash',
     'Maya': 'pm-card-maya',
-    'QR Ph': 'pm-card-qrph',
-    'Credit Card': 'pm-card-card',
-    'GrabPay': 'pm-card-grab',
     'Cash': 'pm-card-cash'
   };
 
@@ -5948,6 +5945,17 @@ function selectCheckoutMethod(method) {
 
   const cashNotice = document.getElementById('checkout-cash-notice');
   if (cashNotice) cashNotice.style.display = (method === 'Cash') ? 'block' : 'none';
+
+  const btn = document.getElementById('btn-method-continue');
+  if (btn) {
+    if (method === 'PayMongo') {
+      btn.innerHTML = '<i class="fa-solid fa-lock"></i> PROCEED TO PAYMONGO CHECKOUT';
+    } else if (method === 'Cash') {
+      btn.innerHTML = '<i class="fa-solid fa-store"></i> REQUEST CASH RENEWAL';
+    } else {
+      btn.innerHTML = 'CONTINUE TO QR DETAILS <i class="fa-solid fa-arrow-right" style="margin-left:6px;"></i>';
+    }
+  }
 }
 
 function proceedFromMethodSelection() {
@@ -5956,11 +5964,16 @@ function proceedFromMethodSelection() {
     return;
   }
 
+  if (selectedRenewMethod === 'PayMongo' || selectedRenewMethod === 'Credit Card') {
+    executeGatewayCheckout();
+    return;
+  }
+
   const p = selectedRenewPlan;
   if (!p) return showToast('Please select a membership plan.');
   const priceFormatted = '₱' + parseFloat(p.price).toFixed(2);
 
-  // Configure GCash / Maya / QR Ph Confirmation Screen
+  // Configure GCash / Maya Confirmation Screen for manual transfer
   const amountEl = document.getElementById('confirm-gcash-amount');
   const titleEl  = document.getElementById('renew-modal-title');
   const nameEl   = document.getElementById('renew-account-name');
@@ -6139,16 +6152,35 @@ async function submitCashRenewalRequest() {
   }
 }
 
+let currentCheckoutUrl = '';
+
+function openCheckoutUrl(url) {
+  if (!url) return;
+  try {
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+      window.Capacitor.Plugins.Browser.open({ url: url });
+      return;
+    }
+  } catch (e) {
+    console.warn('Capacitor Browser plugin error:', e);
+  }
+  const w = window.open(url, '_blank');
+  if (!w || w.closed || typeof w.closed === 'undefined') {
+    window.location.href = url;
+  }
+}
+
 async function executeGatewayCheckout() {
   if (!selectedRenewPlanId) return showToast('Please select a membership plan.');
 
   const token = localStorage.getItem('peg_token');
   if (!token) return showToast('Session expired. Please sign in again.');
 
-  const btn = document.getElementById('btn-continue-to-gcash');
+  const btn = document.getElementById('btn-method-continue') || document.getElementById('btn-submit-qr-payment');
+  const origText = btn ? btn.innerHTML : '<i class="fa-solid fa-lock"></i> PROCEED TO PAYMONGO CHECKOUT';
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Connecting to GCash...';
+    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></div> Connecting to PayMongo...';
   }
 
   try {
@@ -6157,46 +6189,46 @@ async function executeGatewayCheckout() {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
         plan_id: selectedRenewPlanId,
-        payment_method: selectedRenewMethod || 'GCash'
+        payment_method: 'PayMongo'
       })
     });
 
     const data = await res.json();
+    const checkoutObj = data.checkout || data;
+    const checkoutUrl = checkoutObj.checkout_url;
+    const refCode     = checkoutObj.ref_code || checkoutObj.reference_code;
 
-    if (!data.success || !data.checkout || !data.checkout.checkout_url) {
-      throw new Error(data.message || 'Unable to create payment session.');
+    if (!data.success || !checkoutUrl) {
+      throw new Error(data.message || 'Unable to create PayMongo payment session.');
     }
 
-    const checkout = data.checkout;
-    currentPendingRef = checkout.ref_code;
-    currentResultRef  = checkout.ref_code;
-
-    // Open External / PayMongo Gateway Checkout
-    window.open(checkout.checkout_url, '_blank');
+    currentPendingRef  = refCode;
+    currentResultRef   = refCode;
+    currentCheckoutUrl = checkoutUrl;
 
     // Switch to Result Screen in Pending Mode
     renderResultState('pending', {
-      ref_code: checkout.ref_code,
-      amount_formatted: checkout.amount_formatted,
-      plan_name: checkout.plan_name,
-      payment_method: checkout.payment_method
+      ref_code: refCode,
+      amount_formatted: checkoutObj.amount_formatted || ('₱' + parseFloat(selectedRenewPlan.price).toFixed(2)),
+      plan_name: checkoutObj.plan_name || (selectedRenewPlan ? selectedRenewPlan.name : 'Membership Pass'),
+      payment_method: 'PayMongo',
+      checkout_url: checkoutUrl
     });
 
     showCheckoutStep('result');
 
+    // Open External / PayMongo Gateway Checkout
+    openCheckoutUrl(checkoutUrl);
+
     // Start proactive polling for webhook verification
-    startPaymentStatusPolling(checkout.ref_code);
+    startPaymentStatusPolling(refCode);
 
   } catch (err) {
-    showToast(err.message || 'Failed to connect to payment gateway.');
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Continue to GCash';
-    }
+    showToast(err.message || 'Failed to connect to payment gateway.', 4000);
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Continue to GCash';
+      btn.innerHTML = origText;
     }
   }
 }

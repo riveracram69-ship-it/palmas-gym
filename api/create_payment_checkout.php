@@ -193,13 +193,14 @@ try {
     // 7. Insert PENDING transaction into database with is_test tag
     $tx_stmt = $pdo->prepare("
         INSERT INTO payment_transactions 
-        (member_id, plan_id, reference_code, gateway_transaction_id, gateway, checkout_url, payment_method, amount, currency, status, is_test, expires_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PHP', 'PENDING', ?, DATE_ADD(NOW(), INTERVAL 30 MINUTE))
+        (member_id, plan_id, reference_code, gateway_transaction_id, paymongo_checkout_id, gateway, checkout_url, payment_method, amount, currency, status, is_test, expires_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PHP', 'PENDING', ?, DATE_ADD(NOW(), INTERVAL 30 MINUTE))
     ");
     $tx_stmt->execute([
         $member_id,
         $plan_id,
         $ref_code,
+        $gateway_tx_id,
         $gateway_tx_id,
         $gateway_name,
         $checkout_url,

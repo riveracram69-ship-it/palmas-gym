@@ -13,6 +13,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../config/env.php';
+require_once __DIR__ . '/../config/paymongo.php';
 
 try {
     $include_test = isset($_GET['include_test']) ? (int)$_GET['include_test'] : 1;
@@ -83,17 +85,19 @@ try {
     };
 
     echo json_encode([
-        'success' => true,
-        'plans' => $plans,
+        'success'      => true,
+        'payment_mode' => function_exists('get_payment_mode') ? get_payment_mode() : 'test',
+        'is_test_mode' => function_exists('is_paymongo_test_mode') ? is_paymongo_test_mode() : true,
+        'plans'        => $plans,
         'payment_info' => [
             'gcash' => [
-                'name' => $settings['gcash_name'] ?? "Palma's Elite Gym",
-                'number' => $settings['gcash_number'] ?? "0917-888-4961",
+                'name'     => $settings['gcash_name'] ?? "Palma's Elite Gym",
+                'number'   => $settings['gcash_number'] ?? "0917-888-4961",
                 'qr_image' => $format_qr_url($settings['gcash_qr_image'] ?? null)
             ],
             'maya' => [
-                'name' => $settings['maya_name'] ?? "Palma's Elite Gym",
-                'number' => $settings['maya_number'] ?? "0917-888-4961",
+                'name'     => $settings['maya_name'] ?? "Palma's Elite Gym",
+                'number'   => $settings['maya_number'] ?? "0917-888-4961",
                 'qr_image' => $format_qr_url($settings['maya_qr_image'] ?? null)
             ]
         ]
