@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/../config/env.php';
 require_member_login();
 
 $member = current_member($pdo);
@@ -32,12 +33,15 @@ $pay_count    = count($payments);
 $last_payment = $payments[0] ?? null;
 
 $method_icons = [
-    'Cash'         => ['icon' => 'fa-money-bill', 'color' => '#2d6a4f', 'bg' => 'rgba(45,106,79,0.1)'],
-    'GCash'        => ['icon' => 'fa-mobile-screen', 'color' => '#007dfe', 'bg' => 'rgba(0,125,254,0.12)'],
-    'Maya'         => ['icon' => 'fa-wallet', 'color' => '#059669', 'bg' => 'rgba(5,150,105,0.12)'],
-    'Credit Card'  => ['icon' => 'fa-credit-card', 'color' => '#1a1f71', 'bg' => 'rgba(26,31,113,0.12)'],
-    'Visa'         => ['icon' => 'fa-brands fa-cc-visa', 'color' => '#1a1f71', 'bg' => 'rgba(26,31,113,0.12)'],
-    'Bank Transfer'=> ['icon' => 'fa-building-columns', 'color' => '#d97706', 'bg' => 'rgba(217,119,6,0.1)'],
+    'Cash'              => ['icon' => 'fa-money-bill', 'color' => '#2d6a4f', 'bg' => 'rgba(45,106,79,0.1)'],
+    'GCash'             => ['icon' => 'fa-mobile-screen', 'color' => '#007dfe', 'bg' => 'rgba(0,125,254,0.12)'],
+    'Maya'              => ['icon' => 'fa-wallet', 'color' => '#059669', 'bg' => 'rgba(5,150,105,0.12)'],
+    'Credit Card'       => ['icon' => 'fa-credit-card', 'color' => '#1a1f71', 'bg' => 'rgba(26,31,113,0.12)'],
+    'Visa'              => ['icon' => 'fa-brands fa-cc-visa', 'color' => '#1a1f71', 'bg' => 'rgba(26,31,113,0.12)'],
+    'Bank Transfer'     => ['icon' => 'fa-building-columns', 'color' => '#d97706', 'bg' => 'rgba(217,119,6,0.1)'],
+    'PayMongo'          => ['icon' => 'fa-shield-halved', 'color' => '#10b981', 'bg' => 'rgba(16,185,129,0.12)'],
+    'PayMongo (Online)' => ['icon' => 'fa-shield-halved', 'color' => '#10b981', 'bg' => 'rgba(16,185,129,0.12)'],
+    'Online (PayMongo)' => ['icon' => 'fa-shield-halved', 'color' => '#10b981', 'bg' => 'rgba(16,185,129,0.12)'],
 ];
 ?>
 <!DOCTYPE html>
@@ -129,6 +133,16 @@ $method_icons = [
     </header>
 
     <main class="app-content">
+
+        <?php if (function_exists('is_paymongo_test_mode') && is_paymongo_test_mode()): ?>
+            <div class="fade-up" style="background:rgba(245,158,11,0.12); border:1px dashed #f59e0b; color:#b45309; padding:10px 14px; border-radius:14px; margin-bottom:1.25rem; font-size:0.75rem; font-weight:700; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-flask" style="color:#d97706; font-size:0.9rem;"></i>
+                <div>
+                    <div>PAYMONGO TEST MODE ACTIVE</div>
+                    <div style="font-weight:400; font-size:0.7rem; color:#92400e; margin-top:2px;">Simulated sandbox environment &bull; No real money charged</div>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <!-- Total Banner -->
         <div class="total-banner fade-up">
@@ -257,6 +271,9 @@ $method_icons = [
                                 <i class="fas <?php echo $mdata['icon']; ?>" style="font-size:0.55rem;"></i>
                                 <?php echo htmlspecialchars($method); ?>
                             </span>
+                            <?php if (!empty($p['is_test'])): ?>
+                                <span class="badge" style="background:#fef3c7; color:#b45309; border:1px solid #fcd34d; font-size:0.6rem; padding:1px 6px; border-radius:4px; font-weight:700;">TEST</span>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="list-item-right">

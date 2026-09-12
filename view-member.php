@@ -79,7 +79,7 @@ if (!$member): ?>
             <div style="padding:2rem; margin-top:-60px; display:flex; gap:2rem; align-items:flex-end;">
                 <div style="width:130px; height:130px; border-radius:20px; background:#fff; border:5px solid #fff; box-shadow:var(--shadow-md); overflow:hidden; display:flex; align-items:center; justify-content:center;">
                     <?php if($member['photo']): ?>
-                        <img src="<?php echo htmlspecialchars($member['photo']); ?>" style="width:100%; height:100%; object-fit:cover;">
+                        <img src="<?php echo htmlspecialchars($member['photo']); ?>" alt="<?php echo htmlspecialchars($member['full_name']); ?> Photo" style="width:100%; height:100%; object-fit:cover;">
                     <?php else: ?>
                         <span style="font-size:3rem; font-family:'Playfair Display', serif; color:var(--accent);"><?php echo strtoupper(substr($member['full_name'], 0, 1)); ?></span>
                     <?php endif; ?>
@@ -160,7 +160,7 @@ if (!$member): ?>
             <div id="id-card-capture" style="width:380px; height:640px; background:#ffffff; border-radius:32px; position:relative; overflow:hidden; margin:0 auto; box-shadow:0 30px 70px rgba(8,28,21,0.2); display:flex; flex-direction:column; border:1px solid rgba(255,255,255,0.8); justify-content:space-between;">
             
             <!-- OVERSIZED LOGO WATERMARK IN BACKGROUND (2.5% opacity) -->
-            <img src="assets/images/palmas-logo.png" style="position:absolute; right:-60px; top:-20px; width:280px; opacity:0.025; pointer-events:none; z-index:1; filter:grayscale(100%);">
+            <img src="assets/images/palmas-logo.png" alt="Palma's Elite Gym Watermark Logo" style="position:absolute; right:-60px; top:-20px; width:280px; opacity:0.025; pointer-events:none; z-index:1; filter:grayscale(100%);">
             
             <!-- TOP GRADIENT SECTION -->
             <div style="height:170px; background:linear-gradient(135deg, #133c2a 0%, #061510 100%); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:1.5rem 2rem 0; text-align:center; position:relative; z-index:2; overflow:hidden; flex-shrink:0;">
@@ -193,7 +193,7 @@ if (!$member): ?>
                         <!-- Actual Photo/Fallback Area -->
                         <div style="width:100%; height:100%; border-radius:50%; overflow:hidden; background:#f1f5f9; display:flex; align-items:center; justify-content:center; border:2px solid #ffffff; box-shadow:inset 0 2px 5px rgba(0,0,0,0.05);">
                             <?php if($member['photo']): ?>
-                                <img src="<?php echo htmlspecialchars($member['photo']); ?>" style="width:100%; height:100%; object-fit:cover;">
+                                <img src="<?php echo htmlspecialchars($member['photo']); ?>" alt="<?php echo htmlspecialchars($member['full_name']); ?> Photo" style="width:100%; height:100%; object-fit:cover;">
                             <?php else: ?>
                                 <div style="width:100%; height:100%; background:linear-gradient(135deg, var(--accent-dim) 0%, rgba(45,106,79,0.16) 100%); display:flex; align-items:center; justify-content:center;">
                                     <span style="font-size:3.2rem; font-family:'Outfit', sans-serif; font-weight:700; color:var(--accent); text-shadow:0 1px 0 rgba(255,255,255,0.7);"><?php echo strtoupper(substr($member['full_name'], 0, 1)); ?></span>

@@ -249,4 +249,46 @@ class PayMongoGateway {
 
         return null;
     }
+
+    /**
+     * Check if currently operating in Test/Sandbox mode
+     */
+    public static function isTestMode(): bool {
+        $secret = self::getSecretKey();
+        return (defined('PAYMONGO_MODE') && PAYMONGO_MODE === 'test') || 
+               (defined('PAYMENT_MODE') && PAYMENT_MODE === 'test') ||
+               str_starts_with($secret, 'sk_test_');
+    }
+
+    /**
+     * Retrieve individual Payment details from PayMongo API
+     */
+    public static function getPayment(string $paymentId): ?array {
+        $secretKey = self::getSecretKey();
+        if (empty($secretKey) || empty($paymentId)) {
+            return null;
+        }
+
+        $ch = curl_init(self::API_BASE . '/payments/' . urlencode($paymentId));
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_USERPWD        => $secretKey . ':',
+            CURLOPT_HTTPHEADER     => [
+                'Accept: application/json'
+            ],
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_SSL_VERIFYPEER => true
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode === 200 && $response) {
+            $decoded = json_decode($response, true);
+            return $decoded['data'] ?? null;
+        }
+
+        return null;
+    }
 }

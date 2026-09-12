@@ -387,6 +387,16 @@ try {
                 <p id="sum-plan-price" style="font-family:'Outfit',sans-serif; font-size:1.3rem; font-weight:800; color:var(--palmas-primary);"></p>
             </div>
 
+            <?php if (is_paymongo_test_mode()): ?>
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:0.75rem 1rem; margin-bottom:1.2rem; display:flex; align-items:center; gap:0.65rem; font-size:0.8rem; color:#1e40af;">
+                <i class="fas fa-flask" style="color:#2563eb; font-size:1.15rem; flex-shrink:0;"></i>
+                <div>
+                    <strong style="display:block; font-weight:700; color:#1d4ed8;">TEST MODE ACTIVE</strong>
+                    Payments are simulated in PayMongo Sandbox. No real money will be charged.
+                </div>
+            </div>
+            <?php endif; ?>
+
             <p style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:0.75rem;">Choose Payment Method</p>
 
             <!-- Payment Instructions Box -->
@@ -396,9 +406,10 @@ try {
             <div style="display:flex; flex-direction:column; gap:0.6rem; margin-bottom:1.25rem;">
                 <?php
                 $pmethods = [
-                    ['GCash', 'fa-mobile-screen',   '#2563eb', 'rgba(37,99,235,0.1)', 'GCash E-Wallet'],
-                    ['Maya',  'fa-wallet',          '#059669', 'rgba(5,150,105,0.1)', 'Maya E-Wallet'],
-                    ['Cash',  'fa-money-bill-wave', '#3e8241', 'rgba(62,130,65,0.1)', 'Cash (Front Desk)'],
+                    ['PayMongo', 'fa-credit-card',     '#6366f1', 'rgba(99,102,241,0.1)', 'Online Checkout (Cards, GCash, Maya, GrabPay)'],
+                    ['GCash',    'fa-mobile-screen',   '#2563eb', 'rgba(37,99,235,0.1)', 'Manual GCash Transfer'],
+                    ['Maya',     'fa-wallet',          '#059669', 'rgba(5,150,105,0.1)', 'Manual Maya Transfer'],
+                    ['Cash',     'fa-money-bill-wave', '#3e8241', 'rgba(62,130,65,0.1)', 'Cash (Front Desk)'],
                 ];
                 foreach($pmethods as [$pm, $icon, $clr, $bg, $label]):
                 ?>
@@ -408,7 +419,7 @@ try {
                         <i class="fas <?php echo $icon; ?>"></i>
                     </div>
                     <div style="flex:1;">
-                        <div style="font-weight:600; font-size:0.88rem; color:var(--text-primary);"><?php echo $pm; ?></div>
+                        <div style="font-weight:600; font-size:0.88rem; color:var(--text-primary);"><?php echo $pm === 'PayMongo' ? 'Pay Online (PayMongo)' : $pm; ?></div>
                         <div style="font-size:0.74rem; color:var(--text-secondary);"><?php echo $label; ?></div>
                     </div>
                     <span class="pay-check"><i class="fas fa-circle-check"></i></span>
@@ -700,12 +711,27 @@ function copyPaymentText(text, btn) {
 }
 
 function toggleRef(method) {
-    const isOnline = ['GCash', 'Maya'].includes(method);
-    document.getElementById('ref-group').style.display = isOnline ? 'block' : 'none';
+    const isManualOnline = ['GCash', 'Maya'].includes(method);
+    document.getElementById('ref-group').style.display = isManualOnline ? 'block' : 'none';
     const instructions = document.getElementById('payment-instructions');
+    const confirmBtn = document.getElementById('confirm-renew-btn');
     if (!instructions) return;
 
-    if (method === 'GCash') {
+    if (method === 'PayMongo') {
+        if (confirmBtn) confirmBtn.innerHTML = '<i class="fas fa-lock"></i> Proceed to PayMongo Checkout';
+        instructions.innerHTML = `
+            <div style="background:#eef2ff; border:1px solid #c7d2fe; border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem; color:#3730a3; font-weight:700; font-size:0.88rem; margin-bottom:0.35rem;">
+                    <i class="fas fa-shield-halved" style="color:#4f46e5;"></i> PayMongo Secure Checkout
+                </div>
+                <p style="font-size:0.82rem; color:#4338ca; line-height:1.5;">
+                    You will be redirected to the secure PayMongo payment portal to complete payment with <strong>GCash, Maya, Credit/Debit Card, or GrabPay</strong>. Your membership will activate automatically upon verification.
+                </p>
+            </div>`;
+        instructions.style.display = 'block';
+
+    } else if (method === 'GCash') {
+        if (confirmBtn) confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm Renewal';
         const num = gymPaymentSettings.gcash_number || '0917-000-0000';
         const name = gymPaymentSettings.gcash_name || "Palma's Elite Gym";
         const qrHtml = gymPaymentSettings.gcash_qr ? `
@@ -743,6 +769,7 @@ function toggleRef(method) {
         instructions.style.display = 'block';
 
     } else if (method === 'Maya') {
+        if (confirmBtn) confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm Renewal';
         const num = gymPaymentSettings.maya_number || '0918-000-0000';
         const name = gymPaymentSettings.maya_name || "Palma's Elite Gym";
         const qrHtml = gymPaymentSettings.maya_qr ? `
@@ -761,10 +788,10 @@ function toggleRef(method) {
                 </div>
                 
                 <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:0.75rem 0.9rem; margin-bottom:0.5rem;">
-                    <div style="font-size:0.72rem; color:#64748b;">Account Name:</div>
+                    <div style="font-size:0.72rem; color:#047857;">Account Name:</div>
                     <div style="font-weight:700; color:#0f172a; font-size:0.92rem; margin-bottom:0.4rem;">${name}</div>
                     
-                    <div style="font-size:0.72rem; color:#64748b;">Maya Mobile Number:</div>
+                    <div style="font-size:0.72rem; color:#047857;">Maya Mobile Number:</div>
                     <div style="display:flex; align-items:center; justify-content:space-between;">
                         <span style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:800; color:#059669; letter-spacing:0.5px;">${num}</span>
                         <button type="button" onclick="copyPaymentText('${num}', this)" style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; color:#334155; font-size:0.72rem; padding:4px 10px; cursor:pointer; transition:all 0.2s; font-weight:600;">
@@ -780,6 +807,7 @@ function toggleRef(method) {
         instructions.style.display = 'block';
 
     } else {
+        if (confirmBtn) confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm Renewal';
         instructions.innerHTML = `
             <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
                 <div style="display:flex; align-items:center; gap:0.5rem; color:#166534; font-weight:700; font-size:0.88rem; margin-bottom:0.35rem;">
@@ -800,6 +828,42 @@ async function submitRenewal() {
 
     if (!plan)   { alert('Please select a plan.'); return; }
     if (!method) { alert('Please choose a payment method.'); return; }
+
+    // ── PayMongo Online Checkout Redirect Flow ──
+    if (method.value === 'PayMongo') {
+        const btn = document.getElementById('confirm-renew-btn');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting to PayMongo...';
+        btn.disabled  = true;
+
+        try {
+            const res = await fetch('../api/payments/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    plan_id: plan.value,
+                    payment_method: 'all'
+                })
+            });
+            const data = await res.json();
+            if (data.success && data.checkout_url) {
+                window.location.href = data.checkout_url;
+                return;
+            } else {
+                alert(data.message || 'Payment initialization failed. Please try again.');
+                btn.innerHTML = '<i class="fas fa-lock"></i> Proceed to PayMongo Checkout';
+                btn.disabled  = false;
+                return;
+            }
+        } catch(e) {
+            alert('A network error occurred connecting to PayMongo. Please try again.');
+            btn.innerHTML = '<i class="fas fa-lock"></i> Proceed to PayMongo Checkout';
+            btn.disabled  = false;
+            return;
+        }
+    }
+
     if (['GCash', 'Maya'].includes(method.value) && !ref) {
         alert('Please enter your GCash / Maya Reference Number.'); return;
     }

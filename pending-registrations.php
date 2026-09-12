@@ -274,7 +274,7 @@ try {
                     <td>
                         <div class="member-cell">
                             <?php if (!empty($pm['google_picture'])): ?>
-                                <img src="<?php echo htmlspecialchars($pm['google_picture']); ?>" alt=""
+                                <img src="<?php echo htmlspecialchars($pm['google_picture']); ?>" alt="<?php echo htmlspecialchars($pm['full_name']); ?> avatar"
                                      style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #4285F4;"
                                      onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
                                 <div class="member-avatar" style="background:var(--accent-dim);color:var(--accent);font-weight:700;display:none;">

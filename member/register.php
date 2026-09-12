@@ -89,6 +89,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $validation_errors[] = "Passwords do not match.";
     }
 
+    if (empty($_POST['terms_consent'])) {
+        $validation_errors[] = "You must agree to the Terms & Conditions and Privacy Policy to register.";
+    }
+
     // Photo upload handling
     $photo_path = null;
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
@@ -765,6 +769,14 @@ select.if{
           </button>
         </div>
         <div class="hint" id="pw-hint" aria-live="polite"></div>
+      </div>
+
+      <!-- Terms & Privacy Consent -->
+      <div class="fg" style="margin-top:0.5rem; margin-bottom:1.25rem;">
+        <label for="terms_consent" style="display:flex; align-items:flex-start; gap:0.65rem; font-size:0.84rem; color:var(--c-muted); cursor:pointer; line-height:1.45;">
+          <input type="checkbox" name="terms_consent" id="terms_consent" value="1" required style="width:17px; height:17px; margin-top:2px; accent-color:var(--c-p, #3e8241); cursor:pointer; flex-shrink:0;" <?php echo !empty($_POST['terms_consent']) ? 'checked' : ''; ?>>
+          <span>I agree to the <a href="terms.php" target="_blank" style="color:var(--c-p, #3e8241); font-weight:600; text-decoration:underline;">Terms &amp; Conditions</a> and consent to the collection and processing of my personal data pursuant to the <a href="privacy.php" target="_blank" style="color:var(--c-p, #3e8241); font-weight:600; text-decoration:underline;">Privacy Policy</a>.</span>
+        </label>
       </div>
 
       <button type="submit" class="btn-primary" id="sub-btn">

@@ -460,7 +460,9 @@ img{max-width:100%;display:block}
   </a>
 
   <p class="help-footer">
-    Need help? Contact the gym front desk to retrieve your Membership ID.
+    Need help? Contact the gym front desk to retrieve your Membership ID.<br>
+    <a href="privacy.php" style="color:var(--c-muted); text-decoration:underline; font-size:0.75rem;">Privacy Policy</a> &bull;
+    <a href="terms.php" style="color:var(--c-muted); text-decoration:underline; font-size:0.75rem;">Terms &amp; Conditions</a>
   </p>
 
 </div><!-- /.wrap -->

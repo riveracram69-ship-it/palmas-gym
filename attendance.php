@@ -158,7 +158,7 @@ function processCheckin(membershipId) {
             let photoHtml = '';
             if (data.photo) {
                 const safePhoto = escapeHtml(data.photo);
-                photoHtml = `<img src="${safePhoto}" style="width:54px;height:54px;border-radius:12px;object-fit:cover;border:2px solid ${isCooldown ? '#F59E0B' : '#10B981'};">`;
+                photoHtml = `<img src="${safePhoto}" alt="${safeName} Photo" style="width:54px;height:54px;border-radius:12px;object-fit:cover;border:2px solid ${isCooldown ? '#F59E0B' : '#10B981'};">`;
             } else {
                 photoHtml = `<div style="width:54px;height:54px;border-radius:12px;background:${isCooldown ? '#FEF3C7' : '#D1FAE5'};color:${isCooldown ? '#B45309' : '#047857'};display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;">${safeName.charAt(0).toUpperCase()}</div>`;
             }

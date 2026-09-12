@@ -721,7 +721,7 @@ try {
                                     <div class="member-cell">
                                         <div class="member-avatar" style="width:34px; height:34px; border-radius:50%;">
                                             <?php if (!empty($top_m['photo'])): ?>
-                                                <img src="<?php echo htmlspecialchars($top_m['photo']); ?>" style="width:100%; height:100%; object-fit:cover;">
+                                                <img src="<?php echo htmlspecialchars($top_m['photo']); ?>" alt="<?php echo htmlspecialchars($top_m['full_name']); ?> photo" style="width:100%; height:100%; object-fit:cover;">
                                             <?php else: ?>
                                                 <?php echo strtoupper(substr($top_m['full_name'], 0, 1)); ?>
                                             <?php endif; ?>
@@ -958,7 +958,7 @@ function renderInactiveTable($list, $title) {
         echo '<td><div style="display:flex; align-items:center; gap:0.65rem;">';
         echo '<div style="width:32px; height:32px; border-radius:50%; background:var(--border); overflow:hidden; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem;">';
         if (!empty($m['photo'])) {
-            echo '<img src="' . htmlspecialchars($m['photo']) . '" style="width:100%; height:100%; object-fit:cover;">';
+            echo '<img src="' . htmlspecialchars($m['photo']) . '" alt="' . htmlspecialchars($m['full_name']) . ' photo" style="width:100%; height:100%; object-fit:cover;">';
         } else {
             echo strtoupper(substr($m['full_name'], 0, 1));
         }

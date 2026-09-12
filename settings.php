@@ -49,6 +49,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $gcash_name             = trim($_POST['gcash_name'] ?? '');
         $maya_number            = trim($_POST['maya_number'] ?? '');
         $maya_name              = trim($_POST['maya_name'] ?? '');
+        $gym_address            = trim($_POST['gym_address'] ?? '');
+        $gym_email              = trim($_POST['gym_email'] ?? '');
+        $gym_phone              = trim($_POST['gym_phone'] ?? '');
+        $gym_hours              = trim($_POST['gym_hours'] ?? '');
 
         if (empty($gym_name) || $max_capacity <= 0 || $renewal_threshold_days < 0) {
             $error = "Please provide valid values for all required fields.";
@@ -68,6 +72,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $save_setting('gcash_name', $gcash_name);
                 $save_setting('maya_number', $maya_number);
                 $save_setting('maya_name', $maya_name);
+                $save_setting('gym_address', $gym_address);
+                $save_setting('gym_email', $gym_email);
+                $save_setting('gym_phone', $gym_phone);
+                $save_setting('gym_hours', $gym_hours);
 
                 // Handle GCash QR Image Upload
                 if (isset($_FILES['gcash_qr']) && $_FILES['gcash_qr']['error'] === UPLOAD_ERR_OK) {
@@ -111,6 +119,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $app_settings['gcash_name']             = $gcash_name;
                 $app_settings['maya_number']            = $maya_number;
                 $app_settings['maya_name']              = $maya_name;
+                $app_settings['gym_address']            = $gym_address;
+                $app_settings['gym_email']              = $gym_email;
+                $app_settings['gym_phone']              = $gym_phone;
+                $app_settings['gym_hours']              = $gym_hours;
 
             } catch (Exception $e) {
                 $pdo->rollBack();
@@ -237,9 +249,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
+                <hr style="border:0; border-top:1px solid var(--border); margin:0.75rem 0;">
+
+                <!-- 3. Official Business Details -->
+                <h3 class="section-title" style="margin-bottom:0.25rem;"><i class="fas fa-building" style="color:var(--palmas-primary);"></i> Gym Business & Contact Details</h3>
+                <p class="cell-secondary" style="margin-bottom:1rem;">Official business address, support contact, and operating schedule displayed in member portals and legal notices.</p>
+
+                <div class="form-grid" style="grid-template-columns:1fr 1fr; gap:1rem;">
+                    <div class="form-group">
+                        <label for="gym_address">Physical Gym Address</label>
+                        <input type="text" id="gym_address" name="gym_address" class="form-control" placeholder="e.g. 123 Fitness Ave, City, Metro Manila" value="<?php echo htmlspecialchars($app_settings['gym_address'] ?? ''); ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gym_hours">Operating Schedule / Hours</label>
+                        <input type="text" id="gym_hours" name="gym_hours" class="form-control" placeholder="e.g. Mon – Sat: 6am - 10pm | Sun: 8am - 8pm" value="<?php echo htmlspecialchars($app_settings['gym_hours'] ?? ''); ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gym_email">Support / Contact Email</label>
+                        <input type="email" id="gym_email" name="gym_email" class="form-control" placeholder="e.g. support@palmaselitegym.ph" value="<?php echo htmlspecialchars($app_settings['gym_email'] ?? ''); ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gym_phone">Contact Phone / Hotline</label>
+                        <input type="text" id="gym_phone" name="gym_phone" class="form-control" placeholder="e.g. +63 917 000 0000" value="<?php echo htmlspecialchars($app_settings['gym_phone'] ?? ''); ?>">
+                    </div>
+                </div>
+
                 <div style="margin-top:0.5rem;">
                     <button type="submit" class="btn btn-primary" style="padding:0.75rem 1.75rem;">
-                        <i class="fas fa-floppy-disk"></i> Save Settings & E-Wallets
+                        <i class="fas fa-floppy-disk"></i> Save All Settings
                     </button>
                 </div>
             </div>

@@ -26,4 +26,10 @@ if (!isset($app_settings['gcash_qr_image'])) $app_settings['gcash_qr_image'] = '
 if (!isset($app_settings['maya_number'])) $app_settings['maya_number'] = '0918-000-0000';
 if (!isset($app_settings['maya_name'])) $app_settings['maya_name'] = "Palma's Elite Gym";
 if (!isset($app_settings['maya_qr_image'])) $app_settings['maya_qr_image'] = '';
+
+// Business & Contact Details Defaults
+if (!isset($app_settings['gym_address'])) $app_settings['gym_address'] = '123 Fitness Ave, Metro Manila, Philippines';
+if (!isset($app_settings['gym_email'])) $app_settings['gym_email'] = 'support@palmaselitegym.ph';
+if (!isset($app_settings['gym_phone'])) $app_settings['gym_phone'] = '+63 917 000 0000';
+if (!isset($app_settings['gym_hours'])) $app_settings['gym_hours'] = 'Mon – Sat: 6:00 AM – 10:00 PM | Sun: 8:00 AM – 8:00 PM';
 ?>

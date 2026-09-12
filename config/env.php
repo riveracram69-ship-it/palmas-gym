@@ -140,13 +140,18 @@
         define('GOOGLE_CLIENT_ID', $get_conf('GOOGLE_CLIENT_ID', ''));
     }
 
-    // Payment Mode: 'demo', 'test' (sandbox/test promo), or 'live' (production)
-    if (!defined('PAYMENT_MODE')) {
-        $mode = strtolower(trim($get_conf('PAYMENT_MODE', 'demo')));
+    // Payment Mode: 'test' (sandbox/test promo), 'demo', or 'live' (production)
+    // Supports PAYMONGO_MODE (primary) and PAYMENT_MODE (backward-compatible)
+    if (!defined('PAYMONGO_MODE')) {
+        $raw_mode = $get_conf('PAYMONGO_MODE', $get_conf('PAYMENT_MODE', 'test'));
+        $mode = strtolower(trim($raw_mode));
         if (!in_array($mode, ['demo', 'test', 'live'], true)) {
-            $mode = 'demo';
+            $mode = 'test';
         }
-        define('PAYMENT_MODE', $mode);
+        define('PAYMONGO_MODE', $mode);
+    }
+    if (!defined('PAYMENT_MODE')) {
+        define('PAYMENT_MODE', PAYMONGO_MODE);
     }
 
     // PayMongo Payment Gateway Configuration (GCash, Maya, Card, GrabPay)
@@ -186,6 +191,12 @@ if (!function_exists('is_payment_test')) {
 if (!function_exists('is_payment_live')) {
     function is_payment_live(): bool {
         return get_payment_mode() === 'live';
+    }
+}
+
+if (!function_exists('is_paymongo_test_mode')) {
+    function is_paymongo_test_mode(): bool {
+        return get_payment_mode() === 'test';
     }
 }
 

@@ -141,10 +141,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:1.5rem; padding-bottom:1.25rem; border-bottom:1px solid var(--border);">
             <div style="width:80px; height:80px; border-radius:50%; border:2px solid var(--border); overflow:hidden; display:flex; align-items:center; justify-content:center; background:var(--palmas-dark);">
                 <?php if (!empty($member['photo'])): ?>
-                    <img id="edit-photo-preview" src="<?php echo htmlspecialchars($member['photo']); ?>" style="width:100%; height:100%; object-fit:cover;">
+                    <img id="edit-photo-preview" src="<?php echo htmlspecialchars($member['photo']); ?>" alt="Current member photo preview" style="width:100%; height:100%; object-fit:cover;">
                 <?php else: ?>
                     <i id="edit-photo-icon" class="fas fa-camera" style="font-size:1.8rem; color:var(--text-muted);"></i>
-                    <img id="edit-photo-preview" src="" style="width:100%; height:100%; object-fit:cover; display:none;">
+                    <img id="edit-photo-preview" src="" alt="New member photo preview" style="width:100%; height:100%; object-fit:cover; display:none;">
                 <?php endif; ?>
             </div>
             <div>

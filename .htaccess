@@ -47,6 +47,12 @@ Options -Indexes -MultiViews
     # Authorization Header forwarder for API Bearer tokens under FastCGI/PHP-FPM
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # REST Payment Endpoints
+    RewriteRule ^api/payments/create/?$ api/payments/create.php [L,QSA]
+    RewriteRule ^api/payments/paymongo/webhook/?$ api/payments/paymongo/webhook.php [L,QSA]
+    RewriteRule ^api/payments/status/?$ api/payments/status.php [L,QSA]
+    RewriteRule ^api/payments/([0-9]+)/?$ api/payments/status.php?id=$1 [L,QSA]
 </IfModule>
 
 # 6. PHP Production Error and Execution Safeguards (Apache module mode)

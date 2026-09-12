@@ -82,18 +82,14 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         ");
         $sub_stmt->execute([$member_id]);
         $active_sub = $sub_stmt->fetch(PDO::FETCH_ASSOC);
-
         $now_str = date('Y-m-d H:i:s');
+
         if ($duration_minutes > 0) {
             // Temporary-duration promotion (e.g. 30 or 60 minutes)
-            // Only extend if active sub is expiring within 5 minutes; otherwise start now
-            $base_datetime = $now_str;
-            if ($active_sub && !empty($active_sub['expiry_date'])) {
-                $diff_sec = strtotime($active_sub['expiry_date']) - time();
-                if ($diff_sec > 0 && $diff_sec <= 300) {
-                    $base_datetime = $active_sub['expiry_date'];
-                }
-            }
+            // If active sub exists, extend from current expiry date; otherwise start from now
+            $base_datetime = ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time())
+                ? $active_sub['expiry_date']
+                : $now_str;
             $start_date = $base_datetime;
             $new_expiry = date('Y-m-d H:i:s', strtotime("{$base_datetime} + {$duration_minutes} minutes"));
             $duration_label = "{$duration_minutes} Minute" . ($duration_minutes > 1 ? "s" : "");
@@ -445,5 +441,47 @@ function get_payment_receipt_details($pdo, $identifier, int $member_id = 0): ?ar
     } catch (Exception $e) {
         error_log("Error in get_payment_receipt_details: " . $e->getMessage());
         return null;
+    }
+}
+
+/**
+ * Log structured payment audit event.
+ * Events: PAYMENT_CREATED, PAYMENT_PENDING, PAYMENT_SUCCEEDED, PAYMENT_FAILED, MEMBERSHIP_ACTIVATED
+ */
+function log_payment_audit(PDO $pdo, array $data): void {
+    try {
+        $event_type    = $data['event_type'] ?? 'PAYMENT_EVENT';
+        $member_id     = $data['user_id'] ?? ($data['member_id'] ?? null);
+        $payment_id    = $data['payment_id'] ?? null;
+        $reference_code= $data['reference_code'] ?? null;
+        $gateway_tx_id = $data['gateway_transaction_id'] ?? ($data['paymongo_transaction_id'] ?? null);
+        $prev_status   = $data['previous_status'] ?? null;
+        $new_status    = $data['new_status'] ?? null;
+        $amount        = isset($data['amount']) ? (float)$data['amount'] : null;
+        $ip_address    = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $result        = $data['result'] ?? 'OK';
+
+        $description = sprintf(
+            "[%s] Ref: %s | Mode: %s | Status: %s -> %s | Amount: ₱%s | Gateway ID: %s | Result: %s (IP: %s)",
+            $event_type,
+            $reference_code ?: 'N/A',
+            get_payment_mode(),
+            $prev_status ?: 'NONE',
+            $new_status ?: 'UNKNOWN',
+            $amount !== null ? number_format($amount, 2) : '0.00',
+            $gateway_tx_id ?: 'N/A',
+            $result,
+            $ip_address
+        );
+
+        log_activity(
+            $pdo,
+            $event_type,
+            $description,
+            'Payment',
+            $member_id ? (int)$member_id : null
+        );
+    } catch (Throwable $e) {
+        error_log("Error recording payment audit log: " . $e->getMessage());
     }
 }

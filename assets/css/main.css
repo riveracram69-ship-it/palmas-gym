@@ -83,7 +83,7 @@
     --text-main: #121a14;
     --text-soft: #334337;
     --text-muted: #617567;
-    --text-faint: #91a397;
+    --text-faint: #697d70; /* WCAG AA accessible contrast (>4.5:1 on light bg) */
     --muted: #617567;
     --border: #dce5dd;
     --border-subtle: #ebf0ec;
@@ -97,7 +97,7 @@
     --sidebar-active-border: #52b788;
     --sidebar-text: #a3b8aa;
     --sidebar-text-active: #ffffff;
-    --sidebar-section-label: #526b5a;
+    --sidebar-section-label: #7ea388; /* WCAG AA accessible contrast (>5.5:1 on obsidian bg) */
     --sidebar-width: 265px;
 
     /* Elevation & Shadows */

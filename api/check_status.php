@@ -353,6 +353,11 @@ try {
                 <div class="icon-circle">
                     <i class="fa-solid <?= $statusIcon ?>"></i>
                 </div>
+                <?php if (!empty($tx['is_test'])): ?>
+                <div style="background:rgba(59, 130, 246, 0.15); border:1px solid rgba(59, 130, 246, 0.4); border-radius:10px; padding:8px 12px; margin-bottom:16px; font-size:12px; color:#93C5FD; display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <i class="fa-solid fa-flask"></i> <strong>TEST MODE:</strong> Simulated transaction. No real money was charged.
+                </div>
+                <?php endif; ?>
                 <h1><?= htmlspecialchars($statusTitle) ?></h1>
                 <p class="sub-text">
                     <?= $isPaid ? 'Your membership has been activated and is ready to use.' : ($isCancelled ? 'The checkout session was cancelled.' : 'Please wait while we confirm your payment.') ?>

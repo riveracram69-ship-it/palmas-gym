@@ -1086,7 +1086,7 @@ try {
                                 <div style="display:flex; align-items:center; gap:0.6rem;">
                                     <div style="width:32px; height:32px; border-radius:50%; background:var(--border); overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700;">
                                         <?php if (!empty($tx['photo'])): ?>
-                                            <img src="<?php echo htmlspecialchars($tx['photo']); ?>" style="width:100%; height:100%; object-fit:cover;">
+                                            <img src="<?php echo htmlspecialchars($tx['photo']); ?>" alt="<?php echo htmlspecialchars($tx['full_name']); ?> Avatar" style="width:100%; height:100%; object-fit:cover;">
                                         <?php else: ?>
                                             <?php echo strtoupper(substr($tx['full_name'], 0, 2)); ?>
                                         <?php endif; ?>
