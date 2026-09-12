@@ -71,7 +71,14 @@
     }
 
     if (!defined('APP_URL')) {
-        define('APP_URL', rtrim($get_conf('APP_URL', 'http://localhost/gym'), '/'));
+        $conf_url = rtrim($get_conf('APP_URL', ''), '/');
+        if (empty($conf_url) || str_contains($conf_url, 'YOUR-DOMAIN')) {
+            $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https') ? 'https://' : 'http://';
+            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $subdir = str_contains($_SERVER['REQUEST_URI'] ?? '', '/gggym/gym') ? '/gggym/gym' : (str_contains($_SERVER['REQUEST_URI'] ?? '', '/gym') ? '/gym' : '');
+            $conf_url = rtrim($proto . $host . $subdir, '/');
+        }
+        define('APP_URL', $conf_url);
     }
 
     // Database Configuration (Supports DB_HOST or Host, DB_PASS or Password, etc.)

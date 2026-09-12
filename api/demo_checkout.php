@@ -158,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>PayMongo / GCash Sandbox Simulator</title>
+  <title>Practice Checkout • Palma's Elite Gym</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
@@ -184,16 +184,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       padding: 16px;
     }
     .checkout-card {
+      width: 100%;
+      max-width: 420px;
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 20px;
-      width: 100%;
-      max-width: 440px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
       overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
     }
     .header {
-      background: linear-gradient(135deg, #005ce6, #00368a);
+      background: linear-gradient(135deg, var(--gcash-blue) 0%, var(--gcash-dark) 100%);
       padding: 24px 20px;
       text-align: center;
       position: relative;
@@ -203,9 +203,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       color: #fff;
       font-size: 0.72rem;
       font-weight: 800;
-      letter-spacing: 1px;
+      letter-spacing: 0.8px;
       text-transform: uppercase;
-      padding: 3px 10px;
+      padding: 4px 12px;
       border-radius: 20px;
       display: inline-block;
       margin-bottom: 8px;
@@ -294,7 +294,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div class="checkout-card">
   <div class="header">
-    <span class="sandbox-tag"><i class="fa-solid fa-flask"></i> PayMongo Sandbox Simulator</span>
+    <span class="sandbox-tag"><i class="fa-solid fa-circle-check"></i> Practice Mode • No Real Money</span>
     <h2 style="font-family:'Outfit'; font-size:1.1rem; color:#dbeafe;">Palma's Elite Gym</h2>
     <div class="amount-display">₱<?php echo number_format($tx['amount'], 2); ?></div>
   </div>
@@ -309,7 +309,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <span class="val"><?php echo htmlspecialchars($tx['full_name']); ?> (<?php echo htmlspecialchars($tx['membership_id']); ?>)</span>
     </div>
     <div class="info-row">
-      <span class="label">Payment Channel:</span>
+      <span class="label">Payment Method:</span>
       <span class="val" style="color:#60a5fa;"><i class="fa-solid fa-wallet"></i> <?php echo htmlspecialchars($tx['payment_method']); ?></span>
     </div>
     <div class="info-row">
@@ -319,20 +319,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <button type="button" class="btn-pay" id="btn-pay" onclick="triggerSimulation('pay')">
       <div class="spinner" id="pay-spinner"></div>
-      <i class="fa-solid fa-shield-halved" id="pay-icon"></i>
-      <span id="pay-text">Simulate Successful GCash Payment</span>
+      <i class="fa-solid fa-bolt" id="pay-icon"></i>
+      <span id="pay-text">Confirm Payment (Activate Pass)</span>
     </button>
 
     <button type="button" class="btn-fail" id="btn-fail" onclick="triggerSimulation('fail')">
-      <i class="fa-solid fa-triangle-exclamation"></i> Simulate Payment Failure
+      <i class="fa-solid fa-triangle-exclamation"></i> Simulate Payment Decline
     </button>
 
     <button type="button" class="btn-cancel" onclick="triggerSimulation('cancel')">
-      Cancel Payment & Return to App
+      Cancel & Return to Gym
     </button>
 
     <div class="security-note">
-      <i class="fa-solid fa-lock"></i> 256-Bit Encrypted Payment Simulation
+      <i class="fa-solid fa-shield-check"></i> Secure Practice Mode • No real money will be charged
     </div>
   </div>
 </div>

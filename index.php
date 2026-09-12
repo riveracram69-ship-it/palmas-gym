@@ -190,7 +190,6 @@ try {
              JOIN membership_plans p ON p.id = s.plan_id
              WHERE s.expiry_date < CURDATE()
                AND s.member_id NOT IN (SELECT member_id FROM subscriptions WHERE expiry_date >= CURDATE())
-               AND s.member_id NOT IN (SELECT member_id FROM renewal_requests WHERE status = 'Pending')
              ORDER BY s.expiry_date DESC
              LIMIT 10"
         )->fetchAll();

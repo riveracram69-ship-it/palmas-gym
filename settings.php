@@ -77,32 +77,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $save_setting('gym_phone', $gym_phone);
                 $save_setting('gym_hours', $gym_hours);
 
-                // Handle GCash QR Image Upload
+                // Handle GCash QR Image Upload (Saved as persistent Base64 Data URI in DB)
                 if (isset($_FILES['gcash_qr']) && $_FILES['gcash_qr']['error'] === UPLOAD_ERR_OK) {
                     $ext = strtolower(pathinfo($_FILES['gcash_qr']['name'], PATHINFO_EXTENSION));
                     if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
                         $target_dir = __DIR__ . '/uploads/qr';
-                        if (!is_dir($target_dir)) mkdir($target_dir, 0775, true);
+                        if (!is_dir($target_dir)) @mkdir($target_dir, 0775, true);
                         $filename = 'gcash_qr_' . time() . '.' . $ext;
                         $dest = $target_dir . '/' . $filename;
-                        if (move_uploaded_file($_FILES['gcash_qr']['tmp_name'], $dest)) {
-                            $save_setting('gcash_qr_image', 'uploads/qr/' . $filename);
-                            $app_settings['gcash_qr_image'] = 'uploads/qr/' . $filename;
+                        @move_uploaded_file($_FILES['gcash_qr']['tmp_name'], $dest);
+
+                        $raw_img = @file_get_contents($dest);
+                        if ($raw_img) {
+                            $mime = ($ext === 'png') ? 'image/png' : (($ext === 'webp') ? 'image/webp' : 'image/jpeg');
+                            $b64 = 'data:' . $mime . ';base64,' . base64_encode($raw_img);
+                            $save_setting('gcash_qr_image', $b64);
+                            $app_settings['gcash_qr_image'] = $b64;
                         }
                     }
                 }
 
-                // Handle Maya QR Image Upload
+                // Handle Maya QR Image Upload (Saved as persistent Base64 Data URI in DB)
                 if (isset($_FILES['maya_qr']) && $_FILES['maya_qr']['error'] === UPLOAD_ERR_OK) {
                     $ext = strtolower(pathinfo($_FILES['maya_qr']['name'], PATHINFO_EXTENSION));
                     if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
                         $target_dir = __DIR__ . '/uploads/qr';
-                        if (!is_dir($target_dir)) mkdir($target_dir, 0775, true);
+                        if (!is_dir($target_dir)) @mkdir($target_dir, 0775, true);
                         $filename = 'maya_qr_' . time() . '.' . $ext;
                         $dest = $target_dir . '/' . $filename;
-                        if (move_uploaded_file($_FILES['maya_qr']['tmp_name'], $dest)) {
-                            $save_setting('maya_qr_image', 'uploads/qr/' . $filename);
-                            $app_settings['maya_qr_image'] = 'uploads/qr/' . $filename;
+                        @move_uploaded_file($_FILES['maya_qr']['tmp_name'], $dest);
+
+                        $raw_img = @file_get_contents($dest);
+                        if ($raw_img) {
+                            $mime = ($ext === 'png') ? 'image/png' : (($ext === 'webp') ? 'image/webp' : 'image/jpeg');
+                            $b64 = 'data:' . $mime . ';base64,' . base64_encode($raw_img);
+                            $save_setting('maya_qr_image', $b64);
+                            $app_settings['maya_qr_image'] = $b64;
                         }
                     }
                 }

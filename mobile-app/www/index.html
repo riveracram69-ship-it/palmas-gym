@@ -3259,82 +3259,40 @@
             <p style="color:var(--text-muted); font-size:13px; margin:0;">Choose your preferred secure payment channel:</p>
           </div>
 
-          <!-- Test Mode Banner -->
+          <!-- Demo Mode Notice -->
           <div id="checkout-test-mode-banner" style="display:none; background:rgba(245,158,11,0.12); border:1px dashed #f59e0b; color:#b45309; padding:10px 14px; border-radius:14px; margin-bottom:14px; font-size:0.75rem; font-weight:700; align-items:center; gap:8px;">
             <i class="fa-solid fa-flask" style="color:#d97706; font-size:1rem; flex-shrink:0;"></i>
             <div>
-              <div>PAYMONGO TEST MODE ACTIVE</div>
-              <div style="font-weight:400; font-size:0.7rem; color:#92400e; margin-top:2px;">Simulated sandbox environment &bull; No real money charged</div>
+              <div>DEMO / PRACTICE MODE ACTIVE</div>
+              <div style="font-weight:400; font-size:0.7rem; color:#92400e; margin-top:2px;">Simulated test environment &bull; No real money will be charged</div>
             </div>
           </div>
 
           <!-- Payment Method Cards -->
-          <!-- 1. PayMongo Online Checkout (Instant Activation) -->
+          <!-- 1. Automated Online Payment -->
           <div class="payment-method-card selected" id="pm-card-paymongo" onclick="selectCheckoutMethod('PayMongo')">
             <div class="pm-left">
-              <div class="pm-icon-wrap" style="background:#4F46E5; box-shadow:0 4px 12px rgba(79,70,229,0.35); display:flex; align-items:center; justify-content:center;">
-                <i class="fa-solid fa-shield-halved" style="font-size:20px; color:#ffffff;"></i>
+              <div class="pm-icon-wrap" style="background:linear-gradient(135deg, #007dfe, #00d664); box-shadow:0 4px 12px rgba(0,125,254,0.35); display:flex; align-items:center; justify-content:center;">
+                <i class="fa-solid fa-bolt" style="font-size:20px; color:#ffffff;"></i>
               </div>
               <div>
                 <div class="pm-title" style="display:flex; align-items:center; gap:8px;">
-                  <span>Pay Online (PayMongo)</span>
-                  <span style="font-size:10px; font-weight:800; background:rgba(79,70,229,0.2); color:#818cf8; padding:2px 8px; border-radius:6px; border:1px solid rgba(129,140,248,0.3);">INSTANT ACTIVATION</span>
+                  <span>Online Payment</span>
+                  <span style="font-size:10px; font-weight:800; background:rgba(16,185,129,0.2); color:#10b981; padding:2px 8px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">INSTANT ACTIVATION</span>
                 </div>
-                <div class="pm-desc">GCash, Maya, Visa/Mastercard, QR Ph</div>
+                <div class="pm-desc">GCash &bull; Maya &bull; Debit / Credit Card &bull; QR Ph</div>
               </div>
             </div>
             <div class="pm-radio"></div>
           </div>
 
-          <!-- 2. Manual GCash Transfer -->
-          <div class="payment-method-card" id="pm-card-gcash" onclick="selectCheckoutMethod('GCash')">
-            <div class="pm-left">
-              <div class="pm-icon-wrap" style="background:#007DFE; box-shadow:0 4px 12px rgba(0,125,254,0.35);">
-                <svg viewBox="0 0 32 32" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M16 6.5C10.75 6.5 6.5 10.75 6.5 16S10.75 25.5 16 25.5c4.54 0 8.32-3.18 9.22-7.44H16v-3.8h12.87C28.95 14.8 29 15.4 29 16c0 7.18-5.82 13-13 13C8.82 29 3 23.18 3 16S8.82 3 16 3c4.1 0 7.76 1.7 10.33 4.45l-2.68 2.68C21.9 8.3 19.1 6.5 16 6.5z" fill="#FFFFFF"/>
-                  <circle cx="24.8" cy="10.8" r="2.2" fill="#FFFFFF"/>
-                </svg>
-              </div>
-              <div>
-                <div class="pm-title" style="display:flex; align-items:center; gap:8px;">
-                  GCash (Manual Transfer)
-                  <span style="font-size:10px; font-weight:800; background:rgba(0,125,254,0.2); color:#60a5fa; padding:2px 8px; border-radius:6px; border:1px solid rgba(96,165,250,0.3);">STAFF REVIEW</span>
-                </div>
-                <div class="pm-desc">Direct GCash transfer &bull; Staff verification required</div>
-              </div>
-            </div>
-            <div class="pm-radio"></div>
-          </div>
-
-          <!-- 3. Manual Maya Transfer -->
-          <div class="payment-method-card" id="pm-card-maya" onclick="selectCheckoutMethod('Maya')">
-            <div class="pm-left">
-              <div class="pm-icon-wrap" style="background:#0D1117; border:1px solid rgba(0,214,100,0.35); box-shadow:0 4px 12px rgba(0,214,100,0.25);">
-                <svg viewBox="0 0 32 32" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7 23V14c0-2.76 2.24-5 5-5s5 2.24 5 5v9" stroke="#00D664" stroke-width="3.2" stroke-linecap="round"/>
-                  <path d="M17 14c0-2.76 2.24-5 5-5s5 2.24 5 5v9" stroke="#00D664" stroke-width="3.2" stroke-linecap="round"/>
-                  <circle cx="12" cy="9.5" r="1.5" fill="#00D664"/>
-                  <circle cx="22" cy="9.5" r="1.5" fill="#00D664"/>
-                </svg>
-              </div>
-              <div>
-                <div class="pm-title" style="display:flex; align-items:center; gap:8px;">
-                  Maya (Manual Transfer)
-                  <span style="font-size:10px; font-weight:800; background:rgba(0,214,100,0.15); color:#00D664; padding:2px 8px; border-radius:6px; border:1px solid rgba(0,214,100,0.3);">STAFF REVIEW</span>
-                </div>
-                <div class="pm-desc">Direct Maya transfer &bull; Staff verification required</div>
-              </div>
-            </div>
-            <div class="pm-radio"></div>
-          </div>
-
-          <!-- 4. Front Desk Cash -->
+          <!-- 2. Front Desk Cash -->
           <div class="payment-method-card" id="pm-card-cash" onclick="selectCheckoutMethod('Cash')">
             <div class="pm-left">
               <div class="pm-icon-wrap pm-icon-cash"><i class="fa-solid fa-store"></i></div>
               <div>
                 <div class="pm-title">Cash (Front Desk)</div>
-                <div class="pm-desc">Settle at gym reception counter</div>
+                <div class="pm-desc">Pay at the gym reception counter</div>
               </div>
             </div>
             <div class="pm-radio"></div>
@@ -3342,89 +3300,15 @@
 
           <!-- Cash Details Notice -->
           <div id="checkout-cash-notice" style="display:none; text-align:center; padding:14px; background:rgba(82, 183, 136,0.1); border:1px solid var(--border); border-radius:16px; margin-bottom:14px; font-size:13px; color:var(--text-secondary);">
-            <i class="fa-solid fa-circle-info" style="color:var(--primary); margin-right:6px;"></i> Proceed to the gym front desk. Staff will verify and activate your renewal once received.
+            <i class="fa-solid fa-circle-info" style="color:var(--primary); margin-right:6px;"></i> Please proceed to the gym front desk. Staff will confirm your renewal once paid.
           </div>
 
           <button class="btn-primary" id="btn-method-continue" onclick="proceedFromMethodSelection()" style="margin-top:8px; margin-bottom:10px;">
-            <i class="fa-solid fa-lock"></i> PROCEED TO PAYMONGO CHECKOUT
+            <i class="fa-solid fa-bolt"></i> CONTINUE TO PAYMENT
           </button>
           <button class="btn-outline" onclick="showCheckoutStep('summary')">
             <i class="fa-solid fa-arrow-left"></i> Back to Summary
           </button>
-        </div>
-
-        <!-- ── STEP 4: ONLINE QR PH / EWALLET PAYMENT SCREEN ── -->
-        <div id="checkout-step-confirm-gcash" class="checkout-step" style="display:none;">
-          <div class="card card-elevated" style="text-align:center; padding:22px 18px; margin-bottom:18px;">
-            <div class="pm-icon-wrap pm-icon-gcash" style="margin:0 auto 12px; width:52px; height:52px; font-size:24px;">
-              <i class="fa-solid fa-qrcode"></i>
-            </div>
-            <h2 style="color:var(--text-primary); font-size:1.3rem; font-weight:800; margin:0 0 4px;" id="renew-modal-title">GCash / Maya QR Ph</h2>
-            <p style="color:var(--text-secondary); font-size:0.84rem; line-height:1.45; margin:0 0 14px;">
-              Scan with <strong style="color:var(--primary-light);">GCash, Maya, or any banking app</strong>, then enter your Reference Number below.
-            </p>
-
-            <!-- QR Display Container -->
-            <div style="background:#ffffff; border:2px solid var(--border); border-radius:18px; padding:14px; display:inline-block; margin:0 auto 14px; box-shadow:0 8px 24px rgba(0,0,0,0.4);" id="renew-qr-box">
-              <div id="renew-payment-qr-target" style="width:170px; height:170px; display:flex; align-items:center; justify-content:center; margin:0 auto;"></div>
-              <div style="font-size:11px; font-weight:700; color:#1b4332; margin-top:6px; letter-spacing:0.5px;">
-                <i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i> OFFICIAL QR PH
-              </div>
-            </div>
-
-            <!-- Amount & Account Details -->
-            <div style="background:rgba(6,31,24,0.85); border:1px solid var(--border); border-radius:16px; padding:14px 16px; margin-bottom:16px; text-align:left;">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                  <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Amount to Send</div>
-                  <div style="font-size:1.75rem; font-weight:900; color:var(--primary); font-family:'Outfit',sans-serif; margin:2px 0 0;" id="confirm-gcash-amount">₱500.00</div>
-                </div>
-                <button type="button" class="btn-copy-chip" onclick="copyAmountToClipboard()" style="padding:6px 12px; background:rgba(62,130,65,0.2); border:1px solid var(--primary); color:var(--primary-light); border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">
-                  <i class="fa-regular fa-copy"></i> Copy
-                </button>
-              </div>
-
-              <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; margin-top:10px; border-top:1px solid var(--border); padding-top:8px;">
-                <div>
-                  <span style="color:var(--text-muted); display:block; font-size:11px;">Account Name</span>
-                  <strong style="color:var(--text-primary); font-size:13px;" id="renew-account-name">Palma's Elite Gym</strong>
-                </div>
-              </div>
-
-              <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; margin-top:8px;">
-                <div>
-                  <span style="color:var(--text-muted); display:block; font-size:11px;">Account / Mobile Number</span>
-                  <strong style="color:var(--primary-light); font-family:monospace; font-size:14px;" id="renew-account-number">0917-888-4961</strong>
-                </div>
-                <button type="button" class="btn-copy-chip" onclick="copyNumberToClipboard()" style="padding:6px 12px; background:rgba(62,130,65,0.2); border:1px solid var(--primary); color:var(--primary-light); border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">
-                  <i class="fa-regular fa-copy"></i> Copy
-                </button>
-              </div>
-            </div>
-
-            <!-- Reference Number Input -->
-            <div style="text-align:left; margin-bottom:16px;">
-              <label for="renew-reference-no" style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px;">
-                GCash / Maya Reference Number <span style="color:var(--primary-light);">*</span>
-              </label>
-              <input type="text" id="renew-reference-no" class="input-field" placeholder="e.g. 1029 3847 5612" style="width:100%; box-sizing:border-box; font-family:monospace; font-size:15px; letter-spacing:1px; padding:12px 14px; background:#082119; border:1.5px solid var(--border); border-radius:12px; color:#fff;" maxlength="25">
-              <p style="color:var(--text-muted); font-size:11px; margin:5px 0 0; line-height:1.35;">
-                Enter the reference number from your payment receipt so staff can verify it.
-              </p>
-            </div>
-
-            <button class="btn-primary" id="btn-submit-qr-payment" onclick="submitPersonalQrRenewal()" style="margin-bottom:10px;">
-              <i class="fa-solid fa-check-circle"></i> Submit Payment for Verification
-            </button>
-
-            <button class="btn-outline" onclick="executeGatewayCheckout()" style="margin-bottom:10px; font-size:12px; padding:10px; border-color:rgba(82,183,136,0.3); color:var(--text-secondary);">
-              <i class="fa-solid fa-arrow-up-right-from-square"></i> Or Open Direct Gateway Checkout
-            </button>
-            
-            <button class="btn-outline" onclick="showCheckoutStep('method')">
-              <i class="fa-solid fa-arrow-left"></i> Back to Payment Methods
-            </button>
-          </div>
         </div>
 
         <!-- ── STEP 5: PAYMENT RESULT SCREEN ── -->
@@ -3435,7 +3319,7 @@
             <div class="result-screen-card result-success">
               <div class="result-icon-circle"><i class="fa-solid fa-check"></i></div>
               <h2 style="color:var(--text-primary); font-size:1.35rem; font-weight:800; margin:0 0 4px;">Payment Successful</h2>
-              <p style="color:var(--text-secondary); font-size:0.86rem; margin:0 0 14px;">Your payment has been confirmed by the backend.</p>
+              <p style="color:var(--text-secondary); font-size:0.86rem; margin:0 0 14px;">Your payment has been confirmed! Your gym pass is now active.</p>
               
               <div style="font-size:2rem; font-weight:900; color:var(--primary); font-family:'Outfit';" id="res-success-amount">₱1,500.00</div>
               
@@ -3484,21 +3368,21 @@
           <div id="result-state-pending" style="display:none;">
             <div class="result-screen-card result-pending">
               <div class="result-icon-circle"><i class="fa-solid fa-hourglass-half"></i></div>
-              <h2 style="color:var(--text-primary); font-size:1.35rem; font-weight:800; margin:0 0 6px;">Payment verification in progress</h2>
+              <h2 style="color:var(--text-primary); font-size:1.35rem; font-weight:800; margin:0 0 6px;">Payment in Progress</h2>
               <p style="color:var(--text-secondary); font-size:0.86rem; margin:0 0 16px; line-height:1.5;">
-                Your payment is being verified with the payment gateway.<br>
-                Please wait while the backend confirms the transaction.
+                Confirming your payment...<br>
+                Your membership pass will activate automatically in just a moment.
               </p>
               <div style="background:rgba(6,31,24,0.7); border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:16px;">
                 <span style="font-size:12px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Payment Reference:</span>
                 <div style="font-size:1.1rem; font-weight:800; color:var(--primary); font-family:monospace; margin-top:4px;" id="res-pending-ref">--</div>
               </div>
-              <!-- Re-open PayMongo checkout button if closed -->
-              <button class="btn-primary" id="btn-reopen-checkout" onclick="openCheckoutUrl(currentCheckoutUrl)" style="margin-bottom:10px; background:linear-gradient(135deg, #4f46e5, #4338ca);">
-                <i class="fa-solid fa-arrow-up-right-from-square"></i> Open PayMongo Checkout Page
+              <!-- Re-open checkout button if closed -->
+              <button class="btn-primary" id="btn-reopen-checkout" onclick="openCheckoutUrl(currentCheckoutUrl)" style="margin-bottom:10px; background:linear-gradient(135deg, #007dfe, #00d664);">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Payment Window
               </button>
               <button class="btn-outline" id="btn-check-pending-status" onclick="pollPaymentStatus(currentResultRef)" style="margin-bottom:10px;">
-                <i class="fa-solid fa-arrows-rotate"></i> Check Payment Status
+                <i class="fa-solid fa-arrows-rotate"></i> Refresh Pass Status
               </button>
               <button class="btn-outline" onclick="closeRenewalModal(); refreshDashboard();">
                 Return to Membership
@@ -3787,10 +3671,10 @@ async function checkBackendConnection(showToastAlert = false) {
     } catch (e2) {}
   }
 
-  // 3. Both failed (likely Render cold-starting)
+  // 3. Both failed (likely server is starting up)
   if (dot) dot.style.background = '#F06A6A';
-  if (txt) txt.textContent = 'Server Sleeping (Tap to Wake)';
-  if (showToastAlert) showToast('Waking up server container. Please wait 15-20s and tap again.', 5000);
+  if (txt) txt.textContent = 'Connecting... (Tap to retry)';
+  if (showToastAlert) showToast('Connecting to server. Please wait a moment and try again.', 4000);
   return false;
 }
 
@@ -5803,7 +5687,7 @@ function refreshDashboard() {
 // ── MULTI-STEP MEMBERSHIP CHECKOUT FLOW ────────────────────────────
 
 function showCheckoutStep(step) {
-  const steps = ['plans', 'summary', 'method', 'confirm-gcash', 'result'];
+  const steps = ['plans', 'summary', 'method', 'result'];
   steps.forEach(s => {
     const el = document.getElementById(`checkout-step-${s}`);
     if (el) el.style.display = (s === step) ? 'block' : 'none';
@@ -5814,7 +5698,6 @@ function showCheckoutStep(step) {
     if (step === 'plans') titleEl.textContent = 'Select Membership Plan';
     else if (step === 'summary') titleEl.textContent = 'Checkout Summary';
     else if (step === 'method') titleEl.textContent = 'Payment Method';
-    else if (step === 'confirm-gcash') titleEl.textContent = 'Pay via GCash';
     else if (step === 'result') titleEl.textContent = 'Payment Status';
   }
 }
@@ -5933,8 +5816,6 @@ function selectCheckoutMethod(method) {
   selectedRenewMethod = method;
   const cards = {
     'PayMongo': 'pm-card-paymongo',
-    'GCash': 'pm-card-gcash',
-    'Maya': 'pm-card-maya',
     'Cash': 'pm-card-cash'
   };
 
@@ -5948,12 +5829,10 @@ function selectCheckoutMethod(method) {
 
   const btn = document.getElementById('btn-method-continue');
   if (btn) {
-    if (method === 'PayMongo') {
-      btn.innerHTML = '<i class="fa-solid fa-lock"></i> PROCEED TO PAYMONGO CHECKOUT';
-    } else if (method === 'Cash') {
+    if (method === 'Cash') {
       btn.innerHTML = '<i class="fa-solid fa-store"></i> REQUEST CASH RENEWAL';
     } else {
-      btn.innerHTML = 'CONTINUE TO QR DETAILS <i class="fa-solid fa-arrow-right" style="margin-left:6px;"></i>';
+      btn.innerHTML = '<i class="fa-solid fa-bolt"></i> CONTINUE TO PAYMENT';
     }
   }
 }
@@ -5964,40 +5843,8 @@ function proceedFromMethodSelection() {
     return;
   }
 
-  if (selectedRenewMethod === 'PayMongo' || selectedRenewMethod === 'Credit Card') {
-    executeGatewayCheckout();
-    return;
-  }
-
-  const p = selectedRenewPlan;
-  if (!p) return showToast('Please select a membership plan.');
-  const priceFormatted = '₱' + parseFloat(p.price).toFixed(2);
-
-  // Configure GCash / Maya Confirmation Screen for manual transfer
-  const amountEl = document.getElementById('confirm-gcash-amount');
-  const titleEl  = document.getElementById('renew-modal-title');
-  const nameEl   = document.getElementById('renew-account-name');
-  const numEl    = document.getElementById('renew-account-number');
-  const refInput = document.getElementById('renew-reference-no');
-
-  if (amountEl) amountEl.textContent = priceFormatted;
-  if (refInput) refInput.value = '';
-
-  const isMaya = (selectedRenewMethod === 'Maya');
-  const info = (isMaya && gymPaymentSettings && gymPaymentSettings.maya) ? gymPaymentSettings.maya : ((gymPaymentSettings && gymPaymentSettings.gcash) ? gymPaymentSettings.gcash : {
-    name: "Palma's Elite Gym",
-    number: "0917-888-4961",
-    qr_image: null
-  });
-
-  if (titleEl) titleEl.textContent = isMaya ? 'Pay via Maya QR Ph' : 'Pay via GCash QR Ph';
-  if (nameEl)  nameEl.textContent  = info.name || "Palma's Elite Gym";
-  if (numEl)   numEl.textContent   = info.number || "0917-888-4961";
-
-  // Render QR Code (Uploaded Image or Generated QR Ph)
-  renderRenewPaymentQR(info, p);
-
-  showCheckoutStep('confirm-gcash');
+  // All online methods (GCash, Maya, Card) execute automated instant checkout
+  executeGatewayCheckout();
 }
 
 function renderRenewPaymentQR(info, plan) {
@@ -6176,11 +6023,11 @@ async function executeGatewayCheckout() {
   const token = localStorage.getItem('peg_token');
   if (!token) return showToast('Session expired. Please sign in again.');
 
-  const btn = document.getElementById('btn-method-continue') || document.getElementById('btn-submit-qr-payment');
-  const origText = btn ? btn.innerHTML : '<i class="fa-solid fa-lock"></i> PROCEED TO PAYMONGO CHECKOUT';
+  const btn = document.getElementById('btn-method-continue');
+  const origText = btn ? btn.innerHTML : '<i class="fa-solid fa-bolt"></i> CONTINUE TO PAYMENT';
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></div> Connecting to PayMongo...';
+    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></div> Opening payment screen...';
   }
 
   try {
@@ -6199,7 +6046,7 @@ async function executeGatewayCheckout() {
     const refCode     = checkoutObj.ref_code || checkoutObj.reference_code;
 
     if (!data.success || !checkoutUrl) {
-      throw new Error(data.message || 'Unable to create PayMongo payment session.');
+      throw new Error(data.message || 'Unable to open payment screen. Please try again.');
     }
 
     currentPendingRef  = refCode;
@@ -6211,20 +6058,20 @@ async function executeGatewayCheckout() {
       ref_code: refCode,
       amount_formatted: checkoutObj.amount_formatted || ('₱' + parseFloat(selectedRenewPlan.price).toFixed(2)),
       plan_name: checkoutObj.plan_name || (selectedRenewPlan ? selectedRenewPlan.name : 'Membership Pass'),
-      payment_method: 'PayMongo',
+      payment_method: 'Online Payment',
       checkout_url: checkoutUrl
     });
 
     showCheckoutStep('result');
 
-    // Open External / PayMongo Gateway Checkout
+    // Open External / Secure Payment Page
     openCheckoutUrl(checkoutUrl);
 
-    // Start proactive polling for webhook verification
+    // Start proactive polling for instant confirmation
     startPaymentStatusPolling(refCode);
 
   } catch (err) {
-    showToast(err.message || 'Failed to connect to payment gateway.', 4000);
+    showToast(err.message || 'Failed to open payment screen. Please try again.', 4000);
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -6239,10 +6086,10 @@ function startPaymentStatusPolling(refCode) {
   paymentPollingTimer = setInterval(async () => {
     attempts++;
     const isDone = await pollPaymentStatus(refCode, attempts);
-    if (isDone || attempts >= 20) {
+    if (isDone || attempts >= 25) {
       clearInterval(paymentPollingTimer);
     }
-  }, 4000);
+  }, 3000);
 }
 
 async function pollPaymentStatus(refCode, attempt = 1) {
@@ -6253,7 +6100,7 @@ async function pollPaymentStatus(refCode, attempt = 1) {
   const btnCheck = document.getElementById('btn-check-pending-status');
   if (btnCheck && attempt === 1) {
     btnCheck.disabled = true;
-    btnCheck.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> Verifying...';
+    btnCheck.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> Refreshing...';
   }
 
   try {
@@ -6264,7 +6111,7 @@ async function pollPaymentStatus(refCode, attempt = 1) {
 
     if (btnCheck) {
       btnCheck.disabled = false;
-      btnCheck.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Check Payment Status';
+      btnCheck.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Refresh Pass Status';
     }
 
     if (!data.success) return false;

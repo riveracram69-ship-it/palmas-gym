@@ -82,6 +82,9 @@ class PayMongoGateway {
             $allowedTypes = ['grab_pay'];
         }
 
+        $refCode = $params['reference_code'] ?? ($params['reference_number'] ?? ('PAY-' . strtoupper(bin2hex(random_bytes(4)))));
+        $isLocalOrTest = is_paymongo_test_mode() || in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1']);
+
         $payload = [
             'data' => [
                 'attributes' => [
@@ -90,7 +93,7 @@ class PayMongoGateway {
                         'email' => !empty($params['member']['email']) ? $params['member']['email'] : 'member@palmasgym.com',
                         'phone' => !empty($params['member']['phone']) ? $params['member']['phone'] : '09170000000',
                     ],
-                    'send_email_receipt'   => true,
+                    'send_email_receipt'   => false,
                     'show_description'     => true,
                     'show_line_items'      => true,
                     'description'          => $params['description'] ?? "Palma's Elite Gym Membership",
@@ -100,15 +103,15 @@ class PayMongoGateway {
                             'amount'      => $amountCentavos,
                             'name'        => $params['plan_name'] ?? 'Gym Membership',
                             'quantity'    => 1,
-                            'description' => "Membership Access Pass - Ref: " . ($params['reference_code'] ?? '')
+                            'description' => "Membership Access Pass - Ref: " . $refCode
                         ]
                     ],
                     'payment_method_types' => $allowedTypes,
-                    'reference_number'     => $params['reference_code'],
+                    'reference_number'     => $refCode,
                     'success_url'          => $params['success_url'],
                     'cancel_url'           => $params['cancel_url'],
                     'metadata'             => array_merge($params['metadata'] ?? [], [
-                        'reference_code' => $params['reference_code'],
+                        'reference_code' => $refCode,
                         'gym_system'     => 'PalmasEliteGym'
                     ])
                 ]
@@ -126,7 +129,8 @@ class PayMongoGateway {
                 'Accept: application/json'
             ],
             CURLOPT_TIMEOUT        => 20,
-            CURLOPT_SSL_VERIFYPEER => true
+            CURLOPT_SSL_VERIFYPEER => !$isLocalOrTest,
+            CURLOPT_SSL_VERIFYHOST => $isLocalOrTest ? 0 : 2
         ]);
 
         $response = curl_exec($ch);
@@ -138,7 +142,7 @@ class PayMongoGateway {
             error_log("PayMongo cURL Error: " . $curlErr);
             return [
                 'success' => false,
-                'message' => 'Unable to connect to PayMongo payment gateway.'
+                'message' => 'Unable to connect to payment provider. Please check your internet connection.'
             ];
         }
 
@@ -233,6 +237,8 @@ class PayMongoGateway {
             return null;
         }
 
+        $isLocalOrTest = is_paymongo_test_mode() || in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1']);
+
         $ch = curl_init(self::API_BASE . '/checkout_sessions/' . urlencode($sessionId));
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -241,7 +247,8 @@ class PayMongoGateway {
                 'Accept: application/json'
             ],
             CURLOPT_TIMEOUT        => 15,
-            CURLOPT_SSL_VERIFYPEER => true
+            CURLOPT_SSL_VERIFYPEER => !$isLocalOrTest,
+            CURLOPT_SSL_VERIFYHOST => $isLocalOrTest ? 0 : 2
         ]);
 
         $response = curl_exec($ch);

@@ -21,91 +21,45 @@ if (!in_array($status_tab, ['all', 'paid', 'pending'], true)) {
 }
 
 $count_paid_payments    = 0;
-$count_pending_requests = 0;
 $count_all              = 0;
 
 try {
     if (isset($pdo) && $pdo) {
-        $count_paid_payments    = (int)$pdo->query("SELECT COUNT(*) FROM payments")->fetchColumn();
-        $count_pending_requests = (int)$pdo->query("SELECT COUNT(*) FROM renewal_requests WHERE status = 'Pending'")->fetchColumn();
-        $count_all              = $count_paid_payments + $count_pending_requests;
+        $count_paid_payments = (int)$pdo->query("SELECT COUNT(*) FROM payments")->fetchColumn();
+        $count_all           = $count_paid_payments;
 
-        $paid_rows = [];
-        if ($status_tab !== 'pending') {
-            $sql = "
-                SELECT p.*, m.full_name, m.membership_id, plan.name as plan_name, u.name as verified_by_name, 'Paid' as txn_status
-                FROM payments p 
-                JOIN members m ON p.member_id = m.id 
-                LEFT JOIN subscriptions s ON p.subscription_id = s.id
-                LEFT JOIN membership_plans plan ON s.plan_id = plan.id
-                LEFT JOIN users u ON p.verified_by = u.id
-                WHERE 1=1
-            ";
-            $params = [];
+        $sql = "
+            SELECT p.*, m.full_name, m.membership_id, plan.name as plan_name, u.name as verified_by_name, 'Paid' as txn_status
+            FROM payments p 
+            JOIN members m ON p.member_id = m.id 
+            LEFT JOIN subscriptions s ON p.subscription_id = s.id
+            LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+            LEFT JOIN users u ON p.verified_by = u.id
+            WHERE 1=1
+        ";
+        $params = [];
 
-            if ($method_filter !== 'all' && !empty($method_filter)) {
-                $sql .= " AND p.payment_method = :method";
-                $params['method'] = $method_filter;
-            }
-
-            if (!empty($date_start)) {
-                $sql .= " AND p.payment_date >= :start_date";
-                $params['start_date'] = $date_start;
-            }
-
-            if (!empty($date_end)) {
-                $sql .= " AND p.payment_date <= :end_date";
-                $params['end_date'] = $date_end;
-            }
-
-            $sql .= " ORDER BY p.payment_date DESC, p.created_at DESC";
-
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
-            $paid_rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if ($method_filter !== 'all' && !empty($method_filter)) {
+            $sql .= " AND p.payment_method = :method";
+            $params['method'] = $method_filter;
         }
 
-        $pending_rows = [];
-        if ($status_tab !== 'paid') {
-            $rSql = "
-                SELECT r.id, r.member_id, r.reference_no as reference_number, r.payment_method, 
-                       COALESCE(p.price, 0) as amount, r.created_at, r.created_at as payment_date,
-                       m.full_name, m.membership_id, COALESCE(p.name, 'Membership Renewal') as plan_name,
-                       'Pending' as txn_status, NULL as verified_by_name
-                FROM renewal_requests r
-                JOIN members m ON r.member_id = m.id
-                LEFT JOIN membership_plans p ON p.id = r.plan_id
-                WHERE r.status = 'Pending'
-            ";
-            $rParams = [];
-            if ($method_filter !== 'all' && !empty($method_filter)) {
-                $rSql .= " AND r.payment_method = :method";
-                $rParams['method'] = $method_filter;
-            }
-            if (!empty($date_start)) {
-                $rSql .= " AND r.created_at >= :start_date";
-                $rParams['start_date'] = $date_start . ' 00:00:00';
-            }
-            if (!empty($date_end)) {
-                $rSql .= " AND r.created_at <= :end_date";
-                $rParams['end_date'] = $date_end . ' 23:59:59';
-            }
-            $rSql .= " ORDER BY r.created_at DESC";
-            $rStmt = $pdo->prepare($rSql);
-            $rStmt->execute($rParams);
-            $pending_rows = $rStmt->fetchAll(PDO::FETCH_ASSOC);
+        if (!empty($date_start)) {
+            $sql .= " AND p.payment_date >= :start_date";
+            $params['start_date'] = $date_start;
         }
 
-        if ($status_tab === 'paid') {
-            $payments = $paid_rows;
-        } elseif ($status_tab === 'pending') {
-            $payments = $pending_rows;
-        } else {
-            $payments = array_merge($pending_rows, $paid_rows);
-            usort($payments, function ($a, $b) {
-                return strtotime($b['created_at'] ?? '0') <=> strtotime($a['created_at'] ?? '0');
-            });
+        if (!empty($date_end)) {
+            $sql .= " AND p.payment_date <= :end_date";
+            $params['end_date'] = $date_end;
         }
+
+        $sql .= " ORDER BY p.payment_date DESC, p.created_at DESC";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $payments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 
         // Fetch KPI stats
         $stats_stmt = $pdo->query("
@@ -134,8 +88,7 @@ try {
         <h1>Payment & Transaction History</h1>
         <p>Complete official ledger and audit trail of all approved gym revenue & subscriptions.</p>
     </div>
-    <div style="display:flex; gap:0.75rem;">
-        <a href="renewal-requests.php" class="btn btn-outline"><i class="fas fa-clock"></i> Pending Requests</a>
+    <div>
         <button onclick="openPaymentModal()" class="btn btn-primary"><i class="fas fa-plus"></i> Record Cash Payment</button>
     </div>
 </div>
@@ -164,18 +117,6 @@ try {
     </div>
 </div>
 
-<!-- Status Tabs -->
-<div class="tab-nav" style="margin-bottom:1.25rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
-    <a href="?status=all<?php echo $method_filter !== 'all' ? '&method=' . urlencode($method_filter) : ''; ?>" class="btn <?php echo $status_tab === 'all' ? 'btn-primary' : 'btn-outline'; ?>">
-        All Records <span class="tab-count"><?php echo $count_all; ?></span>
-    </a>
-    <a href="?status=paid<?php echo $method_filter !== 'all' ? '&method=' . urlencode($method_filter) : ''; ?>" class="btn <?php echo $status_tab === 'paid' ? 'btn-primary' : 'btn-outline'; ?>">
-        Completed / Paid <span class="tab-count"><?php echo $count_paid_payments; ?></span>
-    </a>
-    <a href="?status=pending<?php echo $method_filter !== 'all' ? '&method=' . urlencode($method_filter) : ''; ?>" class="btn <?php echo $status_tab === 'pending' ? 'btn-primary' : 'btn-outline'; ?>">
-        ⏳ Pending Verification <span class="tab-count"><?php echo $count_pending_requests; ?></span>
-    </a>
-</div>
 
 <!-- Filter & Search Toolbar -->
 <div class="card" style="margin-bottom:1.5rem; padding:1.25rem;">
@@ -322,26 +263,18 @@ try {
 
                         <!-- Status -->
                         <td>
-                            <?php if ($is_pending): ?>
-                                <span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; font-weight:800; font-size:0.7rem; padding:3px 8px; border-radius:20px;">
-                                    <i class="fas fa-clock"></i> Pending
-                                </span>
-                            <?php else: ?>
-                                <span class="badge badge-success"><i class="fas fa-circle-check"></i> Paid</span>
-                            <?php endif; ?>
+                            <span class="badge badge-success"><i class="fas fa-circle-check"></i> Paid</span>
                         </td>
 
-                        <!-- Verified By / Actions -->
+                        <!-- Verified By -->
                         <td>
-                            <?php if ($is_pending): ?>
-                                <a href="renewal-requests.php?status=Pending" class="btn btn-sm btn-outline" style="padding:3px 10px; font-size:0.74rem; border-color:#f59e0b; color:#d97706; text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-weight:700;">
-                                    <i class="fas fa-check"></i> Review & Approve
-                                </a>
-                            <?php else: ?>
-                                <div class="cell-secondary" style="font-size:0.8rem;">
-                                    <i class="fas fa-user-check" style="color:var(--accent);"></i> <?php echo htmlspecialchars($p['verified_by_name'] ?: 'Admin'); ?>
-                                </div>
-                            <?php endif; ?>
+                            <div class="cell-secondary" style="font-size:0.8rem;">
+                                <?php if (!empty($p['paymongo_checkout_id'])): ?>
+                                    <span style="color:#4f46e5; font-weight:700;"><i class="fas fa-bolt"></i> Auto (PayMongo)</span>
+                                <?php else: ?>
+                                    <i class="fas fa-user-check" style="color:var(--accent);"></i> <?php echo htmlspecialchars($p['verified_by_name'] ?: 'Front Desk Admin'); ?>
+                                <?php endif; ?>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>

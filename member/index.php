@@ -138,18 +138,15 @@ try {
         </div>
 
         <?php if ($pending_request): ?>
-            <!-- Pending Renewal Request Banner -->
+            <!-- Pending Front Desk Renewal Banner -->
             <div class="card pending-renewal-banner fade-up" style="background: #fffbeb; border: 1.5px dashed #f59e0b; border-radius: 16px; padding: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; box-shadow: var(--shadow-xs);">
                 <div style="width: 42px; height: 42px; border-radius: 12px; background: #fef3c7; display: flex; align-items: center; justify-content: center; color: #d97706; font-size: 1.2rem; flex-shrink: 0;">
-                    <i class="fas fa-spinner fa-spin"></i>
+                    <i class="fas fa-clock"></i>
                 </div>
                 <div style="flex: 1; min-width: 0;">
-                    <p style="margin: 0; font-size: 0.85rem; font-weight: 700; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px;">Renewal Under Review</p>
+                    <p style="margin: 0; font-size: 0.85rem; font-weight: 700; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px;">Awaiting Front Desk Settlement</p>
                     <p style="margin: 4px 0 0 0; font-size: 0.84rem; color: #374151; line-height: 1.4;">
-                        Your request for <strong><?php echo htmlspecialchars($pending_request['plan_name']); ?></strong> (₱<?php echo number_format($pending_request['plan_price'], 2); ?>) is pending admin approval.
-                        <?php if ($pending_request['reference_no']): ?>
-                            <br><span style="font-size: 0.76rem; color: #4b5563;">Payment Method: <?php echo htmlspecialchars($pending_request['payment_method']); ?> | Ref: <code><?php echo htmlspecialchars($pending_request['reference_no']); ?></code></span>
-                        <?php endif; ?>
+                        Your renewal request for <strong><?php echo htmlspecialchars($pending_request['plan_name']); ?></strong> (₱<?php echo number_format($pending_request['plan_price'], 2); ?>) has been received. Please settle your payment in cash at the front desk to activate your pass.
                     </p>
                 </div>
             </div>
@@ -389,10 +386,10 @@ try {
 
             <?php if (is_paymongo_test_mode()): ?>
             <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:0.75rem 1rem; margin-bottom:1.2rem; display:flex; align-items:center; gap:0.65rem; font-size:0.8rem; color:#1e40af;">
-                <i class="fas fa-flask" style="color:#2563eb; font-size:1.15rem; flex-shrink:0;"></i>
+                <i class="fas fa-circle-info" style="color:#2563eb; font-size:1.15rem; flex-shrink:0;"></i>
                 <div>
-                    <strong style="display:block; font-weight:700; color:#1d4ed8;">TEST MODE ACTIVE</strong>
-                    Payments are simulated in PayMongo Sandbox. No real money will be charged.
+                    <strong style="display:block; font-weight:700; color:#1d4ed8;">DEMO / PRACTICE MODE ACTIVE</strong>
+                    Simulated payment environment • No real money will be charged.
                 </div>
             </div>
             <?php endif; ?>
@@ -403,35 +400,35 @@ try {
             <div id="payment-instructions" style="display:none;"></div>
 
             <!-- Payment Method Options -->
-            <div style="display:flex; flex-direction:column; gap:0.6rem; margin-bottom:1.25rem;">
-                <?php
-                $pmethods = [
-                    ['PayMongo', 'fa-credit-card',     '#6366f1', 'rgba(99,102,241,0.1)', 'Online Checkout (Cards, GCash, Maya, GrabPay)'],
-                    ['GCash',    'fa-mobile-screen',   '#2563eb', 'rgba(37,99,235,0.1)', 'Manual GCash Transfer'],
-                    ['Maya',     'fa-wallet',          '#059669', 'rgba(5,150,105,0.1)', 'Manual Maya Transfer'],
-                    ['Cash',     'fa-money-bill-wave', '#3e8241', 'rgba(62,130,65,0.1)', 'Cash (Front Desk)'],
-                ];
-                foreach($pmethods as [$pm, $icon, $clr, $bg, $label]):
-                ?>
-                <label class="pay-option" for="pm-<?php echo str_replace(' ','-',$pm); ?>">
-                    <input type="radio" name="paymethod" id="pm-<?php echo str_replace(' ','-',$pm); ?>" value="<?php echo $pm; ?>" onchange="toggleRef('<?php echo $pm; ?>')"> 
-                    <div style="width:38px;height:38px;border-radius:10px;background:<?php echo $bg; ?>;color:<?php echo $clr; ?>;display:flex;align-items:center;justify-content:center;font-size:0.95rem;">
-                        <i class="fas <?php echo $icon; ?>"></i>
+            <div style="display:flex; flex-direction:column; gap:0.65rem; margin-bottom:1.25rem;">
+                <!-- Automated Online Payment -->
+                <label class="pay-option" for="pm-PayMongo" style="border:1.5px solid #6366f1; background:rgba(99,102,241,0.03);">
+                    <input type="radio" name="paymethod" id="pm-PayMongo" value="PayMongo" checked onchange="toggleRef('PayMongo')"> 
+                    <div style="width:40px;height:40px;border-radius:10px;background:rgba(99,102,241,0.12);color:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">
+                        <i class="fas fa-credit-card"></i>
                     </div>
                     <div style="flex:1;">
-                        <div style="font-weight:600; font-size:0.88rem; color:var(--text-primary);"><?php echo $pm === 'PayMongo' ? 'Pay Online (PayMongo)' : $pm; ?></div>
-                        <div style="font-size:0.74rem; color:var(--text-secondary);"><?php echo $label; ?></div>
+                        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                            <span style="font-weight:700; font-size:0.9rem; color:var(--text-primary);">Online Payment (GCash, Maya, Cards)</span>
+                            <span style="font-size:0.65rem; background:#dcfce7; color:#15803d; padding:2px 7px; border-radius:12px; font-weight:800; letter-spacing:0.4px;">⚡ INSTANT ACTIVATION</span>
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">Automated instant pass activation upon payment</div>
                     </div>
                     <span class="pay-check"><i class="fas fa-circle-check"></i></span>
                 </label>
-                <?php endforeach; ?>
-            </div>
 
-            <!-- Reference No (for GCash/Maya) -->
-            <div id="ref-group" style="display:none; margin-bottom:1.25rem;">
-                <p style="font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:0.4rem;">GCash / Maya Reference No. *</p>
-                <input type="text" id="reference-no" placeholder="e.g. 1004582914"
-                    style="width:100%;background:#ffffff;border:1px solid var(--border);border-radius:12px;padding:0.8rem 1rem;color:var(--text-primary);font-size:0.88rem;font-family:'Inter',sans-serif;box-sizing:border-box;">
+                <!-- Front Desk Cash -->
+                <label class="pay-option" for="pm-Cash">
+                    <input type="radio" name="paymethod" id="pm-Cash" value="Cash" onchange="toggleRef('Cash')"> 
+                    <div style="width:40px;height:40px;border-radius:10px;background:rgba(62,130,65,0.12);color:#2d6a4f;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-weight:700; font-size:0.9rem; color:var(--text-primary);">Cash (Front Desk)</div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">Pay over the counter at gym front desk</div>
+                    </div>
+                    <span class="pay-check"><i class="fas fa-circle-check"></i></span>
+                </label>
             </div>
 
             <div style="display:flex; gap:0.65rem;">
@@ -439,7 +436,7 @@ try {
                     <i class="fas fa-arrow-left"></i> Back
                 </button>
                 <button class="renew-btn" style="flex:2;" id="confirm-renew-btn" onclick="submitRenewal()">
-                    <i class="fas fa-check-circle"></i> Confirm Renewal
+                    <i class="fas fa-bolt"></i> Continue to Payment
                 </button>
             </div>
         </div>
@@ -642,9 +639,8 @@ function openRenewModal() {
     document.getElementById('renew-step-2').style.display = 'none';
     document.getElementById('renew-step-3').style.display = 'none';
     document.querySelectorAll('input[name=plan]').forEach(r => r.checked = false);
-    document.querySelectorAll('input[name=paymethod]').forEach(r => r.checked = false);
-    document.getElementById('reference-no').value = '';
-    document.getElementById('ref-group').style.display = 'none';
+    const defaultPm = document.getElementById('pm-PayMongo');
+    if (defaultPm) defaultPm.checked = true;
     document.getElementById('renew-overlay').classList.add('open');
     document.getElementById('renew-drawer').classList.add('open');
 }
@@ -671,6 +667,7 @@ function goToPayment() {
     document.getElementById('renew-step-1').style.display = 'none';
     document.getElementById('renew-step-2').style.display = 'flex';
     document.getElementById('renew-step-2').style.flexDirection = 'column';
+    toggleRef('PayMongo');
 }
 
 function backToPlan() {
@@ -679,142 +676,32 @@ function backToPlan() {
     document.getElementById('renew-step-1').style.flexDirection = 'column';
 }
 
-const gymPaymentSettings = {
-    gcash_number: <?php echo json_encode($app_settings['gcash_number'] ?? ''); ?>,
-    gcash_name:   <?php echo json_encode($app_settings['gcash_name'] ?? "Palma's Elite Gym"); ?>,
-    gcash_qr:     <?php echo json_encode(!empty($app_settings['gcash_qr_image']) ? '../' . $app_settings['gcash_qr_image'] : ''); ?>,
-    maya_number:  <?php echo json_encode($app_settings['maya_number'] ?? ''); ?>,
-    maya_name:    <?php echo json_encode($app_settings['maya_name'] ?? "Palma's Elite Gym"); ?>,
-    maya_qr:      <?php echo json_encode(!empty($app_settings['maya_qr_image']) ? '../' . $app_settings['maya_qr_image'] : ''); ?>
-};
-
-function copyPaymentText(text, btn) {
-    if (!navigator.clipboard) {
-        const temp = document.createElement('input');
-        temp.value = text;
-        document.body.appendChild(temp);
-        temp.select();
-        document.execCommand('copy');
-        document.body.removeChild(temp);
-    } else {
-        navigator.clipboard.writeText(text);
-    }
-    const origHtml = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-    btn.style.background = 'var(--palmas-primary, #3e8241)';
-    btn.style.color = '#fff';
-    setTimeout(() => {
-        btn.innerHTML = origHtml;
-        btn.style.background = 'rgba(255,255,255,0.08)';
-        btn.style.color = 'inherit';
-    }, 2000);
-}
-
 function toggleRef(method) {
-    const isManualOnline = ['GCash', 'Maya'].includes(method);
-    document.getElementById('ref-group').style.display = isManualOnline ? 'block' : 'none';
     const instructions = document.getElementById('payment-instructions');
     const confirmBtn = document.getElementById('confirm-renew-btn');
     if (!instructions) return;
 
     if (method === 'PayMongo') {
-        if (confirmBtn) confirmBtn.innerHTML = '<i class="fas fa-lock"></i> Proceed to PayMongo Checkout';
+        if (confirmBtn) confirmBtn.innerHTML = '<i class="fas fa-bolt"></i> Continue to Payment';
         instructions.innerHTML = `
-            <div style="background:#eef2ff; border:1px solid #c7d2fe; border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
-                <div style="display:flex; align-items:center; gap:0.5rem; color:#3730a3; font-weight:700; font-size:0.88rem; margin-bottom:0.35rem;">
-                    <i class="fas fa-shield-halved" style="color:#4f46e5;"></i> PayMongo Secure Checkout
+            <div style="background:#eef2ff; border:1px solid #c7d2fe; border-radius:14px; padding:0.9rem 1rem; margin-bottom:1.1rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem; color:#3730a3; font-weight:700; font-size:0.86rem; margin-bottom:0.3rem;">
+                    <i class="fas fa-shield-check" style="color:#4f46e5;"></i> Secure Online Checkout
                 </div>
-                <p style="font-size:0.82rem; color:#4338ca; line-height:1.5;">
-                    You will be redirected to the secure PayMongo payment portal to complete payment with <strong>GCash, Maya, Credit/Debit Card, or GrabPay</strong>. Your membership will activate automatically upon verification.
+                <p style="font-size:0.8rem; color:#4338ca; line-height:1.45; margin:0;">
+                    Pay directly using <strong>GCash, Maya, or Debit/Credit Card</strong>. Your gym pass will activate immediately after completing payment.
                 </p>
             </div>`;
         instructions.style.display = 'block';
-
-    } else if (method === 'GCash') {
-        if (confirmBtn) confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm Renewal';
-        const num = gymPaymentSettings.gcash_number || '0917-000-0000';
-        const name = gymPaymentSettings.gcash_name || "Palma's Elite Gym";
-        const qrHtml = gymPaymentSettings.gcash_qr ? `
-            <div style="text-align:center; margin-top:0.75rem;">
-                <p style="font-size:0.7rem; color:#8faaa0; margin-bottom:4px;">Scan GCash QR Code:</p>
-                <img src="${gymPaymentSettings.gcash_qr}" alt="GCash QR" style="max-width:140px; border-radius:10px; border:2px solid #3b82f6; background:#fff; padding:4px;">
-            </div>` : '';
-
-        instructions.innerHTML = `
-            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
-                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.6rem;">
-                    <span style="font-size:0.78rem; font-weight:700; color:#1e40af; text-transform:uppercase; letter-spacing:0.5px;">
-                        <i class="fas fa-mobile-screen"></i> GCash Payment Details
-                    </span>
-                    <span style="font-size:0.7rem; background:#dbeafe; color:#1e40af; padding:2px 8px; border-radius:12px; font-weight:600;">Direct E-Wallet</span>
-                </div>
-                
-                <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:0.75rem 0.9rem; margin-bottom:0.5rem;">
-                    <div style="font-size:0.72rem; color:#64748b;">Account Name:</div>
-                    <div style="font-weight:700; color:#0f172a; font-size:0.92rem; margin-bottom:0.4rem;">${name}</div>
-                    
-                    <div style="font-size:0.72rem; color:#64748b;">GCash Mobile Number:</div>
-                    <div style="display:flex; align-items:center; justify-content:space-between;">
-                        <span style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:800; color:#2563eb; letter-spacing:0.5px;">${num}</span>
-                        <button type="button" onclick="copyPaymentText('${num}', this)" style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; color:#334155; font-size:0.72rem; padding:4px 10px; cursor:pointer; transition:all 0.2s; font-weight:600;">
-                            <i class="far fa-copy"></i> Copy
-                        </button>
-                    </div>
-                </div>
-                ${qrHtml}
-                <p style="font-size:0.75rem; color:#1d4ed8; margin-top:0.6rem; text-align:center; line-height:1.4;">
-                    <i class="fas fa-info-circle"></i> Send payment, then enter the <strong>Reference Number</strong> below.
-                </p>
-            </div>`;
-        instructions.style.display = 'block';
-
-    } else if (method === 'Maya') {
-        if (confirmBtn) confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm Renewal';
-        const num = gymPaymentSettings.maya_number || '0918-000-0000';
-        const name = gymPaymentSettings.maya_name || "Palma's Elite Gym";
-        const qrHtml = gymPaymentSettings.maya_qr ? `
-            <div style="text-align:center; margin-top:0.75rem;">
-                <p style="font-size:0.72rem; color:#065f46; margin-bottom:4px; font-weight:600;">Scan Maya QR Code:</p>
-                <img src="${gymPaymentSettings.maya_qr}" alt="Maya QR" style="max-width:140px; border-radius:10px; border:2px solid #10b981; background:#fff; padding:4px;">
-            </div>` : '';
-
-        instructions.innerHTML = `
-            <div style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
-                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.6rem;">
-                    <span style="font-size:0.78rem; font-weight:700; color:#065f46; text-transform:uppercase; letter-spacing:0.5px;">
-                        <i class="fas fa-wallet"></i> Maya Payment Details
-                    </span>
-                    <span style="font-size:0.7rem; background:#d1fae5; color:#065f46; padding:2px 8px; border-radius:12px; font-weight:600;">Direct E-Wallet</span>
-                </div>
-                
-                <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:0.75rem 0.9rem; margin-bottom:0.5rem;">
-                    <div style="font-size:0.72rem; color:#047857;">Account Name:</div>
-                    <div style="font-weight:700; color:#0f172a; font-size:0.92rem; margin-bottom:0.4rem;">${name}</div>
-                    
-                    <div style="font-size:0.72rem; color:#047857;">Maya Mobile Number:</div>
-                    <div style="display:flex; align-items:center; justify-content:space-between;">
-                        <span style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:800; color:#059669; letter-spacing:0.5px;">${num}</span>
-                        <button type="button" onclick="copyPaymentText('${num}', this)" style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; color:#334155; font-size:0.72rem; padding:4px 10px; cursor:pointer; transition:all 0.2s; font-weight:600;">
-                            <i class="far fa-copy"></i> Copy
-                        </button>
-                    </div>
-                </div>
-                ${qrHtml}
-                <p style="font-size:0.75rem; color:#047857; margin-top:0.6rem; text-align:center; line-height:1.4;">
-                    <i class="fas fa-info-circle"></i> Send payment, then enter the <strong>Reference Number</strong> below.
-                </p>
-            </div>`;
-        instructions.style.display = 'block';
-
     } else {
-        if (confirmBtn) confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm Renewal';
+        if (confirmBtn) confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Front Desk Request';
         instructions.innerHTML = `
-            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:14px; padding:1rem; margin-bottom:1.25rem;">
-                <div style="display:flex; align-items:center; gap:0.5rem; color:#166534; font-weight:700; font-size:0.88rem; margin-bottom:0.35rem;">
-                    <i class="fas fa-hand-holding-dollar"></i> Over-the-Counter Cash Payment
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:14px; padding:0.9rem 1rem; margin-bottom:1.1rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem; color:#166534; font-weight:700; font-size:0.86rem; margin-bottom:0.3rem;">
+                    <i class="fas fa-hand-holding-dollar"></i> Front Desk Cash Payment
                 </div>
-                <p style="font-size:0.82rem; color:#14532d; line-height:1.5;">
-                    Please settle your membership payment in <strong>Cash</strong> at the Front Desk upon your next visit. Our staff will immediately confirm your payment and extend your subscription.
+                <p style="font-size:0.8rem; color:#14532d; line-height:1.45; margin:0;">
+                    Please settle your membership payment in <strong>Cash</strong> at the gym front desk upon your visit. Our staff will confirm your payment and activate your pass.
                 </p>
             </div>`;
         instructions.style.display = 'block';
@@ -824,15 +711,14 @@ function toggleRef(method) {
 async function submitRenewal() {
     const plan   = document.querySelector('input[name=plan]:checked');
     const method = document.querySelector('input[name=paymethod]:checked');
-    const ref    = document.getElementById('reference-no').value.trim();
 
-    if (!plan)   { alert('Please select a plan.'); return; }
+    if (!plan)   { alert('Please select a membership plan.'); return; }
     if (!method) { alert('Please choose a payment method.'); return; }
 
-    // ── PayMongo Online Checkout Redirect Flow ──
+    // ── PayMongo Online Checkout Flow ──
     if (method.value === 'PayMongo') {
         const btn = document.getElementById('confirm-renew-btn');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting to PayMongo...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening Payment Window...';
         btn.disabled  = true;
 
         try {
@@ -851,31 +737,28 @@ async function submitRenewal() {
                 window.location.href = data.checkout_url;
                 return;
             } else {
-                alert(data.message || 'Payment initialization failed. Please try again.');
-                btn.innerHTML = '<i class="fas fa-lock"></i> Proceed to PayMongo Checkout';
+                alert(data.message || 'Unable to open payment window. Please try again.');
+                btn.innerHTML = '<i class="fas fa-bolt"></i> Continue to Payment';
                 btn.disabled  = false;
                 return;
             }
         } catch(e) {
-            alert('A network error occurred connecting to PayMongo. Please try again.');
-            btn.innerHTML = '<i class="fas fa-lock"></i> Proceed to PayMongo Checkout';
+            alert('A connection error occurred. Please try again.');
+            btn.innerHTML = '<i class="fas fa-bolt"></i> Continue to Payment';
             btn.disabled  = false;
             return;
         }
     }
 
-    if (['GCash', 'Maya'].includes(method.value) && !ref) {
-        alert('Please enter your GCash / Maya Reference Number.'); return;
-    }
-
+    // ── Front Desk Cash Request ──
     const btn = document.getElementById('confirm-renew-btn');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
     btn.disabled  = true;
 
     const fd = new FormData();
     fd.append('plan_id',        plan.value);
-    fd.append('payment_method', method.value);
-    fd.append('reference_no',   ref);
+    fd.append('payment_method', 'Cash');
+    fd.append('reference_no',   '');
     fd.append('csrf_token',     document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
     try {
@@ -887,13 +770,13 @@ async function submitRenewal() {
             document.getElementById('renew-step-3').style.display = 'flex';
             document.getElementById('renew-success-msg').textContent = data.message;
         } else {
-            alert(data.message || 'Renewal failed. Please try again.');
-            btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm Renewal';
+            alert(data.message || 'Renewal request failed. Please try again.');
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Front Desk Request';
             btn.disabled  = false;
         }
     } catch(e) {
         alert('Network error. Please try again.');
-        btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm Renewal';
+        btn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Front Desk Request';
         btn.disabled  = false;
     }
 }

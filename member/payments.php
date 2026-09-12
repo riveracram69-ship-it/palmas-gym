@@ -177,16 +177,13 @@ $method_icons = [
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                     <div>
                         <span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; font-weight:800; font-size:0.68rem; padding:3px 9px; border-radius:20px;">
-                            <i class="fas fa-hourglass-half"></i> Pending Staff Verification
+                            <i class="fas fa-clock"></i> Awaiting Front Desk Payment
                         </span>
                         <h4 style="margin:8px 0 2px; font-size:1.05rem; font-weight:800; color:#1f2937;">
                             <?php echo htmlspecialchars($pr['plan_name'] ?: 'Membership Renewal'); ?>
                         </h4>
                         <p style="margin:0; font-size:0.78rem; color:#6b7280;">
-                            <?php echo htmlspecialchars($p_method); ?> 
-                            <?php if (!empty($pr['reference_no'])): ?>
-                                • Ref: <code style="font-weight:700; color:#1f2937;"><?php echo htmlspecialchars($pr['reference_no']); ?></code>
-                            <?php endif; ?>
+                            <?php echo htmlspecialchars($p_method); ?> (Over-the-counter)
                         </p>
                     </div>
                     <div style="text-align:right;">
@@ -199,7 +196,7 @@ $method_icons = [
                     </div>
                 </div>
                 <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #fcd34d; font-size:0.75rem; color:#92400e; display:flex; align-items:center; gap:6px;">
-                    <i class="fas fa-info-circle"></i> Awaiting gym front-desk review. Your digital pass will automatically update once verified.
+                    <i class="fas fa-info-circle"></i> Please settle payment in cash at the gym front desk. Your pass will automatically activate upon payment.
                 </div>
             </div>
             <?php endforeach; ?>
@@ -226,21 +223,18 @@ $method_icons = [
                 ?>
                 <div class="list-item" style="background:rgba(245,158,11,0.05); border-left:3px solid #f59e0b;">
                     <div class="list-item-icon" style="background:rgba(245,158,11,0.15); color:#d97706;">
-                        <i class="fas fa-hourglass-half"></i>
+                        <i class="fas fa-clock"></i>
                     </div>
                     <div class="list-item-info">
                         <div class="list-item-title" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                             <span><?php echo htmlspecialchars($pr['plan_name'] ?: 'Membership Renewal'); ?></span>
-                            <span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; font-size:0.6rem; padding:1px 6px;">⏳ Pending</span>
+                            <span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; font-size:0.6rem; padding:1px 6px;">Front Desk Settlement</span>
                         </div>
                         <div class="list-item-sub" style="margin-top:4px;">
                             <span class="method-badge" style="background:<?php echo $mdata['bg']; ?>; color:<?php echo $mdata['color']; ?>;">
                                 <i class="fas <?php echo $mdata['icon']; ?>" style="font-size:0.55rem;"></i>
                                 <?php echo htmlspecialchars($method); ?>
                             </span>
-                            <?php if (!empty($pr['reference_no'])): ?>
-                                <code style="font-size:0.7rem; color:var(--text-muted);">Ref: <?php echo htmlspecialchars($pr['reference_no']); ?></code>
-                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="list-item-right">
