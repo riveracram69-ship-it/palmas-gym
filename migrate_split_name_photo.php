@@ -98,6 +98,91 @@ try {
     }
 
     echo "  [+] Backfilled {$count} member record(s).\n";
+
+    // ── Photo Column Migration & Base64 Persistence ────────────────────────────
+    echo "\n  [*] Ensuring `photo` column supports persistent Base64 Data URIs...\n";
+    try {
+        $pdo->exec("ALTER TABLE `members` MODIFY COLUMN `photo` MEDIUMTEXT NULL");
+        echo "  [+] `photo` column updated to MEDIUMTEXT.\n";
+    } catch (\Throwable $photoColErr) {
+        echo "  [*] Note on `photo` column: " . $photoColErr->getMessage() . "\n";
+    }
+
+    // Convert any existing local image files on disk into persistent Base64 Data URIs
+    $photo_stmt = $pdo->query("SELECT id, photo FROM members WHERE photo IS NOT NULL AND photo != '' AND photo NOT LIKE 'data:%' AND photo NOT LIKE 'http%'");
+    $local_photos = $photo_stmt->fetchAll(PDO::FETCH_ASSOC);
+    $photo_migrated = 0;
+
+    $photo_upd = $pdo->prepare("UPDATE members SET photo = ? WHERE id = ?");
+
+    foreach ($local_photos as $lp) {
+        $clean_path = ltrim($lp['photo'], '/');
+        $full_paths = [
+            __DIR__ . '/' . $clean_path,
+            __DIR__ . '/uploads/members/' . basename($clean_path),
+            dirname(__DIR__) . '/' . $clean_path
+        ];
+
+        $found_file = null;
+        foreach ($full_paths as $fp) {
+            if (file_exists($fp) && is_file($fp)) {
+                $found_file = $fp;
+                break;
+            }
+        }
+
+        if ($found_file) {
+            $raw_data = @file_get_contents($found_file);
+            if ($raw_data) {
+                $b64 = null;
+                if (extension_loaded('gd')) {
+                    $src = @imagecreatefromstring($raw_data);
+                    if ($src !== false) {
+                        $sw = imagesx($src);
+                        $sh = imagesy($src);
+                        $tw = $sw;
+                        $th = $sh;
+                        if ($sw > 400 || $sh > 400) {
+                            $ratio = min(400 / $sw, 400 / $sh);
+                            $tw = max(1, (int)round($sw * $ratio));
+                            $th = max(1, (int)round($sh * $ratio));
+                        }
+                        $dst = imagecreatetruecolor($tw, $th);
+                        $white = imagecolorallocate($dst, 255, 255, 255);
+                        imagefilledrectangle($dst, 0, 0, $tw, $th, $white);
+                        imagecopyresampled($dst, $src, 0, 0, 0, 0, $tw, $th, $sw, $sh);
+
+                        ob_start();
+                        imagejpeg($dst, null, 82);
+                        $jpg = ob_get_clean();
+                        imagedestroy($src);
+                        imagedestroy($dst);
+
+                        if (!empty($jpg)) {
+                            $b64 = 'data:image/jpeg;base64,' . base64_encode($jpg);
+                        }
+                    }
+                }
+
+                if (!$b64) {
+                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                    $mime = finfo_file($finfo, $found_file) ?: 'image/jpeg';
+                    finfo_close($finfo);
+                    $b64 = 'data:' . $mime . ';base64,' . base64_encode($raw_data);
+                }
+
+                if ($b64) {
+                    $photo_upd->execute([$b64, $lp['id']]);
+                    $photo_migrated++;
+                }
+            }
+        }
+    }
+
+    if ($photo_migrated > 0) {
+        echo "  [+] Converted {$photo_migrated} existing local member photo(s) to persistent Base64 Data URIs.\n";
+    }
+
     echo "\n[SUCCESS] Migration completed successfully.\n";
 
 } catch (Exception $e) {

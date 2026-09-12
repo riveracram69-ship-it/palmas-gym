@@ -551,8 +551,8 @@ async function refreshQR() {
             
             new QRCode(qrContainer, {
                 text: data.token,
-                width: 120,
-                height: 120,
+                width: 180,
+                height: 180,
                 colorDark: "#000000",
                 colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H
@@ -566,8 +566,8 @@ async function refreshQR() {
             qrContainer.innerHTML = '';
             new QRCode(qrContainer, {
                 text: cachedToken,
-                width: 120,
-                height: 120,
+                width: 180,
+                height: 180,
                 colorDark: "#000000",
                 colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H

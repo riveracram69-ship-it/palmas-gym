@@ -36,8 +36,14 @@ try {
     <!-- Left: Scanner Section -->
     <div style="display:flex; flex-direction:column; gap:1.5rem;">
         <div class="card">
-            <h3 class="section-title" style="margin-bottom:1.5rem;"><i class="fas fa-camera" style="color:var(--accent);"></i> Live Scanner</h3>
-            <div id="reader" style="width:100%; border-radius:12px; overflow:hidden; border:1px solid var(--border); background:#000;"></div>
+            <h3 class="section-title" style="margin-bottom:1rem;"><i class="fas fa-camera" style="color:var(--accent);"></i> Live Scanner</h3>
+            
+            <div class="camera-tip-pill" style="display:flex; align-items:center; gap:8px; background:rgba(62,130,65,0.08); border:1px solid rgba(62,130,65,0.2); padding:8px 12px; border-radius:10px; margin-bottom:14px; font-size:0.75rem; color:#2d6a4f; line-height:1.4;">
+                <i class="fas fa-mobile-screen-button" style="color:#52b788; font-size:1.1rem; flex-shrink:0;"></i>
+                <span><strong>Mobile Phone Scan Tip:</strong> Set phone brightness to 80%+, hold phone ~15–20cm away from lens, and angle slightly to avoid direct ceiling light glare.</span>
+            </div>
+
+            <div id="reader" style="width:100%; border-radius:12px; overflow:hidden; border:1px solid var(--border); background:#000; transition:outline 0.2s ease;"></div>
             
             <div id="scan-result" style="display:none; margin-top:1.5rem; padding:1.25rem; border-radius:12px;" role="alert"></div>
 
@@ -246,17 +252,76 @@ document.getElementById('manual-id').addEventListener('keydown', e => { if(e.key
 
 let isProcessingCheckin = false;
 
+// Audio Chime Synthesizer via Web Audio API (No external sound files required)
+function playScanBeep(isSuccess = true) {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        if (isSuccess) {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 note
+            osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.12); // A6 note
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.18);
+        } else {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(320, ctx.currentTime);
+            osc.frequency.linearRampToValueAtTime(180, ctx.currentTime + 0.22);
+            gain.gain.setValueAtTime(0.25, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.25);
+        }
+    } catch (e) {
+        // AudioContext not allowed before gesture or unsupported
+    }
+}
+
+function flashReaderBorder(isSuccess = true) {
+    const readerEl = document.getElementById('reader');
+    if (!readerEl) return;
+    readerEl.style.outline = isSuccess ? '5px solid #10B981' : '5px solid #EF4444';
+    readerEl.style.outlineOffset = '-5px';
+    setTimeout(() => {
+        readerEl.style.outline = 'none';
+    }, 600);
+}
+
 function onScanSuccess(text) {
     if (isProcessingCheckin) return;
     if (!text || !text.trim()) return;
 
     isProcessingCheckin = true;
+    playScanBeep(true);
+    flashReaderBorder(true);
     processCheckin(text.trim());
 }
 
+// Optimized Html5QrcodeScanner tailored specifically for mobile phone screens
 let scanner = new Html5QrcodeScanner('reader', { 
-    fps: 12, 
-    qrbox: { width: 250, height: 250 },
+    fps: 20, 
+    qrbox: function(viewfinderWidth, viewfinderHeight) {
+        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+        const qrboxSize = Math.max(220, Math.floor(minEdge * 0.75));
+        return { width: qrboxSize, height: qrboxSize };
+    },
+    aspectRatio: 1.0,
+    formatsToSupport: (typeof Html5QrcodeSupportedFormats !== 'undefined') ? [ Html5QrcodeSupportedFormats.QR_CODE ] : undefined,
+    experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
+    },
     rememberLastUsedCamera: true
 });
 scanner.render(onScanSuccess);

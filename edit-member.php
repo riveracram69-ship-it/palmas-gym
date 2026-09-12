@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $upload_result = secure_process_image_upload($_FILES['photo'], 'members', 1200, 1200);
         if ($upload_result['success']) {
             $photo_path = $upload_result['path'];
-            if (!empty($member['photo']) && file_exists(__DIR__ . '/' . $member['photo'])) {
+            if (!empty($member['photo']) && !str_starts_with($member['photo'], 'data:') && !str_starts_with($member['photo'], 'http') && file_exists(__DIR__ . '/' . $member['photo'])) {
                 @unlink(__DIR__ . '/' . $member['photo']);
             }
         } else {
@@ -141,7 +141,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:1.5rem; padding-bottom:1.25rem; border-bottom:1px solid var(--border);">
             <div style="width:80px; height:80px; border-radius:50%; border:2px solid var(--border); overflow:hidden; display:flex; align-items:center; justify-content:center; background:var(--palmas-dark);">
                 <?php if (!empty($member['photo'])): ?>
-                    <img id="edit-photo-preview" src="<?php echo htmlspecialchars($member['photo']); ?>" alt="Current member photo preview" style="width:100%; height:100%; object-fit:cover;">
+                    <img id="edit-photo-preview" src="<?php echo htmlspecialchars($member['photo']); ?>" alt="Current member photo preview" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; document.getElementById('edit-photo-icon-fb').style.display='block';">
+                    <i id="edit-photo-icon-fb" class="fas fa-user" style="font-size:1.8rem; color:var(--text-muted); display:none;"></i>
                 <?php else: ?>
                     <i id="edit-photo-icon" class="fas fa-camera" style="font-size:1.8rem; color:var(--text-muted);"></i>
                     <img id="edit-photo-preview" src="" alt="New member photo preview" style="width:100%; height:100%; object-fit:cover; display:none;">

@@ -2621,8 +2621,11 @@
               </div>
 
               <!-- Dynamic QR Code in visually separated frame -->
-              <div class="pass-qr-frame">
+              <div class="pass-qr-frame" onclick="openEnlargedQRModal()" title="Tap to enlarge for kiosk scanner" style="cursor:pointer;">
                 <div id="qr-target"></div>
+                <div style="margin-top:8px; font-size:0.72rem; color:#4a5568; font-weight:700; display:flex; align-items:center; justify-content:center; gap:5px;">
+                  <i class="fa-solid fa-expand" style="color:var(--primary);"></i> Tap to enlarge for scanner
+                </div>
               </div>
 
               <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin:4px 0 10px;">
@@ -3553,6 +3556,28 @@
         </button>
       </div>
     </div>
+  <!-- ══════════════════════════════════════════════════════════
+       ENLARGED HIGH-CONTRAST QR KIOSK SCANNER MODAL
+       ══════════════════════════════════════════════════════════ -->
+  <div id="modal-enlarged-qr" class="custom-dialog-overlay" style="display:none;" onclick="closeEnlargedQRModal()">
+    <div class="custom-dialog-card" onclick="event.stopPropagation()" style="max-width:340px; text-align:center; background:#ffffff; border:2.5px solid #52B788; box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+      <div style="width:44px; height:4px; background:#d1d5db; border-radius:2px; margin:0 auto 14px;"></div>
+      <div style="display:inline-flex; align-items:center; gap:6px; background:#e8f5e9; border:1px solid #c8e6c9; color:#2e7d32; font-size:0.75rem; font-weight:800; padding:4px 12px; border-radius:14px; margin-bottom:10px; text-transform:uppercase;">
+        <i class="fa-solid fa-qrcode"></i> Kiosk Scanner Mode
+      </div>
+      <h3 style="font-family:'Outfit',sans-serif; font-size:1.15rem; font-weight:800; color:#121A14; margin:0 0 4px;">Hold to Scanner Camera</h3>
+      <p style="font-size:0.78rem; color:#617567; margin:0 0 16px;">Set screen brightness to 100% for instant check-in</p>
+
+      <div style="background:#ffffff; padding:12px; border-radius:16px; display:inline-block; border:2px solid #e5e7eb; box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+        <div id="enlarged-qr-target" style="display:flex; align-items:center; justify-content:center; min-width:240px; min-height:240px;"></div>
+      </div>
+
+      <div id="enlarged-qr-memid" style="font-family:monospace; font-weight:900; font-size:1.15rem; color:#121A14; margin-top:12px; letter-spacing:1px;">--</div>
+
+      <button class="btn-primary" style="margin-top:16px; height:46px; font-size:0.9rem;" onclick="closeEnlargedQRModal()">
+        <i class="fa-solid fa-check"></i> Done (Close)
+      </button>
+    </div>
   </div>
 
   <!-- TOAST -->
@@ -3825,6 +3850,13 @@ function handleHardwareBack() {
   const signoutModal = document.getElementById('custom-signout-modal');
   if (signoutModal && signoutModal.style.display !== 'none') {
     closeSignOutDialog();
+    return;
+  }
+
+  // 1b. Check enlarged QR scanner modal
+  const qrModal = document.getElementById('modal-enlarged-qr');
+  if (qrModal && qrModal.style.display !== 'none') {
+    closeEnlargedQRModal();
     return;
   }
 
@@ -5026,6 +5058,7 @@ async function loadDashboard(memberId) {
 
     const m = data.member;
     currentMember = m;
+    localStorage.setItem('peg_member', JSON.stringify(m));
     availablePlans = data.plans || [];
 
     // Request notification permission if supported
@@ -5207,6 +5240,46 @@ function renderQRCode(text) {
   } catch (err) {
     console.error('QR code generation error:', err);
   }
+}
+
+// ── ENLARGED HIGH-CONTRAST QR KIOSK SCANNER POPUP ──────────────────
+let enlargedQrInstance = null;
+
+function openEnlargedQRModal() {
+  const modal = document.getElementById('modal-enlarged-qr');
+  const target = document.getElementById('enlarged-qr-target');
+  const memidEl = document.getElementById('enlarged-qr-memid');
+  if (!modal || !target) return;
+
+  const payload = (currentMember && currentMember.membership_id) || '';
+  if (memidEl) memidEl.textContent = payload || 'NO MEMBER ID';
+
+  target.innerHTML = '';
+  if (enlargedQrInstance) {
+    try { enlargedQrInstance.clear(); } catch (e) {}
+  }
+
+  if (payload) {
+    try {
+      enlargedQrInstance = new QRCode(target, {
+        text: payload,
+        width: 240,
+        height: 240,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    } catch (e) {
+      console.warn('Enlarged QR render error:', e);
+    }
+  }
+
+  modal.style.display = 'flex';
+}
+
+function closeEnlargedQRModal() {
+  const modal = document.getElementById('modal-enlarged-qr');
+  if (modal) modal.style.display = 'none';
 }
 
 let currentActiveTab = 'tab-pass';
@@ -5645,6 +5718,10 @@ async function handlePhotoSelected(input) {
 
     const data = await res.json();
     if (data.success) {
+      if (data.member) {
+        currentMember = data.member;
+        localStorage.setItem('peg_member', JSON.stringify(data.member));
+      }
       if (statusEl) {
         statusEl.style.color = 'var(--primary)';
         statusEl.innerHTML = '<i class="fa-solid fa-check"></i> Photo updated successfully!';

@@ -141,9 +141,21 @@ function secure_process_image_upload(
                 // Resample pixels onto new canvas (neutralizes any non-pixel code)
                 imagecopyresampled($dst_img, $src_img, 0, 0, 0, 0, $target_w, $target_h, $orig_width, $orig_height);
 
-                // Save sanitized image as clean JPEG with 88% quality
-                if (imagejpeg($dst_img, $target_filepath, 88)) {
-                    $reencoded = true;
+                // Generate optimized, lightweight JPEG binary
+                ob_start();
+                imagejpeg($dst_img, null, 82);
+                $jpeg_binary = ob_get_clean();
+
+                if (!empty($jpeg_binary)) {
+                    $base64_data_uri = 'data:image/jpeg;base64,' . base64_encode($jpeg_binary);
+                    // Also persist physical file to disk if directory is writable
+                    if (@file_put_contents($target_filepath, $jpeg_binary)) {
+                        $reencoded = true;
+                        @chmod($target_filepath, 0644);
+                    } else {
+                        // Even if disk write fails (read-only container), base64 is available!
+                        $reencoded = true;
+                    }
                 }
 
                 imagedestroy($src_img);
@@ -158,17 +170,23 @@ function secure_process_image_upload(
     // Fallback if GD is disabled or failed
     if (!$reencoded) {
         if (!move_uploaded_file($tmp_name, $target_filepath)) {
-            return ['success' => false, 'path' => null, 'error' => 'Failed to write uploaded image to server storage.'];
+            return ['success' => false, 'path' => null, 'file_path' => null, 'error' => 'Failed to write uploaded image to server storage.'];
+        }
+        @chmod($target_filepath, 0644);
+        $raw_bytes = @file_get_contents($target_filepath);
+        if ($raw_bytes) {
+            $base64_data_uri = 'data:image/jpeg;base64,' . base64_encode($raw_bytes);
         }
     }
 
-    // 10. Enforce non-executable file permissions (read-only for web server)
-    @chmod($target_filepath, 0644);
+    // Default to base64 Data URI so it persists in database across Render container rebuilds
+    $final_path = !empty($base64_data_uri) ? $base64_data_uri : $relative_db_path;
 
     return [
-        'success' => true,
-        'path'    => $relative_db_path,
-        'error'   => null
+        'success'   => true,
+        'path'      => $final_path,
+        'file_path' => $relative_db_path,
+        'error'     => null
     ];
 }
 
@@ -207,32 +225,6 @@ function secure_process_base64_image_upload(
         return ['success' => false, 'path' => null, 'error' => "Image exceeds maximum limit of {$max_mb}MB."];
     }
 
-    // Verify GD is available
-    if (!extension_loaded('gd') || !function_exists('imagecreatefromstring')) {
-        return ['success' => false, 'path' => null, 'error' => 'Server image processing module unavailable.'];
-    }
-
-    $src_img = @imagecreatefromstring($raw_bytes);
-    if ($src_img === false) {
-        return ['success' => false, 'path' => null, 'error' => 'Uploaded data is not a recognized image.'];
-    }
-
-    $orig_w = imagesx($src_img);
-    $orig_h = imagesy($src_img);
-    if ($orig_w <= 0 || $orig_h <= 0) {
-        imagedestroy($src_img);
-        return ['success' => false, 'path' => null, 'error' => 'Invalid image dimensions.'];
-    }
-
-    // Calculate dimensions
-    $target_w = $orig_w;
-    $target_h = $orig_h;
-    if ($orig_w > $max_width || $orig_h > $max_height) {
-        $ratio = min($max_width / $orig_w, $max_height / $orig_h);
-        $target_w = max(1, (int)round($orig_w * $ratio));
-        $target_h = max(1, (int)round($orig_h * $ratio));
-    }
-
     $clean_subfolder = trim(preg_replace('/[^a-zA-Z0-9_-]/', '', $subfolder), '/');
     $base_upload_dir = __DIR__ . '/../uploads/' . ($clean_subfolder ? $clean_subfolder . '/' : '');
     if (!is_dir($base_upload_dir)) {
@@ -243,24 +235,71 @@ function secure_process_base64_image_upload(
     $target_filepath = $base_upload_dir . $safe_filename;
     $relative_db_path = 'uploads/' . ($clean_subfolder ? $clean_subfolder . '/' : '') . $safe_filename;
 
-    $dst_img = imagecreatetruecolor($target_w, $target_h);
-    $white = imagecolorallocate($dst_img, 255, 255, 255);
-    imagefilledrectangle($dst_img, 0, 0, $target_w, $target_h, $white);
-    imagecopyresampled($dst_img, $src_img, 0, 0, 0, 0, $target_w, $target_h, $orig_w, $orig_h);
+    $base64_data_uri = null;
 
-    $saved = imagejpeg($dst_img, $target_filepath, 88);
-    imagedestroy($src_img);
-    imagedestroy($dst_img);
+    // Verify GD is available for re-encoding and resizing
+    if (extension_loaded('gd') && function_exists('imagecreatefromstring')) {
+        $src_img = @imagecreatefromstring($raw_bytes);
+        if ($src_img !== false) {
+            $orig_w = imagesx($src_img);
+            $orig_h = imagesy($src_img);
+            if ($orig_w > 0 && $orig_h > 0) {
+                // Calculate dimensions
+                $target_w = $orig_w;
+                $target_h = $orig_h;
+                if ($orig_w > $max_width || $orig_h > $max_height) {
+                    $ratio = min($max_width / $orig_w, $max_height / $orig_h);
+                    $target_w = max(1, (int)round($orig_w * $ratio));
+                    $target_h = max(1, (int)round($orig_h * $ratio));
+                }
 
-    if (!$saved) {
-        return ['success' => false, 'path' => null, 'error' => 'Failed to save processed image.'];
+                $dst_img = imagecreatetruecolor($target_w, $target_h);
+                $white = imagecolorallocate($dst_img, 255, 255, 255);
+                imagefilledrectangle($dst_img, 0, 0, $target_w, $target_h, $white);
+                imagecopyresampled($dst_img, $src_img, 0, 0, 0, 0, $target_w, $target_h, $orig_w, $orig_h);
+
+                // Generate optimized, lightweight JPEG binary
+                ob_start();
+                imagejpeg($dst_img, null, 82);
+                $jpeg_binary = ob_get_clean();
+
+                if (!empty($jpeg_binary)) {
+                    $base64_data_uri = 'data:image/jpeg;base64,' . base64_encode($jpeg_binary);
+                    // Persist file to local disk if directory writable
+                    if (@file_put_contents($target_filepath, $jpeg_binary)) {
+                        @chmod($target_filepath, 0644);
+                    }
+                }
+
+                imagedestroy($src_img);
+                imagedestroy($dst_img);
+            }
+        }
     }
 
-    @chmod($target_filepath, 0644);
+    // Fallback if GD is unavailable: validate MIME magic bytes via finfo
+    if (empty($base64_data_uri)) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_buffer($finfo, $raw_bytes);
+        finfo_close($finfo);
+
+        $allowed_mimes = ['image/jpeg', 'image/pjpeg', 'image/png', 'image/x-png', 'image/webp'];
+        if (!in_array($mime, $allowed_mimes, true)) {
+            return ['success' => false, 'path' => null, 'file_path' => null, 'error' => 'Invalid image content format. Genuine image files only.'];
+        }
+
+        @file_put_contents($target_filepath, $raw_bytes);
+        @chmod($target_filepath, 0644);
+        $base64_data_uri = 'data:' . $mime . ';base64,' . base64_encode($raw_bytes);
+    }
+
+    // Default to base64 Data URI so it persists in database across Render container rebuilds
+    $final_path = !empty($base64_data_uri) ? $base64_data_uri : $relative_db_path;
 
     return [
-        'success' => true,
-        'path'    => $relative_db_path,
-        'error'   => null
+        'success'   => true,
+        'path'      => $final_path,
+        'file_path' => $relative_db_path,
+        'error'     => null
     ];
 }

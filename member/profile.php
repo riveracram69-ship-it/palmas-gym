@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $db_path = $upload_result['path'];
             try {
                 // Remove old photo safely if exists
-                if (!empty($member['photo']) && file_exists(__DIR__ . '/../' . $member['photo'])) {
+                if (!empty($member['photo']) && !str_starts_with($member['photo'], 'data:') && !str_starts_with($member['photo'], 'http') && file_exists(__DIR__ . '/../' . $member['photo'])) {
                     @unlink(__DIR__ . '/../' . $member['photo']);
                 }
                 

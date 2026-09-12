@@ -90,7 +90,7 @@ try {
     }
 
     if ($new_photo_path) {
-        if (!empty($member['photo']) && file_exists(__DIR__ . '/../' . $member['photo'])) {
+        if (!empty($member['photo']) && !str_starts_with($member['photo'], 'data:') && !str_starts_with($member['photo'], 'http') && file_exists(__DIR__ . '/../' . $member['photo'])) {
             @unlink(__DIR__ . '/../' . $member['photo']);
         }
         $updates[] = "photo = ?";

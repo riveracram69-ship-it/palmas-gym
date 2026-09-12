@@ -79,7 +79,8 @@ if (!$member): ?>
             <div style="padding:2rem; margin-top:-60px; display:flex; gap:2rem; align-items:flex-end;">
                 <div style="width:130px; height:130px; border-radius:20px; background:#fff; border:5px solid #fff; box-shadow:var(--shadow-md); overflow:hidden; display:flex; align-items:center; justify-content:center;">
                     <?php if($member['photo']): ?>
-                        <img src="<?php echo htmlspecialchars($member['photo']); ?>" alt="<?php echo htmlspecialchars($member['full_name']); ?> Photo" style="width:100%; height:100%; object-fit:cover;">
+                        <img src="<?php echo htmlspecialchars($member['photo']); ?>" alt="<?php echo htmlspecialchars($member['full_name']); ?> Photo" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <span style="display:none; font-size:3rem; font-family:'Playfair Display', serif; color:var(--accent);"><?php echo strtoupper(substr($member['full_name'], 0, 1)); ?></span>
                     <?php else: ?>
                         <span style="font-size:3rem; font-family:'Playfair Display', serif; color:var(--accent);"><?php echo strtoupper(substr($member['full_name'], 0, 1)); ?></span>
                     <?php endif; ?>
@@ -193,7 +194,10 @@ if (!$member): ?>
                         <!-- Actual Photo/Fallback Area -->
                         <div style="width:100%; height:100%; border-radius:50%; overflow:hidden; background:#f1f5f9; display:flex; align-items:center; justify-content:center; border:2px solid #ffffff; box-shadow:inset 0 2px 5px rgba(0,0,0,0.05);">
                             <?php if($member['photo']): ?>
-                                <img src="<?php echo htmlspecialchars($member['photo']); ?>" alt="<?php echo htmlspecialchars($member['full_name']); ?> Photo" style="width:100%; height:100%; object-fit:cover;">
+                                <img src="<?php echo htmlspecialchars($member['photo']); ?>" alt="<?php echo htmlspecialchars($member['full_name']); ?> Photo" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div style="display:none; width:100%; height:100%; background:linear-gradient(135deg, var(--accent-dim) 0%, rgba(45,106,79,0.16) 100%); align-items:center; justify-content:center;">
+                                    <span style="font-size:3.2rem; font-family:'Outfit', sans-serif; font-weight:700; color:var(--accent); text-shadow:0 1px 0 rgba(255,255,255,0.7);"><?php echo strtoupper(substr($member['full_name'], 0, 1)); ?></span>
+                                </div>
                             <?php else: ?>
                                 <div style="width:100%; height:100%; background:linear-gradient(135deg, var(--accent-dim) 0%, rgba(45,106,79,0.16) 100%); display:flex; align-items:center; justify-content:center;">
                                     <span style="font-size:3.2rem; font-family:'Outfit', sans-serif; font-weight:700; color:var(--accent); text-shadow:0 1px 0 rgba(255,255,255,0.7);"><?php echo strtoupper(substr($member['full_name'], 0, 1)); ?></span>

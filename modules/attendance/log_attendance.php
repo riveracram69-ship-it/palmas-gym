@@ -27,16 +27,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $membership_id = $raw_input;
 
-    // Handle token format (e.g. PEG:MEMBERSHIP_ID:SIG or GYM-XXXXXX:SIG) or direct Membership ID
-    if (strpos($raw_input, ':') !== false) {
+    // Robust extraction: Detect GYM-XXXXXX pattern anywhere in scanned string
+    // Supports raw IDs, dynamic tokens (GYM-XXXXXX:time:hash), URLs, and JSON payloads
+    // Negative lookbehind ensures we don't accidentally match hostnames/subdomains like palmas-gym-4oxn.onrender.com
+    if (preg_match('/(?<![a-zA-Z0-9-])(GYM-[A-Za-z0-9]{4,10})(?![a-zA-Z0-9])/i', $raw_input, $matches)) {
+        $membership_id = strtoupper($matches[1]);
+    } elseif (strpos($raw_input, ':') !== false) {
         $parts = explode(':', $raw_input);
         if (count($parts) >= 2) {
-            // First part or second part is the membership ID
-            $membership_id = $parts[0];
-            if ($parts[0] === 'PEG' && isset($parts[1])) {
-                $membership_id = $parts[1];
-            }
+            $membership_id = ($parts[0] === 'PEG' && isset($parts[1])) ? trim($parts[1]) : trim($parts[0]);
         }
+    } else {
+        $membership_id = trim($raw_input);
     }
 
     try {
