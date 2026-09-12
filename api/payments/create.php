@@ -26,6 +26,9 @@ require_once __DIR__ . '/../../config/payment.php';
 require_once __DIR__ . '/../../config/paymongo.php';
 require_once __DIR__ . '/../../config/rate_limiter.php';
 
+// Ensure required PayMongo and test columns exist
+PayMongoGateway::ensureSchema($pdo);
+
 // ── 1. AUTHENTICATE USER (Session or Bearer Token) ──────────────────────────
 $member_id = null;
 if (session_status() === PHP_SESSION_NONE) {

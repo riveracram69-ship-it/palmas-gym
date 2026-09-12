@@ -18,6 +18,9 @@ require_once __DIR__ . '/../config/paymongo.php';
 require_once __DIR__ . '/../config/rate_limiter.php';
 require_once __DIR__ . '/auth_middleware.php';
 
+// Self-healing schema check to ensure PayMongo columns exist
+PayMongoGateway::ensureSchema($pdo);
+
 // Rate Limiting Guard: Max checkout requests per window per member
 $rate_check = check_rate_limit($pdo, 'member_' . $auth_member_id, 'payment_checkout');
 if (!$rate_check['allowed']) {
@@ -231,8 +234,9 @@ try {
 
 } catch (Throwable $e) {
     error_log('Error in create_payment_checkout.php: ' . $e->getMessage());
+    $err_detail = $e->getMessage();
     echo json_encode([
         'success' => false,
-        'message' => 'Unable to initialize checkout. Please try again.'
+        'message' => 'Unable to initialize checkout: ' . $err_detail
     ]);
 }

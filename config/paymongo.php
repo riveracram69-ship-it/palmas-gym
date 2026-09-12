@@ -63,17 +63,23 @@ class PayMongoGateway {
             return ['success' => false, 'message' => 'Invalid transaction amount.'];
         }
 
+        // PayMongo requires a minimum of 2000 centavos (₱20.00) for E-Wallets and 10000 centavos (₱100.00) for Cards.
+        // In test mode, if testing with a ₱1 promo pass, floor to 2000 centavos so PayMongo API doesn't reject with 400.
+        if (self::isTestMode() && $amountCentavos < 2000) {
+            $amountCentavos = 2000;
+        }
+
         // Map application payment method to PayMongo payment method types
-        $methodType = strtolower($params['payment_method'] ?? 'gcash');
-        $allowedTypes = ['gcash'];
-        if (str_contains($methodType, 'maya')) {
+        $methodType = strtolower($params['payment_method'] ?? 'paymongo');
+        $allowedTypes = ['gcash', 'paymaya', 'card', 'grab_pay'];
+        if ($methodType === 'gcash') {
+            $allowedTypes = ['gcash'];
+        } elseif (str_contains($methodType, 'maya')) {
             $allowedTypes = ['paymaya'];
         } elseif (str_contains($methodType, 'card') || str_contains($methodType, 'credit')) {
             $allowedTypes = ['card'];
         } elseif (str_contains($methodType, 'grab')) {
             $allowedTypes = ['grab_pay'];
-        } elseif (str_contains($methodType, 'all')) {
-            $allowedTypes = ['gcash', 'paymaya', 'card', 'grab_pay'];
         }
 
         $payload = [
@@ -290,5 +296,58 @@ class PayMongoGateway {
         }
 
         return null;
+    }
+
+    /**
+     * Self-healing schema migration: ensure PayMongo columns and tables exist.
+     */
+    public static function ensureSchema(?PDO $pdo = null): void {
+        static $executed = false;
+        if ($executed) return;
+        if (!$pdo) {
+            global $pdo;
+        }
+        if (!$pdo) return;
+
+        try {
+            // Check payment_transactions columns
+            $stmt = $pdo->query("SHOW COLUMNS FROM `payment_transactions`");
+            $cols = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+
+            if (!empty($cols)) {
+                if (!in_array('paymongo_checkout_id', $cols)) {
+                    $pdo->exec("ALTER TABLE `payment_transactions` ADD COLUMN `paymongo_checkout_id` VARCHAR(100) NULL AFTER `gateway_transaction_id`");
+                }
+                if (!in_array('paymongo_payment_id', $cols)) {
+                    $pdo->exec("ALTER TABLE `payment_transactions` ADD COLUMN `paymongo_payment_id` VARCHAR(100) NULL AFTER `paymongo_checkout_id`");
+                }
+                if (!in_array('is_test', $cols)) {
+                    $pdo->exec("ALTER TABLE `payment_transactions` ADD COLUMN `is_test` TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`");
+                }
+                if (!in_array('failure_reason', $cols)) {
+                    $pdo->exec("ALTER TABLE `payment_transactions` ADD COLUMN `failure_reason` VARCHAR(255) NULL AFTER `gateway_response`");
+                }
+            }
+
+            // Check payments columns
+            $p_stmt = $pdo->query("SHOW COLUMNS FROM `payments`");
+            $pCols = $p_stmt ? $p_stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+
+            if (!empty($pCols)) {
+                if (!in_array('paymongo_checkout_id', $pCols)) {
+                    $pdo->exec("ALTER TABLE `payments` ADD COLUMN `paymongo_checkout_id` VARCHAR(100) NULL AFTER `reference_number`");
+                }
+                if (!in_array('paymongo_payment_id', $pCols)) {
+                    $pdo->exec("ALTER TABLE `payments` ADD COLUMN `paymongo_payment_id` VARCHAR(100) NULL AFTER `paymongo_checkout_id`");
+                }
+                if (!in_array('is_test', $pCols)) {
+                    $pdo->exec("ALTER TABLE `payments` ADD COLUMN `is_test` TINYINT(1) NOT NULL DEFAULT 0 AFTER `notes`");
+                }
+            }
+
+            $executed = true;
+        } catch (Throwable $e) {
+            error_log("ensureSchema notice: " . $e->getMessage());
+        }
     }
 }

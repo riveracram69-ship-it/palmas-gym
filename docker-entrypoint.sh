@@ -17,6 +17,7 @@ php /var/www/html/gym/migrate_split_name_photo.php || true
 php /var/www/html/gym/migrate_backfill_missing_payments.php || true
 php /var/www/html/gym/migrate_clean_unified.php || true
 php /var/www/html/gym/migrate_fix_plan_durations.php || true
+php /var/www/html/gym/database/migrations/paymongo_integration_migration.php || true
 
 # Execute Apache in foreground
 exec apache2-foreground
