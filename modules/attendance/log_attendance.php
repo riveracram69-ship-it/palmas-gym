@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $token_slot   = intval(trim($parts[1]));
             $token_sig    = trim($parts[2]);
 
-            if (!preg_match('/^GYM-[A-Za-z0-9]{4,10}$/i', $token_mem_id)) {
+            if (!preg_match('/^[A-Za-z0-9_-]{4,20}$/i', $token_mem_id)) {
                 echo json_encode(['success' => false, 'message' => 'Malformed QR code: Invalid Member ID format.']);
                 exit;
             }
@@ -74,21 +74,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
     } else {
-        // Raw Member ID submitted (without signature)
-        // Must ONLY be accepted if entered via authenticated staff/admin manual entry
-        if ($is_staff && $is_manual) {
+        // Raw Member ID submitted (without signature, e.g. from printed/downloaded ID card or manual entry)
+        // Allowed if scanned or entered by authenticated front-desk staff/admin
+        if ($is_staff) {
             $cleaned = trim($raw_input);
-            if (preg_match('/^(GYM-[A-Za-z0-9]{4,10})$/i', $cleaned, $matches)) {
-                $membership_id = strtoupper($matches[1]);
-            } else {
-                $membership_id = strtoupper($cleaned);
-            }
+            $membership_id = strtoupper($cleaned);
         } else {
-            // Scanner or unauthenticated entry attempted using static / raw Member ID
+            // Unattended kiosk or unauthenticated scanner requires dynamic rotating QR code
             echo json_encode([
                 'success' => false, 
                 'status_type' => 'Static QR Blocked',
-                'message' => 'Static QR code or raw Member ID rejected. Please use your dynamic rotating QR in the member app.'
+                'message' => 'Static QR code or raw Member ID rejected on unattended scanner. Please use your dynamic rotating QR in the member app.'
             ]);
             exit;
         }

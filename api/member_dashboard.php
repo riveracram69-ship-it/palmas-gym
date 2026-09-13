@@ -60,6 +60,9 @@ try {
     $is_expired = (!empty($member['expiry_date']) && $exp_ts < $now_time);
     $member['is_expired'] = $is_expired;
 
+    $is_active = ($member['status'] === 'Active' && !$is_expired && ($member['account_status'] ?? 'Approved') === 'Approved');
+    $member['is_active'] = $is_active;
+
     // Determine renewal eligibility (can only renew if expired or expiring soon)
     $can_renew = true;
     $cannot_renew_reason = null;
@@ -163,7 +166,6 @@ try {
         $plans_stmt = $pdo->query("
             SELECT id, name, price, duration_months, duration_minutes, is_test_promo, benefits 
             FROM membership_plans 
-            WHERE is_active = 1 OR is_active IS NULL
             ORDER BY price ASC
         ");
         $plans = $plans_stmt->fetchAll(PDO::FETCH_ASSOC);

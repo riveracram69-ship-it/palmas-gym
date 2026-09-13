@@ -3660,6 +3660,7 @@ function getFallbackEndpoint() {
 let currentMember = null;
 let availablePlans = [];
 let qrInstance = null;
+let currentQrToken = '';
 let regPrefill = {};
 let selectedGender = '';
 let selectedPlanId = null;
@@ -5233,8 +5234,9 @@ async function loadDashboard(memberId) {
     // Dynamic Test Promo Countdown
     checkAndStartTestPromoCountdown(m);
 
-    // Fixed permanent Member Pass QR Code
-    renderQRCode(m.membership_id);
+    // Dynamic Authenticated Member Pass QR Code
+    currentQrToken = data.qr_token || m.membership_id;
+    renderQRCode(currentQrToken);
 
     // Populate Tab 2: Attendance
     renderAttendance(data.attendance || []);
@@ -5344,8 +5346,8 @@ function openEnlargedQRModal() {
   const memidEl = document.getElementById('enlarged-qr-memid');
   if (!modal || !target) return;
 
-  const payload = (currentMember && currentMember.membership_id) || '';
-  if (memidEl) memidEl.textContent = payload || 'NO MEMBER ID';
+  const payload = currentQrToken || (currentMember && currentMember.membership_id) || '';
+  if (memidEl) memidEl.textContent = (currentMember && currentMember.membership_id) || payload || 'NO MEMBER ID';
 
   target.innerHTML = '';
   if (enlargedQrInstance) {
