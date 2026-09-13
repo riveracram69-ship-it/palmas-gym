@@ -1,11 +1,17 @@
 <?php
 $pending_regs_count = 0;
+$pending_renewals_count = 0;
 try {
     if (isset($pdo) && $pdo) {
         $counts = $pdo->query("
             SELECT COUNT(*) AS pending_regs FROM members WHERE account_status = 'Pending'
         ")->fetch(PDO::FETCH_ASSOC);
         $pending_regs_count = (int)($counts['pending_regs'] ?? 0);
+
+        $renew_counts = $pdo->query("
+            SELECT COUNT(*) AS pending_renews FROM renewal_requests WHERE status = 'Pending'
+        ")->fetch(PDO::FETCH_ASSOC);
+        $pending_renewals_count = (int)($renew_counts['pending_renews'] ?? 0);
     }
 } catch (Exception $e) {
     error_log("Sidebar counts query error: " . $e->getMessage());
@@ -44,6 +50,14 @@ try {
                 <i class="fas fa-user-clock"></i> Pending Approvals
                 <?php if ($pending_regs_count > 0): ?>
                     <span class="badge badge-warning" style="margin-left:auto; font-size:0.72rem; padding:0.15rem 0.55rem; border-radius:var(--radius-full);"><?php echo $pending_regs_count; ?></span>
+                <?php endif; ?>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="renewal-requests.php" class="nav-link <?php echo nav_active('renewal-requests.php'); ?>">
+                <i class="fas fa-arrows-rotate"></i> Renewal Requests
+                <?php if ($pending_renewals_count > 0): ?>
+                    <span class="badge badge-warning" style="margin-left:auto; font-size:0.72rem; padding:0.15rem 0.55rem; border-radius:var(--radius-full);"><?php echo $pending_renewals_count; ?></span>
                 <?php endif; ?>
             </a>
         </li>

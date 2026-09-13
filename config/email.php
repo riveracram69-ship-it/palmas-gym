@@ -73,7 +73,7 @@ function send_email_notification($to, $subject, $title, $body_text) {
         $mail->Host       = SMTP_HOST;
         $mail->SMTPAuth   = true;
         $mail->Username   = SMTP_USER;
-        $mail->Password   = SMTP_PASS;
+        $mail->Password   = trim(str_replace(' ', '', (string)SMTP_PASS));
         $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = SMTP_PORT;
         $mail->Timeout    = 5;

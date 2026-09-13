@@ -24,12 +24,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $plan_id        = intval($_POST['plan_id'] ?? 0);
 $payment_method = trim($_POST['payment_method'] ?? '');
 $reference_no   = trim($_POST['reference_no'] ?? '');
-$auto_activate  = isset($_POST['auto_activate']) && $_POST['auto_activate'] == '1';
-
-$allowed_methods = ['Cash', 'GCash', 'Maya', 'QR Ph', 'Instant GCash', 'Instant Maya', 'Credit Card', 'Bank Transfer'];
+$allowed_methods = ['Cash', 'GCash', 'Maya', 'QR Ph', 'Credit Card', 'Bank Transfer'];
 
 if (!$plan_id || !in_array($payment_method, $allowed_methods)) {
-    echo json_encode(['success' => false, 'message' => 'Please fill in all required fields.']);
+    echo json_encode(['success' => false, 'message' => 'Please select a valid membership plan and payment method.']);
     exit;
 }
 
@@ -41,25 +39,6 @@ try {
 
     if (!$plan) {
         echo json_encode(['success' => false, 'message' => 'Selected plan not found.']);
-        exit;
-    }
-
-    // Check if auto-activation is requested for instant payment methods
-    $is_instant = $auto_activate || in_array($payment_method, ['Instant GCash', 'Instant Maya', 'QR Ph']);
-
-    if ($is_instant) {
-        // Instant Automated Activation
-        $normalized_method = str_replace('Instant ', '', $payment_method);
-        $result = process_automated_subscription_activation(
-            $pdo,
-            $member['id'],
-            $plan_id,
-            floatval($plan['price']),
-            $normalized_method,
-            $reference_no ?: ('AUTO-' . strtoupper(bin2hex(random_bytes(3))))
-        );
-
-        echo json_encode($result);
         exit;
     }
 

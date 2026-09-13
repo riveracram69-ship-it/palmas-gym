@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
         require_once __DIR__ . '/config/uploader.php';
-        $upload_result = secure_process_image_upload($_FILES['photo'], 'members', 1200, 1200);
+        $upload_result = secure_process_image_upload($_FILES['photo'], 'members', 600, 600);
         if ($upload_result['success']) {
             $photo_path = $upload_result['path'];
         } else {
@@ -93,8 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $created_by = $_SESSION['user_id'] ?? null;
             $membership_id = 'GYM-' . strtoupper(substr(uniqid(), -6));
 
-            $stmt = $pdo->prepare("INSERT INTO members (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, age, gender, photo, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?)");
-            $stmt->execute([$membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact, $age, $gender, $photo_path, $created_by]);
+            $stmt = $pdo->prepare("INSERT INTO members (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, age, gender, photo, status, created_by, account_status, approved_by, approved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?, 'Approved', ?, NOW())");
+            $stmt->execute([$membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact, $age, $gender, $photo_path, $created_by, $created_by]);
             $member_id = $pdo->lastInsertId();
 
             $plan_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes FROM membership_plans WHERE id = ?");

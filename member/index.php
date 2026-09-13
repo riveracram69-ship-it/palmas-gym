@@ -34,9 +34,9 @@ if (!empty($member['expiry_date']) && !$expired) {
     $threshold_sec = (!empty($is_minute_promo)) ? 300 : (3 * 86400);
     if ($diff_sec > $threshold_sec) {
         $can_renew = false;
-        $rem_text = (!empty($is_minute_promo) || $diff_sec < 86400) ? ceil($diff_sec / 60) . ' minuto(s)' : ceil($diff_sec / 86400) . ' araw';
-        $rule_text = (!empty($is_minute_promo)) ? '5 minuto bago mag-expire' : '3 araw bago mag-expire';
-        $cannot_renew_reason = "Hindi pa maaaring mag-renew! Aktibo pa ang iyong kasalukuyang plano ({$rem_text} natitira). Maaari lamang mag-renew kapag expired na o {$rule_text}.";
+        $rem_text = (!empty($is_minute_promo) || $diff_sec < 86400) ? ceil($diff_sec / 60) . ' min(s)' : ceil($diff_sec / 86400) . ' day(s)';
+        $rule_text = (!empty($is_minute_promo)) ? 'within 5 minutes of expiration' : 'within 3 days of expiration';
+        $cannot_renew_reason = "Your plan is still active ({$rem_text} remaining). Renewal is available when expired or {$rule_text}.";
     }
 }
 
@@ -419,26 +419,42 @@ try {
 
             <!-- Payment Method Options -->
             <div style="display:flex; flex-direction:column; gap:0.65rem; margin-bottom:1.25rem;">
-                <!-- Automated Online Payment -->
-                <label class="pay-option" for="pm-PayMongo" style="border:1.5px solid #6366f1; background:rgba(99,102,241,0.03);">
-                    <input type="radio" name="paymethod" id="pm-PayMongo" value="PayMongo" checked onchange="toggleRef('PayMongo')"> 
-                    <div style="width:40px;height:40px;border-radius:10px;background:rgba(99,102,241,0.12);color:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">
-                        <i class="fas fa-credit-card"></i>
+                <!-- 1. GCash Payment -->
+                <label class="pay-option" for="pm-GCash">
+                    <input type="radio" name="paymethod" id="pm-GCash" value="GCash" checked onchange="toggleRef('GCash')"> 
+                    <div style="width:40px;height:40px;border-radius:10px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,125,254,0.25);padding:2px;flex-shrink:0;">
+                        <img src="../assets/images/gcash-logo.png" alt="GCash" style="width:100%;height:100%;object-fit:contain;">
                     </div>
                     <div style="flex:1;">
                         <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                            <span style="font-weight:700; font-size:0.9rem; color:var(--text-primary);">Online Payment (GCash, Maya, Cards)</span>
+                            <span style="font-weight:700; font-size:0.9rem; color:var(--text-primary);">GCash</span>
                             <span style="font-size:0.65rem; background:#dcfce7; color:#15803d; padding:2px 7px; border-radius:12px; font-weight:800; letter-spacing:0.4px;">⚡ INSTANT ACTIVATION</span>
                         </div>
-                        <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">Automated instant pass activation upon payment</div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">Direct GCash E-Wallet payment</div>
                     </div>
                     <span class="pay-check"><i class="fas fa-circle-check"></i></span>
                 </label>
 
-                <!-- Front Desk Cash -->
+                <!-- 2. Maya Payment -->
+                <label class="pay-option" for="pm-Maya">
+                    <input type="radio" name="paymethod" id="pm-Maya" value="Maya" onchange="toggleRef('Maya')"> 
+                    <div style="width:40px;height:40px;border-radius:10px;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,214,100,0.2);padding:3px;flex-shrink:0;">
+                        <img src="../assets/images/maya-logo.png" alt="Maya" style="width:100%;height:100%;object-fit:contain;">
+                    </div>
+                    <div style="flex:1;">
+                        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                            <span style="font-weight:700; font-size:0.9rem; color:var(--text-primary);">Maya</span>
+                            <span style="font-size:0.65rem; background:#dcfce7; color:#15803d; padding:2px 7px; border-radius:12px; font-weight:800; letter-spacing:0.4px;">⚡ INSTANT ACTIVATION</span>
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">Direct Maya E-Wallet payment</div>
+                    </div>
+                    <span class="pay-check"><i class="fas fa-circle-check"></i></span>
+                </label>
+
+                <!-- 3. Front Desk Cash -->
                 <label class="pay-option" for="pm-Cash">
                     <input type="radio" name="paymethod" id="pm-Cash" value="Cash" onchange="toggleRef('Cash')"> 
-                    <div style="width:40px;height:40px;border-radius:10px;background:rgba(62,130,65,0.12);color:#2d6a4f;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">
+                    <div style="width:40px;height:40px;border-radius:10px;background:rgba(62,130,65,0.12);color:#2d6a4f;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">
                         <i class="fas fa-money-bill-wave"></i>
                     </div>
                     <div style="flex:1;">
@@ -657,7 +673,7 @@ function openRenewModal() {
     document.getElementById('renew-step-2').style.display = 'none';
     document.getElementById('renew-step-3').style.display = 'none';
     document.querySelectorAll('input[name=plan]').forEach(r => r.checked = false);
-    const defaultPm = document.getElementById('pm-PayMongo');
+    const defaultPm = document.getElementById('pm-GCash');
     if (defaultPm) defaultPm.checked = true;
     document.getElementById('renew-overlay').classList.add('open');
     document.getElementById('renew-drawer').classList.add('open');
@@ -685,7 +701,8 @@ function goToPayment() {
     document.getElementById('renew-step-1').style.display = 'none';
     document.getElementById('renew-step-2').style.display = 'flex';
     document.getElementById('renew-step-2').style.flexDirection = 'column';
-    toggleRef('PayMongo');
+    const checkedMethod = document.querySelector('input[name=paymethod]:checked');
+    toggleRef(checkedMethod ? checkedMethod.value : 'GCash');
 }
 
 function backToPlan() {
@@ -699,15 +716,27 @@ function toggleRef(method) {
     const confirmBtn = document.getElementById('confirm-renew-btn');
     if (!instructions) return;
 
-    if (method === 'PayMongo') {
-        if (confirmBtn) confirmBtn.innerHTML = '<i class="fas fa-bolt"></i> Continue to Payment';
+    if (method === 'GCash') {
+        if (confirmBtn) confirmBtn.innerHTML = '<i class="fas fa-bolt"></i> Continue to GCash Payment';
         instructions.innerHTML = `
-            <div style="background:#eef2ff; border:1px solid #c7d2fe; border-radius:14px; padding:0.9rem 1rem; margin-bottom:1.1rem;">
-                <div style="display:flex; align-items:center; gap:0.5rem; color:#3730a3; font-weight:700; font-size:0.86rem; margin-bottom:0.3rem;">
-                    <i class="fas fa-shield-check" style="color:#4f46e5;"></i> Secure Online Checkout
+            <div style="background:#eef6ff; border:1px solid #bfdbfe; border-radius:14px; padding:0.9rem 1rem; margin-bottom:1.1rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem; color:#1d4ed8; font-weight:700; font-size:0.86rem; margin-bottom:0.3rem;">
+                    <i class="fas fa-bolt" style="color:#007dfe;"></i> Instant GCash Checkout
                 </div>
-                <p style="font-size:0.8rem; color:#4338ca; line-height:1.45; margin:0;">
-                    Pay directly using <strong>GCash, Maya, or Debit/Credit Card</strong>. Your gym pass will activate immediately after completing payment.
+                <p style="font-size:0.8rem; color:#1e40af; line-height:1.45; margin:0;">
+                    Pay directly using your <strong>GCash</strong> E-Wallet account. Your gym pass will activate immediately after completing payment.
+                </p>
+            </div>`;
+        instructions.style.display = 'block';
+    } else if (method === 'Maya') {
+        if (confirmBtn) confirmBtn.innerHTML = '<i class="fas fa-bolt"></i> Continue to Maya Payment';
+        instructions.innerHTML = `
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:14px; padding:0.9rem 1rem; margin-bottom:1.1rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem; color:#15803d; font-weight:700; font-size:0.86rem; margin-bottom:0.3rem;">
+                    <i class="fas fa-bolt" style="color:#00d664;"></i> Instant Maya Checkout
+                </div>
+                <p style="font-size:0.8rem; color:#166534; line-height:1.45; margin:0;">
+                    Pay directly using your <strong>Maya</strong> E-Wallet account. Your gym pass will activate immediately after completing payment.
                 </p>
             </div>`;
         instructions.style.display = 'block';
@@ -733,10 +762,10 @@ async function submitRenewal() {
     if (!plan)   { alert('Please select a membership plan.'); return; }
     if (!method) { alert('Please choose a payment method.'); return; }
 
-    // ── PayMongo Online Checkout Flow ──
-    if (method.value === 'PayMongo') {
+    // ── Online Checkout Flow (GCash / Maya) ──
+    if (method.value === 'GCash' || method.value === 'Maya' || method.value === 'PayMongo') {
         const btn = document.getElementById('confirm-renew-btn');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening Payment Window...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening ' + method.value + ' Window...';
         btn.disabled  = true;
 
         try {
@@ -747,7 +776,7 @@ async function submitRenewal() {
                 },
                 body: JSON.stringify({
                     plan_id: plan.value,
-                    payment_method: 'all'
+                    payment_method: method.value
                 })
             });
             const data = await res.json();
@@ -756,15 +785,14 @@ async function submitRenewal() {
                 return;
             } else {
                 alert(data.message || 'Unable to open payment window. Please try again.');
-                btn.innerHTML = '<i class="fas fa-bolt"></i> Continue to Payment';
+                btn.innerHTML = '<i class="fas fa-bolt"></i> Continue to ' + method.value + ' Payment';
                 btn.disabled  = false;
                 return;
             }
         } catch(e) {
             alert('A connection error occurred. Please try again.');
-            btn.innerHTML = '<i class="fas fa-bolt"></i> Continue to Payment';
+            btn.innerHTML = '<i class="fas fa-bolt"></i> Continue to ' + method.value + ' Payment';
             btn.disabled  = false;
-            return;
         }
     }
 

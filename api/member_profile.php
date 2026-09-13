@@ -72,16 +72,18 @@ try {
     $new_photo_path = null;
     $base64_photo = $data['photo_base64'] ?? $data['photo'] ?? '';
     if (!empty($base64_photo) && is_string($base64_photo) && str_starts_with($base64_photo, 'data:image')) {
-        $upload_result = secure_process_base64_image_upload($base64_photo, 'members', 1200, 1200);
-        if ($upload_result['success']) {
+        $upload_result = secure_process_base64_image_upload($base64_photo, 'members', 600, 600);
+        if (!empty($upload_result['success']) && !empty($upload_result['path'])) {
             $new_photo_path = $upload_result['path'];
+        } elseif (preg_match('/^data:image\/(jpeg|png|webp|jpg);base64,/i', $base64_photo) && strlen($base64_photo) <= 2 * 1024 * 1024) {
+            $new_photo_path = $base64_photo;
         } else {
             echo json_encode(['success' => false, 'message' => $upload_result['error'] ?? 'Photo upload failed.']);
             exit;
         }
     } elseif (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
-        $upload_result = secure_process_image_upload($_FILES['photo'], 'members', 1200, 1200);
-        if ($upload_result['success']) {
+        $upload_result = secure_process_image_upload($_FILES['photo'], 'members', 600, 600);
+        if (!empty($upload_result['success']) && !empty($upload_result['path'])) {
             $new_photo_path = $upload_result['path'];
         } else {
             echo json_encode(['success' => false, 'message' => $upload_result['error'] ?? 'Photo upload failed.']);

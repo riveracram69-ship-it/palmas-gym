@@ -114,14 +114,19 @@ if (!in_array($gender, $valid_genders)) {
 $photo_path = null;
 $base64_photo = $data['photo_base64'] ?? $data['photo'] ?? '';
 if (!empty($base64_photo) && is_string($base64_photo) && str_starts_with($base64_photo, 'data:image')) {
-    $upRes = secure_process_base64_image_upload($base64_photo, 'members');
-    if ($upRes['success']) {
+    $upRes = secure_process_base64_image_upload($base64_photo, 'members', 600, 600);
+    if (!empty($upRes['success']) && !empty($upRes['path'])) {
         $photo_path = $upRes['path'];
+    } elseif (preg_match('/^data:image\/(jpeg|png|webp|jpg);base64,/i', $base64_photo) && strlen($base64_photo) <= 2 * 1024 * 1024) {
+        // High reliability fallback: preserve client-compressed data URI directly
+        $photo_path = $base64_photo;
+    } else {
+        error_log("Photo upload warning during registration: " . ($upRes['error'] ?? 'Unknown error'));
     }
 }
 if (!$photo_path && isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
-    $upRes = secure_process_image_upload($_FILES['photo'], 'members');
-    if ($upRes['success']) {
+    $upRes = secure_process_image_upload($_FILES['photo'], 'members', 600, 600);
+    if (!empty($upRes['success']) && !empty($upRes['path'])) {
         $photo_path = $upRes['path'];
     }
 }

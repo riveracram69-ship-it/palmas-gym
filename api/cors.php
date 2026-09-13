@@ -23,13 +23,11 @@ if (!defined('APP_URL')) {
  */
 function get_allowed_origins(): array {
     $origins = [
-        // Capacitor Android app (WebView uses https://localhost, capacitor://, null or file://)
+        // Capacitor Android app (WebView uses https://localhost, capacitor://, ionic://)
         'https://localhost',
         'http://localhost',
         'capacitor://localhost',
         'ionic://localhost',
-        'null',
-        'file://',
         // Local development origins
         'http://127.0.0.1',
         'http://localhost:3000',

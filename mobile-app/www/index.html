@@ -2504,61 +2504,74 @@
             </div>
           </div>
 
-          <!-- PAYMENT METHOD SELECTION (3 Methods: GCash, Maya, Cash) -->
+          <!-- PAYMENT METHOD SELECTION (Separate GCash, Maya, and Front Desk Cash) -->
           <div class="dark-card" style="padding:16px; margin-bottom:16px;">
-            <label style="display:block; color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:10px;">Choose Payment Option</label>
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:12px;">
-              <button type="button" class="gender-btn selected" id="reg-pm-gcash" onclick="selectRegPaymentMethod('GCash')" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
-                <svg viewBox="0 0 32 32" width="16" height="16" fill="none"><rect width="32" height="32" rx="6" fill="#007DFE"/><path d="M16 6.5C10.75 6.5 6.5 10.75 6.5 16S10.75 25.5 16 25.5c4.54 0 8.32-3.18 9.22-7.44H16v-3.8h12.87C28.95 14.8 29 15.4 29 16c0 7.18-5.82 13-13 13C8.82 29 3 23.18 3 16S8.82 3 16 3c4.1 0 7.76 1.7 10.33 4.45l-2.68 2.68C21.9 8.3 19.1 6.5 16 6.5z" fill="#FFF"/><circle cx="24.8" cy="10.8" r="2.2" fill="#FFF"/></svg>
-                GCash
-              </button>
-              <button type="button" class="gender-btn" id="reg-pm-maya" onclick="selectRegPaymentMethod('Maya')" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
-                <svg viewBox="0 0 32 32" width="16" height="16" fill="none"><rect width="32" height="32" rx="6" fill="#0D1117"/><path d="M7 23V14c0-2.76 2.24-5 5-5s5 2.24 5 5v9" stroke="#00D664" stroke-width="3.2" stroke-linecap="round"/><path d="M17 14c0-2.76 2.24-5 5-5s5 2.24 5 5v9" stroke="#00D664" stroke-width="3.2" stroke-linecap="round"/></svg>
-                Maya
-              </button>
-              <button type="button" class="gender-btn" id="reg-pm-cash" onclick="selectRegPaymentMethod('Cash')" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
-                <i class="fa-solid fa-money-bill-wave" style="color:var(--primary);"></i> Cash
-              </button>
-            </div>
-
-            <!-- ONLINE QR CHECKOUT CONTAINER -->
-            <div id="reg-qr-checkout-wrap" style="text-align:center; padding:14px; background:rgba(15,45,32,0.6); border-radius:14px; border:1px solid var(--gym-border); margin-top:8px;">
-              <span id="reg-qr-badge" style="background:var(--gym-green); color:#fff; font-size:0.72rem; font-weight:800; padding:3px 10px; border-radius:10px;">GCASH ACCOUNT DETAILS</span>
-              <p style="color:var(--gym-muted); font-size:0.8rem; margin:8px 0 4px;">Account: <strong id="reg-acct-label" style="color:#fff;">Palma's Elite Gym (0917-888-4961)</strong></p>
-              <p style="color:var(--gym-muted); font-size:0.8rem; margin:0 0 10px;">Total Due: <strong id="reg-qr-amount-text" style="color:var(--gym-light); font-size:1.1rem;">₱0.00</strong></p>
-              
-              <!-- QR / Number Toggle -->
-              <div style="display:flex; gap:4px; justify-content:center; margin-bottom:12px;">
-                <button type="button" class="gender-btn selected" id="reg-mode-qr" onclick="toggleRegPayMode('qr')" style="font-size:0.75rem; padding:6px 14px;">📱 Scan QR</button>
-                <button type="button" class="gender-btn" id="reg-mode-number" onclick="toggleRegPayMode('number')" style="font-size:0.75rem; padding:6px 14px;">🔢 Send to Number</button>
-              </div>
-
-              <!-- QR View -->
-              <div id="reg-qr-view" class="qr-box" style="margin-bottom:10px; display:inline-block; background:#fff; padding:8px; border-radius:12px;">
-                <div id="reg-payment-qr-target" style="width:160px; height:160px;"></div>
-              </div>
-
-              <!-- Number View -->
-              <div id="reg-number-view" style="display:none; background:rgba(10,35,25,0.7); border:1px dashed var(--gym-mid); border-radius:12px; padding:16px; margin-bottom:10px;">
-                <p style="color:var(--gym-muted); font-size:0.75rem; margin:0 0 8px;">Send exact amount to this number:</p>
-                <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
-                  <span id="reg-pay-number-display" style="color:#fff; font-size:1.3rem; font-weight:900; letter-spacing:1px;">0917-888-4961</span>
-                  <button type="button" onclick="copyRegPayNumber()" style="background:var(--gym-green); border:none; color:#fff; padding:6px 10px; border-radius:8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                    <i class="fa-solid fa-copy"></i> Copy
-                  </button>
+            <label style="display:block; color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:12px;">Choose Payment Option</label>
+            
+            <!-- 1. GCash Card -->
+            <div class="payment-method-card selected" id="reg-card-gcash" onclick="selectRegPaymentMethod('GCash')" style="margin-bottom:10px; cursor:pointer; background:rgba(27,67,50,0.5); border:1.5px solid var(--gym-green); border-radius:14px; padding:12px; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s;">
+              <div class="pm-left" style="display:flex; align-items:center;">
+                <div class="pm-icon-wrap" style="width:42px; height:42px; border-radius:12px; margin-right:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#fff; padding:2px; box-shadow:0 3px 10px rgba(0,125,254,0.3);">
+                  <img src="assets/images/gcash-logo.png" alt="GCash" style="width:100%; height:100%; object-fit:contain;">
                 </div>
-                <p id="reg-pay-name-display" style="color:var(--gym-light); font-size:0.82rem; font-weight:600; margin:8px 0 0;">Palma's Elite Gym</p>
+                <div>
+                  <div class="pm-title" style="display:flex; align-items:center; gap:6px; font-weight:700; color:#fff; font-size:0.92rem;">
+                    <span>GCash</span>
+                    <span style="font-size:9px; font-weight:800; background:rgba(16,185,129,0.2); color:#10b981; padding:2px 6px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">INSTANT ACTIVATION</span>
+                  </div>
+                  <div class="pm-desc" style="font-size:0.75rem; color:var(--gym-muted); margin-top:2px;">GCash E-Wallet &bull; Direct Online Checkout</div>
+                </div>
               </div>
-
-              <div class="input-field-wrap" style="margin-top:6px;">
-                <input type="text" id="reg-ref-no" placeholder="Payment Reference No. (from GCash/Maya receipt)" />
+              <div class="pm-radio" id="reg-radio-gcash" style="width:20px; height:20px; border-radius:50%; border:2px solid var(--gym-green); background:var(--gym-green); display:flex; align-items:center; justify-content:center;">
+                <i class="fa-solid fa-check" style="font-size:10px; color:#fff;"></i>
               </div>
-              <span style="display:block; color:var(--gym-muted); font-size:0.72rem; margin-top:5px;">Enter reference number from your payment receipt. If paying upon arrival, select <strong>Cash</strong> above.</span>
             </div>
 
+            <!-- 2. Maya Card -->
+            <div class="payment-method-card" id="reg-card-maya" onclick="selectRegPaymentMethod('Maya')" style="margin-bottom:10px; cursor:pointer; background:rgba(10,30,22,0.6); border:1.5px solid rgba(82,183,136,0.2); border-radius:14px; padding:12px; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s;">
+              <div class="pm-left" style="display:flex; align-items:center;">
+                <div class="pm-icon-wrap" style="width:42px; height:42px; border-radius:12px; margin-right:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#000; padding:4px; box-shadow:0 3px 10px rgba(0,214,100,0.2);">
+                  <img src="assets/images/maya-logo.png" alt="Maya" style="width:100%; height:100%; object-fit:contain;">
+                </div>
+                <div>
+                  <div class="pm-title" style="display:flex; align-items:center; gap:6px; font-weight:700; color:#fff; font-size:0.92rem;">
+                    <span>Maya</span>
+                    <span style="font-size:9px; font-weight:800; background:rgba(16,185,129,0.2); color:#10b981; padding:2px 6px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">INSTANT ACTIVATION</span>
+                  </div>
+                  <div class="pm-desc" style="font-size:0.75rem; color:var(--gym-muted); margin-top:2px;">Maya E-Wallet &bull; Direct Online Checkout</div>
+                </div>
+              </div>
+              <div class="pm-radio" id="reg-radio-maya" style="width:20px; height:20px; border-radius:50%; border:2px solid rgba(255,255,255,0.3); background:transparent; display:flex; align-items:center; justify-content:center;">
+              </div>
+            </div>
+
+            <!-- 3. Front Desk Cash Card -->
+            <div class="payment-method-card" id="reg-card-cash" onclick="selectRegPaymentMethod('Cash')" style="margin-bottom:12px; cursor:pointer; background:rgba(10,30,22,0.6); border:1.5px solid rgba(82,183,136,0.2); border-radius:14px; padding:12px; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s;">
+              <div class="pm-left" style="display:flex; align-items:center;">
+                <div class="pm-icon-wrap" style="background:rgba(82, 183, 136, 0.2); display:flex; align-items:center; justify-content:center; width:42px; height:42px; border-radius:12px; margin-right:12px;">
+                  <i class="fa-solid fa-store" style="font-size:18px; color:var(--gym-light);"></i>
+                </div>
+                <div>
+                  <div class="pm-title" style="font-weight:700; color:#fff; font-size:0.92rem;">Cash (Front Desk)</div>
+                  <div class="pm-desc" style="font-size:0.75rem; color:var(--gym-muted); margin-top:2px;">Pay at gym reception counter upon your first visit</div>
+                </div>
+              </div>
+              <div class="pm-radio" id="reg-radio-cash" style="width:20px; height:20px; border-radius:50%; border:2px solid rgba(255,255,255,0.3); background:transparent; display:flex; align-items:center; justify-content:center;">
+              </div>
+            </div>
+
+            <!-- Online Info Notice -->
+            <div id="reg-online-info-wrap" style="text-align:center; padding:14px; background:rgba(15,45,32,0.6); border-radius:14px; border:1px solid var(--gym-border); margin-top:8px;">
+              <p style="color:var(--gym-muted); font-size:0.8rem; margin:0 0 4px;">Total Due: <strong id="reg-qr-amount-text" style="color:var(--gym-light); font-size:1.15rem;">₱0.00</strong></p>
+              <div id="reg-online-provider-note" style="background:rgba(0,125,254,0.1); border:1px solid rgba(0,125,254,0.25); border-radius:10px; padding:10px; margin-top:8px; text-align:left; font-size:0.75rem; color:#93c5fd; line-height:1.4;">
+                <i class="fa-solid fa-shield-check" style="color:#60a5fa; margin-right:4px;"></i> Pay securely via <strong>GCash</strong> online checkout. No manual mobile number transfers or receipt upload needed.
+              </div>
+            </div>
+
+            <!-- Cash Info Notice -->
             <div id="reg-cash-info-wrap" style="display:none; text-align:center; padding:14px; background:rgba(82,183,136,0.1); border-radius:12px; font-size:0.82rem; color:var(--gym-light); margin-top:8px;">
-              <i class="fa-solid fa-store" style="font-size:1.4rem; margin-bottom:6px; display:block;"></i>
-              Please pay <strong>in cash</strong> at the front desk when you first visit the gym. Staff will verify and approve your membership.
+              <i class="fa-solid fa-store" style="font-size:1.4rem; margin-bottom:6px; display:block; color:var(--gym-light);"></i>
+              Please settle your membership fee <strong>in cash</strong> at the front desk when you first visit the gym. Staff will verify and activate your pass.
             </div>
           </div>
 
@@ -3254,18 +3267,35 @@
           </div>
 
           <!-- Payment Method Cards -->
-          <!-- 1. Automated Online Payment -->
-          <div class="payment-method-card selected" id="pm-card-paymongo" onclick="selectCheckoutMethod('PayMongo')">
+          <!-- 1. GCash Payment Card -->
+          <div class="payment-method-card selected" id="pm-card-gcash" onclick="selectCheckoutMethod('GCash')">
             <div class="pm-left">
-              <div class="pm-icon-wrap" style="background:linear-gradient(135deg, #007dfe, #00d664); box-shadow:0 4px 12px rgba(0,125,254,0.35); display:flex; align-items:center; justify-content:center;">
-                <i class="fa-solid fa-bolt" style="font-size:20px; color:#ffffff;"></i>
+              <div class="pm-icon-wrap" style="width:42px; height:42px; border-radius:12px; overflow:hidden; background:#fff; padding:2px; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,125,254,0.3);">
+                <img src="assets/images/gcash-logo.png" alt="GCash" style="width:100%; height:100%; object-fit:contain;">
               </div>
               <div>
                 <div class="pm-title" style="display:flex; align-items:center; gap:8px;">
-                  <span>Online Payment</span>
+                  <span>GCash</span>
                   <span style="font-size:10px; font-weight:800; background:rgba(16,185,129,0.2); color:#10b981; padding:2px 8px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">INSTANT ACTIVATION</span>
                 </div>
-                <div class="pm-desc">GCash &bull; Maya &bull; Debit / Credit Card &bull; QR Ph</div>
+                <div class="pm-desc">GCash E-Wallet &bull; Direct Online Checkout</div>
+              </div>
+            </div>
+            <div class="pm-radio"></div>
+          </div>
+
+          <!-- 2. Maya Payment Card -->
+          <div class="payment-method-card" id="pm-card-maya" onclick="selectCheckoutMethod('Maya')">
+            <div class="pm-left">
+              <div class="pm-icon-wrap" style="width:42px; height:42px; border-radius:12px; overflow:hidden; background:#000; padding:4px; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,214,100,0.2);">
+                <img src="assets/images/maya-logo.png" alt="Maya" style="width:100%; height:100%; object-fit:contain;">
+              </div>
+              <div>
+                <div class="pm-title" style="display:flex; align-items:center; gap:8px;">
+                  <span>Maya</span>
+                  <span style="font-size:10px; font-weight:800; background:rgba(16,185,129,0.2); color:#10b981; padding:2px 8px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">INSTANT ACTIVATION</span>
+                </div>
+                <div class="pm-desc">Maya E-Wallet &bull; Direct Online Checkout</div>
               </div>
             </div>
             <div class="pm-radio"></div>
@@ -3534,11 +3564,11 @@
       <p style="font-size:13px; color:var(--text-secondary); margin:0 0 16px; text-align:center;">Choose backend endpoint or enter custom IP for local testing.</p>
 
       <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
-        <button class="btn-outline" style="height:44px; font-size:12px; justify-content:flex-start; padding:0 14px;" onclick="selectEndpoint('https://palmas-gym-4oxn.onrender.com/api')">
-          <i class="fa-solid fa-cloud" style="color:var(--primary); margin-right:8px;"></i> Render Primary (4oxn)
-        </button>
         <button class="btn-outline" style="height:44px; font-size:12px; justify-content:flex-start; padding:0 14px;" onclick="selectEndpoint('https://palmas-gym.onrender.com/api')">
-          <i class="fa-solid fa-cloud" style="color:var(--primary); margin-right:8px;"></i> Render Secondary (palmas-gym)
+          <i class="fa-solid fa-cloud" style="color:var(--primary); margin-right:8px;"></i> Live Cloud Server (Primary)
+        </button>
+        <button class="btn-outline" style="height:44px; font-size:12px; justify-content:flex-start; padding:0 14px;" onclick="selectEndpoint('https://palmas-gym-4oxn.onrender.com/api')">
+          <i class="fa-solid fa-cloud" style="color:var(--text-muted); margin-right:8px;"></i> Backup Cloud Server (Failover)
         </button>
       </div>
 
@@ -3556,6 +3586,8 @@
         </button>
       </div>
     </div>
+  </div>
+
   <!-- ══════════════════════════════════════════════════════════
        ENLARGED HIGH-CONTRAST QR KIOSK SCANNER MODAL
        ══════════════════════════════════════════════════════════ -->
@@ -3593,8 +3625,8 @@
 // ══════════════════════════════════════════════════════════════════
 // ── Primary & Failover API Endpoints ────────────────────────────────
 const DEFAULT_ENDPOINTS = [
-  'https://palmas-gym-4oxn.onrender.com/api',
-  'https://palmas-gym.onrender.com/api'
+  'https://palmas-gym.onrender.com/api',
+  'https://palmas-gym-4oxn.onrender.com/api'
 ];
 
 let API_URL = localStorage.getItem('peg_api_endpoint') || DEFAULT_ENDPOINTS[0];
@@ -3772,9 +3804,15 @@ class GymApiClient {
     } catch (err) {
       // Automatic failover on connection error if calling default endpoint
       const fallback = getFallbackEndpoint();
-      if (!endpoint.startsWith('http') && fallback && fallback !== targetBase) {
+      let fallbackUrl = null;
+      if (endpoint.startsWith(targetBase)) {
+        fallbackUrl = endpoint.replace(targetBase, fallback);
+      } else if (!endpoint.startsWith('http')) {
+        fallbackUrl = `${fallback}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+      }
+
+      if (fallbackUrl && fallback && fallback !== targetBase) {
         console.warn('Request failed on primary, retrying with fallback endpoint...', fallback);
-        const fallbackUrl = `${fallback}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
         try {
           response = await this.fetchWithTimeout(fallbackUrl, options, headers, options.timeout || 35000);
           // Update active endpoint to the working one
@@ -4282,6 +4320,61 @@ async function checkPendingApprovalStatus() {
 }
 
 
+// ── CLIENT-SIDE IMAGE COMPRESSOR ──────────────────────────────────
+/**
+ * Compresses an image File or Blob client-side to a max dimension and JPEG quality.
+ * Returns a Promise resolving to a compact base64 Data URI (typically 25KB - 55KB).
+ * Prevents mobile payload bloat, timeout failures, and guarantees MariaDB persistence.
+ */
+function compressImageClientSide(file, maxWidth = 500, maxHeight = 500, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      return reject(new Error('No image file provided.'));
+    }
+    if (file.type && !file.type.startsWith('image/')) {
+      return reject(new Error('Selected file is not an image.'));
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Failed to read image file.'));
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Failed to process image data.'));
+      img.onload = function() {
+        try {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.max(1, Math.round(width * ratio));
+            height = Math.max(1, Math.round(height * ratio));
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            return resolve(e.target.result); // Fallback to raw if canvas unsupported
+          }
+          // Solid white background (safeguard for transparent PNGs)
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const compressed = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressed);
+        } catch (canvasErr) {
+          console.warn('Canvas compression error, using raw image:', canvasErr);
+          resolve(e.target.result);
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 // ── REGISTRATION PHOTO & NAME HELPERS ──────────────────────────────
 let regSelectedPhotoBase64 = '';
 
@@ -4290,11 +4383,11 @@ function triggerRegPhotoUpload() {
   if (inp) inp.click();
 }
 
-function handleRegPhotoSelected(input) {
+async function handleRegPhotoSelected(input) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
-  if (file.size > 5 * 1024 * 1024) {
-    showToast('Photo size must be less than 5MB');
+  if (file.size > 12 * 1024 * 1024) {
+    showToast('Photo size must be less than 12MB');
     input.value = '';
     return;
   }
@@ -4303,18 +4396,24 @@ function handleRegPhotoSelected(input) {
     input.value = '';
     return;
   }
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    regSelectedPhotoBase64 = e.target.result;
-    const prev = document.getElementById('reg-photo-preview');
-    const icon = document.getElementById('reg-photo-icon');
+
+  const prev = document.getElementById('reg-photo-preview');
+  const icon = document.getElementById('reg-photo-icon');
+
+  try {
+    showToast('Optimizing photo for mobile profile...', 1500);
+    const compressed = await compressImageClientSide(file, 500, 500, 0.82);
+    regSelectedPhotoBase64 = compressed;
     if (prev) {
       prev.src = regSelectedPhotoBase64;
       prev.style.display = 'block';
     }
     if (icon) icon.style.display = 'none';
-  };
-  reader.readAsDataURL(file);
+  } catch (err) {
+    console.error('Photo optimization error:', err);
+    showToast('Failed to process selected photo. Please try another.');
+    input.value = '';
+  }
 }
 
 function syncRegFullName() {
@@ -4494,78 +4593,53 @@ function wizardBack(fromStep) {
   else if (fromStep === 3) goToWizardStep(2);
 }
 
-let gymPaymentSettings = {
-  gcash: { name: "Palma's Elite Gym", number: "0917-888-4961", qr_image: null },
-  maya:  { name: "Palma's Elite Gym", number: "0917-888-4961", qr_image: null }
-};
-
 let selectedRegPaymentMethod = 'GCash';
 
 function selectRegPaymentMethod(method) {
   selectedRegPaymentMethod = method;
-  ['GCash', 'Maya', 'Cash'].forEach(m => {
+  const methods = ['GCash', 'Maya', 'Cash'];
+  
+  methods.forEach(m => {
     const key = m.toLowerCase();
-    const btn = document.getElementById(`reg-pm-${key}`);
-    if (btn) btn.classList.toggle('selected', m === method);
+    const card = document.getElementById(`reg-card-${key}`);
+    const radio = document.getElementById(`reg-radio-${key}`);
+    const isSel = (m === method);
+    
+    if (card) {
+      card.style.background = isSel ? 'rgba(27,67,50,0.5)' : 'rgba(10,30,22,0.6)';
+      card.style.borderColor = isSel ? 'var(--gym-green)' : 'rgba(82,183,136,0.2)';
+    }
+    if (radio) {
+      radio.style.background = isSel ? 'var(--gym-green)' : 'transparent';
+      radio.style.borderColor = isSel ? 'var(--gym-green)' : 'rgba(255,255,255,0.3)';
+      radio.innerHTML = isSel ? '<i class="fa-solid fa-check" style="font-size:10px; color:#fff;"></i>' : '';
+    }
   });
 
-  const qrWrap = document.getElementById('reg-qr-checkout-wrap');
+  const onlineWrap = document.getElementById('reg-online-info-wrap');
   const cashWrap = document.getElementById('reg-cash-info-wrap');
-  const badge = document.getElementById('reg-qr-badge');
+  const providerNote = document.getElementById('reg-online-provider-note');
+  const btnSubmit = document.getElementById('btn-submit-reg');
 
   if (method === 'Cash') {
-    if (qrWrap) qrWrap.style.display = 'none';
+    if (onlineWrap) onlineWrap.style.display = 'none';
     if (cashWrap) cashWrap.style.display = 'block';
+    if (btnSubmit) btnSubmit.innerHTML = '<i class="fa-solid fa-store"></i> COMPLETE REGISTRATION (PAY CASH AT DESK)';
   } else {
-    if (qrWrap) qrWrap.style.display = 'block';
+    if (onlineWrap) onlineWrap.style.display = 'block';
     if (cashWrap) cashWrap.style.display = 'none';
-    if (badge) badge.textContent = `${method.toUpperCase()} ACCOUNT DETAILS`;
-    
-    const info = gymPaymentSettings[method.toLowerCase()] || gymPaymentSettings.gcash;
-    const accEl = document.querySelector('#reg-qr-checkout-wrap p strong');
-    if (accEl && info) {
-      accEl.textContent = `${info.name} (${info.number})`;
+    if (providerNote) {
+      providerNote.innerHTML = `<i class="fa-solid fa-shield-check" style="color:#60a5fa; margin-right:4px;"></i> Pay securely via <strong>${method}</strong> online checkout. No manual phone numbers or receipt upload needed.`;
     }
-    renderRegPaymentQR();
-    updateRegNumberView(info);
+    if (btnSubmit) btnSubmit.innerHTML = `<i class="fa-solid fa-bolt"></i> COMPLETE &amp; PAY WITH ${method.toUpperCase()}`;
   }
 }
 
-function updateRegNumberView(info) {
-  const numDisplay = document.getElementById('reg-pay-number-display');
-  const nameDisplay = document.getElementById('reg-pay-name-display');
-  const acctLabel = document.getElementById('reg-acct-label');
-  if (numDisplay && info) numDisplay.textContent = info.number;
-  if (nameDisplay && info) nameDisplay.textContent = info.name;
-  if (acctLabel && info) acctLabel.textContent = `${info.name} (${info.number})`;
-}
-
-function toggleRegPayMode(mode) {
-  const qrView = document.getElementById('reg-qr-view');
-  const numView = document.getElementById('reg-number-view');
-  const btnQR = document.getElementById('reg-mode-qr');
-  const btnNum = document.getElementById('reg-mode-number');
-  if (mode === 'qr') {
-    if (qrView) qrView.style.display = 'inline-block';
-    if (numView) numView.style.display = 'none';
-    if (btnQR) btnQR.classList.add('selected');
-    if (btnNum) btnNum.classList.remove('selected');
-  } else {
-    if (qrView) qrView.style.display = 'none';
-    if (numView) numView.style.display = 'block';
-    if (btnQR) btnQR.classList.remove('selected');
-    if (btnNum) btnNum.classList.add('selected');
+function updateRegAmountDisplay() {
+  const amtEl = document.getElementById('reg-qr-amount-text');
+  if (amtEl && selectedPlan) {
+    amtEl.textContent = '₱' + parseFloat(selectedPlan.price).toFixed(2);
   }
-}
-
-function copyRegPayNumber() {
-  const info = gymPaymentSettings[selectedRegPaymentMethod.toLowerCase()] || gymPaymentSettings.gcash;
-  const num = info ? info.number : '0917-888-4961';
-  navigator.clipboard.writeText(num.replace(/-/g, '')).then(() => {
-    showToast('Number copied! Paste it in your GCash/Maya app.');
-  }).catch(() => {
-    showToast(num);
-  });
 }
 
 function getValidQrUrl(rawUrl) {
@@ -4577,41 +4651,6 @@ function getValidQrUrl(rawUrl) {
     return cleaned;
   }
   return `${baseSiteUrl}/${cleaned.replace(/^\/+/, '')}`;
-}
-
-function renderRegPaymentQR() {
-  const target = document.getElementById('reg-payment-qr-target');
-  if (!target) return;
-  target.innerHTML = '';
-  const amt = selectedPlan ? parseFloat(selectedPlan.price).toFixed(2) : '0.00';
-  const amtText = document.getElementById('reg-qr-amount-text');
-  if (amtText) amtText.textContent = `₱${amt}`;
-
-  const methodKey = selectedRegPaymentMethod.toLowerCase();
-  const info = gymPaymentSettings[methodKey] || gymPaymentSettings.gcash;
-
-  const validUrl = info && info.qr_image ? getValidQrUrl(info.qr_image) : null;
-  if (validUrl) {
-    target.innerHTML = `<img src="${validUrl}" alt="${selectedRegPaymentMethod} QR" style="width:160px; height:160px; object-fit:contain; border-radius:8px;" onerror="this.onerror=null; renderFallbackRegQR();">`;
-  } else {
-    renderFallbackRegQR();
-  }
-}
-
-function renderFallbackRegQR() {
-  const target = document.getElementById('reg-payment-qr-target');
-  if (!target) return;
-  target.innerHTML = '';
-  const amt = selectedPlan ? parseFloat(selectedPlan.price).toFixed(2) : '0.00';
-  const qrPayload = `00020101021226580010ph.ppmi.qr0111PALMASGYM0215REG${Date.now()}520459995303608540${amt.length}${amt}5802PH5918PALMAS ELITE GYM6006MANILA6304`;
-  new QRCode(target, {
-    text: qrPayload,
-    width: 160,
-    height: 160,
-    colorDark: '#000000',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.H
-  });
 }
 
 async function loadPlansForRegistration() {
@@ -4662,7 +4701,7 @@ function renderPlanCards(plans, container) {
       selectedPlan = p;
       container.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
-      renderRegPaymentQR();
+      updateRegAmountDisplay();
     };
     card.innerHTML = `
       <div class="plan-check"><i class="fa-solid fa-check"></i></div>
@@ -4672,15 +4711,10 @@ function renderPlanCards(plans, container) {
     `;
     container.appendChild(card);
   });
-  renderRegPaymentQR();
+  updateRegAmountDisplay();
 }
 
 async function submitRegistration() {
-  const refNo = (document.getElementById('reg-ref-no')?.value || '').trim();
-  if (selectedRegPaymentMethod !== 'Cash' && !refNo) {
-    return showToast(`Please enter your ${selectedRegPaymentMethod} Reference Number, or select Cash to pay upon arrival.`);
-  }
-
   const btn = document.getElementById('btn-submit-reg');
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Submitting...';
@@ -4700,8 +4734,8 @@ async function submitRegistration() {
         password:       document.getElementById('reg-password')?.value || '',
         gender:         selectedGender,
         plan_id:        selectedPlanId || 1,
-        payment_method: selectedRegPaymentMethod || 'Cash',
-        reference_no:   refNo,
+        payment_method: selectedRegPaymentMethod || 'GCash',
+        reference_no:   '',
         photo_base64:   regSelectedPhotoBase64 || '',
         google_id:      regPrefill.google_id || '',
         google_picture: regPrefill.picture || '',
@@ -4711,9 +4745,9 @@ async function submitRegistration() {
     const data = await res.json();
     if (data.success || data.pending_approval) {
       const regEmail = document.getElementById('reg-email').value.trim();
-      const regName = document.getElementById('reg-name').value.trim();
-      setPendingScreen(regEmail, regName);
-      showToast('Registration & Payment submitted! Pending staff approval.');
+      const regFullName = syncRegFullName();
+      setPendingScreen(regEmail, regFullName);
+      showToast('Registration submitted! ' + (selectedRegPaymentMethod === 'Cash' ? 'Please settle cash upon visiting front desk.' : 'Pending staff approval.'));
     } else {
       showToast(data.message || 'Registration failed.');
     }
@@ -4744,15 +4778,29 @@ function initMainView(memberId) {
   setTimeout(() => switchToTab('tab-pass'), 100);
   setTimeout(() => switchToTab('tab-pass'), 350);
 
-  // Immediately render cached member pass and QR code if available
-  if (currentMember && currentMember.membership_id) {
-    renderQRCode(currentMember.membership_id);
-    const qid = document.getElementById('card-qr-memid');
-    if (qid) qid.textContent = currentMember.membership_id;
-    const cid = document.getElementById('card-code');
-    if (cid) cid.textContent = currentMember.membership_id;
-    const cname = document.getElementById('card-name');
-    if (cname && currentMember.full_name) cname.textContent = currentMember.full_name;
+  // Immediately render cached member pass, avatar, and QR code if available
+  if (currentMember) {
+    if (currentMember.membership_id) {
+      renderQRCode(currentMember.membership_id);
+      const qid = document.getElementById('card-qr-memid');
+      if (qid) qid.textContent = currentMember.membership_id;
+      const cid = document.getElementById('card-code');
+      if (cid) cid.textContent = currentMember.membership_id;
+      const cname = document.getElementById('card-name');
+      if (cname && currentMember.full_name) cname.textContent = currentMember.full_name;
+    }
+
+    const initials = getMemberInitials(currentMember.full_name);
+    const wrapPass = document.getElementById('member-avatar-wrap');
+    const wrapProf = document.getElementById('prof-avatar-wrap');
+    if (currentMember.photo) {
+      const photoSrc = getFullPhotoUrl(currentMember.photo);
+      if (wrapPass) wrapPass.innerHTML = `<img src="${photoSrc}" alt="${currentMember.full_name || 'Member'}" style="width:100%;height:100%;object-fit:cover;" onerror="this.remove(); const el=document.getElementById('member-avatar-initials'); if(el) el.style.display='block';" /><span id="member-avatar-initials" style="display:none;">${initials}</span>`;
+      if (wrapProf) wrapProf.innerHTML = `<img src="${photoSrc}" alt="${currentMember.full_name || 'Member'}" style="width:100%;height:100%;object-fit:cover;" onerror="this.remove(); const el=document.getElementById('prof-avatar-initials'); if(el) el.style.display='block';" /><span id="prof-avatar-initials" style="display:none;">${initials}</span>`;
+    } else {
+      if (wrapPass) wrapPass.innerHTML = `<span id="member-avatar-initials">${initials}</span>`;
+      if (wrapProf) wrapProf.innerHTML = `<span id="prof-avatar-initials">${initials}</span>`;
+    }
   }
 
   loadDashboard(memberId);
@@ -5674,8 +5722,8 @@ async function handlePhotoSelected(input) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
 
-  if (file.size > 5 * 1024 * 1024) {
-    showToast('Photo size must be less than 5MB');
+  if (file.size > 12 * 1024 * 1024) {
+    showToast('Photo size must be less than 12MB');
     input.value = '';
     return;
   }
@@ -5690,30 +5738,23 @@ async function handlePhotoSelected(input) {
   if (statusEl) {
     statusEl.style.display = 'block';
     statusEl.style.color = 'var(--primary)';
-    statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading photo...';
+    statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Optimizing & saving photo...';
   }
 
-  // Instant local preview
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const wrapPass = document.getElementById('member-avatar-wrap');
-    const wrapProf = document.getElementById('prof-avatar-wrap');
-    if (wrapPass) wrapPass.innerHTML = `<img src="${e.target.result}" alt="Member" style="width:100%;height:100%;object-fit:cover;" />`;
-    if (wrapProf) wrapProf.innerHTML = `<img src="${e.target.result}" alt="Member" style="width:100%;height:100%;object-fit:cover;" />`;
-  };
-  reader.readAsDataURL(file);
-
   try {
-    const token = localStorage.getItem('peg_token');
-    const formData = new FormData();
-    formData.append('photo', file);
+    // 1. Client-side compress to 500x500 JPEG @ 0.82 quality (~35KB)
+    const compressedDataUri = await compressImageClientSide(file, 500, 500, 0.82);
 
-    const res = await authFetch(`${API_URL}/member_profile.php`, {
+    const token = localStorage.getItem('peg_token');
+    const res = await authFetch('member_profile.php', {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: formData
+      body: JSON.stringify({
+        photo_base64: compressedDataUri
+      })
     });
 
     const data = await res.json();
@@ -5722,12 +5763,21 @@ async function handlePhotoSelected(input) {
         currentMember = data.member;
         localStorage.setItem('peg_member', JSON.stringify(data.member));
       }
+
+      // Update avatar previews in DOM with verified saved image
+      const photoToRender = (data.member && data.member.photo) ? getFullPhotoUrl(data.member.photo) : compressedDataUri;
+      const wrapPass = document.getElementById('member-avatar-wrap');
+      const wrapProf = document.getElementById('prof-avatar-wrap');
+      const initials = getMemberInitials(currentMember ? currentMember.full_name : '');
+      if (wrapPass) wrapPass.innerHTML = `<img src="${photoToRender}" alt="Member" style="width:100%;height:100%;object-fit:cover;" onerror="this.remove();" /><span id="member-avatar-initials" style="display:none;">${initials}</span>`;
+      if (wrapProf) wrapProf.innerHTML = `<img src="${photoToRender}" alt="Member" style="width:100%;height:100%;object-fit:cover;" onerror="this.remove();" /><span id="prof-avatar-initials" style="display:none;">${initials}</span>`;
+
       if (statusEl) {
         statusEl.style.color = 'var(--primary)';
-        statusEl.innerHTML = '<i class="fa-solid fa-check"></i> Photo updated successfully!';
+        statusEl.innerHTML = '<i class="fa-solid fa-check"></i> Photo saved permanently!';
         setTimeout(() => { if (statusEl) statusEl.style.display = 'none'; }, 3000);
       }
-      showToast('Profile photo updated!');
+      showToast('Profile photo updated and saved!');
       if (currentMember && currentMember.id) {
         loadDashboard(currentMember.id);
       }
@@ -5742,9 +5792,9 @@ async function handlePhotoSelected(input) {
     console.error('Photo upload error:', err);
     if (statusEl) {
       statusEl.style.color = 'var(--danger)';
-      statusEl.textContent = 'Network error uploading photo';
+      statusEl.textContent = err.message || 'Network error saving photo';
     }
-    showToast('Network error uploading photo');
+    showToast(err.message || 'Network error saving photo');
   } finally {
     input.value = '';
   }
@@ -5880,14 +5930,15 @@ function proceedToCheckoutSummary() {
 }
 
 function proceedToPaymentMethodSelection() {
-  selectCheckoutMethod(selectedRenewMethod || 'PayMongo');
+  selectCheckoutMethod(selectedRenewMethod || 'GCash');
   showCheckoutStep('method');
 }
 
 function selectCheckoutMethod(method) {
   selectedRenewMethod = method;
   const cards = {
-    'PayMongo': 'pm-card-paymongo',
+    'GCash': 'pm-card-gcash',
+    'Maya': 'pm-card-maya',
     'Cash': 'pm-card-cash'
   };
 
@@ -5904,7 +5955,7 @@ function selectCheckoutMethod(method) {
     if (method === 'Cash') {
       btn.innerHTML = '<i class="fa-solid fa-store"></i> REQUEST CASH RENEWAL';
     } else {
-      btn.innerHTML = '<i class="fa-solid fa-bolt"></i> CONTINUE TO PAYMENT';
+      btn.innerHTML = `<i class="fa-solid fa-bolt"></i> CONTINUE TO ${method.toUpperCase()} PAYMENT`;
     }
   }
 }
@@ -5917,122 +5968,6 @@ function proceedFromMethodSelection() {
 
   // All online methods (GCash, Maya, Card) execute automated instant checkout
   executeGatewayCheckout();
-}
-
-function renderRenewPaymentQR(info, plan) {
-  const target = document.getElementById('renew-payment-qr-target');
-  if (!target) return;
-  target.innerHTML = '';
-
-  const validUrl = info && info.qr_image ? getValidQrUrl(info.qr_image) : null;
-  if (validUrl) {
-    target.innerHTML = `<img src="${validUrl}" alt="Payment QR" style="width:160px; height:160px; object-fit:contain; border-radius:8px;" onerror="this.onerror=null; renderFallbackRenewQR(selectedRenewPlan);">`;
-  } else {
-    renderFallbackRenewQR(plan);
-  }
-}
-
-function renderFallbackRenewQR(plan) {
-  const target = document.getElementById('renew-payment-qr-target');
-  if (!target) return;
-  target.innerHTML = '';
-  const amt = plan ? parseFloat(plan.price).toFixed(2) : '0.00';
-  const qrPayload = `00020101021226580010ph.ppmi.qr0111PALMASGYM0215RNW${Date.now()}520459995303608540${amt.length}${amt}5802PH5918PALMAS ELITE GYM6006MANILA6304`;
-  new QRCode(target, {
-    text: qrPayload,
-    width: 160,
-    height: 160,
-    colorDark: '#000000',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.H
-  });
-}
-
-function copyAmountToClipboard() {
-  if (!selectedRenewPlan) return;
-  const amt = parseFloat(selectedRenewPlan.price).toFixed(2);
-  copyToClipboardText(amt, 'Amount copied: ₱' + amt);
-}
-
-function copyNumberToClipboard() {
-  const numEl = document.getElementById('renew-account-number');
-  const num = numEl ? numEl.textContent.trim() : '0917-888-4961';
-  copyToClipboardText(num, 'Account number copied: ' + num);
-}
-
-function copyToClipboardText(text, successMsg) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => showToast(successMsg)).catch(() => fallbackCopy(text, successMsg));
-  } else {
-    fallbackCopy(text, successMsg);
-  }
-}
-
-function fallbackCopy(text, successMsg) {
-  const t = document.createElement('textarea');
-  t.value = text;
-  document.body.appendChild(t);
-  t.select();
-  document.execCommand('copy');
-  document.body.removeChild(t);
-  showToast(successMsg);
-}
-
-async function submitPersonalQrRenewal() {
-  if (!selectedRenewPlanId) return showToast('Please select a membership plan.');
-
-  const token = localStorage.getItem('peg_token');
-  if (!token) return showToast('Session expired. Please sign in again.');
-
-  const refInput = document.getElementById('renew-reference-no');
-  const refNo = refInput ? refInput.value.trim() : '';
-
-  if (!refNo) {
-    return showToast('Please enter your transaction Reference Number.');
-  }
-
-  const btn = document.getElementById('btn-submit-qr-payment');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Submitting...';
-  }
-
-  try {
-    const res = await authFetch(`${API_URL}/member_renew.php`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({
-        plan_id: selectedRenewPlanId,
-        payment_method: selectedRenewMethod || 'GCash',
-        reference_no: refNo
-      })
-    });
-
-    const data = await res.json();
-    if (data.success) {
-      currentPendingRef = refNo;
-      currentResultRef  = refNo;
-      renderResultState('submitted_pending', {
-        ref_code: refNo,
-        amount_formatted: '₱' + parseFloat(selectedRenewPlan.price).toFixed(2),
-        plan_name: selectedRenewPlan.name,
-        payment_method: selectedRenewMethod || 'GCash'
-      });
-      showCheckoutStep('result');
-      refreshDashboard();
-      loadPaymentHistory();
-    } else {
-      showToast(data.message || 'Unable to submit payment.', 4000);
-      showCannotRenewModal(data.message);
-    }
-  } catch (err) {
-    showToast('Network error submitting payment. Please try again.');
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Submit Payment for Verification';
-    }
-  }
 }
 
 async function submitCashRenewalRequest() {
@@ -6172,7 +6107,7 @@ async function executeGatewayCheckout() {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
         plan_id: selectedRenewPlanId,
-        payment_method: 'PayMongo'
+        payment_method: selectedRenewMethod || 'GCash'
       })
     });
 

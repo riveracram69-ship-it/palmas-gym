@@ -25,20 +25,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $membership_id = $raw_input;
+    $is_manual = isset($_POST['is_manual']) && ($_POST['is_manual'] === '1' || $_POST['is_manual'] === 'true');
+    $membership_id = null;
 
-    // Robust extraction: Detect GYM-XXXXXX pattern anywhere in scanned string
-    // Supports raw IDs, dynamic tokens (GYM-XXXXXX:time:hash), URLs, and JSON payloads
-    // Negative lookbehind ensures we don't accidentally match hostnames/subdomains like palmas-gym-4oxn.onrender.com
-    if (preg_match('/(?<![a-zA-Z0-9-])(GYM-[A-Za-z0-9]{4,10})(?![a-zA-Z0-9])/i', $raw_input, $matches)) {
-        $membership_id = strtoupper($matches[1]);
-    } elseif (strpos($raw_input, ':') !== false) {
-        $parts = explode(':', $raw_input);
-        if (count($parts) >= 2) {
-            $membership_id = ($parts[0] === 'PEG' && isset($parts[1])) ? trim($parts[1]) : trim($parts[0]);
+    // Check if input is a dynamic rotating QR token (Format: GYM-XXXXXX:time_slot:signature)
+    if (strpos($raw_input, ':') !== false) {
+        $parts = explode(':', trim($raw_input));
+        if (count($parts) === 3) {
+            $token_mem_id = strtoupper(trim($parts[0]));
+            $token_slot   = intval(trim($parts[1]));
+            $token_sig    = trim($parts[2]);
+
+            if (!preg_match('/^GYM-[A-Za-z0-9]{4,10}$/i', $token_mem_id)) {
+                echo json_encode(['success' => false, 'message' => 'Malformed QR code: Invalid Member ID format.']);
+                exit;
+            }
+
+            $current_slot = floor(time() / 15);
+            $slot_diff    = abs($current_slot - $token_slot);
+
+            // Time window: 15-second slots, max +-4 slots (~60 seconds drift allowance)
+            if ($slot_diff > 4) {
+                echo json_encode([
+                    'success' => false, 
+                    'status_type' => 'Expired QR',
+                    'message' => 'QR Code has expired. Please present a freshly refreshed dynamic QR.'
+                ]);
+                exit;
+            }
+
+            // Recalculate HMAC signature using server QR_SECRET_KEY
+            $secret_key = defined('QR_SECRET_KEY') ? QR_SECRET_KEY : '';
+            $full_sig   = hash_hmac('sha256', $token_mem_id . '|' . $token_slot, $secret_key);
+            $expected_sig = (strlen($token_sig) <= 16) ? substr($full_sig, 0, strlen($token_sig)) : $full_sig;
+
+            if (empty($token_sig) || !hash_equals($expected_sig, $token_sig)) {
+                echo json_encode([
+                    'success' => false, 
+                    'status_type' => 'Tampered QR',
+                    'message' => 'Invalid or tampered QR signature. Access denied.'
+                ]);
+                exit;
+            }
+
+            $membership_id = $token_mem_id;
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Malformed QR code structure. Expected format: GYM-ID:slot:sig']);
+            exit;
         }
     } else {
-        $membership_id = trim($raw_input);
+        // Raw Member ID submitted (without signature)
+        // Must ONLY be accepted if entered via authenticated staff/admin manual entry
+        if ($is_staff && $is_manual) {
+            $cleaned = trim($raw_input);
+            if (preg_match('/^(GYM-[A-Za-z0-9]{4,10})$/i', $cleaned, $matches)) {
+                $membership_id = strtoupper($matches[1]);
+            } else {
+                $membership_id = strtoupper($cleaned);
+            }
+        } else {
+            // Scanner or unauthenticated entry attempted using static / raw Member ID
+            echo json_encode([
+                'success' => false, 
+                'status_type' => 'Static QR Blocked',
+                'message' => 'Static QR code or raw Member ID rejected. Please use your dynamic rotating QR in the member app.'
+            ]);
+            exit;
+        }
     }
 
     try {

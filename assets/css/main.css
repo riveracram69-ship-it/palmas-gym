@@ -1409,6 +1409,62 @@ button:disabled,
     border-color: var(--success);
 }
 
+/* ─── MEMBER PROFILE RESPONSIVE UTILITIES ───────────────────────────────── */
+.member-profile-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 2rem;
+    align-items: start;
+}
+.member-header-card-inner {
+    padding: 2rem;
+    margin-top: -60px;
+    display: flex;
+    gap: 2rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+.member-meta-grid {
+    padding: 1.5rem 2rem 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 992px) {
+    .member-profile-layout {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+@media (max-width: 640px) {
+    .member-header-card-inner {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1.25rem;
+        padding: 1.5rem 1rem;
+    }
+    .member-header-card-inner .badge {
+        margin-left: 0 !important;
+    }
+}
+
+/* ─── ACCESSIBILITY & TOUCH INTERACTION ─────────────────────────────────── */
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
 /* Print stylesheet (performance: strip decorative shadows, sidebars) */
 @media print {
     .sidebar,

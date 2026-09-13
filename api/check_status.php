@@ -24,15 +24,50 @@ require_once __DIR__ . '/../config/paymongo.php';
 
 // ── MEMBER REGISTRATION APPROVAL STATUS CHECK ──────────────────────
 // Supports mobile app polling when a user is on the "Registration Pending" screen
+// Privacy-hardened: Does NOT disclose full names, emails, member IDs, or contact numbers
+require_once __DIR__ . '/../config/rate_limiter.php';
+
+function mask_status_identifier(string $val): string {
+    $val = trim($val);
+    if (strpos($val, '@') !== false) {
+        $parts = explode('@', $val, 2);
+        $local = $parts[0];
+        $domain = $parts[1] ?? '';
+        $masked_local = (strlen($local) > 2) 
+            ? substr($local, 0, 1) . str_repeat('*', max(3, strlen($local) - 2)) . substr($local, -1)
+            : substr($local, 0, 1) . '***';
+        return $masked_local . '@' . $domain;
+    }
+    if (preg_match('/^\d{7,15}$/', $val)) {
+        return substr($val, 0, 2) . str_repeat('*', max(4, strlen($val) - 4)) . substr($val, -2);
+    }
+    return (strlen($val) > 4)
+        ? substr($val, 0, 2) . str_repeat('*', max(3, strlen($val) - 4)) . substr($val, -2)
+        : '***';
+}
+
 $raw_input = file_get_contents('php://input');
 $input_data = json_decode($raw_input, true) ?: $_POST;
 $identifier = trim($input_data['identifier'] ?? $_GET['identifier'] ?? '');
 
 if (!empty($identifier)) {
     header('Content-Type: application/json; charset=utf-8');
+
+    // Rate limiting to defend against enumeration
+    $rate = check_rate_limit($pdo, get_client_ip(), 'check_status');
+    if (!$rate['allowed']) {
+        http_response_code(429);
+        echo json_encode([
+            'success' => false,
+            'found'   => false,
+            'message' => 'Too many requests. Please try again later.'
+        ]);
+        exit;
+    }
+
     try {
         $stmt = $pdo->prepare("
-            SELECT id, membership_id, full_name, email, contact_number, account_status, status, rejection_reason
+            SELECT account_status, status, rejection_reason
             FROM members 
             WHERE email = ? OR membership_id = ? OR contact_number = ?
             LIMIT 1
@@ -43,18 +78,19 @@ if (!empty($identifier)) {
         if ($member) {
             echo json_encode([
                 'success'          => true,
+                'found'            => true,
                 'account_status'   => $member['account_status'] ?? 'Pending',
                 'status'           => $member['status'] ?? 'Inactive',
-                'membership_id'    => $member['membership_id'],
-                'email'            => $member['email'],
-                'full_name'        => $member['full_name'],
-                'rejection_reason' => $member['rejection_reason'] ?? null
+                'identifier'       => mask_status_identifier($identifier),
+                'rejection_reason' => ($member['account_status'] === 'Rejected') ? ($member['rejection_reason'] ?? 'Registration not approved.') : null
             ]);
             exit;
         } else {
+            record_failed_attempt($pdo, get_client_ip(), 'check_status');
             echo json_encode([
                 'success' => false,
-                'message' => 'No registration record found for this email or Member ID.'
+                'found'   => false,
+                'message' => 'No registration record found for the provided identifier.'
             ]);
             exit;
         }

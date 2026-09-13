@@ -2,7 +2,7 @@
 $page_title = 'Renewal Requests';
 include 'includes/header.php';
 include 'includes/sidebar.php';
-require_admin();
+require_login();
 
 $message = '';
 $error = '';

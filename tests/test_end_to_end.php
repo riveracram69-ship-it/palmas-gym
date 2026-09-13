@@ -121,7 +121,7 @@ try {
     // TEST 4: First-Time Membership Activation
     // -------------------------------------------------------------------------
     echo "\n--- TEST 4: FIRST-TIME MEMBERSHIP ACTIVATION ---\n";
-    $first_plan = $pdo->query("SELECT id, name, price, duration_months FROM membership_plans ORDER BY price ASC LIMIT 1")->fetch();
+    $first_plan = $pdo->query("SELECT id, name, price, duration_months, duration_minutes FROM membership_plans ORDER BY price ASC LIMIT 1")->fetch();
     $plan_id = (int)$first_plan['id'];
 
     $act_res = process_automated_subscription_activation($pdo, $member_id_1, $plan_id, 0, 'GCash', 'TEST-REF-001');
@@ -150,10 +150,23 @@ try {
     $renew_res = process_automated_subscription_activation($pdo, $member_id_1, $plan_id, 0, 'Maya', 'TEST-RENEW-002');
     assert_test("Renewal activation succeeded", $renew_res['success'] === true);
 
-    // Verify new expiry is extended from initial expiry date
+    // Verify new expiry is extended from initial expiry date according to plan configuration
     $new_sub = $pdo->query("SELECT expiry_date FROM subscriptions WHERE member_id = {$member_id_1} ORDER BY expiry_date DESC LIMIT 1")->fetch();
-    $expected_expiry = date('Y-m-d', strtotime("{$initial_expiry} + {$first_plan['duration_months']} months"));
-    assert_test("New expiration correctly extends active expiry ({$new_sub['expiry_date']})", $new_sub['expiry_date'] === $expected_expiry);
+    $dur_mins   = intval($first_plan['duration_minutes'] ?? 0);
+    $dur_months = intval($first_plan['duration_months'] ?? 0);
+    if ($dur_mins <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $first_plan['name'] ?? '', $pm)) {
+        $dur_mins = intval($pm[1]);
+    }
+
+    if ($dur_mins > 0) {
+        $expected_expiry = date('Y-m-d H:i:s', strtotime("{$initial_expiry} + {$dur_mins} minutes"));
+        $is_valid_expiry = (abs(strtotime($new_sub['expiry_date']) - strtotime($expected_expiry)) <= 2);
+    } else {
+        if ($dur_months <= 0) $dur_months = 1;
+        $expected_date   = date('Y-m-d', strtotime("{$initial_expiry} + {$dur_months} months"));
+        $is_valid_expiry = (strpos($new_sub['expiry_date'], $expected_date) === 0);
+    }
+    assert_test("New expiration correctly extends active expiry ({$new_sub['expiry_date']})", $is_valid_expiry);
 
     // Verify activity log says "Membership Renewed"
     $renew_log_stmt = $pdo->prepare("SELECT action FROM activity_logs WHERE action = 'Membership Renewed' AND description LIKE ? ORDER BY id DESC LIMIT 1");

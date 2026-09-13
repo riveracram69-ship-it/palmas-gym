@@ -77,7 +77,7 @@ try {
                 <tbody id="logs-body">
                     <?php if (empty($today_logs)): ?>
                     <tr id="no-logs">
-                        <td colspan="3">
+                        <td colspan="4">
                             <div class="empty-state" style="padding:4rem 0;">
                                 <i class="fas fa-qrcode" style="font-size:2.5rem; opacity:0.1; margin-bottom:1rem; display:block;"></i>
                                 <p>Waiting for first scan...</p>
@@ -129,7 +129,7 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
-function processCheckin(membershipId) {
+function processCheckin(membershipId, isManual = false) {
     const safeInputId = escapeHtml(membershipId);
     const res = document.getElementById('scan-result');
     res.style.display = 'block';
@@ -143,7 +143,7 @@ function processCheckin(membershipId) {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
-        body: 'membership_id=' + encodeURIComponent(membershipId)
+        body: 'membership_id=' + encodeURIComponent(membershipId) + (isManual ? '&is_manual=1' : '')
     })
     .then(r => r.json())
     .then(data => {
@@ -245,7 +245,7 @@ function processCheckin(membershipId) {
 function manualCheckin() {
     const inp = document.getElementById('manual-id');
     const id = inp.value.trim();
-    if (id) { processCheckin(id); inp.value = ''; }
+    if (id) { processCheckin(id, true); inp.value = ''; }
 }
 
 document.getElementById('manual-id').addEventListener('keydown', e => { if(e.key === 'Enter') manualCheckin(); });

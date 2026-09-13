@@ -13,7 +13,7 @@
  */
 
 if (!defined('MAX_UPLOAD_SIZE_BYTES')) {
-    define('MAX_UPLOAD_SIZE_BYTES', 3 * 1024 * 1024); // 3MB maximum
+    define('MAX_UPLOAD_SIZE_BYTES', 10 * 1024 * 1024); // 10MB maximum
 }
 
 /**

@@ -7,7 +7,7 @@ $members = [];
 try {
     if (isset($pdo) && $pdo) {
         $members = $pdo->query(
-            "SELECT m.*, 
+            "SELECT m.id, m.membership_id, m.full_name, m.email, m.contact_number, m.status, m.account_status, m.created_at, 
                     COALESCE(sub.plan_name, '—') AS plan_name,
                     sub.expiry_date
              FROM members m

@@ -111,9 +111,12 @@
     // This prevents a misconfigured deployment from running silently with empty keys.
     if ($get_conf('APP_ENV', 'development') === 'production') {
         $missing_secrets = [];
-        if (empty(QR_SECRET_KEY) || strlen(QR_SECRET_KEY) < 20)    $missing_secrets[] = 'QR_SECRET_KEY';
-        if (empty(KIOSK_API_KEY) || strlen(KIOSK_API_KEY) < 10)    $missing_secrets[] = 'KIOSK_API_KEY';
-        if (empty(CRON_SECRET_KEY) || strlen(CRON_SECRET_KEY) < 10) $missing_secrets[] = 'CRON_SECRET_KEY';
+        $is_placeholder = function($val) {
+            return preg_match('/(REPLACE_WITH_|CHANGE_ME|SAMPLE_|YOUR_SECRET|default_secret)/i', trim($val));
+        };
+        if (empty(QR_SECRET_KEY) || strlen(QR_SECRET_KEY) < 20 || $is_placeholder(QR_SECRET_KEY))    $missing_secrets[] = 'QR_SECRET_KEY';
+        if (empty(KIOSK_API_KEY) || strlen(KIOSK_API_KEY) < 10 || $is_placeholder(KIOSK_API_KEY))    $missing_secrets[] = 'KIOSK_API_KEY';
+        if (empty(CRON_SECRET_KEY) || strlen(CRON_SECRET_KEY) < 10 || $is_placeholder(CRON_SECRET_KEY)) $missing_secrets[] = 'CRON_SECRET_KEY';
         if (!empty($missing_secrets)) {
             $msg = '[CRITICAL] Production deployment is missing required secret keys: ' . implode(', ', $missing_secrets) . '. Set them in your environment variables or .env file.';
             error_log($msg);

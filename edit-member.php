@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $photo_path = null;
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
         require_once __DIR__ . '/config/uploader.php';
-        $upload_result = secure_process_image_upload($_FILES['photo'], 'members', 1200, 1200);
+        $upload_result = secure_process_image_upload($_FILES['photo'], 'members', 600, 600);
         if ($upload_result['success']) {
             $photo_path = $upload_result['path'];
             if (!empty($member['photo']) && !str_starts_with($member['photo'], 'data:') && !str_starts_with($member['photo'], 'http') && file_exists(__DIR__ . '/' . $member['photo'])) {

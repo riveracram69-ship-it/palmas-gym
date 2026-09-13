@@ -72,11 +72,11 @@ if (!$member): ?>
     </div>
 </div>
 
-<div style="display:grid; grid-template-columns: 1fr 340px; gap: 2rem;">
+<div class="member-profile-layout">
     <div style="display:flex; flex-direction:column; gap:2rem;">
         <div class="card" style="padding:0; overflow:hidden;">
             <div style="height:100px; background:linear-gradient(135deg, var(--palmas-primary) 0%, var(--palmas-dark) 100%);"></div>
-            <div style="padding:2rem; margin-top:-60px; display:flex; gap:2rem; align-items:flex-end;">
+            <div class="member-header-card-inner">
                 <div style="width:130px; height:130px; border-radius:20px; background:#fff; border:5px solid #fff; box-shadow:var(--shadow-md); overflow:hidden; display:flex; align-items:center; justify-content:center;">
                     <?php if($member['photo']): ?>
                         <img src="<?php echo htmlspecialchars($member['photo']); ?>" alt="<?php echo htmlspecialchars($member['full_name']); ?> Photo" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -96,7 +96,7 @@ if (!$member): ?>
                     </span>
                 </div>
             </div>
-            <div style="padding:1.5rem 2.5rem 2.5rem; display:grid; grid-template-columns:repeat(3,1fr); gap:2rem; border-top:1px solid #f8f9fa;">
+            <div class="member-meta-grid">
                 <div><p class="stat-label">Email</p><p style="font-weight:600;"><?php echo htmlspecialchars($member['email']); ?></p></div>
                 <div><p class="stat-label">Contact</p><p style="font-weight:600;"><?php echo htmlspecialchars($member['contact_number'] ?: '—'); ?></p></div>
                 <div><p class="stat-label">Plan</p><p style="font-weight:600; color:var(--accent);"><?php echo htmlspecialchars($member['plan_name'] ?: 'No Plan'); ?></p></div>

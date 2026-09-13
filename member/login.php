@@ -34,13 +34,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (empty($membership_id) || empty($credential)) {
         $error = "Please enter both your Membership ID / Email and Password.";
     } else {
-        $clean_id = str_replace('-', '', strtoupper($membership_id));
+        $clean_id = str_replace(['-', ' '], '', strtoupper($membership_id));
         try {
-            $stmt = $pdo->prepare("SELECT id, full_name, account_status, status, rejection_reason, password_hash FROM members
-                                   WHERE REPLACE(UPPER(membership_id), '-', '') = ?
-                                      OR LOWER(email) = LOWER(?)
-                                      OR contact_number = ? LIMIT 1");
-            $stmt->execute([$clean_id, $membership_id, $membership_id]);
+            $stmt = $pdo->prepare("
+                SELECT m.id, m.full_name, m.account_status, m.status, m.rejection_reason, m.password_hash 
+                FROM members m
+                LEFT JOIN renewal_requests r ON r.member_id = m.id
+                WHERE REPLACE(REPLACE(UPPER(m.membership_id), '-', ''), ' ', '') = ?
+                   OR LOWER(m.email) = LOWER(?)
+                   OR m.contact_number = ?
+                   OR UPPER(r.reference_no) = UPPER(?)
+                ORDER BY m.id DESC
+                LIMIT 1
+            ");
+            $stmt->execute([$clean_id, $membership_id, $membership_id, $membership_id]);
             $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($member) {

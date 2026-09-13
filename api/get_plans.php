@@ -90,16 +90,9 @@ try {
         'is_test_mode' => function_exists('is_paymongo_test_mode') ? is_paymongo_test_mode() : true,
         'plans'        => $plans,
         'payment_info' => [
-            'gcash' => [
-                'name'     => $settings['gcash_name'] ?? "Palma's Elite Gym",
-                'number'   => $settings['gcash_number'] ?? "0917-888-4961",
-                'qr_image' => $format_qr_url($settings['gcash_qr_image'] ?? null)
-            ],
-            'maya' => [
-                'name'     => $settings['maya_name'] ?? "Palma's Elite Gym",
-                'number'   => $settings['maya_number'] ?? "0917-888-4961",
-                'qr_image' => $format_qr_url($settings['maya_qr_image'] ?? null)
-            ]
+            'gateway'           => 'PayMongo',
+            'supported_methods' => ['GCash', 'Maya', 'Card', 'QR Ph', 'Cash'],
+            'online_enabled'    => true
         ]
     ]);
 } catch (Exception $e) {
@@ -107,8 +100,9 @@ try {
         'success' => false, 
         'plans' => [], 
         'payment_info' => [
-            'gcash' => ['name' => "Palma's Elite Gym", 'number' => "0917-888-4961", 'qr_image' => null],
-            'maya'  => ['name' => "Palma's Elite Gym", 'number' => "0917-888-4961", 'qr_image' => null]
+            'gateway'           => 'PayMongo',
+            'supported_methods' => ['GCash', 'Maya', 'Card', 'QR Ph', 'Cash'],
+            'online_enabled'    => true
         ],
         'message' => 'Unable to fetch plans.'
     ]);
