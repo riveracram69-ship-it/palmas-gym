@@ -2261,7 +2261,9 @@
       </div>
 
       <p class="login-help-footer">
-        Need help? Contact the gym front desk to retrieve your Membership ID.
+        Need help? Contact the gym front desk to retrieve your Membership ID.<br>
+        <a href="javascript:void(0)" onclick="openPrivacyPolicyModal()" style="color:#52B788; text-decoration:underline; font-size:0.75rem; margin-top:6px; display:inline-block;">Privacy Policy (RA 10173)</a> &bull;
+        <a href="javascript:void(0)" onclick="openTermsModal()" style="color:#52B788; text-decoration:underline; font-size:0.75rem; margin-top:6px; display:inline-block;">Terms &amp; Conditions</a>
       </p>
 
     </div>
@@ -2594,6 +2596,14 @@
               <i class="fa-solid fa-store" style="font-size:1.4rem; margin-bottom:6px; display:block; color:var(--gym-light);"></i>
               Please settle your membership fee <strong>in cash</strong> at the front desk when you first visit the gym. Staff will verify and activate your pass.
             </div>
+          </div>
+
+          <!-- Terms & Privacy Consent Checkbox -->
+          <div style="margin: 14px 0; background: rgba(15,45,32,0.6); border: 1px solid var(--gym-border); border-radius: 14px; padding: 12px 14px;">
+            <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:0.8rem; color:var(--gym-pale, #e2ece9); line-height:1.45; user-select:none;">
+              <input type="checkbox" id="reg-privacy-consent" checked style="width:18px; height:18px; margin-top:2px; accent-color:var(--gym-green, #10b981); flex-shrink:0; cursor:pointer;" />
+              <span>I agree to the <a href="javascript:void(0)" onclick="openTermsModal()" style="color:var(--gym-light, #8fcfbc); font-weight:700; text-decoration:underline;">Terms &amp; Conditions</a> and consent to data processing under the <a href="javascript:void(0)" onclick="openPrivacyPolicyModal()" style="color:var(--gym-light, #8fcfbc); font-weight:700; text-decoration:underline;">Privacy Policy</a> (RA 10173).</span>
+            </label>
           </div>
 
           <button class="btn-primary" id="btn-submit-reg" onclick="submitRegistration()">
@@ -2987,10 +2997,16 @@
             <!-- Card D: Account Settings -->
             <div class="card" style="margin-bottom:20px;">
               <h4 style="color:var(--text-primary); font-size:0.82rem; text-transform:uppercase; font-weight:800; margin:0 0 14px; border-bottom:1px solid var(--border); padding-bottom:10px; letter-spacing:0.5px;">
-                <i class="fa-solid fa-gear" style="color:var(--primary); margin-right:6px;"></i> Settings
+                <i class="fa-solid fa-gear" style="color:var(--primary); margin-right:6px;"></i> Settings &amp; Legal
               </h4>
               <button onclick="openChangePasswordModal()" class="btn-outline" style="height:46px; margin-bottom:10px; font-size:0.88rem;">
                 <i class="fa-solid fa-key"></i> Change Password
+              </button>
+              <button onclick="openPrivacyPolicyModal()" class="btn-outline" style="height:46px; margin-bottom:10px; font-size:0.88rem;">
+                <i class="fa-solid fa-shield-halved"></i> Privacy Policy &amp; RA 10173
+              </button>
+              <button onclick="openTermsModal()" class="btn-outline" style="height:46px; margin-bottom:10px; font-size:0.88rem;">
+                <i class="fa-solid fa-file-contract"></i> Terms &amp; Conditions
               </button>
               <button class="btn-danger" style="height:46px; font-size:0.88rem;" onclick="confirmSignOutDialog()">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
@@ -3630,6 +3646,129 @@
       <button class="btn-primary" style="margin-top:16px; height:46px; font-size:0.9rem;" onclick="closeEnlargedQRModal()">
         <i class="fa-solid fa-check"></i> Done (Close)
       </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       PRIVACY POLICY MODAL (Data Privacy Act of 2012 / RA 10173)
+       ══════════════════════════════════════════════════════════ -->
+  <div id="modal-privacy-policy" class="custom-dialog-overlay" style="display:none; z-index:99999;" onclick="closePrivacyPolicyModal()">
+    <div class="custom-dialog-card" onclick="event.stopPropagation()" style="max-width:480px; max-height:85vh; display:flex; flex-direction:column; padding:20px 18px; text-align:left; background:var(--background-secondary, #0c2017); border:1.5px solid rgba(82,183,136,0.35); box-shadow:0 25px 60px rgba(0,0,0,0.8);">
+      <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(82,183,136,0.2); padding-bottom:12px; margin-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:38px; height:38px; border-radius:10px; background:rgba(82,183,136,0.15); color:var(--primary, #52B788); display:flex; align-items:center; justify-content:center; font-size:18px;">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <h3 style="margin:0; font-family:'Outfit',sans-serif; font-size:1.15rem; font-weight:800; color:#fff;">Privacy Policy</h3>
+            <span style="font-size:0.72rem; color:var(--primary-light, #8fcfbc);">Philippine RA 10173 Compliance</span>
+          </div>
+        </div>
+        <button onclick="closePrivacyPolicyModal()" style="background:transparent; border:none; color:var(--text-muted, #94a3b8); font-size:1.25rem; cursor:pointer; padding:6px;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div style="flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-right:4px; font-size:0.83rem; line-height:1.55; color:var(--text-secondary, #d1d5db);">
+        <div style="background:rgba(82,183,136,0.08); border-left:3px solid var(--primary, #52B788); padding:10px 12px; border-radius:0 8px 8px 0; margin-bottom:14px; font-size:0.78rem; color:#fff;">
+          <strong>Palma's Elite Gym</strong> is committed to protecting your privacy in full compliance with the <strong>Philippine Data Privacy Act of 2012 (Republic Act No. 10173)</strong> and National Privacy Commission regulations.
+        </div>
+
+        <h4 style="color:var(--primary-light, #8fcfbc); font-size:0.88rem; margin:12px 0 6px;"><i class="fa-solid fa-database" style="margin-right:6px;"></i> 1. Information Collected</h4>
+        <p style="margin:0 0 8px;">We collect necessary information to provide gym services:</p>
+        <ul style="padding-left:18px; margin:0 0 12px;">
+          <li><strong>Identity:</strong> Full name, gender, and unique Membership ID.</li>
+          <li><strong>Contact:</strong> Email address and mobile phone number.</li>
+          <li><strong>Biometric/Photo:</strong> Member profile picture solely for identity validation and kiosk QR attendance.</li>
+          <li><strong>Financial:</strong> Payment transaction references (GCash / Maya reference IDs) and subscription receipts.</li>
+          <li><strong>Facility Access:</strong> QR scan attendance timestamps.</li>
+        </ul>
+
+        <h4 style="color:var(--primary-light, #8fcfbc); font-size:0.88rem; margin:12px 0 6px;"><i class="fa-solid fa-bullseye" style="margin-right:6px;"></i> 2. Purpose of Processing</h4>
+        <ul style="padding-left:18px; margin:0 0 12px;">
+          <li>Verifying membership and granting facility access via QR code.</li>
+          <li>Processing renewals, membership extensions, and sending expiry reminders.</li>
+          <li>Facility safety, security logging, and emergency communications.</li>
+        </ul>
+
+        <h4 style="color:var(--primary-light, #8fcfbc); font-size:0.88rem; margin:12px 0 6px;"><i class="fa-solid fa-lock" style="margin-right:6px;"></i> 3. Security &amp; Protection</h4>
+        <p style="margin:0 0 12px;">
+          All sensitive data is secured with industry-standard 256-bit TLS encryption, cryptographic password hashing (bcrypt), and role-based staff access controls. We <strong>never sell or rent</strong> your personal data to third parties.
+        </p>
+
+        <h4 style="color:var(--primary-light, #8fcfbc); font-size:0.88rem; margin:12px 0 6px;"><i class="fa-solid fa-user-check" style="margin-right:6px;"></i> 4. Your Rights (Data Subject Rights)</h4>
+        <p style="margin:0 0 12px;">
+          You have the right to be informed, access your records, update inaccurate information, and request data deletion subject to legal and operational requirements.
+        </p>
+
+        <h4 style="color:var(--primary-light, #8fcfbc); font-size:0.88rem; margin:12px 0 6px;"><i class="fa-solid fa-envelope" style="margin-right:6px;"></i> 5. Contact Information</h4>
+        <p style="margin:0 0 8px;">
+          For inquiries or privacy concerns, contact our Data Protection Officer or front desk staff:
+        </p>
+        <div style="background:rgba(0,0,0,0.25); padding:8px 12px; border-radius:8px; font-size:0.76rem; margin-bottom:12px;">
+          <strong>Palma's Elite Gym</strong><br>
+          📍 123 Fitness Ave, Metro Manila<br>
+          📞 +63 917 000 0000 &bull; ✉️ support@palmaselitegym.ph
+        </div>
+      </div>
+
+      <div style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(82,183,136,0.2);">
+        <button class="btn-primary" style="height:44px; font-size:0.88rem;" onclick="closePrivacyPolicyModal()">
+          <i class="fa-solid fa-check"></i> I Understand &amp; Agree
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       TERMS & CONDITIONS MODAL
+       ══════════════════════════════════════════════════════════ -->
+  <div id="modal-terms" class="custom-dialog-overlay" style="display:none; z-index:99999;" onclick="closeTermsModal()">
+    <div class="custom-dialog-card" onclick="event.stopPropagation()" style="max-width:480px; max-height:85vh; display:flex; flex-direction:column; padding:20px 18px; text-align:left; background:var(--background-secondary, #0c2017); border:1.5px solid rgba(82,183,136,0.35); box-shadow:0 25px 60px rgba(0,0,0,0.8);">
+      <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(82,183,136,0.2); padding-bottom:12px; margin-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:38px; height:38px; border-radius:10px; background:rgba(82,183,136,0.15); color:var(--primary, #52B788); display:flex; align-items:center; justify-content:center; font-size:18px;">
+            <i class="fa-solid fa-file-contract"></i>
+          </div>
+          <div>
+            <h3 style="margin:0; font-family:'Outfit',sans-serif; font-size:1.15rem; font-weight:800; color:#fff;">Terms &amp; Conditions</h3>
+            <span style="font-size:0.72rem; color:var(--primary-light, #8fcfbc);">Membership Rules &amp; Code of Conduct</span>
+          </div>
+        </div>
+        <button onclick="closeTermsModal()" style="background:transparent; border:none; color:var(--text-muted, #94a3b8); font-size:1.25rem; cursor:pointer; padding:6px;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div style="flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-right:4px; font-size:0.83rem; line-height:1.55; color:var(--text-secondary, #d1d5db);">
+        <h4 style="color:var(--primary-light, #8fcfbc); font-size:0.88rem; margin:10px 0 6px;"><i class="fa-solid fa-id-card" style="margin-right:6px;"></i> 1. Membership &amp; QR Pass</h4>
+        <p style="margin:0 0 10px;">
+          Digital QR membership passes are strictly personal and non-transferable. Every member must scan their active QR code upon facility entry.
+        </p>
+
+        <h4 style="color:var(--primary-light, #8fcfbc); font-size:0.88rem; margin:12px 0 6px;"><i class="fa-solid fa-dumbbell" style="margin-right:6px;"></i> 2. Gym Etiquette &amp; Safety</h4>
+        <ul style="padding-left:18px; margin:0 0 12px;">
+          <li>Wear proper athletic gym attire and clean indoor shoes at all times.</li>
+          <li>Always re-rack dumbbells, barbells, and weight plates after each set.</li>
+          <li>Wipe down benches and machine pads after use using provided sanitizers.</li>
+        </ul>
+
+        <h4 style="color:var(--primary-light, #8fcfbc); font-size:0.88rem; margin:12px 0 6px;"><i class="fa-solid fa-money-bill-wave" style="margin-right:6px;"></i> 3. Payments &amp; Renewals</h4>
+        <p style="margin:0 0 10px;">
+          Membership subscriptions are non-refundable. Renewal may be completed via GCash, Maya, or cash over the counter before plan expiration.
+        </p>
+
+        <h4 style="color:var(--primary-light, #8fcfbc); font-size:0.88rem; margin:12px 0 6px;"><i class="fa-solid fa-shield-heart" style="margin-right:6px;"></i> 4. Health &amp; Liability</h4>
+        <p style="margin:0 0 10px;">
+          Members engage in physical workouts at their own discretion and declare they are physically fit for exercise.
+        </p>
+      </div>
+
+      <div style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(82,183,136,0.2);">
+        <button class="btn-primary" style="height:44px; font-size:0.88rem;" onclick="closeTermsModal()">
+          <i class="fa-solid fa-check"></i> Close
+        </button>
+      </div>
     </div>
   </div>
 
@@ -4791,7 +4930,32 @@ function renderPlanCards(plans, container) {
   updateRegAmountDisplay();
 }
 
+function openPrivacyPolicyModal() {
+  const modal = document.getElementById('modal-privacy-policy');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closePrivacyPolicyModal() {
+  const modal = document.getElementById('modal-privacy-policy');
+  if (modal) modal.style.display = 'none';
+}
+
+function openTermsModal() {
+  const modal = document.getElementById('modal-terms');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeTermsModal() {
+  const modal = document.getElementById('modal-terms');
+  if (modal) modal.style.display = 'none';
+}
+
 async function submitRegistration() {
+  const consent = document.getElementById('reg-privacy-consent');
+  if (consent && !consent.checked) {
+    return showToast('⚠️ Please agree to the Terms & Conditions and Privacy Policy to complete registration.');
+  }
+
   const btn = document.getElementById('btn-submit-reg');
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Submitting...';

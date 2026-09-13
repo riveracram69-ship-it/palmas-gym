@@ -395,6 +395,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Looking for member access? <br>
             <a href="member/login.php"><i class="fas fa-arrow-up-right-from-square"></i> Go to Member Portal</a>
         </div>
+        <div style="margin-top: 1.25rem; text-align: center; font-size: 0.78rem; color: #718096;">
+            <a href="privacy.php" target="_blank" style="color: #4a5568; text-decoration: underline;">Privacy Policy (RA 10173)</a> &bull;
+            <a href="terms.php" target="_blank" style="color: #4a5568; text-decoration: underline;">Terms &amp; Conditions</a>
+        </div>
     </div>
 </div>
 
