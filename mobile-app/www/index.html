@@ -4587,7 +4587,7 @@ function selectGender(g) {
   });
 }
 
-function wizardNext(fromStep) {
+async function wizardNext(fromStep) {
   if (fromStep === 1) {
     const fn    = (document.getElementById('reg-first-name')?.value || '').trim();
     const ln    = (document.getElementById('reg-last-name')?.value || '').trim();
@@ -4606,6 +4606,50 @@ function wizardNext(fromStep) {
     }
 
     if (!selectedGender) return showToast('Please select your gender.');
+
+    // ── Real-time Duplicate Check: Email & Phone Number ───────────────────────
+    const step1NextBtn = document.querySelector('#reg-step-1 button[onclick*="wizardNext"]');
+    const originalBtnHtml = step1NextBtn ? step1NextBtn.innerHTML : '';
+    if (step1NextBtn) {
+      step1NextBtn.disabled = true;
+      step1NextBtn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></div> Checking...';
+    }
+
+    try {
+      const dupRes = await authFetch(`${API_URL}/check_duplicate.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          contact_number: phone,
+          full_name: name
+        })
+      });
+
+      if (dupRes.ok) {
+        const dupData = await dupRes.json();
+        if (dupData && dupData.valid === false) {
+          const errMsg = dupData.message || (dupData.errors && dupData.errors[0]) || 'This email address or contact number is already registered.';
+          showToast(`⚠️ ${errMsg}`, 5000);
+          
+          // Focus the duplicate input field
+          if (errMsg.toLowerCase().includes('email')) {
+            document.getElementById('reg-email')?.focus();
+          } else if (errMsg.toLowerCase().includes('contact') || errMsg.toLowerCase().includes('phone') || errMsg.toLowerCase().includes('number')) {
+            document.getElementById('reg-phone')?.focus();
+          }
+          return; // STOP: Do not advance to Step 2!
+        }
+      }
+    } catch (checkErr) {
+      console.warn('Duplicate pre-check warning:', checkErr);
+    } finally {
+      if (step1NextBtn) {
+        step1NextBtn.disabled = false;
+        step1NextBtn.innerHTML = originalBtnHtml;
+      }
+    }
+
     goToWizardStep(2);
   } else if (fromStep === 2) {
     if (!selectedPlanId) return showToast('Please select a membership plan.');
