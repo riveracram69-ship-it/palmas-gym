@@ -281,16 +281,20 @@ try {
 
     $pdo->commit();
 
-    // Activity Log
-    $provider_label = ($auth_provider === 'google') ? ' (Google Sign-In)' : '';
-    $log_status = $is_online_instant ? 'Auto-activated instantly.' : 'Pending staff cash collection.';
-    log_activity($pdo, 'Member Registration', "New member registered{$provider_label}: {$full_name} ({$membership_id}) via {$payment_method}. {$log_status}", 'Member');
+    // Activity Log (Non-blocking safeguard)
+    try {
+        $provider_label = ($auth_provider === 'google') ? ' (Google Sign-In)' : '';
+        $log_status = $is_online_instant ? 'Auto-activated instantly.' : 'Pending staff cash collection.';
+        log_activity($pdo, 'Member Registration', "New member registered{$provider_label}: {$full_name} ({$membership_id}) via {$payment_method}. {$log_status}", 'Member');
+    } catch (Throwable $logEx) {
+        error_log("Registration log_activity warning: " . $logEx->getMessage());
+    }
 
-    // Welcome email (non-blocking)
+    // Welcome email (Non-blocking safeguard)
     try {
         require_once __DIR__ . '/../config/email.php';
         if ($is_online_instant) {
-            send_email_notification(
+            @send_email_notification(
                 $email,
                 "Membership Activated! — Palma's Elite Gym",
                 "Welcome, {$full_name}!",
@@ -301,14 +305,20 @@ try {
                 ? "You can use <strong>Continue with Google</strong> in the Palma's Elite Gym Mobile App once your front-desk cash payment is verified."
                 : "Your Membership Reference ID is: <strong>{$membership_id}</strong>.";
 
-            send_email_notification(
+            @send_email_notification(
                 $email,
                 "Registration Received — Palma's Elite Gym",
                 "Welcome, {$full_name}!",
                 "Thank you for registering with Palma's Elite Gym!<br><br>Your account is currently <strong>Pending Review</strong>. Please settle your cash payment at the gym front desk upon your visit. {$auth_text}"
             );
         }
-    } catch (Exception $emErr) {}
+    } catch (Throwable $emErr) {
+        error_log("Registration send_email_notification warning: " . $emErr->getMessage());
+    }
+
+    if (ob_get_length()) {
+        ob_clean();
+    }
 
     echo json_encode([
         'success'          => true,
@@ -334,6 +344,7 @@ try {
 } catch (Exception $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     error_log('Error in member_register.php: ' . $e->getMessage());
+    if (ob_get_length()) ob_clean();
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'An error occurred during registration. Please try again.']);
 }

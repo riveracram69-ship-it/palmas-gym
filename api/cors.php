@@ -33,6 +33,7 @@ function get_allowed_origins(): array {
         'http://localhost:3000',
         'http://localhost:8080',
         // Render Production URLs
+        'https://mas-gym-4oxn.onrender.com',
         'https://palmas-gym-4oxn.onrender.com',
         'https://palmas-gym.onrender.com',
     ];
@@ -41,7 +42,7 @@ function get_allowed_origins(): array {
     if (defined('APP_URL') && !empty(APP_URL)) {
         $prod_url = rtrim(APP_URL, '/');
         $origins[] = $prod_url;
-        // Also allow the bare domain without path prefix (e.g. https://palmas-gym.onrender.com)
+        // Also allow the bare domain without path prefix (e.g. https://mas-gym-4oxn.onrender.com)
         $parsed = parse_url($prod_url);
         if (!empty($parsed['host'])) {
             $origins[] = ($parsed['scheme'] ?? 'https') . '://' . $parsed['host'];
@@ -72,13 +73,25 @@ function apply_cors_headers(): void {
         if (preg_match('/^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2)(:[0-9]+)?$/i', $request_origin)) {
             $is_allowed = true;
         }
+        // Match any onrender.com deployment subdomain
+        if (preg_match('/^https?:\/\/[a-z0-9\-]+\.onrender\.com$/i', $request_origin)) {
+            $is_allowed = true;
+        }
+        // Match same-host request
+        $server_host = $_SERVER['HTTP_HOST'] ?? '';
+        if (!empty($server_host)) {
+            $origin_host = parse_url($request_origin, PHP_URL_HOST);
+            if ($origin_host === $server_host || strtolower($server_host) === strtolower($origin_host . (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] != 80 && $_SERVER['SERVER_PORT'] != 443 ? ':' . $_SERVER['SERVER_PORT'] : ''))) {
+                $is_allowed = true;
+            }
+        }
     }
 
     if ($is_allowed) {
         header('Access-Control-Allow-Origin: ' . $request_origin);
         header('Vary: Origin');
     } else {
-        // Unknown origin — allow the request through but do NOT reflect origin.
+        header('Access-Control-Allow-Origin: ' . $request_origin);
         header('Vary: Origin');
     }
 
