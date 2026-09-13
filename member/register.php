@@ -126,48 +126,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $password_hash = password_hash($password, PASSWORD_DEFAULT);
+            $payment_method = trim($_POST['payment_method'] ?? 'GCash');
+            $is_online_instant = in_array(strtolower($payment_method), ['gcash', 'maya', 'paymaya', 'online']);
+            $initial_acc_status = $is_online_instant ? 'Approved' : 'Pending';
+            $initial_status     = $is_online_instant ? 'Active' : 'Inactive';
 
             $stmt = $pdo->prepare("
-                INSERT INTO members (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, gender, photo, account_status, status, selected_plan_id, password_hash, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'Inactive', ?, ?, NOW())
+                INSERT INTO members (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, gender, photo, account_status, status, selected_plan_id, password_hash, approved_at, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " . ($is_online_instant ? "NOW()" : "NULL") . ", NOW())
             ");
-            $stmt->execute([$membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact_number, $gender, $photo_path, ($plan_id > 0 ? $plan_id : null), $password_hash]);
+            $stmt->execute([$membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact_number, $gender, $photo_path, $initial_acc_status, $initial_status, ($plan_id > 0 ? $plan_id : null), $password_hash]);
             $member_id = (int)$pdo->lastInsertId();
 
-            // Insert admin notification
-            try {
-                $notif_stmt = $pdo->prepare("
-                    INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)
-                    VALUES (?, 'Registration', 'New Member Registration Awaiting Review', ?, 'Sent', 'Unread', NOW())
-                ");
-                $notif_stmt->execute([$member_id, "New member registration submitted by {$full_name} ({$membership_id}). Please review and approve."]);
-            } catch (Exception $nEx) {}
-
-            // Record initial registration payment request (visible in Pending Payment History)
+            // Fetch plan price if plan selected
+            $plan_price = 0.00;
             if ($plan_id > 0) {
+                $p_stmt = $pdo->prepare("SELECT price FROM membership_plans WHERE id = ?");
+                $p_stmt->execute([$plan_id]);
+                $plan_price = floatval($p_stmt->fetchColumn() ?: 0);
+            }
+
+            if ($is_online_instant) {
+                // Instant Auto-Activation for GCash and Maya!
+                require_once __DIR__ . '/../config/payment.php';
+                if ($plan_id > 0) {
+                    process_automated_subscription_activation(
+                        $pdo,
+                        $member_id,
+                        $plan_id,
+                        $plan_price,
+                        $payment_method,
+                        'REG-' . $membership_id,
+                        true
+                    );
+                }
+
                 try {
                     $pdo->prepare("
-                        INSERT INTO renewal_requests (member_id, plan_id, payment_method, reference_no, status, notes, created_at)
-                        VALUES (?, ?, 'Cash', ?, 'Pending', 'Initial Membership Registration Fee', NOW())
-                    ")->execute([$member_id, $plan_id, 'REG-' . $membership_id]);
-                } catch (Exception $payEx) {}
+                        INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)
+                        VALUES (?, 'Registration', 'New Member Auto-Activated', ?, 'Sent', 'Unread', NOW())
+                    ")->execute([$member_id, "New member {$full_name} ({$membership_id}) registered and was auto-activated via {$payment_method}."]);
+                } catch (Exception $nEx) {}
+
+            } else {
+                // Cash Payment: Record initial registration payment request for front desk
+                if ($plan_id > 0) {
+                    try {
+                        $pdo->prepare("
+                            INSERT INTO renewal_requests (member_id, plan_id, payment_method, reference_no, status, notes, created_at)
+                            VALUES (?, ?, 'Cash', ?, 'Pending', 'Initial Membership Registration Fee', NOW())
+                        ")->execute([$member_id, $plan_id, 'REG-' . $membership_id]);
+                    } catch (Exception $payEx) {}
+                }
+
+                try {
+                    $pdo->prepare("
+                        INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)
+                        VALUES (?, 'Registration', 'New Member Registration Awaiting Review', ?, 'Sent', 'Unread', NOW())
+                    ")->execute([$member_id, "New member registration submitted by {$full_name} ({$membership_id}). Please verify cash payment at front desk."]);
+                } catch (Exception $nEx) {}
             }
 
             $pdo->commit();
 
-            log_activity($pdo, 'Member Registration', "New member registered (Pending Review): {$full_name} ({$membership_id})", 'Member');
+            $log_status = $is_online_instant ? 'Auto-activated instantly.' : 'Pending front-desk cash collection.';
+            log_activity($pdo, 'Member Registration', "New member registered: {$full_name} ({$membership_id}) via {$payment_method}. {$log_status}", 'Member');
 
             try {
                 require_once __DIR__ . '/../config/email.php';
-                $email_subject = "Registration Received - Palma's Elite Gym";
-                $email_title   = "Hello, {$full_name}!";
-                $email_body    = "Thank you for registering at Palma's Elite Gym! Your registration has been submitted and is currently <strong>Pending Review</strong> by our staff. Your Membership ID is: <strong>{$membership_id}</strong>. You will receive an email once your account has been approved.";
+                if ($is_online_instant) {
+                    $email_subject = "Membership Activated! — Palma's Elite Gym";
+                    $email_title   = "Welcome, {$full_name}!";
+                    $email_body    = "Thank you for joining Palma's Elite Gym!<br><br>Your payment via <strong>{$payment_method}</strong> has been processed, and your gym membership has been <strong>instantly activated</strong>!<br><br>Your Membership ID is: <strong>{$membership_id}</strong>.<br>You can now sign in to your member portal or mobile app to view your Digital QR Pass!";
+                } else {
+                    $email_subject = "Registration Received - Palma's Elite Gym";
+                    $email_title   = "Hello, {$full_name}!";
+                    $email_body    = "Thank you for registering at Palma's Elite Gym! Your registration has been submitted and is currently <strong>Pending Review</strong>. Please settle your cash payment at the gym front desk upon your visit. Your Membership ID is: <strong>{$membership_id}</strong>.";
+                }
                 send_email_notification($email, $email_subject, $email_title, $email_body);
             } catch (Exception $emErr) {}
 
             $new_membership_id  = $membership_id;
             $submitted_name     = $full_name;
-            $success            = "Registration submitted successfully! Your account is currently pending approval by gym staff.";
+            $is_auto_activated  = $is_online_instant;
+            $used_method        = $payment_method;
+            $success            = $is_online_instant 
+                ? "Registration complete! Your membership is active." 
+                : "Registration submitted successfully! Please settle cash at the gym front desk.";
 
         } catch (Exception $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
@@ -542,32 +587,45 @@ select.if{
   <main class="card" id="main-content">
 
     <?php if ($success): ?>
-    <!-- SUCCESS SCREEN: PENDING REVIEW -->
+    <?php if (!empty($is_auto_activated)): ?>
+    <!-- SUCCESS SCREEN: INSTANT ACTIVATION (GCASH / MAYA) -->
+    <div class="success-scr">
+      <div class="success-ico" style="background:#DCFCE7;color:#15803D;border:2px solid #86EFAC;"><i class="fa-solid fa-circle-check"></i></div>
+      <h2>Membership Activated! 🎉</h2>
+      <p style="color:var(--c-muted);font-size:0.95rem;margin-bottom:18px;">
+        Congratulations, <strong><?php echo htmlspecialchars($submitted_name); ?></strong>! Your payment via <strong><?php echo htmlspecialchars($used_method); ?></strong> is confirmed and your gym membership is <strong>Active</strong>!
+      </p>
+      <div class="mid-box" style="background:#F0FDF4;border:1.5px solid #86EFAC;">
+        <div class="mid-lbl" style="color:#166534;">Your Official Membership ID</div>
+        <div class="mid-val" style="color:#15803D;"><?php echo htmlspecialchars($new_membership_id); ?></div>
+        <div class="mid-hint" style="color:#14532D;">Use this ID with your password to sign in to your Web Portal and Mobile App.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
+        <a href="login.php" class="btn-primary" style="text-decoration:none;margin-top:0">
+          <i class="fa-solid fa-bolt" aria-hidden="true"></i> Sign In to Access Your QR Pass Now
+        </a>
+      </div>
+    </div>
+    <?php else: ?>
+    <!-- SUCCESS SCREEN: PENDING CASH AT FRONT DESK -->
     <div class="success-scr">
       <div class="success-ico" style="background:#FEF3C7;color:#D97706;border:2px solid #FDE68A;"><i class="fa-solid fa-clock"></i></div>
       <h2>Registration Received!</h2>
       <p style="color:var(--c-muted);font-size:0.95rem;margin-bottom:18px;">
-        Thank you, <strong><?php echo htmlspecialchars($submitted_name); ?></strong>! Your account has been submitted and is currently <strong>Pending Review</strong> by our staff.
+        Thank you, <strong><?php echo htmlspecialchars($submitted_name); ?></strong>! Please settle your cash payment at the gym front desk upon your visit.
       </p>
       <div class="mid-box" style="background:#FFFBEB;border:1px solid #FDE68A;">
         <div class="mid-lbl" style="color:#92400E;">Your Membership Reference ID</div>
         <div class="mid-val" style="color:#B45309;"><?php echo htmlspecialchars($new_membership_id); ?></div>
-        <div class="mid-hint" style="color:#78350F;">Save this ID &mdash; you will use it with your password once staff approves your account.</div>
+        <div class="mid-hint" style="color:#78350F;">Save this ID &mdash; staff will confirm your cash renewal and activate your account.</div>
       </div>
-      <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:14px;margin-bottom:20px;text-align:left;">
-        <div style="font-weight:700;color:#166534;font-size:0.85rem;margin-bottom:4px;"><i class="fa-solid fa-shield-halved"></i> What happens next?</div>
-        <div style="font-size:0.8rem;color:#15803D;line-height:1.4;">
-          1. Gym staff will verify your details.<br>
-          2. Your account will be activated.<br>
-          3. You can then sign in to access your Digital QR Pass and Gym features!
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
         <a href="login.php" class="btn-primary" style="text-decoration:none;margin-top:0">
           <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Back to Sign In
         </a>
       </div>
     </div>
+    <?php endif; ?>
 
     <?php else: ?>
 
@@ -743,6 +801,73 @@ select.if{
         </div>
       </div>
       <?php endif; ?>
+
+      <!-- Payment Method Selection -->
+      <div class="fg">
+        <div class="lbl" id="paymethod-lbl">Payment Method</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <!-- GCash -->
+          <label class="plan on" id="reg-pm-gcash" style="cursor:pointer;" onclick="selectWebPayMethod('GCash')">
+            <input type="radio" name="payment_method" value="GCash" checked style="display:none;">
+            <div class="plan-l">
+              <div style="width:36px;height:36px;border-radius:10px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,125,254,0.3);padding:2px;flex-shrink:0;">
+                <img src="../assets/images/gcash-logo.png" alt="GCash" style="width:100%;height:100%;object-fit:contain;">
+              </div>
+              <div>
+                <div style="font-weight:700; font-size:0.88rem; color:var(--c-h); display:flex; align-items:center; gap:6px;">
+                  GCash <span style="font-size:0.62rem; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:10px; font-weight:800;">⚡ INSTANT ACTIVATION</span>
+                </div>
+                <div style="font-size:0.72rem; color:var(--c-muted);">Direct E-Wallet Instant Activation</div>
+              </div>
+            </div>
+            <div class="radio-dot" id="dot-gcash"></div>
+          </label>
+
+          <!-- Maya -->
+          <label class="plan" id="reg-pm-maya" style="cursor:pointer;" onclick="selectWebPayMethod('Maya')">
+            <input type="radio" name="payment_method" value="Maya" style="display:none;">
+            <div class="plan-l">
+              <div style="width:36px;height:36px;border-radius:10px;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,214,100,0.2);padding:3px;flex-shrink:0;">
+                <img src="../assets/images/maya-logo.png" alt="Maya" style="width:100%;height:100%;object-fit:contain;">
+              </div>
+              <div>
+                <div style="font-weight:700; font-size:0.88rem; color:var(--c-h); display:flex; align-items:center; gap:6px;">
+                  Maya <span style="font-size:0.62rem; background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:10px; font-weight:800;">⚡ INSTANT ACTIVATION</span>
+                </div>
+                <div style="font-size:0.72rem; color:var(--c-muted);">Direct E-Wallet Instant Activation</div>
+              </div>
+            </div>
+            <div class="radio-dot" id="dot-maya"></div>
+          </label>
+
+          <!-- Cash -->
+          <label class="plan" id="reg-pm-cash" style="cursor:pointer;" onclick="selectWebPayMethod('Cash')">
+            <input type="radio" name="payment_method" value="Cash" style="display:none;">
+            <div class="plan-l">
+              <div style="width:36px;height:36px;border-radius:10px;background:rgba(62,130,65,0.12);color:#2d6a4f;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">
+                <i class="fa-solid fa-money-bill-wave"></i>
+              </div>
+              <div>
+                <div style="font-weight:700; font-size:0.88rem; color:var(--c-h);">Cash (Front Desk)</div>
+                <div style="font-size:0.72rem; color:var(--c-muted);">Pay over the counter upon your visit</div>
+              </div>
+            </div>
+            <div class="radio-dot" id="dot-cash"></div>
+          </label>
+        </div>
+      </div>
+
+      <script>
+      function selectWebPayMethod(m) {
+        ['gcash','maya','cash'].forEach(k => {
+          const card = document.getElementById('reg-pm-' + k);
+          const radio = card ? card.querySelector('input[type=radio]') : null;
+          const isSel = (k.toLowerCase() === m.toLowerCase());
+          if (card) card.classList.toggle('on', isSel);
+          if (radio) radio.checked = isSel;
+        });
+      }
+      </script>
 
       <!-- Passwords -->
       <div class="sec-tag">Security</div>

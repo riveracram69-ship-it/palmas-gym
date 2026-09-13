@@ -42,6 +42,22 @@ try {
         exit;
     }
 
+    // Instant Auto-Activation for GCash and Maya: No staff approval needed!
+    if (in_array($payment_method, ['GCash', 'Maya'])) {
+        if (empty($reference_no)) {
+            $reference_no = 'REN-' . strtoupper(substr($payment_method, 0, 2)) . '-' . strtoupper(bin2hex(random_bytes(3)));
+        }
+        $actRes = process_automated_subscription_activation($pdo, $member['id'], $plan_id, $plan['price'], $payment_method, $reference_no);
+        if ($actRes && !empty($actRes['success'])) {
+            echo json_encode([
+                'success'   => true,
+                'is_active' => true,
+                'message'   => 'Renewal complete! Your ' . htmlspecialchars($plan['name']) . ' pass has been instantly activated via ' . $payment_method . '.'
+            ]);
+            exit;
+        }
+    }
+
     // Otherwise, Traditional Cash / Front Desk pending request
     $pending_stmt = $pdo->prepare("SELECT COUNT(*) FROM renewal_requests WHERE member_id = ? AND status = 'Pending'");
     $pending_stmt->execute([$member['id']]);
@@ -62,7 +78,7 @@ try {
 
     echo json_encode([
         'success' => true,
-        'message' => 'Your renewal request for ' . htmlspecialchars($plan['name']) . ' has been submitted! Please settle payment at the front desk.',
+        'message' => 'Your renewal request for ' . htmlspecialchars($plan['name']) . ' has been submitted! Please settle cash payment at the front desk.',
     ]);
 
 } catch (Exception $e) {

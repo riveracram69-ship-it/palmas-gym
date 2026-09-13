@@ -37,10 +37,9 @@ if (!$plan_id) {
     exit;
 }
 
-// Enforce reference number for online payments
+// Reference number for online payments
 if (in_array($payment_method, ['GCash', 'Maya']) && empty($reference_no)) {
-    echo json_encode(['success' => false, 'message' => "Please enter your {$payment_method} transaction Reference Number."]);
-    exit;
+    $reference_no = 'REN-' . strtoupper(substr($payment_method, 0, 2)) . '-' . strtoupper(bin2hex(random_bytes(3)));
 }
 
 try {
@@ -108,7 +107,29 @@ try {
         }
     }
 
-    // 3. Check for existing pending request (update instead of blocking)
+    // 3. For GCash and Maya: Instant auto-activation without waiting for staff approval!
+    if (in_array($payment_method, ['GCash', 'Maya'])) {
+        require_once __DIR__ . '/../config/payment.php';
+        $actRes = process_automated_subscription_activation(
+            $pdo,
+            $member_id,
+            $plan_id,
+            $plan['price'],
+            $payment_method,
+            $reference_no
+        );
+
+        if ($actRes && !empty($actRes['success'])) {
+            echo json_encode([
+                'success'   => true,
+                'is_active' => true,
+                'message'   => 'Renewal complete! Your ' . htmlspecialchars($plan['name']) . ' pass has been instantly activated via ' . $payment_method . '.'
+            ]);
+            exit;
+        }
+    }
+
+    // 4. For Cash (Front Desk): Check for existing pending request or insert new pending request
     $pending_stmt = $pdo->prepare("SELECT id FROM renewal_requests WHERE member_id = ? AND status = 'Pending' LIMIT 1");
     $pending_stmt->execute([$member_id]);
     $existing = $pending_stmt->fetch(PDO::FETCH_ASSOC);
@@ -122,12 +143,11 @@ try {
 
         echo json_encode([
             'success' => true,
-            'message' => 'Your pending renewal for ' . htmlspecialchars($plan['name']) . ' has been updated with your ' . $payment_method . ' reference number (' . htmlspecialchars($reference_no) . '). Gym staff will verify shortly!'
+            'message' => 'Your pending renewal for ' . htmlspecialchars($plan['name']) . ' has been updated. Please settle cash at the gym front desk.'
         ]);
         exit;
     }
 
-    // 4. Insert renewal request
     $insert_stmt = $pdo->prepare("
         INSERT INTO renewal_requests (member_id, plan_id, payment_method, reference_no, status, created_at) 
         VALUES (?, ?, ?, ?, 'Pending', NOW())
@@ -140,20 +160,20 @@ try {
     ]);
     $request_id = $pdo->lastInsertId();
 
-    // 5. Send notification to staff
+    // Send notification to staff
     try {
         $pdo->prepare("
             INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)
             VALUES (?, 'Renewal', 'New Renewal Request Awaiting Staff Verification', ?, 'Sent', 'Unread', NOW())
         ")->execute([
             $member_id,
-            "Member {$member['full_name']} ({$member['membership_id']}) requested renewal for {$plan['name']} (₱" . number_format($plan['price'], 2) . ") via {$payment_method}" . ($reference_no ? " | Ref: {$reference_no}" : "") . ". Pending staff approval."
+            "Member {$member['full_name']} ({$member['membership_id']}) requested renewal for {$plan['name']} (₱" . number_format($plan['price'], 2) . ") via {$payment_method}. Pending front-desk cash collection."
         ]);
     } catch (Throwable $notifEx) {}
 
     echo json_encode([
         'success' => true,
-        'message' => 'Renewal request for ' . htmlspecialchars($plan['name']) . ' submitted! Our staff will verify your ' . $payment_method . ' payment and activate your membership.'
+        'message' => 'Renewal request for ' . htmlspecialchars($plan['name']) . ' submitted! Please settle your cash payment at the gym front desk upon your visit.'
     ]);
 
 } catch (Exception $e) {

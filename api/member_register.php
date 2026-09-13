@@ -30,6 +30,7 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/logger.php';
 require_once __DIR__ . '/../config/duplicate_validator.php';
 require_once __DIR__ . '/../config/uploader.php';
+require_once __DIR__ . '/../config/payment.php';
 
 $raw  = file_get_contents('php://input');
 $data = json_decode($raw, true) ?: $_POST;
@@ -41,9 +42,10 @@ $last_name      = trim($data['last_name'] ?? '');
 $extension      = trim($data['extension'] ?? '');
 $full_name      = trim($data['full_name'] ?? '');
 
-// Reconstruct full_name or split if only full_name was provided
+// Auto-derive full_name if first & last provided
 if (!empty($first_name) || !empty($last_name)) {
-    $full_name = trim(implode(' ', array_filter([$first_name, $middle_name, $last_name, $extension])));
+    $name_parts = array_filter([$first_name, $middle_name, $last_name, $extension]);
+    $full_name  = trim(implode(' ', $name_parts));
 } elseif (!empty($full_name)) {
     $tokens = preg_split('/\s+/', $full_name);
     if (count($tokens) > 1) {
@@ -70,39 +72,40 @@ if (!empty($first_name) || !empty($last_name)) {
     }
 }
 
-$email          = strtolower(trim($data['email'] ?? ''));
+$email          = trim($data['email'] ?? '');
+$password       = $data['password'] ?? '';
 $contact_number = trim($data['contact_number'] ?? '');
-$password       = trim($data['password'] ?? '');
-$gender         = trim($data['gender'] ?? 'Other');
-$plan_id        = intval($data['plan_id'] ?? 0);
+$gender         = $data['gender'] ?? 'Male';
+$plan_id        = intval($data['plan_id'] ?? 1);
+$auth_provider  = $data['auth_provider'] ?? 'password';
 $google_id      = trim($data['google_id'] ?? '');
 $google_picture = trim($data['google_picture'] ?? '');
-$auth_provider  = !empty($google_id) ? 'google' : 'password';
 
 // ── Validation ────────────────────────────────────────────────────────────────
 if (empty($full_name)) {
-    echo json_encode(['success' => false, 'message' => 'Full Name (First and Last name) is required.']);
+    echo json_encode(['success' => false, 'message' => 'Please enter your full name.']);
     exit;
 }
 
 if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    echo json_encode(['success' => false, 'message' => 'A valid email address is required.']);
+    echo json_encode(['success' => false, 'message' => 'Please provide a valid email address.']);
     exit;
 }
 
-// Password handling: Optional during registration (if not provided, member sets it on first login after approval)
+// Contact number validation (only validate if provided)
+if (!empty($contact_number) && !preg_match('/^09[0-9]{9}$/', $contact_number)) {
+    echo json_encode(['success' => false, 'message' => 'Contact number must be 11 digits starting with 09 (e.g. 09171234567).']);
+    exit;
+}
+
+// Password required only for traditional registration
 $password_hash = null;
-if (!empty($password)) {
-    if (strlen($password) < 6) {
-        echo json_encode(['success' => false, 'message' => 'If setting a password, it must be at least 6 characters long.']);
+if ($auth_provider !== 'google') {
+    if (empty($password) || strlen($password) < 6) {
+        echo json_encode(['success' => false, 'message' => 'Password must be at least 6 characters.']);
         exit;
     }
-    $password_hash = password_hash($password, PASSWORD_DEFAULT);
-}
-
-if (!empty($contact_number) && !preg_match('/^09[0-9]{9}$/', $contact_number)) {
-    echo json_encode(['success' => false, 'message' => 'Contact number must be 11 digits starting with 09 (e.g. 09123456789).']);
-    exit;
+    $password_hash = password_hash($password, PASSWORD_BCRYPT);
 }
 
 $valid_genders = ['Male', 'Female', 'Other'];
@@ -110,7 +113,7 @@ if (!in_array($gender, $valid_genders)) {
     $gender = 'Other';
 }
 
-// ── Photo Processing ──────────────────────────────────────────────────────────
+// ── Profile Photo Handling ────────────────────────────────────────────────────
 $photo_path = null;
 $base64_photo = $data['photo_base64'] ?? $data['photo'] ?? '';
 if (!empty($base64_photo) && is_string($base64_photo) && str_starts_with($base64_photo, 'data:image')) {
@@ -118,7 +121,6 @@ if (!empty($base64_photo) && is_string($base64_photo) && str_starts_with($base64
     if (!empty($upRes['success']) && !empty($upRes['path'])) {
         $photo_path = $upRes['path'];
     } elseif (preg_match('/^data:image\/(jpeg|png|webp|jpg);base64,/i', $base64_photo) && strlen($base64_photo) <= 2 * 1024 * 1024) {
-        // High reliability fallback: preserve client-compressed data URI directly
         $photo_path = $base64_photo;
     } else {
         error_log("Photo upload warning during registration: " . ($upRes['error'] ?? 'Unknown error'));
@@ -135,7 +137,6 @@ if (!$photo_path && !empty($google_picture)) {
 }
 
 // ── Duplicate Detection ───────────────────────────────────────────────────────
-// Check for existing google_id first (most specific)
 if (!empty($google_id)) {
     $gid_check = $pdo->prepare("SELECT id FROM members WHERE google_id = ? LIMIT 1");
     $gid_check->execute([$google_id]);
@@ -162,11 +163,17 @@ try {
         $id_exists->execute([$membership_id]);
     } while ($id_exists->fetch());
 
+    // Check payment method: GCash and Maya are auto-approved instantly!
+    $payment_method    = trim($data['payment_method'] ?? 'Cash');
+    $is_online_instant = in_array(strtolower($payment_method), ['gcash', 'maya', 'paymaya', 'online']);
+    $initial_acc_status = $is_online_instant ? 'Approved' : 'Pending';
+    $initial_status     = $is_online_instant ? 'Active' : 'Inactive';
+
     $stmt = $pdo->prepare("
         INSERT INTO members 
             (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, gender, photo, google_id, google_picture,
-             auth_provider, account_status, status, selected_plan_id, password_hash, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'Inactive', ?, ?, NOW())
+             auth_provider, account_status, status, selected_plan_id, password_hash, approved_at, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " . ($is_online_instant ? "NOW()" : "NULL") . ", NOW())
     ");
     $stmt->execute([
         $membership_id,
@@ -182,89 +189,146 @@ try {
         $google_id ?: null,
         $google_picture ?: null,
         $auth_provider,
+        $initial_acc_status,
+        $initial_status,
         ($plan_id > 0) ? $plan_id : null,
         $password_hash
     ]);
     $member_id = (int)$pdo->lastInsertId();
 
     // Fetch plan details if selected
-    $plan_name = 'Standard';
+    $plan_name  = 'Standard';
     $plan_price = 0.00;
     if ($plan_id > 0) {
         $p_fetch = $pdo->prepare("SELECT name, price FROM membership_plans WHERE id = ?");
         $p_fetch->execute([$plan_id]);
         $p_row = $p_fetch->fetch(PDO::FETCH_ASSOC);
         if ($p_row) {
-            $plan_name = $p_row['name'];
+            $plan_name  = $p_row['name'];
             $plan_price = floatval($p_row['price']);
         }
     }
 
-    $payment_method = trim($data['payment_method'] ?? 'Cash');
-    $reference_no   = trim($data['reference_no'] ?? '');
+    $reference_no = trim($data['reference_no'] ?? '');
     if (empty($reference_no) && $payment_method !== 'Cash') {
         $reference_no = 'REG-' . strtoupper(substr($payment_method, 0, 2)) . '-' . strtoupper(bin2hex(random_bytes(3)));
     }
 
-    // Record initial registration payment request (visible in Pending Payment History)
-    if ($plan_id > 0) {
-        try {
-            $req_stmt = $pdo->prepare("
-                INSERT INTO renewal_requests 
-                (member_id, plan_id, payment_method, reference_no, status, notes, created_at)
-                VALUES (?, ?, ?, ?, 'Pending', ?, NOW())
-            ");
-            $req_stmt->execute([
+    $auth_token = null;
+
+    if ($is_online_instant) {
+        // ── AUTO-APPROVE & ACTIVATE GCASH / MAYA IMMEDIATELY ──────────
+        if ($plan_id > 0) {
+            process_automated_subscription_activation(
+                $pdo,
                 $member_id,
                 $plan_id,
+                $plan_price,
                 $payment_method,
-                $reference_no ?: null,
-                "Initial Registration Fee — {$plan_name}"
-            ]);
-        } catch (Exception $payEx) {
-            error_log("Failed to insert initial registration renewal request: " . $payEx->getMessage());
+                $reference_no,
+                true // caller controls transaction
+            );
         }
-    }
 
-    // Admin notification
-    try {
-        $pdo->prepare("
-            INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)
-            VALUES (?, 'Registration', 'New Member Registration Awaiting Review', ?, 'Sent', 'Unread', NOW())
-        ")->execute([
-            $member_id,
-            "New member {$full_name} ({$membership_id}) registered with {$plan_name} (₱" . number_format($plan_price, 2) . ", Method: {$payment_method}" . ($reference_no ? ", Ref: {$reference_no}" : "") . ") via " . ($auth_provider === 'google' ? 'Google Sign-In' : 'Mobile App') . ". Please review and approve."
-        ]);
-    } catch (Exception $nEx) {}
+        // Issue bearer auth token for instant login
+        $auth_token = bin2hex(random_bytes(32));
+        $pdo->prepare("INSERT INTO auth_tokens (member_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))")
+            ->execute([$member_id, $auth_token]);
+
+        // Admin notification (informational)
+        try {
+            $pdo->prepare("
+                INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)
+                VALUES (?, 'Registration', 'New Member Auto-Activated', ?, 'Sent', 'Unread', NOW())
+            ")->execute([
+                $member_id,
+                "New member {$full_name} ({$membership_id}) registered with {$plan_name} (₱" . number_format($plan_price, 2) . ") and was auto-activated via {$payment_method}."
+            ]);
+        } catch (Exception $nEx) {}
+
+    } else {
+        // ── CASH (FRONT DESK) WAITS FOR STAFF PAYMENT COLLECTION ────
+        if ($plan_id > 0) {
+            try {
+                $req_stmt = $pdo->prepare("
+                    INSERT INTO renewal_requests 
+                    (member_id, plan_id, payment_method, reference_no, status, notes, created_at)
+                    VALUES (?, ?, ?, ?, 'Pending', ?, NOW())
+                ");
+                $req_stmt->execute([
+                    $member_id,
+                    $plan_id,
+                    $payment_method,
+                    $reference_no ?: null,
+                    "Initial Registration Fee — {$plan_name}"
+                ]);
+            } catch (Exception $payEx) {
+                error_log("Failed to insert initial registration renewal request: " . $payEx->getMessage());
+            }
+        }
+
+        // Admin notification for staff review
+        try {
+            $pdo->prepare("
+                INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)
+                VALUES (?, 'Registration', 'New Member Registration Awaiting Review', ?, 'Sent', 'Unread', NOW())
+            ")->execute([
+                $member_id,
+                "New member {$full_name} ({$membership_id}) registered with {$plan_name} (₱" . number_format($plan_price, 2) . ", Method: {$payment_method}). Please verify payment at front desk."
+            ]);
+        } catch (Exception $nEx) {}
+    }
 
     $pdo->commit();
 
     // Activity Log
     $provider_label = ($auth_provider === 'google') ? ' (Google Sign-In)' : '';
-    log_activity($pdo, 'Member Registration', "New member registered{$provider_label}: {$full_name} ({$membership_id}). Pending staff review.", 'Member');
+    $log_status = $is_online_instant ? 'Auto-activated instantly.' : 'Pending staff cash collection.';
+    log_activity($pdo, 'Member Registration', "New member registered{$provider_label}: {$full_name} ({$membership_id}) via {$payment_method}. {$log_status}", 'Member');
 
     // Welcome email (non-blocking)
     try {
         require_once __DIR__ . '/../config/email.php';
-        $auth_text = ($auth_provider === 'google')
-            ? "You can use <strong>Continue with Google</strong> in the Palma's Elite Gym Mobile App once your account is approved."
-            : "Your Membership Reference ID is: <strong>{$membership_id}</strong>.";
+        if ($is_online_instant) {
+            send_email_notification(
+                $email,
+                "Membership Activated! — Palma's Elite Gym",
+                "Welcome, {$full_name}!",
+                "Thank you for registering with Palma's Elite Gym!<br><br>Your payment via <strong>{$payment_method}</strong> has been processed, and your gym membership has been <strong>instantly activated</strong>!<br><br>Your Membership ID is: <strong>{$membership_id}</strong>.<br>You can now sign in to your mobile app to access your Digital QR Pass."
+            );
+        } else {
+            $auth_text = ($auth_provider === 'google')
+                ? "You can use <strong>Continue with Google</strong> in the Palma's Elite Gym Mobile App once your front-desk cash payment is verified."
+                : "Your Membership Reference ID is: <strong>{$membership_id}</strong>.";
 
-        send_email_notification(
-            $email,
-            "Registration Received — Palma's Elite Gym",
-            "Welcome, {$full_name}!",
-            "Thank you for registering with Palma's Elite Gym!<br><br>Your account is currently <strong>Pending Review</strong> by our staff. {$auth_text}<br><br>You will receive an email and notification once your registration has been reviewed."
-        );
+            send_email_notification(
+                $email,
+                "Registration Received — Palma's Elite Gym",
+                "Welcome, {$full_name}!",
+                "Thank you for registering with Palma's Elite Gym!<br><br>Your account is currently <strong>Pending Review</strong>. Please settle your cash payment at the gym front desk upon your visit. {$auth_text}"
+            );
+        }
     } catch (Exception $emErr) {}
 
     echo json_encode([
         'success'          => true,
-        'pending_approval' => true,
-        'message'          => 'Registration submitted! Your account is pending staff approval. You will be notified via email once reviewed.',
+        'pending_approval' => !$is_online_instant,
+        'is_active'        => $is_online_instant,
+        'message'          => $is_online_instant 
+            ? "Registration complete! Your membership has been instantly activated via {$payment_method}." 
+            : 'Registration submitted! Please settle your cash payment at the gym front desk upon your visit.',
         'membership_id'    => $membership_id,
         'full_name'        => $full_name,
         'auth_provider'    => $auth_provider,
+        'token'            => $auth_token,
+        'member'           => [
+            'id'             => $member_id,
+            'membership_id'  => $membership_id,
+            'full_name'      => $full_name,
+            'email'          => $email,
+            'account_status' => $initial_acc_status,
+            'status'         => $initial_status
+        ]
     ]);
 
 } catch (Exception $e) {

@@ -189,138 +189,128 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <form method="POST" action="" enctype="multipart/form-data" class="needs-validation" novalidate>
     <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
-    <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: start;">
+    <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 1.75rem; align-items: start;">
         
-        <div style="display:flex; flex-direction:column; gap:2rem;">
-            <!-- Main Info -->
-            <div class="card">
-                <h3 class="section-title"><i class="fas fa-user-pen" style="color:var(--accent);"></i> Personal Information</h3>
+        <div style="display:flex; flex-direction:column; gap:1.25rem;">
+            <!-- Fast Entry Core Details -->
+            <div class="card" style="padding:1.5rem;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; border-bottom:1px solid var(--border); padding-bottom:0.75rem;">
+                    <h3 class="section-title" style="margin:0;"><i class="fas fa-bolt" style="color:var(--accent);"></i> Quick Member Registration</h3>
+                    <span style="font-size:0.75rem; color:var(--text-muted);"><i class="fas fa-check-circle" style="color:var(--palmas-primary, #10b981);"></i> Required fields marked with *</span>
+                </div>
                 
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:1rem;">
                     <div class="form-group">
                         <label>First Name *</label>
-                        <input type="text" name="first_name" class="form-control" placeholder="Juan" value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>" required>
+                        <input type="text" name="first_name" class="form-control" placeholder="e.g. Juan" value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>" required autofocus>
                     </div>
-                    <div class="form-group">
-                        <label>Middle Name <span style="font-size:0.75rem; color:#888;">(Optional)</span></label>
-                        <input type="text" name="middle_name" class="form-control" placeholder="Santos" value="<?php echo htmlspecialchars($_POST['middle_name'] ?? ''); ?>">
-                    </div>
-                </div>
-
-                <div class="form-grid" style="grid-template-columns: 2fr 1fr;">
                     <div class="form-group">
                         <label>Last Name *</label>
-                        <input type="text" name="last_name" class="form-control" placeholder="Dela Cruz" value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Suffix / Extension</label>
-                        <select name="extension" class="form-control">
-                            <?php $cur_ext = $_POST['extension'] ?? ''; ?>
-                            <option value="" <?php echo $cur_ext === '' ? 'selected' : ''; ?>>None</option>
-                            <option value="Jr." <?php echo $cur_ext === 'Jr.' ? 'selected' : ''; ?>>Jr.</option>
-                            <option value="Sr." <?php echo $cur_ext === 'Sr.' ? 'selected' : ''; ?>>Sr.</option>
-                            <option value="II" <?php echo $cur_ext === 'II' ? 'selected' : ''; ?>>II</option>
-                            <option value="III" <?php echo $cur_ext === 'III' ? 'selected' : ''; ?>>III</option>
-                            <option value="IV" <?php echo $cur_ext === 'IV' ? 'selected' : ''; ?>>IV</option>
-                            <option value="V" <?php echo $cur_ext === 'V' ? 'selected' : ''; ?>>V</option>
-                        </select>
+                        <input type="text" name="last_name" class="form-control" placeholder="e.g. Dela Cruz" value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>" required>
                     </div>
                 </div>
 
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:1rem;">
                     <div class="form-group">
                         <label>Email Address *</label>
-                        <input type="email" name="email" class="form-control" placeholder="john@example.com" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
+                        <input type="email" name="email" class="form-control" placeholder="juan@example.com" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
                     </div>
                     <div class="form-group">
-                        <label>Contact Number</label>
-                        <input type="text" name="contact_number" class="form-control" placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}" title="Must be exactly 11 digits starting with 09" value="<?php echo htmlspecialchars($_POST['contact_number'] ?? ''); ?>" required>
+                        <label>Contact Number <span style="font-size:0.75rem; color:#888;">(Optional)</span></label>
+                        <input type="text" name="contact_number" class="form-control" placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}" title="Optional: 11 digits starting with 09" value="<?php echo htmlspecialchars($_POST['contact_number'] ?? ''); ?>">
                     </div>
                 </div>
 
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:1rem;">
                     <div class="form-group">
-                        <label>Age</label>
-                        <input type="number" name="age" class="form-control" placeholder="20" min="1" max="120" value="<?php echo htmlspecialchars($_POST['age'] ?? ''); ?>" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Gender</label>
-                        <select name="gender" class="form-control">
-                            <?php $selected_gender = $_POST['gender'] ?? 'Male'; ?>
-                            <option value="Male" <?php echo $selected_gender === 'Male' ? 'selected' : ''; ?>>Male</option>
-                            <option value="Female" <?php echo $selected_gender === 'Female' ? 'selected' : ''; ?>>Female</option>
-                            <option value="Other" <?php echo $selected_gender === 'Other' ? 'selected' : ''; ?>>Other</option>
+                        <label>Membership Plan *</label>
+                        <select name="plan_id" class="form-control" required>
+                            <option value="" disabled <?php echo empty($_POST['plan_id']) ? 'selected' : ''; ?>>Choose a plan...</option>
+                            <?php foreach ($plans as $p): ?>
+                            <?php $is_sel = ((int)($_POST['plan_id'] ?? 0) === (int)$p['id']); ?>
+                            <option value="<?php echo $p['id']; ?>" <?php echo $is_sel ? 'selected' : ''; ?>><?php echo htmlspecialchars($p['name']); ?> — ₱<?php echo number_format($p['price'], 2); ?></option>
+                            <?php endforeach; ?>
                         </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Plan Info -->
-            <div class="card">
-                <h3 class="section-title"><i class="fas fa-gem" style="color:var(--accent);"></i> Membership Details</h3>
-                <div class="form-group">
-                    <label>Select Membership Plan *</label>
-                    <select name="plan_id" class="form-control" required>
-                        <option value="" disabled <?php echo empty($_POST['plan_id']) ? 'selected' : ''; ?>>Choose a plan...</option>
-                        <?php foreach ($plans as $p): ?>
-                        <?php $is_sel = ((int)($_POST['plan_id'] ?? 0) === (int)$p['id']); ?>
-                        <option value="<?php echo $p['id']; ?>" <?php echo $is_sel ? 'selected' : ''; ?>><?php echo htmlspecialchars($p['name']); ?> — ₱<?php echo number_format($p['price'], 2); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="plan-info-note">
-                    <i class="fas fa-info-circle" style="color:var(--accent);"></i>
-                    <span>E-ID Card and QR Code will be automatically generated after registration.</span>
-                </div>
-            </div>
-
-            <!-- Payment Info -->
-            <div class="card">
-                <h3 class="section-title"><i class="fas fa-money-bill-wave" style="color:var(--success);"></i> Initial Payment</h3>
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-                    <div class="form-group">
-                        <label>Amount Paid (₱) *</label>
-                        <input type="number" name="amount_paid" id="amount_paid" class="form-control" placeholder="0.00" min="0" step="0.01" value="<?php echo htmlspecialchars($_POST['amount_paid'] ?? ''); ?>" required>
                     </div>
                     <div class="form-group">
                         <label>Payment Method *</label>
                         <?php $selected_pm = $_POST['payment_method'] ?? 'Cash'; ?>
                         <select name="payment_method" id="payment-method-select" class="form-control" required>
-                            <option value="Cash" <?php echo $selected_pm === 'Cash' ? 'selected' : ''; ?>>Cash</option>
-                            <option value="GCash" <?php echo $selected_pm === 'GCash' ? 'selected' : ''; ?>>GCash</option>
-                            <option value="Maya" <?php echo $selected_pm === 'Maya' ? 'selected' : ''; ?>>Maya</option>
+                            <option value="Cash" <?php echo $selected_pm === 'Cash' ? 'selected' : ''; ?>>Cash (Front Desk)</option>
+                            <option value="GCash" <?php echo $selected_pm === 'GCash' ? 'selected' : ''; ?>>GCash E-Wallet</option>
+                            <option value="Maya" <?php echo $selected_pm === 'Maya' ? 'selected' : ''; ?>>Maya E-Wallet</option>
                         </select>
                     </div>
                 </div>
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-                    <div class="form-group">
-                        <label>Payment Date</label>
-                        <input type="date" name="payment_date" class="form-control" value="<?php echo htmlspecialchars($_POST['payment_date'] ?? date('Y-m-d')); ?>">
-                    </div>
-                    <?php $show_ref = in_array($selected_pm, ['GCash', 'Maya', 'Bank Transfer']); ?>
-                    <div class="form-group" id="ref-number-group" style="<?php echo $show_ref ? '' : 'display:none;'; ?>">
-                        <label>Reference Number *</label>
-                        <input type="text" name="reference_number" class="form-control" placeholder="e.g. 100239401923" title="Required for online transfers" value="<?php echo htmlspecialchars($_POST['reference_number'] ?? ''); ?>">
+
+                <input type="hidden" name="amount_paid" id="amount_paid" value="<?php echo htmlspecialchars($_POST['amount_paid'] ?? ''); ?>">
+                <input type="hidden" name="payment_date" value="<?php echo htmlspecialchars($_POST['payment_date'] ?? date('Y-m-d')); ?>">
+
+                <!-- Collapsible Optional Details -->
+                <div style="margin-top:1rem; border-top:1px dashed var(--border); padding-top:0.75rem;">
+                    <button type="button" onclick="document.getElementById('extra-fields').style.display = (document.getElementById('extra-fields').style.display === 'none' ? 'block' : 'none')" class="btn btn-outline" style="font-size:0.8rem; padding:6px 14px; border-radius:8px; display:inline-flex; align-items:center; gap:6px;">
+                        <i class="fas fa-sliders"></i> Additional Details (Optional) <i class="fas fa-chevron-down" style="font-size:0.7rem;"></i>
+                    </button>
+
+                    <div id="extra-fields" style="display:none; margin-top:1rem; padding:1rem; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:10px;">
+                        <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:0.75rem;">
+                            <div class="form-group">
+                                <label>Middle Name</label>
+                                <input type="text" name="middle_name" class="form-control" placeholder="Santos" value="<?php echo htmlspecialchars($_POST['middle_name'] ?? ''); ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Suffix</label>
+                                <select name="extension" class="form-control">
+                                    <?php $cur_ext = $_POST['extension'] ?? ''; ?>
+                                    <option value="" <?php echo $cur_ext === '' ? 'selected' : ''; ?>>None</option>
+                                    <option value="Jr." <?php echo $cur_ext === 'Jr.' ? 'selected' : ''; ?>>Jr.</option>
+                                    <option value="Sr." <?php echo $cur_ext === 'Sr.' ? 'selected' : ''; ?>>Sr.</option>
+                                    <option value="II" <?php echo $cur_ext === 'II' ? 'selected' : ''; ?>>II</option>
+                                    <option value="III" <?php echo $cur_ext === 'III' ? 'selected' : ''; ?>>III</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                            <div class="form-group">
+                                <label>Age</label>
+                                <input type="number" name="age" class="form-control" placeholder="e.g. 25" min="1" max="120" value="<?php echo htmlspecialchars($_POST['age'] ?? ''); ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Gender</label>
+                                <select name="gender" class="form-control">
+                                    <?php $selected_gender = $_POST['gender'] ?? 'Male'; ?>
+                                    <option value="Male" <?php echo $selected_gender === 'Male' ? 'selected' : ''; ?>>Male</option>
+                                    <option value="Female" <?php echo $selected_gender === 'Female' ? 'selected' : ''; ?>>Female</option>
+                                    <option value="Other" <?php echo $selected_gender === 'Other' ? 'selected' : ''; ?>>Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="ref-number-group" style="margin-top:0.75rem; display:none;">
+                            <label>Online Reference Number</label>
+                            <input type="text" name="reference_number" class="form-control" placeholder="Optional transaction reference" value="<?php echo htmlspecialchars($_POST['reference_number'] ?? ''); ?>">
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="sidebar-col">
-            <div class="card" style="text-align:center;">
-                <h3 class="section-title">Member Photo</h3>
-                <div id="photo-preview" class="photo-preview">
-                    <i class="fas fa-camera" style="font-size:2rem; color:var(--border);"></i>
+            <div class="card" style="text-align:center; padding:1.25rem;">
+                <h3 class="section-title" style="margin-bottom:0.75rem;">Member Photo</h3>
+                <div id="photo-preview" class="photo-preview" style="width:96px; height:96px; border-radius:50%; margin:0 auto 10px; border:2px dashed var(--border); display:flex; align-items:center; justify-content:center; overflow:hidden; background:rgba(0,0,0,0.1); cursor:pointer;" onclick="document.getElementById('photo-input').click()">
+                    <i class="fas fa-camera" style="font-size:1.8rem; color:var(--border);"></i>
                 </div>
                 <input type="file" name="photo" id="photo-input" accept="image/*" style="display:none;">
-                <button type="button" class="btn btn-outline w-100" onclick="document.getElementById('photo-input').click()">
-                    <i class="fas fa-upload"></i> Upload Photo
+                <button type="button" class="btn btn-outline w-100" style="padding:6px 12px; font-size:0.8rem;" onclick="document.getElementById('photo-input').click()">
+                    <i class="fas fa-upload"></i> Upload / Camera
                 </button>
-                <p class="cell-secondary" style="margin-top:0.75rem;">JPG or PNG, max 2MB. Square crop recommended.</p>
+                <p class="cell-secondary" style="margin-top:0.5rem; font-size:0.72rem;">Optional photo or selfie</p>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100" style="padding:1.2rem; font-size:1rem;">
-                <i class="fas fa-check"></i> Register Member
+            <button type="submit" class="btn btn-primary w-100" style="padding:1rem; font-size:1rem; font-weight:700; margin-top:0.75rem; border-radius:12px; box-shadow: 0 4px 14px rgba(16,185,129,0.3);">
+                <i class="fas fa-bolt"></i> Register &amp; Activate
             </button>
         </div>
 
@@ -338,26 +328,29 @@ document.getElementById('photo-input').onchange = function(e) {
 
 // Auto-fill amount based on plan
 const plans = <?php echo json_encode($plans); ?>;
-document.querySelector('select[name="plan_id"]').onchange = function() {
-    const planId = this.value;
+const planSelect = document.querySelector('select[name="plan_id"]');
+function syncPlanPrice() {
+    const planId = planSelect.value;
     const selectedPlan = plans.find(p => p.id == planId);
     if (selectedPlan) {
         document.getElementById('amount_paid').value = selectedPlan.price;
     }
-};
+}
+if (planSelect) {
+    planSelect.onchange = syncPlanPrice;
+    syncPlanPrice(); // run on load
+}
 
-// Toggle reference number field
+// Toggle reference number field (optional)
 document.getElementById('payment-method-select').addEventListener('change', function() {
     const val = this.value;
     const refGroup = document.getElementById('ref-number-group');
-    const refInput = refGroup.querySelector('input');
-    if (val === 'GCash' || val === 'Bank Transfer') {
-        refGroup.style.display = 'block';
-        refInput.required = true;
-    } else {
-        refGroup.style.display = 'none';
-        refInput.required = false;
-        refInput.value = '';
+    if (refGroup) {
+        if (val === 'GCash' || val === 'Maya') {
+            refGroup.style.display = 'block';
+        } else {
+            refGroup.style.display = 'none';
+        }
     }
 });
 </script>

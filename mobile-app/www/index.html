@@ -2359,26 +2359,15 @@
             </button>
           </div>
 
-          <!-- First Name -->
-          <div class="form-group">
-            <label>First Name *</label>
-            <div class="input-field-wrap">
-              <i class="fa-solid fa-user" style="color: var(--gym-light); font-size:0.9rem;"></i>
-              <input type="text" id="reg-first-name" placeholder="Juan" oninput="syncRegFullName()" />
+          <!-- First Name & Last Name (2 columns) -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="form-group">
+              <label>First Name *</label>
+              <div class="input-field-wrap">
+                <i class="fa-solid fa-user" style="color: var(--gym-light); font-size:0.9rem;"></i>
+                <input type="text" id="reg-first-name" placeholder="Juan" oninput="syncRegFullName()" />
+              </div>
             </div>
-          </div>
-
-          <!-- Middle Name -->
-          <div class="form-group">
-            <label>Middle Name <span style="font-size:0.75rem; color:var(--gym-muted);">(Optional)</span></label>
-            <div class="input-field-wrap">
-              <i class="fa-solid fa-user" style="color: var(--gym-light); font-size:0.9rem;"></i>
-              <input type="text" id="reg-middle-name" placeholder="Santos" oninput="syncRegFullName()" />
-            </div>
-          </div>
-
-          <!-- Last Name & Extension -->
-          <div style="display:grid; grid-template-columns: 2fr 1fr; gap:10px;">
             <div class="form-group">
               <label>Last Name *</label>
               <div class="input-field-wrap">
@@ -2386,18 +2375,31 @@
                 <input type="text" id="reg-last-name" placeholder="Dela Cruz" oninput="syncRegFullName()" />
               </div>
             </div>
-            <div class="form-group">
-              <label>Extension <span style="font-size:0.72rem; color:var(--gym-muted);">(Opt.)</span></label>
-              <div class="input-field-wrap" style="padding:0 8px;">
-                <select id="reg-extension" style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;" onchange="syncRegFullName()">
-                  <option value="" style="background:#0b261a; color:#fff;">None</option>
-                  <option value="Jr." style="background:#0b261a; color:#fff;">Jr.</option>
-                  <option value="Sr." style="background:#0b261a; color:#fff;">Sr.</option>
-                  <option value="II" style="background:#0b261a; color:#fff;">II</option>
-                  <option value="III" style="background:#0b261a; color:#fff;">III</option>
-                  <option value="IV" style="background:#0b261a; color:#fff;">IV</option>
-                  <option value="V" style="background:#0b261a; color:#fff;">V</option>
-                </select>
+          </div>
+
+          <!-- Middle Name & Extension (Collapsible / Optional) -->
+          <div style="margin-bottom:12px;">
+            <button type="button" onclick="const el = document.getElementById('reg-optional-names'); el.style.display = (el.style.display === 'none' ? 'grid' : 'none');" style="background:none; border:none; color:var(--gym-light); font-size:0.75rem; cursor:pointer; padding:2px 0; display:flex; align-items:center; gap:5px;">
+              <i class="fa-solid fa-plus-circle"></i> Add Middle Name or Suffix (Optional)
+            </button>
+            <div id="reg-optional-names" style="display:none; grid-template-columns: 2fr 1fr; gap:10px; margin-top:8px;">
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:0.75rem;">Middle Name</label>
+                <div class="input-field-wrap">
+                  <input type="text" id="reg-middle-name" placeholder="Santos" oninput="syncRegFullName()" />
+                </div>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:0.75rem;">Suffix</label>
+                <div class="input-field-wrap" style="padding:0 8px;">
+                  <select id="reg-extension" style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;" onchange="syncRegFullName()">
+                    <option value="" style="background:#0b261a; color:#fff;">None</option>
+                    <option value="Jr." style="background:#0b261a; color:#fff;">Jr.</option>
+                    <option value="Sr." style="background:#0b261a; color:#fff;">Sr.</option>
+                    <option value="II" style="background:#0b261a; color:#fff;">II</option>
+                    <option value="III" style="background:#0b261a; color:#fff;">III</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -2413,7 +2415,7 @@
           </div>
 
           <div class="form-group">
-            <label>Contact Number (09XXXXXXXXX) *</label>
+            <label>Contact Number <span style="font-size:0.75rem; color:var(--gym-muted);">(Optional)</span></label>
             <div class="input-field-wrap">
               <i class="fa-solid fa-phone" style="color: var(--gym-light); font-size:0.9rem;"></i>
               <input type="tel" id="reg-phone" placeholder="09123456789" maxlength="11" />
@@ -2426,17 +2428,6 @@
               <i class="fa-solid fa-lock" style="color: var(--gym-light); font-size:0.9rem;"></i>
               <input type="password" id="reg-password" placeholder="Create a secure password" />
               <button class="eye-btn" type="button" onclick="togglePasswordVisibility('reg-password', this)">
-                <i class="fa-solid fa-eye"></i>
-              </button>
-            </div>
-          </div>
-
-          <div id="reg-confirm-password-group" class="form-group">
-            <label>Confirm Password</label>
-            <div class="input-field-wrap">
-              <i class="fa-solid fa-shield-halved" style="color: var(--gym-light); font-size:0.9rem;"></i>
-              <input type="password" id="reg-confirm-password" placeholder="Confirm your password" />
-              <button class="eye-btn" type="button" onclick="togglePasswordVisibility('reg-confirm-password', this)">
                 <i class="fa-solid fa-eye"></i>
               </button>
             </div>
@@ -4558,18 +4549,16 @@ function wizardNext(fromStep) {
     const ln    = (document.getElementById('reg-last-name')?.value || '').trim();
     const name  = syncRegFullName();
     const email = document.getElementById('reg-email').value.trim();
-    const phone = document.getElementById('reg-phone').value.trim();
+    const phone = (document.getElementById('reg-phone')?.value || '').trim();
     if (!fn) return showToast('Please enter your First Name.');
     if (!ln) return showToast('Please enter your Last Name.');
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('Please enter a valid email address.');
-    if (!phone || !/^09[0-9]{9}$/.test(phone)) return showToast('Contact number must be 11 digits starting with 09.');
+    if (phone && !/^09[0-9]{9}$/.test(phone)) return showToast('Contact number must be 11 digits starting with 09.');
     
     // Password check for non-Google signups
     if (!regPrefill.google_id) {
       const pass = (document.getElementById('reg-password')?.value || '').trim();
-      const cpass = (document.getElementById('reg-confirm-password')?.value || '').trim();
       if (!pass || pass.length < 6) return showToast('Password must be at least 6 characters long.');
-      if (pass !== cpass) return showToast('Passwords do not match.');
     }
 
     if (!selectedGender) return showToast('Please select your gender.');
@@ -4743,11 +4732,24 @@ async function submitRegistration() {
       })
     });
     const data = await res.json();
-    if (data.success || data.pending_approval) {
+    if (data.success && (data.is_active || data.token)) {
+      // Instant Auto-Activation for GCash & Maya - No staff approval needed!
+      if (data.token) {
+        localStorage.setItem('peg_token', data.token);
+      }
+      if (data.member) {
+        currentUser = data.member;
+        localStorage.setItem('peg_user', JSON.stringify(data.member));
+      }
+      showToast('Registration complete! Membership pass activated! 🎉');
+      showView('dashboard');
+      loadDashboard();
+      return;
+    } else if (data.success || data.pending_approval) {
       const regEmail = document.getElementById('reg-email').value.trim();
       const regFullName = syncRegFullName();
       setPendingScreen(regEmail, regFullName);
-      showToast('Registration submitted! ' + (selectedRegPaymentMethod === 'Cash' ? 'Please settle cash upon visiting front desk.' : 'Pending staff approval.'));
+      showToast('Registration submitted! Please settle cash at the gym front desk upon your visit.');
     } else {
       showToast(data.message || 'Registration failed.');
     }
