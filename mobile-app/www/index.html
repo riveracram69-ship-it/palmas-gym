@@ -158,10 +158,14 @@
     .screen {
       position: fixed;
       inset: 0;
+      width: 100%;
+      max-width: 100vw;
       overflow-y: auto;
+      overflow-x: hidden !important;
       background: var(--background);
       z-index: 10;
       -webkit-overflow-scrolling: touch;
+      box-sizing: border-box;
     }
 
     /* ── GLOBAL REUSABLE CARD COMPONENT ────────────────────────────── */
@@ -391,6 +395,7 @@
       align-items: center;
       gap: 12px;
       width: 100%;
+      max-width: 100%;
       height: 54px;
       box-sizing: border-box;
       position: relative;
@@ -404,11 +409,12 @@
 
     .input-field-wrap input {
       flex: 1;
+      width: 100%;
       min-width: 0;
       background: transparent;
       border: none;
       color: var(--text-primary);
-      font-size: 15px;
+      font-size: 16px;
       font-family: 'Inter', sans-serif;
       outline: none;
     }
@@ -1355,6 +1361,10 @@
     /* ── REGISTRATION WIZARD ─────────────────────────────────────── */
     .wizard-screen {
       min-height: 100vh;
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden !important;
+      box-sizing: border-box;
       background: radial-gradient(circle at top, #0D3427 0%, var(--background) 70%);
     }
 
@@ -1365,12 +1375,27 @@
       z-index: 5;
       background: var(--background-secondary);
       border-bottom: 1px solid var(--border);
+      width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+
+    .wizard-header-inner {
+      max-width: 440px;
+      margin: 0 auto;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .step-progress {
       display: flex;
       align-items: center;
       margin: 12px 0 8px;
+      width: 100%;
+      max-width: 440px;
+      margin-left: auto;
+      margin-right: auto;
+      box-sizing: border-box;
     }
 
     .step-dot {
@@ -1404,6 +1429,7 @@
 
     .step-line {
       flex: 1;
+      min-width: 16px;
       height: 2px;
       background: var(--border);
       transition: background 0.25s ease;
@@ -1417,7 +1443,10 @@
       padding: 20px;
       padding-bottom: 48px;
       max-width: 440px;
+      width: 100%;
+      box-sizing: border-box;
       margin: 0 auto;
+      overflow-x: hidden !important;
     }
 
     .gender-group {
@@ -2316,22 +2345,24 @@
   <div id="view-register" class="screen" style="display:none;">
     <div class="wizard-screen">
       <div class="wizard-header">
-        <div style="display:flex; align-items:center; justify-content:space-between;">
-          <button onclick="cancelRegistration()" style="background:none; border:none; color: var(--gym-light); font-size:1.1rem; cursor:pointer; padding:8px;">
-            <i class="fa-solid fa-arrow-left"></i>
-          </button>
-          <h3 style="font-weight:800; color:#fff; margin:0; font-size:1.15rem;" id="wizard-title">Create Membership</h3>
-          <div style="width:36px;"></div>
-        </div>
+        <div class="wizard-header-inner">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <button onclick="cancelRegistration()" style="background:none; border:none; color: var(--gym-light); font-size:1.1rem; cursor:pointer; padding:8px;">
+              <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <h3 style="font-weight:800; color:#fff; margin:0; font-size:1.15rem;" id="wizard-title">Create Membership</h3>
+            <div style="width:36px;"></div>
+          </div>
 
-        <div class="step-progress">
-          <div class="step-dot active" id="sdot-1">1</div>
-          <div class="step-line" id="sline-1"></div>
-          <div class="step-dot" id="sdot-2">2</div>
-          <div class="step-line" id="sline-2"></div>
-          <div class="step-dot" id="sdot-3">3</div>
+          <div class="step-progress">
+            <div class="step-dot active" id="sdot-1">1</div>
+            <div class="step-line" id="sline-1"></div>
+            <div class="step-dot" id="sdot-2">2</div>
+            <div class="step-line" id="sline-2"></div>
+            <div class="step-dot" id="sdot-3">3</div>
+          </div>
+          <p id="wizard-step-label" style="color: var(--gym-muted); font-size:0.8rem; margin:0 0 8px; text-align:center;">Step 1 of 3 — Personal Information</p>
         </div>
-        <p id="wizard-step-label" style="color: var(--gym-muted); font-size:0.8rem; margin:0 0 8px; text-align:center;">Step 1 of 3 — Personal Information</p>
       </div>
 
       <div class="wizard-body">
@@ -2359,31 +2390,30 @@
             </button>
           </div>
 
-          <!-- First Name & Last Name (2 columns) -->
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div class="form-group">
-              <label>First Name *</label>
-              <div class="input-field-wrap">
-                <i class="fa-solid fa-user" style="color: var(--gym-light); font-size:0.9rem;"></i>
-                <input type="text" id="reg-first-name" placeholder="Juan" oninput="syncRegFullName()" />
-              </div>
+          <!-- First Name & Last Name (Stacked full-width for mobile layout stability) -->
+          <div class="form-group">
+            <label>First Name *</label>
+            <div class="input-field-wrap">
+              <i class="fa-solid fa-user" style="color: var(--gym-light); font-size:0.9rem;"></i>
+              <input type="text" id="reg-first-name" placeholder="Juan" oninput="syncRegFullName()" />
             </div>
-            <div class="form-group">
-              <label>Last Name *</label>
-              <div class="input-field-wrap">
-                <i class="fa-solid fa-user" style="color: var(--gym-light); font-size:0.9rem;"></i>
-                <input type="text" id="reg-last-name" placeholder="Dela Cruz" oninput="syncRegFullName()" />
-              </div>
+          </div>
+
+          <div class="form-group">
+            <label>Last Name *</label>
+            <div class="input-field-wrap">
+              <i class="fa-solid fa-user" style="color: var(--gym-light); font-size:0.9rem;"></i>
+              <input type="text" id="reg-last-name" placeholder="Dela Cruz" oninput="syncRegFullName()" />
             </div>
           </div>
 
           <!-- Middle Name & Extension (Collapsible / Optional) -->
           <div style="margin-bottom:12px;">
-            <button type="button" onclick="const el = document.getElementById('reg-optional-names'); el.style.display = (el.style.display === 'none' ? 'grid' : 'none');" style="background:none; border:none; color:var(--gym-light); font-size:0.75rem; cursor:pointer; padding:2px 0; display:flex; align-items:center; gap:5px;">
+            <button type="button" onclick="const el = document.getElementById('reg-optional-names'); el.style.display = (el.style.display === 'none' ? 'block' : 'none');" style="background:none; border:none; color:var(--gym-light); font-size:0.75rem; cursor:pointer; padding:4px 0; display:flex; align-items:center; gap:5px;">
               <i class="fa-solid fa-plus-circle"></i> Add Middle Name or Suffix (Optional)
             </button>
-            <div id="reg-optional-names" style="display:none; grid-template-columns: 2fr 1fr; gap:10px; margin-top:8px;">
-              <div class="form-group" style="margin:0;">
+            <div id="reg-optional-names" style="display:none; margin-top:8px;">
+              <div class="form-group" style="margin-bottom:10px;">
                 <label style="font-size:0.75rem;">Middle Name</label>
                 <div class="input-field-wrap">
                   <input type="text" id="reg-middle-name" placeholder="Santos" oninput="syncRegFullName()" />
@@ -2391,7 +2421,7 @@
               </div>
               <div class="form-group" style="margin:0;">
                 <label style="font-size:0.75rem;">Suffix</label>
-                <div class="input-field-wrap" style="padding:0 8px;">
+                <div class="input-field-wrap" style="padding:0 12px;">
                   <select id="reg-extension" style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;" onchange="syncRegFullName()">
                     <option value="" style="background:#0b261a; color:#fff;">None</option>
                     <option value="Jr." style="background:#0b261a; color:#fff;">Jr.</option>
@@ -2500,54 +2530,54 @@
             <label style="display:block; color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:12px;">Choose Payment Option</label>
             
             <!-- 1. GCash Card -->
-            <div class="payment-method-card selected" id="reg-card-gcash" onclick="selectRegPaymentMethod('GCash')" style="margin-bottom:10px; cursor:pointer; background:rgba(27,67,50,0.5); border:1.5px solid var(--gym-green); border-radius:14px; padding:12px; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s;">
-              <div class="pm-left" style="display:flex; align-items:center;">
-                <div class="pm-icon-wrap" style="width:42px; height:42px; border-radius:12px; margin-right:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#fff; padding:2px; box-shadow:0 3px 10px rgba(0,125,254,0.3);">
+            <div class="payment-method-card selected" id="reg-card-gcash" onclick="selectRegPaymentMethod('GCash')" style="margin-bottom:10px; cursor:pointer; background:rgba(27,67,50,0.5); border:1.5px solid var(--gym-green); border-radius:14px; padding:12px; display:flex; align-items:center; justify-content:space-between; gap:10px; transition:all 0.2s; box-sizing:border-box; width:100%;">
+              <div class="pm-left" style="display:flex; align-items:center; min-width:0; flex:1; gap:10px;">
+                <div class="pm-icon-wrap" style="width:40px; height:40px; border-radius:12px; flex-shrink:0; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#fff; padding:2px; box-shadow:0 3px 10px rgba(0,125,254,0.3);">
                   <img src="assets/images/gcash-logo.png" alt="GCash" style="width:100%; height:100%; object-fit:contain;">
                 </div>
-                <div>
-                  <div class="pm-title" style="display:flex; align-items:center; gap:6px; font-weight:700; color:#fff; font-size:0.92rem;">
+                <div style="min-width:0; flex:1;">
+                  <div class="pm-title" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-weight:700; color:#fff; font-size:0.92rem;">
                     <span>GCash</span>
-                    <span style="font-size:9px; font-weight:800; background:rgba(16,185,129,0.2); color:#10b981; padding:2px 6px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">INSTANT ACTIVATION</span>
+                    <span style="font-size:9px; font-weight:800; background:rgba(16,185,129,0.2); color:#10b981; padding:2px 6px; border-radius:6px; border:1px solid rgba(16,185,129,0.3); white-space:nowrap;">INSTANT ACTIVATION</span>
                   </div>
-                  <div class="pm-desc" style="font-size:0.75rem; color:var(--gym-muted); margin-top:2px;">GCash E-Wallet &bull; Direct Online Checkout</div>
+                  <div class="pm-desc" style="font-size:0.75rem; color:var(--gym-muted); margin-top:2px; word-break:break-word;">GCash Direct Online Checkout</div>
                 </div>
               </div>
-              <div class="pm-radio" id="reg-radio-gcash" style="width:20px; height:20px; border-radius:50%; border:2px solid var(--gym-green); background:var(--gym-green); display:flex; align-items:center; justify-content:center;">
+              <div class="pm-radio" id="reg-radio-gcash" style="width:20px; height:20px; flex-shrink:0; border-radius:50%; border:2px solid var(--gym-green); background:var(--gym-green); display:flex; align-items:center; justify-content:center;">
                 <i class="fa-solid fa-check" style="font-size:10px; color:#fff;"></i>
               </div>
             </div>
 
             <!-- 2. Maya Card -->
-            <div class="payment-method-card" id="reg-card-maya" onclick="selectRegPaymentMethod('Maya')" style="margin-bottom:10px; cursor:pointer; background:rgba(10,30,22,0.6); border:1.5px solid rgba(82,183,136,0.2); border-radius:14px; padding:12px; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s;">
-              <div class="pm-left" style="display:flex; align-items:center;">
-                <div class="pm-icon-wrap" style="width:42px; height:42px; border-radius:12px; margin-right:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#000; padding:4px; box-shadow:0 3px 10px rgba(0,214,100,0.2);">
+            <div class="payment-method-card" id="reg-card-maya" onclick="selectRegPaymentMethod('Maya')" style="margin-bottom:10px; cursor:pointer; background:rgba(10,30,22,0.6); border:1.5px solid rgba(82,183,136,0.2); border-radius:14px; padding:12px; display:flex; align-items:center; justify-content:space-between; gap:10px; transition:all 0.2s; box-sizing:border-box; width:100%;">
+              <div class="pm-left" style="display:flex; align-items:center; min-width:0; flex:1; gap:10px;">
+                <div class="pm-icon-wrap" style="width:40px; height:40px; border-radius:12px; flex-shrink:0; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#000; padding:4px; box-shadow:0 3px 10px rgba(0,214,100,0.2);">
                   <img src="assets/images/maya-logo.png" alt="Maya" style="width:100%; height:100%; object-fit:contain;">
                 </div>
-                <div>
-                  <div class="pm-title" style="display:flex; align-items:center; gap:6px; font-weight:700; color:#fff; font-size:0.92rem;">
+                <div style="min-width:0; flex:1;">
+                  <div class="pm-title" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-weight:700; color:#fff; font-size:0.92rem;">
                     <span>Maya</span>
-                    <span style="font-size:9px; font-weight:800; background:rgba(16,185,129,0.2); color:#10b981; padding:2px 6px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">INSTANT ACTIVATION</span>
+                    <span style="font-size:9px; font-weight:800; background:rgba(16,185,129,0.2); color:#10b981; padding:2px 6px; border-radius:6px; border:1px solid rgba(16,185,129,0.3); white-space:nowrap;">INSTANT ACTIVATION</span>
                   </div>
-                  <div class="pm-desc" style="font-size:0.75rem; color:var(--gym-muted); margin-top:2px;">Maya E-Wallet &bull; Direct Online Checkout</div>
+                  <div class="pm-desc" style="font-size:0.75rem; color:var(--gym-muted); margin-top:2px; word-break:break-word;">Maya Direct Online Checkout</div>
                 </div>
               </div>
-              <div class="pm-radio" id="reg-radio-maya" style="width:20px; height:20px; border-radius:50%; border:2px solid rgba(255,255,255,0.3); background:transparent; display:flex; align-items:center; justify-content:center;">
+              <div class="pm-radio" id="reg-radio-maya" style="width:20px; height:20px; flex-shrink:0; border-radius:50%; border:2px solid rgba(255,255,255,0.3); background:transparent; display:flex; align-items:center; justify-content:center;">
               </div>
             </div>
 
             <!-- 3. Front Desk Cash Card -->
-            <div class="payment-method-card" id="reg-card-cash" onclick="selectRegPaymentMethod('Cash')" style="margin-bottom:12px; cursor:pointer; background:rgba(10,30,22,0.6); border:1.5px solid rgba(82,183,136,0.2); border-radius:14px; padding:12px; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s;">
-              <div class="pm-left" style="display:flex; align-items:center;">
-                <div class="pm-icon-wrap" style="background:rgba(82, 183, 136, 0.2); display:flex; align-items:center; justify-content:center; width:42px; height:42px; border-radius:12px; margin-right:12px;">
+            <div class="payment-method-card" id="reg-card-cash" onclick="selectRegPaymentMethod('Cash')" style="margin-bottom:12px; cursor:pointer; background:rgba(10,30,22,0.6); border:1.5px solid rgba(82,183,136,0.2); border-radius:14px; padding:12px; display:flex; align-items:center; justify-content:space-between; gap:10px; transition:all 0.2s; box-sizing:border-box; width:100%;">
+              <div class="pm-left" style="display:flex; align-items:center; min-width:0; flex:1; gap:10px;">
+                <div class="pm-icon-wrap" style="background:rgba(82, 183, 136, 0.2); display:flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:12px; flex-shrink:0;">
                   <i class="fa-solid fa-store" style="font-size:18px; color:var(--gym-light);"></i>
                 </div>
-                <div>
+                <div style="min-width:0; flex:1;">
                   <div class="pm-title" style="font-weight:700; color:#fff; font-size:0.92rem;">Cash (Front Desk)</div>
-                  <div class="pm-desc" style="font-size:0.75rem; color:var(--gym-muted); margin-top:2px;">Pay at gym reception counter upon your first visit</div>
+                  <div class="pm-desc" style="font-size:0.75rem; color:var(--gym-muted); margin-top:2px; word-break:break-word;">Pay at gym reception counter upon your first visit</div>
                 </div>
               </div>
-              <div class="pm-radio" id="reg-radio-cash" style="width:20px; height:20px; border-radius:50%; border:2px solid rgba(255,255,255,0.3); background:transparent; display:flex; align-items:center; justify-content:center;">
+              <div class="pm-radio" id="reg-radio-cash" style="width:20px; height:20px; flex-shrink:0; border-radius:50%; border:2px solid rgba(255,255,255,0.3); background:transparent; display:flex; align-items:center; justify-content:center;">
               </div>
             </div>
 
@@ -4009,8 +4039,15 @@ function showScreen(id) {
   ];
   screens.forEach(sid => {
     const el = document.getElementById(sid);
-    if (el) el.style.display = (sid === id) ? 'block' : 'none';
+    if (el) {
+      el.style.display = (sid === id) ? 'block' : 'none';
+      if (sid === id) {
+        el.scrollTop = 0;
+        el.scrollLeft = 0;
+      }
+    }
   });
+  window.scrollTo(0, 0);
   if (id === 'view-login' && !currentMember) {
     hideLoginAlert();
     const pInp = document.getElementById('input-password');
@@ -4514,6 +4551,12 @@ function openRegistrationWizardWithPrefill(prefill) {
 function cancelRegistration() { showScreen('view-login'); }
 
 function goToWizardStep(step) {
+  const regEl = document.getElementById('view-register');
+  if (regEl) {
+    regEl.scrollTop = 0;
+    regEl.scrollLeft = 0;
+  }
+  window.scrollTo(0, 0);
   [1, 2, 3].forEach(s => {
     const dot  = document.getElementById(`sdot-${s}`);
     const line = document.getElementById(`sline-${s-1}`);
