@@ -75,12 +75,14 @@ function setExportModalPreset(preset) {
 }
 
 function setExportFormat(format) {
-    document.getElementById('export-format-' + format).checked = true;
-    ['csv', 'xls', 'json'].forEach(f => {
+    const radio = document.getElementById('export-format-' + format);
+    if (radio) radio.checked = true;
+    ['csv', 'xls', 'pdf', 'json'].forEach(f => {
         const card = document.getElementById('card-format-' + f);
+        if (!card) return;
         if (f === format) {
             card.style.borderColor = 'var(--accent)';
-            card.style.background = 'rgba(45,106,79,0.1)';
+            card.style.background = 'rgba(45,106,79,0.15)';
         } else {
             card.style.borderColor = 'var(--border)';
             card.style.background = 'transparent';
@@ -88,29 +90,38 @@ function setExportFormat(format) {
     });
 }
 
-// ── PDF GENERATOR ─────────────────────────────────────────────────────────────
-// NOTE: filename with datestamp is set by the inline <script> in reports.php
-// because it requires the PHP-rendered date value.
+// ── EXECUTIVE PDF GENERATOR ───────────────────────────────────────────────────
+// Launches the dedicated high-resolution Executive PDF report view in a new window
+// with auto-print triggered for instant Save-As-PDF or printing.
 function generatePDFReport(filename) {
-    const element = document.getElementById('analytics-master-container');
-    element.classList.add('pdf-render-mode');
+    const activeTab = localStorage.getItem('palmas_active_report_tab') || 'tab-daily';
+    let exportType = 'daily_revenue';
+    if (activeTab === 'tab-retention') exportType = 'retention';
+    else if (activeTab === 'tab-attendance') exportType = 'attendance_hour';
+    else if (activeTab === 'tab-expenses') exportType = 'revenue';
+    else if (activeTab === 'tab-instructors') exportType = 'members';
 
-    const opt = {
-        margin:      [0.4, 0.4, 0.4, 0.4],
-        filename:    filename || 'Palmas_Gym_Analytics_Report.pdf',
-        image:       { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF:       { unit: 'in', format: 'a4', orientation: 'landscape' }
-    };
+    const presetInput = document.getElementById('master-preset-input');
+    const preset = presetInput ? presetInput.value : 'month';
+    const startInput = document.querySelector('input[name="start_date"]');
+    const endInput = document.querySelector('input[name="end_date"]');
+
+    let url = `reports.php?export=${encodeURIComponent(exportType)}&format=pdf&date_preset=${encodeURIComponent(preset)}&auto_print=1`;
+    if (preset === 'custom' && startInput && endInput && startInput.value && endInput.value) {
+        url += `&start_date=${encodeURIComponent(startInput.value)}&end_date=${encodeURIComponent(endInput.value)}`;
+    }
 
     const btn = document.getElementById('btn-pdf-export');
-    const oldHtml = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Building PDF...';
-    btn.disabled = true;
+    if (btn) {
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+        btn.disabled = true;
+        setTimeout(() => {
+            btn.innerHTML = oldHtml;
+            btn.disabled = false;
+        }, 1200);
+    }
 
-    html2pdf().set(opt).from(element).save().then(() => {
-        element.classList.remove('pdf-render-mode');
-        btn.innerHTML = oldHtml;
-        btn.disabled = false;
-    });
+    window.open(url, '_blank');
 }
+

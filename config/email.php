@@ -11,46 +11,172 @@ function send_email_notification($to, $subject, $title, $body_text) {
         $base_url = $protocol . '://' . $host . '/gym';
     }
 
-    // 1. Build HTML email template matching the forest green brand design
-    $html_message = "
-    <html>
+    // Determine action button URL
+    $cta_url = rtrim($base_url, '/') . '/member/login.php';
+    if (str_contains(strtolower($subject), 'reset') || str_contains(strtolower($title), 'reset')) {
+        $cta_url = rtrim($base_url, '/') . '/member/forgot_password.php';
+    }
+
+    // Format body text for email rendering
+    $formatted_body = (str_contains($body_text, '<p>') || str_contains($body_text, '<br>'))
+        ? $body_text 
+        : nl2br(htmlspecialchars($body_text, ENT_QUOTES, 'UTF-8'));
+
+    // Safe year and date
+    $current_year = date('Y');
+    $current_date = date('F j, Y');
+
+    // 1. Build luxury responsive HTML email template matching the Palma's Elite Gym design system
+    $html_message = '
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
     <head>
-        <title>" . htmlspecialchars($subject) . "</title>
-        <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333333; margin: 0; padding: 0; }
-            .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e1e8e5; }
-            .header { background: linear-gradient(135deg, #1b4332 0%, #0d2a1c 100%); padding: 30px; text-align: center; color: #ffffff; }
-            .logo { width: 60px; height: 60px; margin-bottom: 10px; }
-            .header h1 { font-size: 20px; margin: 0; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
-            .body { padding: 40px 30px; line-height: 1.6; font-size: 15px; }
-            .body h2 { color: #1b4332; font-size: 18px; margin-top: 0; margin-bottom: 15px; }
-            .body p { margin: 0 0 15px 0; color: #555555; }
-            .button-container { text-align: center; margin: 30px 0; }
-            .button { background-color: #2d6a4f; color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block; }
-            .footer { background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; }
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="color-scheme" content="light dark" />
+        <meta name="supported-color-schemes" content="light dark" />
+        <title>' . htmlspecialchars($subject) . '</title>
+        <style type="text/css">
+            /* Client-specific resets */
+            body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+            table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+            img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+            body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #F1F5F3; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+            
+            /* Modern CTA hover */
+            .email-btn:hover { background-color: #2D6A4F !important; box-shadow: 0 4px 14px rgba(45,106,79,0.4) !important; }
+            
+            @media screen and (max-width: 600px) {
+                .email-container { width: 100% !important; border-radius: 0 !important; }
+                .email-content { padding: 24px 20px !important; }
+                .email-header { padding: 28px 20px !important; }
+                .email-footer { padding: 24px 20px !important; }
+                .header-logo { width: 56px !important; height: 56px !important; }
+            }
         </style>
     </head>
-    <body>
-        <div class='container'>
-            <div class='header'>
-                <img src='{$base_url}/assets/images/palmas-logo.png' class='logo' alt='Palma\'s Elite Gym Logo'>
-                <h1>Palma's Elite Gym</h1>
-            </div>
-            <div class='body'>
-                <h2>" . htmlspecialchars($title) . "</h2>
-                <p>{$body_text}</p>
-                <div class='button-container'>
-                    <a href='{$base_url}/member/login.php' class='button'>Access Member Portal</a>
-                </div>
-            </div>
-            <div class='footer'>
-                <p>This is an automated notification. Please do not reply directly to this email.</p>
-                <p>&copy; " . date('Y') . " Palma's Elite Gym. All rights reserved.</p>
-            </div>
+    <body style="margin:0; padding:0; background-color:#F1F5F3;">
+        <!-- Preheader text for email client preview snippet -->
+        <div style="display:none; font-size:1px; color:#F1F5F3; line-height:1px; max-height:0px; max-width:0px; opacity:0; overflow:hidden;">
+            ' . htmlspecialchars($title) . ' — Palma\'s Elite Gym Management Notification
         </div>
+
+        <!-- Outer Canvas Table -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#F1F5F3; table-layout:fixed;">
+            <tr>
+                <td align="center" style="padding: 24px 12px 36px;">
+                    <!-- Centered 600px Container -->
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" class="email-container" style="max-width:600px; background-color:#ffffff; border-radius:18px; overflow:hidden; box-shadow:0 10px 30px rgba(27,67,50,0.08); border:1px solid #D8E6DC;">
+                        
+                        <!-- ── LUXURY HEADER ───────────────────────────── -->
+                        <tr>
+                            <td class="email-header" align="center" style="background:linear-gradient(145deg, #1B4332 0%, #0D2E23 60%, #082119 100%); padding:36px 30px; text-align:center;">
+                                <!-- Logo Badge -->
+                                <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;">
+                                    <tr>
+                                        <td align="center" style="width:72px; height:72px; background-color:#ffffff; border-radius:50%; border:2px solid #52B788; box-shadow:0 6px 18px rgba(0,0,0,0.25); text-align:center; vertical-align:middle;">
+                                            <img src="' . $base_url . '/assets/images/palmas-logo.png" class="header-logo" alt="Palma\'s Elite Gym" width="56" height="56" style="display:block; margin:0 auto; width:56px; height:56px; border-radius:50%; object-fit:contain;" />
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <!-- Brand Title -->
+                                <h1 style="margin:0; color:#FFFFFF; font-size:22px; font-weight:800; letter-spacing:1px; text-transform:uppercase; font-family:\'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif;">
+                                    PALMA\'S ELITE GYM
+                                </h1>
+                                <p style="margin:4px 0 0; color:#8FCFBC; font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;">
+                                    MEMBERSHIP &bull; ATTENDANCE &bull; PERFORMANCE
+                                </p>
+
+                                <!-- Date & Pill -->
+                                <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin-top:14px;">
+                                    <tr>
+                                        <td style="background-color:rgba(82,183,136,0.18); border:1px solid rgba(82,183,136,0.35); border-radius:20px; padding:4px 14px;">
+                                            <span style="color:#A3E5C8; font-size:11px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase;">
+                                                OFFICIAL NOTIFICATION
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <!-- ── MAIN CONTENT BODY ───────────────────────── -->
+                        <tr>
+                            <td class="email-content" style="padding:36px 36px 32px; background-color:#ffffff;">
+                                
+                                <!-- Notice Title -->
+                                <h2 style="margin:0 0 16px; color:#1B4332; font-size:20px; font-weight:800; line-height:1.3; font-family:\'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif;">
+                                    ' . htmlspecialchars($title) . '
+                                </h2>
+
+                                <!-- Dynamic Body Copy Box -->
+                                <div style="color:#334155; font-size:15px; line-height:1.68; margin-bottom:28px;">
+                                    ' . $formatted_body . '
+                                </div>
+
+                                <!-- Highlight Callout Card -->
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:28px; background-color:#F4F9F6; border-radius:12px; border-left:4px solid #3E8241; border-top:1px solid #E2EFE7; border-right:1px solid #E2EFE7; border-bottom:1px solid #E2EFE7;">
+                                    <tr>
+                                        <td style="padding:16px 20px;">
+                                            <p style="margin:0 0 4px; color:#2D6A4F; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;">
+                                                DIGITAL PASS &bull; MEMBER SERVICES
+                                            </p>
+                                            <p style="margin:0; color:#475569; font-size:13px; line-height:1.5;">
+                                                Access your active QR gym pass, view payment receipts, and manage renewal status anytime via the Palma\'s Elite Member Portal.
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <!-- Bulletproof Centered CTA Button -->
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:30px 0 10px;">
+                                    <tr>
+                                        <td align="center">
+                                            <table border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                                                <tr>
+                                                    <td align="center" style="border-radius:12px; background:linear-gradient(135deg, #3E8241 0%, #1B4332 100%); box-shadow:0 4px 14px rgba(45,106,79,0.3);">
+                                                        <a href="' . $cta_url . '" class="email-btn" target="_blank" style="display:inline-block; padding:14px 34px; font-family:\'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; font-size:14px; font-weight:800; color:#FFFFFF; text-decoration:none; letter-spacing:0.5px; border-radius:12px;">
+                                                            ACCESS MEMBER PORTAL &rarr;
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                            </td>
+                        </tr>
+
+                        <!-- ── TRUST & FOOTER ──────────────────────────── -->
+                        <tr>
+                            <td class="email-footer" style="padding:28px 36px; background-color:#F8FAF9; border-top:1px solid #E5EFE8; text-align:center;">
+                                
+                                <p style="margin:0 0 8px; color:#64748B; font-size:12px; font-weight:600;">
+                                    Palma\'s Elite Gym &bull; Caloocan City &bull; Philippines
+                                </p>
+                                <p style="margin:0 0 12px; color:#94A3B8; font-size:11px; line-height:1.5;">
+                                    This is an automated operational notification regarding your gym account.<br/>
+                                    Please do not reply directly to this automated email address.
+                                </p>
+                                <div style="border-top:1px solid #EAEFEA; padding-top:12px; margin-top:8px;">
+                                    <span style="color:#94A3B8; font-size:11px;">
+                                        &copy; ' . $current_year . ' Palma\'s Elite Gym Management System. All rights reserved.
+                                    </span>
+                                </div>
+
+                            </td>
+                        </tr>
+
+                    </table>
+                    <!-- End Container -->
+                </td>
+            </tr>
+        </table>
     </body>
     </html>
-    ";
+    ';
 
     require_once __DIR__ . '/env.php';
     require_once __DIR__ . '/../libs/PHPMailer/Exception.php';

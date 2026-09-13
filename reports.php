@@ -301,6 +301,601 @@ if (isset($_GET['export']) && isset($pdo)) {
         echo '</table></body></html>';
         exit;
 
+    } elseif ($format === 'pdf' || $format === 'print') {
+        // ── EXECUTIVE PDF & PRINTABLE REPORT RENDERER ────────────────────────
+        $type_titles = [
+            'daily_revenue'   => 'Daily Revenue & Transaction Ledger',
+            'weekly_revenue'  => 'Weekly Revenue Summary',
+            'monthly_revenue' => 'Monthly Revenue Performance',
+            'retention'       => 'Membership Retention & Lifecycle Audit',
+            'conversion'      => 'Member Registration & Conversion Report',
+            'attendance_hour' => 'Peak Hours Attendance Distribution',
+            'attendance_day'  => 'Day-of-Week Attendance Analytics',
+            'members'         => 'Registered Membership Directory',
+            'attendance'      => 'Member Attendance Check-In Records',
+            'revenue'         => 'Financial Payment Ledger'
+        ];
+        $report_title = $type_titles[$type] ?? ucwords(str_replace('_', ' ', $type)) . ' Report';
+
+        // Date label formatting
+        if (!empty($startDate) && !empty($endDate)) {
+            $date_label = date('M j, Y', strtotime($startDate)) . ' — ' . date('M j, Y', strtotime($endDate));
+        } else {
+            $date_label = 'All Historical Records';
+        }
+
+        // Summary Statistics Calculation
+        $total_records = count($rows);
+        $amount_col_idx = -1;
+        $total_amount = 0;
+        foreach ($headers as $idx => $h) {
+            if (stripos($h, 'amount') !== false || stripos($h, 'revenue') !== false || (stripos($h, 'total') !== false && stripos($h, 'check') === false && stripos($h, 'renew') === false)) {
+                $amount_col_idx = $idx;
+                break;
+            }
+        }
+
+        if ($amount_col_idx !== -1) {
+            foreach ($rows as $r) {
+                $raw = (string)($r[$amount_col_idx] ?? 0);
+                $val = floatval(preg_replace('/[^0-9.]/', '', $raw));
+                $total_amount += $val;
+            }
+        }
+        $avg_amount = ($total_records > 0 && $amount_col_idx !== -1) ? ($total_amount / $total_records) : 0;
+
+        // Current Auditor/User
+        $curr_user = current_user();
+        $admin_name = htmlspecialchars($curr_user['name'] ?? 'Authorized Administrator');
+        $admin_role = ucfirst($curr_user['role'] ?? 'Administrator');
+        $doc_ref = 'PEG-RPT-' . date('Ymd') . '-' . strtoupper(substr(md5($type . ($startDate ?? '') . ($endDate ?? '')), 0, 6));
+        $generated_at = date('F j, Y, g:i A');
+
+        // Current query strings for alternative format links
+        $q_csv = http_build_query(array_merge($_GET, ['format' => 'csv']));
+        $q_xls = http_build_query(array_merge($_GET, ['format' => 'xls']));
+        $auto_print = (isset($_GET['auto_print']) && $_GET['auto_print'] == '1');
+        ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palma's Elite Gym — <?php echo htmlspecialchars($report_title); ?></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1b4332;
+            --primary-dark: #0d2e23;
+            --accent: #52b788;
+            --forest: #2d6a4f;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --bg-page: #f8faf9;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-dark);
+            line-height: 1.5;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        /* Screen Top Action Bar */
+        .export-action-bar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: #1b4332;
+            color: #fff;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+        }
+        .action-bar-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .action-bar-buttons {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn-act {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .btn-act-primary {
+            background: #52b788;
+            color: #0d2e23;
+        }
+        .btn-act-primary:hover {
+            background: #74c69d;
+            box-shadow: 0 2px 8px rgba(82,183,136,0.4);
+        }
+        .btn-act-outline {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.25);
+        }
+        .btn-act-outline:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Report Canvas */
+        .report-canvas {
+            max-width: 1240px;
+            margin: 28px auto 40px;
+            background: #ffffff;
+            padding: 40px 48px;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+        }
+
+        /* Header Section */
+        .report-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 24px;
+            border-bottom: 2px solid #1b4332;
+            margin-bottom: 22px;
+        }
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .brand-logo {
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            border: 2px solid #52b788;
+            object-fit: contain;
+            background: #fff;
+            padding: 2px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+        .brand-text h1 {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #1b4332;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+        .brand-text p {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: #2d6a4f;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+        .report-meta-box {
+            text-align: right;
+            font-size: 0.8rem;
+        }
+        .meta-pill {
+            display: inline-block;
+            background: #e8f5e9;
+            color: #1b4332;
+            font-weight: 700;
+            font-size: 0.72rem;
+            padding: 3px 12px;
+            border-radius: 20px;
+            margin-bottom: 6px;
+            border: 1px solid #c8e6c9;
+        }
+        .meta-line {
+            color: #64748b;
+            margin-bottom: 2px;
+        }
+        .meta-line strong {
+            color: #0f172a;
+        }
+
+        /* Subject Banner */
+        .report-subject-banner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f1f7f4;
+            padding: 16px 20px;
+            border-radius: 8px;
+            border-left: 5px solid #2d6a4f;
+            margin-bottom: 24px;
+        }
+        .subject-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #1b4332;
+        }
+        .subject-scope {
+            font-size: 0.82rem;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        /* Metric Highlights Ribbon */
+        .metrics-ribbon {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .metric-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 14px 18px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+        .metric-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .metric-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: #1b4332;
+        }
+
+        /* Table */
+        .report-table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        table.report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+        table.report-table th {
+            background: #1b4332;
+            color: #ffffff;
+            font-weight: 700;
+            text-align: left;
+            padding: 10px 14px;
+            letter-spacing: 0.3px;
+            border: none;
+            white-space: nowrap;
+        }
+        table.report-table td {
+            padding: 9px 14px;
+            border-bottom: 1px solid #edf2f7;
+            color: #334155;
+            vertical-align: middle;
+        }
+        table.report-table tbody tr:nth-child(even) {
+            background: #fbfdfc;
+        }
+        table.report-table tbody tr:hover {
+            background: #f1f8f4;
+        }
+        table.report-table tfoot th {
+            background: #2d6a4f;
+            color: #ffffff;
+            font-weight: 800;
+            padding: 10px 14px;
+        }
+
+        /* Status Badges */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-align: center;
+        }
+        .badge-active { background: #dcfce7; color: #166534; }
+        .badge-inactive { background: #fee2e2; color: #991b1b; }
+        .badge-pending { background: #fef3c7; color: #92400e; }
+        .badge-other { background: #f1f5f9; color: #475569; }
+
+        /* Sign-off certification */
+        .signoff-section {
+            page-break-inside: avoid;
+            margin-top: 36px;
+            padding-top: 24px;
+            border-top: 1px dashed #cbd5e1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+        }
+        .signature-box {
+            background: #fafcfb;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .sig-label {
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 28px;
+        }
+        .sig-line {
+            border-bottom: 1.5px solid #0f172a;
+            margin-bottom: 8px;
+        }
+        .sig-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .sig-title {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        /* Footer */
+        .report-footer {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 0.72rem;
+            color: #94a3b8;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 12px;
+        }
+
+        /* Print Specific Media Query */
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 10mm 12mm 12mm 12mm;
+            }
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .export-action-bar, .no-print {
+                display: none !important;
+            }
+            .report-canvas {
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            table.report-table th {
+                background: #1b4332 !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            table.report-table tfoot th {
+                background: #2d6a4f !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            table.report-table tbody tr:nth-child(even) {
+                background: #f8faf9 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .badge-active { background: #dcfce7 !important; color: #166534 !important; }
+            .badge-inactive { background: #fee2e2 !important; color: #991b1b !important; }
+            .badge-pending { background: #fef3c7 !important; color: #92400e !important; }
+            .signoff-section {
+                break-inside: avoid !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Action Bar (hidden when printed) -->
+    <div class="export-action-bar no-print">
+        <div class="action-bar-title">
+            <i class="fas fa-file-invoice" style="color:#52b788;"></i>
+            <span>Executive Report Preview — <?php echo htmlspecialchars($report_title); ?></span>
+        </div>
+        <div class="action-bar-buttons">
+            <a href="reports.php?<?php echo $q_xls; ?>" class="btn-act btn-act-outline" title="Download Excel Sheet">
+                <i class="fas fa-file-excel" style="color:#52b788;"></i> Export Excel
+            </a>
+            <a href="reports.php?<?php echo $q_csv; ?>" class="btn-act btn-act-outline" title="Download CSV File">
+                <i class="fas fa-file-csv" style="color:#a7f3d0;"></i> Export CSV
+            </a>
+            <button onclick="window.print()" class="btn-act btn-act-primary" title="Print or Save as PDF">
+                <i class="fas fa-print"></i> Print / Save as PDF
+            </button>
+            <a href="reports.php" class="btn-act btn-act-outline" title="Close Preview">
+                <i class="fas fa-arrow-left"></i> Return to Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Printable Canvas -->
+    <div class="report-canvas">
+        <!-- Header -->
+        <header class="report-header">
+            <div class="brand-section">
+                <img src="assets/images/palmas-logo.png" alt="Palma's Elite Gym Logo" class="brand-logo" onerror="this.style.display='none'">
+                <div class="brand-text">
+                    <h1>PALMA'S ELITE GYM</h1>
+                    <p>Official Executive Operations &amp; Intelligence Ledger</p>
+                </div>
+            </div>
+            <div class="report-meta-box">
+                <span class="meta-pill"><i class="fas fa-shield-alt"></i> Official Certified Record</span>
+                <div class="meta-line">Document Ref: <strong><?php echo htmlspecialchars($doc_ref); ?></strong></div>
+                <div class="meta-line">Generated: <strong><?php echo htmlspecialchars($generated_at); ?></strong></div>
+                <div class="meta-line">Audited By: <strong><?php echo $admin_name . ' (' . $admin_role . ')'; ?></strong></div>
+            </div>
+        </header>
+
+        <!-- Report Subject Banner -->
+        <div class="report-subject-banner">
+            <div>
+                <div class="subject-title"><?php echo htmlspecialchars($report_title); ?></div>
+                <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">Palma's Elite Gym &bull; System Intelligence Reporting Module</div>
+            </div>
+            <div style="text-align:right;">
+                <div class="subject-scope"><i class="fas fa-calendar-alt" style="color:#2d6a4f;"></i> Period Coverage:</div>
+                <div style="font-size:0.9rem; font-weight:700; color:#1b4332;"><?php echo htmlspecialchars($date_label); ?></div>
+            </div>
+        </div>
+
+        <!-- Metric Highlights Ribbon -->
+        <div class="metrics-ribbon">
+            <div class="metric-card">
+                <div class="metric-label">Total Records Listed</div>
+                <div class="metric-val"><?php echo number_format($total_records); ?></div>
+            </div>
+            <?php if ($amount_col_idx !== -1): ?>
+            <div class="metric-card">
+                <div class="metric-label">Total Period Volume</div>
+                <div class="metric-val" style="color:#2d6a4f;">&#8369;<?php echo number_format($total_amount, 2); ?></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Average per Entry</div>
+                <div class="metric-val" style="color:#52b788;">&#8369;<?php echo number_format($avg_amount, 2); ?></div>
+            </div>
+            <?php endif; ?>
+            <div class="metric-card">
+                <div class="metric-label">Verification Status</div>
+                <div class="metric-val" style="font-size:1.1rem; color:#166534;"><i class="fas fa-check-circle"></i> Authenticated</div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="report-table-wrapper">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th style="width:40px; text-align:center;">#</th>
+                        <?php foreach ($headers as $idx => $h): ?>
+                            <th style="<?php echo ($idx === $amount_col_idx) ? 'text-align:right;' : ''; ?>">
+                                <?php echo htmlspecialchars($h); ?>
+                            </th>
+                        <?php endforeach; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($rows)): ?>
+                        <tr>
+                            <td colspan="<?php echo count($headers) + 1; ?>" style="text-align:center; padding:32px; color:#64748b;">
+                                <i class="fas fa-folder-open" style="font-size:1.8rem; color:#cbd5e1; margin-bottom:8px; display:block;"></i>
+                                No matching records found for the selected timeframe.
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($rows as $r_idx => $r): ?>
+                            <tr>
+                                <td style="text-align:center; color:#94a3b8; font-size:0.75rem; font-weight:600;"><?php echo $r_idx + 1; ?></td>
+                                <?php foreach ($r as $c_idx => $val): ?>
+                                    <?php 
+                                        $str_val = (string)$val;
+                                        $is_amount = ($c_idx === $amount_col_idx);
+                                        $is_status = stripos($headers[$c_idx], 'status') !== false;
+                                        $lower_val = strtolower(trim($str_val));
+                                    ?>
+                                    <td style="<?php echo $is_amount ? 'text-align:right; font-weight:600; color:#1b4332;' : ''; ?>">
+                                        <?php if ($is_amount && is_numeric($str_val)): ?>
+                                            &#8369;<?php echo number_format((float)$str_val, 2); ?>
+                                        <?php elseif ($is_status): ?>
+                                            <?php 
+                                                $badge_cls = 'badge-other';
+                                                if (in_array($lower_val, ['active', 'completed', 'activated', 'paid'])) $badge_cls = 'badge-active';
+                                                elseif (in_array($lower_val, ['inactive', 'expired', 'cancelled', 'rejected'])) $badge_cls = 'badge-inactive';
+                                                elseif (in_array($lower_val, ['pending', 'unactivated'])) $badge_cls = 'badge-pending';
+                                            ?>
+                                            <span class="badge <?php echo $badge_cls; ?>">
+                                                <?php echo htmlspecialchars($str_val); ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <?php echo htmlspecialchars($str_val); ?>
+                                        <?php endif; ?>
+                                    </td>
+                                <?php endforeach; ?>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+                <?php if ($amount_col_idx !== -1 && !empty($rows)): ?>
+                <tfoot>
+                    <tr>
+                        <th colspan="<?php echo $amount_col_idx + 1; ?>" style="text-align:right;">TOTAL SUMMARY:</th>
+                        <th style="text-align:right;">&#8369;<?php echo number_format($total_amount, 2); ?></th>
+                        <?php if (count($headers) > ($amount_col_idx + 1)): ?>
+                            <th colspan="<?php echo count($headers) - ($amount_col_idx + 1); ?>"></th>
+                        <?php endif; ?>
+                    </tr>
+                </tfoot>
+                <?php endif; ?>
+            </table>
+        </div>
+
+        <!-- Executive Sign-Off / Approval Block -->
+        <div class="signoff-section">
+            <div class="signature-box">
+                <div class="sig-label">Prepared &amp; Verified By:</div>
+                <div class="sig-line"></div>
+                <div class="sig-name"><?php echo $admin_name; ?></div>
+                <div class="sig-title"><?php echo $admin_role; ?> &bull; System Operations</div>
+                <div style="font-size:0.72rem; color:#94a3b8; margin-top:4px;">Date: <?php echo date('F j, Y'); ?></div>
+            </div>
+            <div class="signature-box">
+                <div class="sig-label">Reviewed &amp; Approved By:</div>
+                <div class="sig-line"></div>
+                <div class="sig-name">Gym Executive Directorate</div>
+                <div class="sig-title">Palma's Elite Gym Management</div>
+                <div style="font-size:0.72rem; color:#94a3b8; margin-top:4px;">Official Seal &amp; Authority Stamp</div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="report-footer">
+            Palma's Elite Gym Management System &bull; Caloocan City, Philippines &bull; Confidential &amp; Proprietary Operational Document
+        </footer>
+    </div>
+
+    <?php if ($auto_print): ?>
+    <script>
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        });
+    </script>
+    <?php endif; ?>
+</body>
+</html>
+        <?php
+        exit;
+
     } else { // CSV
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="' . $filename . '.csv"');
@@ -1563,31 +2158,40 @@ try {
             <!-- Format Selector -->
             <div>
                 <label style="display:block; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:0.4rem;">Download Format</label>
-                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:0.5rem;">
+                <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:0.5rem;">
                     <!-- CSV Option -->
                     <label style="margin:0; cursor:pointer; width:100%;">
                         <input type="radio" name="format" value="csv" checked style="display:none;" id="export-format-csv">
-                        <div class="format-card active" onclick="setExportFormat('csv')" id="card-format-csv" style="border: 1px solid var(--accent); background:rgba(45,106,79,0.1); color:var(--text-main); border-radius:10px; padding:0.65rem; text-align:center; transition:all 0.25s;">
-                            <div style="font-size:1.1rem; color:var(--accent); font-weight:bold;"><i class="fas fa-file-csv"></i> CSV</div>
-                            <span style="font-size:0.68rem; color:var(--text-muted); display:block; margin-top:2px;">Spreadsheets</span>
+                        <div class="format-card active" onclick="setExportFormat('csv')" id="card-format-csv" style="border: 1px solid var(--accent); background:rgba(45,106,79,0.1); color:var(--text-main); border-radius:10px; padding:0.65rem 0.35rem; text-align:center; transition:all 0.25s;">
+                            <div style="font-size:1rem; color:var(--accent); font-weight:bold;"><i class="fas fa-file-csv"></i> CSV</div>
+                            <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin-top:2px;">Spreadsheet</span>
                         </div>
                     </label>
                     
                     <!-- Excel Option -->
                     <label style="margin:0; cursor:pointer; width:100%;">
                         <input type="radio" name="format" value="xls" style="display:none;" id="export-format-xls">
-                        <div class="format-card" onclick="setExportFormat('xls')" id="card-format-xls" style="border: 1px solid var(--border); background:transparent; color:var(--text-main); border-radius:10px; padding:0.65rem; text-align:center; transition:all 0.25s;">
-                            <div style="font-size:1.1rem; color:#52b788; font-weight:bold;"><i class="fas fa-file-excel"></i> Excel</div>
-                            <span style="font-size:0.68rem; color:var(--text-muted); display:block; margin-top:2px;">.XLS Workbook</span>
+                        <div class="format-card" onclick="setExportFormat('xls')" id="card-format-xls" style="border: 1px solid var(--border); background:transparent; color:var(--text-main); border-radius:10px; padding:0.65rem 0.35rem; text-align:center; transition:all 0.25s;">
+                            <div style="font-size:1rem; color:#52b788; font-weight:bold;"><i class="fas fa-file-excel"></i> Excel</div>
+                            <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin-top:2px;">.XLS Sheet</span>
+                        </div>
+                    </label>
+
+                    <!-- PDF Option -->
+                    <label style="margin:0; cursor:pointer; width:100%;">
+                        <input type="radio" name="format" value="pdf" style="display:none;" id="export-format-pdf">
+                        <div class="format-card" onclick="setExportFormat('pdf')" id="card-format-pdf" style="border: 1px solid var(--border); background:transparent; color:var(--text-main); border-radius:10px; padding:0.65rem 0.35rem; text-align:center; transition:all 0.25s;">
+                            <div style="font-size:1rem; color:#ef4444; font-weight:bold;"><i class="fas fa-file-pdf"></i> PDF</div>
+                            <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin-top:2px;">Executive Doc</span>
                         </div>
                     </label>
                     
                     <!-- JSON Option -->
                     <label style="margin:0; cursor:pointer; width:100%;">
                         <input type="radio" name="format" value="json" style="display:none;" id="export-format-json">
-                        <div class="format-card" onclick="setExportFormat('json')" id="card-format-json" style="border: 1px solid var(--border); background:transparent; color:var(--text-main); border-radius:10px; padding:0.65rem; text-align:center; transition:all 0.25s;">
-                            <div style="font-size:1.1rem; color:#eab308; font-weight:bold;"><i class="fas fa-file-code"></i> JSON</div>
-                            <span style="font-size:0.68rem; color:var(--text-muted); display:block; margin-top:2px;">Raw Data API</span>
+                        <div class="format-card" onclick="setExportFormat('json')" id="card-format-json" style="border: 1px solid var(--border); background:transparent; color:var(--text-main); border-radius:10px; padding:0.65rem 0.35rem; text-align:center; transition:all 0.25s;">
+                            <div style="font-size:1rem; color:#eab308; font-weight:bold;"><i class="fas fa-file-code"></i> JSON</div>
+                            <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin-top:2px;">Raw Data</span>
                         </div>
                     </label>
                 </div>
@@ -1658,15 +2262,21 @@ try {
 
 /* Print Specific Rules */
 @media print {
-    .sidebar, .topbar .no-print, .no-print, .report-nav-container { display: none !important; }
-    .main-content { margin-left: 0 !important; padding: 0.5rem !important; }
-    .card { break-inside: avoid; box-shadow: none !important; border: 1px solid #ddd !important; background: #fff !important; color: #000 !important; }
-    .report-tab-pane { display: block !important; margin-bottom: 2rem !important; }
+    .sidebar, .topbar, .no-print, .report-nav-container, .modal { display: none !important; }
+    .main-content { margin-left: 0 !important; width: 100% !important; padding: 0.5rem !important; }
+    .card { break-inside: avoid; box-shadow: none !important; border: 1px solid #e2e8f0 !important; background: #fff !important; color: #0f172a !important; }
+    .report-tab-pane.active { display: block !important; }
+    .report-tab-pane:not(.active) { display: none !important; }
+    body { background: #fff !important; color: #0f172a !important; }
+    table { width: 100% !important; border-collapse: collapse !important; }
+    th { background: #1b4332 !important; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    td { color: #0f172a !important; border-bottom: 1px solid #e2e8f0 !important; }
 }
 
 /* PDF Generator Layout */
 #analytics-master-container.pdf-render-mode .no-print { display: none !important; }
-#analytics-master-container.pdf-render-mode .report-tab-pane { display: block !important; margin-bottom: 2rem !important; }
+#analytics-master-container.pdf-render-mode .report-tab-pane.active { display: block !important; }
+#analytics-master-container.pdf-render-mode .report-tab-pane:not(.active) { display: none !important; }
 </style>
 
 <!-- ── INITIALIZE ALL CHART.JS INSTANCES & CLIENT SCRIPT ────────────────── -->
