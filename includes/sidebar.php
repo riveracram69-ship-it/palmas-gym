@@ -127,16 +127,4 @@ try {
 </aside>
 
 <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
-<div class="mobile-header">
-    <div class="mobile-header-left">
-        <button class="sidebar-toggle" id="mobileSidebarToggle" type="button" aria-label="Toggle Navigation">
-            <i class="fas fa-bars"></i>
-        </button>
-        <div class="mobile-brand-title">
-            <img src="assets/images/palmas-logo.png" alt="Palma's Elite Gym Logo" class="mobile-brand-logo">
-            <span><?php echo htmlspecialchars($app_settings['gym_name'] ?? 'Palma\'s Elite Gym'); ?></span>
-        </div>
-    </div>
-</div>
-
 <main class="main-content" id="main-content">

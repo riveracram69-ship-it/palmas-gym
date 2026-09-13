@@ -26,13 +26,27 @@ function nav_active($page) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Static versioned asset (avoids cache-busting on every request) -->
-    <link rel="stylesheet" href="assets/css/main.css?v=3.1">
+    <link rel="stylesheet" href="assets/css/main.css?v=3.2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
     <meta name="csrf-token" content="<?php echo get_csrf_token(); ?>">
-    <script src="assets/js/main.js?v=3.1" defer></script>
+    <script src="assets/js/main.js?v=3.2" defer></script>
 </head>
 <body>
 <!-- Skip Navigation Landmark (WCAG 2.4.1 — Stage 6 Accessibility) -->
 <a href="#main-content" class="skip-to-main" tabindex="1">Skip to main content</a>
+
+<!-- Mobile Sticky Topbar Header (Fixed/Sticky at the very top of mobile viewport) -->
+<div class="mobile-header">
+    <div class="mobile-header-left">
+        <button class="sidebar-toggle" id="mobileSidebarToggle" type="button" aria-label="Toggle Navigation">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="mobile-brand-title">
+            <img src="assets/images/palmas-logo.png" alt="Palma's Elite Gym Logo" class="mobile-brand-logo">
+            <span><?php echo htmlspecialchars($app_settings['gym_name'] ?? 'Palma\'s Elite Gym'); ?></span>
+        </div>
+    </div>
+</div>
+
 <div class="app-container">
