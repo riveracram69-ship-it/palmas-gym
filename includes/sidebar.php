@@ -26,6 +26,9 @@ try {
             <h2><?php echo htmlspecialchars($app_settings['gym_name'] ?? 'GYM PRO'); ?></h2>
             <p>MANAGEMENT SYSTEM</p>
         </div>
+        <button class="sidebar-close-btn" id="sidebarCloseBtn" type="button" aria-label="Close Navigation">
+            <i class="fas fa-times"></i>
+        </button>
     </div>
 
     <p class="nav-section-label">Main</p>
@@ -125,11 +128,14 @@ try {
 
 <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 <div class="mobile-header">
-    <button class="sidebar-toggle" id="mobileSidebarToggle" aria-label="Toggle Navigation">
-        <i class="fas fa-bars"></i>
-    </button>
-    <div class="mobile-brand-title" style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:800; color:var(--accent);">
-        <?php echo htmlspecialchars($app_settings['gym_name'] ?? 'GYM PRO'); ?>
+    <div class="mobile-header-left">
+        <button class="sidebar-toggle" id="mobileSidebarToggle" type="button" aria-label="Toggle Navigation">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="mobile-brand-title">
+            <img src="assets/images/palmas-logo.png" alt="Palma's Elite Gym Logo" class="mobile-brand-logo">
+            <span><?php echo htmlspecialchars($app_settings['gym_name'] ?? 'Palma\'s Elite Gym'); ?></span>
+        </div>
     </div>
 </div>
 

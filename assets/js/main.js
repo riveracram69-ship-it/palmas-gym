@@ -3,29 +3,38 @@
 document.addEventListener('DOMContentLoaded', function() {
     // ── Mobile Sidebar Drawer Toggle ──────────────────────────────────────────
     const toggleBtn = document.getElementById('mobileSidebarToggle');
+    const closeBtn = document.getElementById('sidebarCloseBtn');
     const sidebar = document.querySelector('.sidebar');
     const backdrop = document.getElementById('sidebarBackdrop');
 
-    if (toggleBtn && sidebar && backdrop) {
-        toggleBtn.addEventListener('click', function() {
+    function openSidebar() {
+        if (sidebar && backdrop) {
             sidebar.classList.add('active');
             backdrop.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        });
+            document.body.classList.add('sidebar-open');
+        }
+    }
 
-        backdrop.addEventListener('click', function() {
+    function closeSidebar() {
+        if (sidebar && backdrop) {
             sidebar.classList.remove('active');
             backdrop.classList.remove('active');
-            document.body.style.overflow = '';
-        });
+            document.body.classList.remove('sidebar-open');
+        }
+    }
 
-        // Close sidebar when clicking any navigation link on mobile
-        const navLinks = sidebar.querySelectorAll('.nav-list .nav-link');
+    if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
+    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+    if (backdrop) backdrop.addEventListener('click', closeSidebar);
+
+    // Close sidebar when clicking any navigation link on mobile
+    if (sidebar) {
+        const navLinks = sidebar.querySelectorAll('.nav-list .nav-link, .sidebar-footer a');
         navLinks.forEach(link => {
             link.addEventListener('click', function() {
-                sidebar.classList.remove('active');
-                backdrop.classList.remove('active');
-                document.body.style.overflow = '';
+                if (window.innerWidth <= 900) {
+                    closeSidebar();
+                }
             });
         });
     }

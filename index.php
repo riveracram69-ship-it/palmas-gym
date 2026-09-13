@@ -1137,6 +1137,7 @@ function renderInactiveTable($list, $title) {
 }
 
 /* ── Workspace Tabs Bar ── */
+/* ── Workspace Tabs Bar ── */
 .workspace-tabs-bar {
     display: flex;
     gap: 0.5rem;
@@ -1144,6 +1145,12 @@ function renderInactiveTable($list, $title) {
     border-bottom: 2px solid var(--border);
     padding-bottom: 0.5rem;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    white-space: nowrap;
+}
+.workspace-tabs-bar::-webkit-scrollbar {
+    display: none;
 }
 .ws-tab-btn {
     padding: 0.65rem 1.25rem;
@@ -1158,6 +1165,8 @@ function renderInactiveTable($list, $title) {
     align-items: center;
     gap: 0.5rem;
     transition: all 0.2s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 .ws-tab-btn:hover {
     color: var(--text-main);
@@ -1220,6 +1229,7 @@ function renderInactiveTable($list, $title) {
     margin-bottom: 1rem;
     overflow-x: auto;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
 }
 .feed-filter-btn {
     padding: 0.25rem 0.65rem;
@@ -1231,6 +1241,7 @@ function renderInactiveTable($list, $title) {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
+    flex-shrink: 0;
 }
 .feed-filter-btn.active {
     background: var(--accent);
@@ -1268,6 +1279,9 @@ function renderInactiveTable($list, $title) {
     padding: 0.2rem;
     border-radius: 8px;
     border: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
 }
 .inactive-tab-btn {
     padding: 0.3rem 0.65rem;
@@ -1278,6 +1292,7 @@ function renderInactiveTable($list, $title) {
     color: var(--text-muted);
     cursor: pointer;
     font-weight: 600;
+    flex-shrink: 0;
 }
 .inactive-tab-btn.active {
     background: var(--accent);
@@ -1308,9 +1323,64 @@ function renderInactiveTable($list, $title) {
     .kpi-master-grid { grid-template-columns: repeat(2, 1fr); }
     .dashboard-grid-2col { grid-template-columns: 1fr; }
 }
+
 @media (max-width: 768px) {
-    .kpi-master-grid { grid-template-columns: 1fr; }
-    .dashboard-topbar { flex-direction: column; align-items: flex-start; }
+    .dashboard-topbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+    .dashboard-title-area {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .dashboard-main-title {
+        font-size: 1.35rem;
+    }
+    .dashboard-actions-area {
+        width: 100%;
+        display: flex;
+        gap: 0.5rem;
+    }
+    .filter-preset-form {
+        flex: 1;
+    }
+    .filter-preset-form .filter-select {
+        width: 100%;
+    }
+    .btn-action {
+        flex: 1;
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+@media (max-width: 640px) {
+    .quick-actions-bar {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+    .quick-action-btn {
+        padding: 0.7rem 0.8rem;
+        font-size: 0.78rem;
+        gap: 0.55rem;
+    }
+    .quick-action-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 0.85rem;
+    }
+    .kpi-master-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .quick-actions-bar {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
 
