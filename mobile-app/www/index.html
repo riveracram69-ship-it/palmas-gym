@@ -3900,6 +3900,7 @@ function closeServerConfigModal() {
 function selectEndpoint(url) {
   const inp = document.getElementById('input-custom-endpoint');
   if (inp) inp.value = url;
+  applyCustomEndpoint();
 }
 
 async function applyCustomEndpoint() {
