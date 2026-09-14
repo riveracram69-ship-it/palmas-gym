@@ -105,6 +105,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $pdo->commit();
 
+            if (!empty($member['email'])) {
+                require_once __DIR__ . '/config/email.php';
+                $email_subject = "Membership Successfully Renewed! — Palma's Elite Gym";
+                $email_title = "Your Membership Has Been Successfully Renewed! 🔄";
+                $email_body = "
+                    <p>Dear <strong>{$member['full_name']}</strong>,</p>
+                    <p>Your gym membership with <strong>Palma's Elite Gym</strong> has been <strong>successfully renewed</strong> by the front desk.</p>
+                    
+                    <div style=\"background-color:#F4F9F6; border:1px solid #D8E6DC; border-radius:10px; padding:18px; margin:20px 0;\">
+                        <p style=\"margin:0 0 10px; font-weight:bold; color:#1B4332; font-size:14px; text-transform:uppercase; letter-spacing:0.5px;\">Membership Summary</p>
+                        <table style=\"width:100%; font-size:13px; color:#334155; border-collapse:collapse;\">
+                            <tr><td style=\"padding:4px 0;\"><strong>Membership ID:</strong></td><td style=\"text-align:right; font-family:monospace; font-weight:bold; color:#1B4332;\">{$member['membership_id']}</td></tr>
+                            <tr><td style=\"padding:4px 0;\"><strong>Plan:</strong></td><td style=\"text-align:right; font-weight:bold;\">{$plan['name']}</td></tr>
+                            <tr><td style=\"padding:4px 0;\"><strong>Amount Paid:</strong></td><td style=\"text-align:right; font-weight:bold; color:#2D6A4F;\">₱" . number_format($amount_paid, 2) . "</td></tr>
+                            <tr><td style=\"padding:4px 0;\"><strong>Payment Method:</strong></td><td style=\"text-align:right;\">{$payment_method}</td></tr>
+                            <tr style=\"border-top:1px dashed #CBD5E1;\"><td style=\"padding:8px 0 0;\"><strong>New Expiry Date:</strong></td><td style=\"padding:8px 0 0; text-align:right; font-weight:bold; color:#1B4332;\">" . date('F j, Y', strtotime($expiry_date)) . "</td></tr>
+                        </table>
+                    </div>
+
+                    <p>Your <strong>Digital QR Pass</strong> has been updated. You can present it at the gym entrance kiosk for instant check-in.</p>
+                    <p style=\"margin-top:16px;\">Thank you for staying with Palma's Elite Gym! 💪</p>
+                ";
+                @send_email_notification($member['email'], $email_subject, $email_title, $email_body);
+            }
+
             log_activity($pdo, 'Renewed Subscription', "Renewed {$member['full_name']} on plan: {$plan['name']}, expires {$expiry_date}", 'Subscription');
 
             echo "<script>window.location.href='view-member.php?id={$member_id}&renewed=1';</script>";

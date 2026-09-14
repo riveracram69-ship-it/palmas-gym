@@ -224,20 +224,30 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         // 10. Automated Email Receipt
         if (!empty($member['email'])) {
             $email_subject = $is_first_activation 
-                ? "Payment Receipt & Membership Activated - Palma's Elite Gym"
-                : "Payment Receipt & Membership Renewed - Palma's Elite Gym";
-            $email_title = "Official Payment Confirmation";
+                ? "Membership Successfully Activated! — Palma's Elite Gym"
+                : "Membership Successfully Renewed! — Palma's Elite Gym";
+            $email_title = $is_first_activation
+                ? "Your Membership is Now Active! 🎉"
+                : "Your Membership Has Been Successfully Renewed! 🔄";
             $email_body = "
-                Dear <strong>{$member['full_name']}</strong>,<br><br>
-                Thank you for your payment! Your membership has been <strong>" . ($is_first_activation ? "activated" : "renewed") . "</strong> in our system.<br><br>
-                <strong>Transaction Details:</strong><br>
-                • <strong>Plan:</strong> {$plan['name']}<br>
-                • <strong>Amount Paid:</strong> ₱" . number_format($amount, 2) . "<br>
-                • <strong>Payment Method:</strong> {$payment_method}<br>
-                • <strong>Reference No:</strong> {$ref_code}<br>
-                • <strong>Duration:</strong> {$duration_label}<br>
-                • <strong>New Expiry Date:</strong> {$formatted_expiry}<br><br>
-                Your Digital QR Pass is now live and ready to use at the gym entrance kiosk. Have a great workout!
+                <p>Dear <strong>{$member['full_name']}</strong>,</p>
+                <p>Great news! Your gym membership with <strong>Palma's Elite Gym</strong> has been <strong>" . ($is_first_activation ? "successfully activated" : "successfully renewed") . "</strong>.</p>
+                
+                <div style=\"background-color:#F4F9F6; border:1px solid #D8E6DC; border-radius:10px; padding:18px; margin:20px 0;\">
+                    <p style=\"margin:0 0 10px; font-weight:bold; color:#1B4332; font-size:14px; text-transform:uppercase; letter-spacing:0.5px;\">Membership &amp; Payment Summary</p>
+                    <table style=\"width:100%; font-size:13px; color:#334155; border-collapse:collapse;\">
+                        <tr><td style=\"padding:4px 0;\"><strong>Membership ID:</strong></td><td style=\"text-align:right; font-family:monospace; font-weight:bold; color:#1B4332;\">{$member['membership_id']}</td></tr>
+                        <tr><td style=\"padding:4px 0;\"><strong>Plan:</strong></td><td style=\"text-align:right; font-weight:bold;\">{$plan['name']}</td></tr>
+                        <tr><td style=\"padding:4px 0;\"><strong>Duration:</strong></td><td style=\"text-align:right;\">{$duration_label}</td></tr>
+                        <tr><td style=\"padding:4px 0;\"><strong>Amount Paid:</strong></td><td style=\"text-align:right; font-weight:bold; color:#2D6A4F;\">₱" . number_format($amount, 2) . "</td></tr>
+                        <tr><td style=\"padding:4px 0;\"><strong>Payment Method:</strong></td><td style=\"text-align:right;\">{$payment_method}</td></tr>
+                        <tr><td style=\"padding:4px 0;\"><strong>Reference No:</strong></td><td style=\"text-align:right; font-family:monospace;\">{$ref_code}</td></tr>
+                        <tr style=\"border-top:1px dashed #CBD5E1;\"><td style=\"padding:8px 0 0;\"><strong>New Expiry Date:</strong></td><td style=\"padding:8px 0 0; text-align:right; font-weight:bold; color:#1B4332;\">{$formatted_expiry}</td></tr>
+                    </table>
+                </div>
+
+                <p>Your <strong>Digital QR Pass</strong> is live and updated! You can present your pass at the gym entrance kiosk for immediate access.</p>
+                <p style=\"margin-top:16px;\">Thank you for staying committed to your fitness journey with Palma's Elite Gym! 💪</p>
             ";
             @send_email_notification($member['email'], $email_subject, $email_title, $email_body);
         }
