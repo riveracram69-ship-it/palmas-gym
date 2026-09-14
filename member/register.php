@@ -146,26 +146,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $plan_price = floatval($p_stmt->fetchColumn() ?: 0);
             }
 
-            if ($is_online_instant) {
-                // Instant Auto-Activation for GCash and Maya!
-                require_once __DIR__ . '/../config/payment.php';
-                if ($plan_id > 0) {
-                    process_automated_subscription_activation(
-                        $pdo,
-                        $member_id,
-                        $plan_id,
-                        $plan_price,
-                        $payment_method,
-                        'REG-' . $membership_id,
-                        true
-                    );
+            $checkout_url = null;
+
+            if ($is_online_instant && $plan_id > 0 && $plan_price > 0) {
+                require_once __DIR__ . '/../config/paymongo.php';
+                require_once __DIR__ . '/../config/env.php';
+                PayMongoGateway::ensureSchema($pdo);
+
+                $date_part = date('Ymd');
+                $rand_part = strtoupper(bin2hex(random_bytes(3)));
+                $ref_code  = "PEG-{$date_part}-{$rand_part}";
+
+                $app_url = defined('APP_URL') ? rtrim(APP_URL, '/') : 'https://palmas-gym-4oxn.onrender.com';
+                $payment_mode = get_payment_mode();
+                $is_test = ($payment_mode === 'demo' || $payment_mode === 'test') ? 1 : 0;
+
+                $gateway_tx_id = null;
+                $paymongo_checkout_id = null;
+
+                if (($payment_mode === 'live' || $payment_mode === 'test') && PayMongoGateway::isConfigured()) {
+                    $p_stmt = $pdo->prepare("SELECT name FROM membership_plans WHERE id = ?");
+                    $p_stmt->execute([$plan_id]);
+                    $plan_name = $p_stmt->fetchColumn() ?: 'Membership Pass';
+
+                    $gatewayResult = PayMongoGateway::createCheckoutSession([
+                        'amount'         => $plan_price,
+                        'currency'       => 'PHP',
+                        'plan_name'      => $plan_name,
+                        'description'    => "Palma's Elite Gym - {$plan_name} Registration",
+                        'reference_code' => $ref_code,
+                        'payment_method' => $payment_method,
+                        'member' => [
+                            'name'  => $full_name,
+                            'email' => $email,
+                            'phone' => $contact_number
+                        ],
+                        'success_url'    => "{$app_url}/api/check_status.php?ref={$ref_code}&status=success",
+                        'cancel_url'     => "{$app_url}/api/check_status.php?ref={$ref_code}&status=cancelled"
+                    ]);
+
+                    if (!empty($gatewayResult['success']) && !empty($gatewayResult['checkout_url'])) {
+                        $checkout_url         = $gatewayResult['checkout_url'];
+                        $paymongo_checkout_id = $gatewayResult['session_id'] ?? null;
+                    }
                 }
+
+                if (empty($checkout_url)) {
+                    $checkout_url = "{$app_url}/api/demo_checkout.php?ref={$ref_code}";
+                }
+
+                // Insert pending payment transaction
+                $tx_stmt = $pdo->prepare("
+                    INSERT INTO payment_transactions 
+                    (member_id, plan_id, reference_code, gateway_transaction_id, paymongo_checkout_id, gateway, checkout_url, payment_method, amount, currency, status, is_test, expires_at)
+                    VALUES (?, ?, ?, ?, ?, 'PayMongo', ?, ?, ?, 'PHP', 'PENDING', ?, DATE_ADD(NOW(), INTERVAL 30 MINUTE))
+                ");
+                $tx_stmt->execute([
+                    $member_id,
+                    $plan_id,
+                    $ref_code,
+                    $gateway_tx_id,
+                    $paymongo_checkout_id,
+                    $checkout_url,
+                    $payment_method,
+                    $plan_price,
+                    $is_test
+                ]);
 
                 try {
                     $pdo->prepare("
                         INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)
-                        VALUES (?, 'Registration', 'New Member Auto-Activated', ?, 'Sent', 'Unread', NOW())
-                    ")->execute([$member_id, "New member {$full_name} ({$membership_id}) registered and was auto-activated via {$payment_method}."]);
+                        VALUES (?, 'Registration', 'New Registration Awaiting Payment', ?, 'Sent', 'Unread', NOW())
+                    ")->execute([
+                        $member_id,
+                        "New member {$full_name} ({$membership_id}) registered with ₱" . number_format($plan_price, 2) . ". Checkout session generated ({$ref_code})."
+                    ]);
                 } catch (Exception $nEx) {}
 
             } else {
@@ -189,30 +244,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $pdo->commit();
 
-            $log_status = $is_online_instant ? 'Auto-activated instantly.' : 'Pending front-desk cash collection.';
+            if ($is_online_instant && !empty($checkout_url)) {
+                // Redirect user to payment checkout immediately
+                header('Location: ' . $checkout_url);
+                exit;
+            }
+
+            $log_status = 'Pending front-desk cash collection.';
             log_activity($pdo, 'Member Registration', "New member registered: {$full_name} ({$membership_id}) via {$payment_method}. {$log_status}", 'Member');
 
             try {
                 require_once __DIR__ . '/../config/email.php';
-                if ($is_online_instant) {
-                    $email_subject = "Membership Activated! — Palma's Elite Gym";
-                    $email_title   = "Welcome, {$full_name}!";
-                    $email_body    = "Thank you for joining Palma's Elite Gym!<br><br>Your payment via <strong>{$payment_method}</strong> has been processed, and your gym membership has been <strong>instantly activated</strong>!<br><br>Your Membership ID is: <strong>{$membership_id}</strong>.<br>You can now sign in to your member portal or mobile app to view your Digital QR Pass!";
-                } else {
-                    $email_subject = "Registration Received - Palma's Elite Gym";
-                    $email_title   = "Hello, {$full_name}!";
-                    $email_body    = "Thank you for registering at Palma's Elite Gym! Your registration has been submitted and is currently <strong>Pending Review</strong>. Please settle your cash payment at the gym front desk upon your visit. Your Membership ID is: <strong>{$membership_id}</strong>.";
-                }
+                $email_subject = "Registration Received - Palma's Elite Gym";
+                $email_title   = "Hello, {$full_name}!";
+                $email_body    = "Thank you for registering at Palma's Elite Gym! Your registration has been submitted and is currently <strong>Pending Review</strong>. Please settle your cash payment at the gym front desk upon your visit. Your Membership ID is: <strong>{$membership_id}</strong>.";
                 send_email_notification($email, $email_subject, $email_title, $email_body);
             } catch (Exception $emErr) {}
 
             $new_membership_id  = $membership_id;
             $submitted_name     = $full_name;
-            $is_auto_activated  = $is_online_instant;
+            $is_auto_activated  = false;
             $used_method        = $payment_method;
-            $success            = $is_online_instant 
-                ? "Registration complete! Your membership is active." 
-                : "Registration submitted successfully! Please settle cash at the gym front desk.";
+            $success            = "Registration submitted successfully! Please settle cash at the gym front desk.";
 
         } catch (Exception $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();

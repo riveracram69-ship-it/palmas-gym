@@ -5125,8 +5125,46 @@ async function submitRegistration() {
       return;
     }
 
-    if (data.success && (data.is_active || data.token)) {
-      // Instant Auto-Activation for GCash & Maya - No staff approval needed!
+    if (data.success && (data.requires_payment || data.checkout_url || (data.checkout && data.checkout.checkout_url))) {
+      const checkoutObj = data.checkout || data;
+      const checkoutUrl = checkoutObj.checkout_url || data.checkout_url;
+      const refCode     = checkoutObj.ref_code || data.reference_code;
+
+      if (data.token) {
+        localStorage.setItem('peg_token', data.token);
+      }
+      if (data.member) {
+        currentMember = data.member;
+        localStorage.setItem('peg_member', JSON.stringify(data.member));
+      }
+
+      currentPendingRef  = refCode;
+      currentResultRef   = refCode;
+      currentCheckoutUrl = checkoutUrl;
+
+      showToast('Account created! Opening secure payment checkout...');
+
+      // Switch to Main View & Checkout Result Screen in Pending Mode
+      showScreen('view-main');
+      switchToTab('tab-renew');
+
+      renderResultState('pending', {
+        ref_code: refCode,
+        amount_formatted: checkoutObj.amount_formatted || ('₱' + parseFloat(selectedPlan ? selectedPlan.price : 500).toFixed(2)),
+        plan_name: checkoutObj.plan_name || (selectedPlan ? selectedPlan.name : 'Membership Pass'),
+        payment_method: selectedRegPaymentMethod || 'Online Payment',
+        checkout_url: checkoutUrl
+      });
+
+      showCheckoutStep('result');
+
+      // Open Payment Checkout page
+      openCheckoutUrl(checkoutUrl);
+
+      // Start live status polling for confirmation
+      startPaymentStatusPolling(refCode);
+      return;
+    } else if (data.success && data.is_active) {
       if (data.token) {
         localStorage.setItem('peg_token', data.token);
       }

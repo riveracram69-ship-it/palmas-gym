@@ -163,17 +163,20 @@ try {
         $id_exists->execute([$membership_id]);
     } while ($id_exists->fetch());
 
-    // Check payment method: GCash and Maya are auto-approved instantly!
-    $payment_method    = trim($data['payment_method'] ?? 'Cash');
-    $is_online_instant = in_array(strtolower($payment_method), ['gcash', 'maya', 'paymaya', 'online']);
-    $initial_acc_status = $is_online_instant ? 'Approved' : 'Pending';
-    $initial_status     = $is_online_instant ? 'Active' : 'Inactive';
+    require_once __DIR__ . '/../config/paymongo.php';
+    PayMongoGateway::ensureSchema($pdo);
+
+    // Initial account status is Pending until payment is confirmed
+    $payment_method     = trim($data['payment_method'] ?? 'Cash');
+    $is_online_payment  = in_array(strtolower($payment_method), ['gcash', 'maya', 'paymaya', 'online']);
+    $initial_acc_status = 'Pending';
+    $initial_status     = 'Inactive';
 
     $stmt = $pdo->prepare("
         INSERT INTO members 
             (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, gender, photo, google_id, google_picture,
              auth_provider, account_status, status, selected_plan_id, password_hash, approved_at, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " . ($is_online_instant ? "NOW()" : "NULL") . ", NOW())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NOW())
     ");
     $stmt->execute([
         $membership_id,
@@ -200,7 +203,7 @@ try {
     $plan_name  = 'Standard';
     $plan_price = 0.00;
     if ($plan_id > 0) {
-        $p_fetch = $pdo->prepare("SELECT name, price FROM membership_plans WHERE id = ?");
+        $p_fetch = $pdo->prepare("SELECT name, price, duration_months, duration_minutes, is_test_promo FROM membership_plans WHERE id = ?");
         $p_fetch->execute([$plan_id]);
         $p_row = $p_fetch->fetch(PDO::FETCH_ASSOC);
         if ($p_row) {
@@ -209,45 +212,83 @@ try {
         }
     }
 
-    $reference_no = trim($data['reference_no'] ?? '');
-    if (empty($reference_no) && $payment_method !== 'Cash') {
-        $reference_no = 'REG-' . strtoupper(substr($payment_method, 0, 2)) . '-' . strtoupper(bin2hex(random_bytes(3)));
-    }
+    $auth_token = bin2hex(random_bytes(32));
+    $pdo->prepare("INSERT INTO auth_tokens (member_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))")
+        ->execute([$member_id, $auth_token]);
 
-    $auth_token = null;
+    $checkout_url = null;
+    $ref_code     = null;
 
-    if ($is_online_instant) {
-        // ── AUTO-APPROVE & ACTIVATE GCASH / MAYA IMMEDIATELY ──────────
-        if ($plan_id > 0) {
-            process_automated_subscription_activation(
-                $pdo,
-                $member_id,
-                $plan_id,
-                $plan_price,
-                $payment_method,
-                $reference_no,
-                true // caller controls transaction
-            );
+    if ($is_online_payment && $plan_id > 0 && $plan_price > 0) {
+        // ── CREATE ONLINE PAYMENT TRANSACTION & CHECKOUT SESSION ──────
+        $date_part = date('Ymd');
+        $rand_part = strtoupper(bin2hex(random_bytes(3)));
+        $ref_code  = "PEG-{$date_part}-{$rand_part}";
+
+        $app_url = defined('APP_URL') ? rtrim(APP_URL, '/') : 'https://palmas-gym-4oxn.onrender.com';
+        $payment_mode = get_payment_mode();
+        $is_test = ($payment_mode === 'demo' || $payment_mode === 'test' || !empty($p_row['is_test_promo'])) ? 1 : 0;
+
+        $gateway_tx_id = null;
+        $paymongo_checkout_id = null;
+
+        if (($payment_mode === 'live' || $payment_mode === 'test') && PayMongoGateway::isConfigured()) {
+            $gatewayResult = PayMongoGateway::createCheckoutSession([
+                'amount'         => $plan_price,
+                'currency'       => 'PHP',
+                'plan_name'      => $plan_name,
+                'description'    => "Palma's Elite Gym - {$plan_name} Registration",
+                'reference_code' => $ref_code,
+                'payment_method' => $payment_method,
+                'member' => [
+                    'name'  => $full_name,
+                    'email' => $email,
+                    'phone' => $contact_number
+                ],
+                'success_url'    => "{$app_url}/api/check_status.php?ref={$ref_code}&status=success",
+                'cancel_url'     => "{$app_url}/api/check_status.php?ref={$ref_code}&status=cancelled"
+            ]);
+
+            if (!empty($gatewayResult['success']) && !empty($gatewayResult['checkout_url'])) {
+                $checkout_url         = $gatewayResult['checkout_url'];
+                $paymongo_checkout_id = $gatewayResult['session_id'] ?? null;
+            }
         }
 
-        // Issue bearer auth token for instant login
-        $auth_token = bin2hex(random_bytes(32));
-        $pdo->prepare("INSERT INTO auth_tokens (member_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))")
-            ->execute([$member_id, $auth_token]);
+        if (empty($checkout_url)) {
+            $checkout_url = "{$app_url}/api/demo_checkout.php?ref={$ref_code}";
+        }
 
-        // Admin notification (informational)
+        // Insert pending payment transaction
+        $tx_stmt = $pdo->prepare("
+            INSERT INTO payment_transactions 
+            (member_id, plan_id, reference_code, gateway_transaction_id, paymongo_checkout_id, gateway, checkout_url, payment_method, amount, currency, status, is_test, expires_at)
+            VALUES (?, ?, ?, ?, ?, 'PayMongo', ?, ?, ?, 'PHP', 'PENDING', ?, DATE_ADD(NOW(), INTERVAL 30 MINUTE))
+        ");
+        $tx_stmt->execute([
+            $member_id,
+            $plan_id,
+            $ref_code,
+            $gateway_tx_id,
+            $paymongo_checkout_id,
+            $checkout_url,
+            $payment_method,
+            $plan_price,
+            $is_test
+        ]);
+
         try {
             $pdo->prepare("
                 INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)
-                VALUES (?, 'Registration', 'New Member Auto-Activated', ?, 'Sent', 'Unread', NOW())
+                VALUES (?, 'Registration', 'New Registration Awaiting Payment', ?, 'Sent', 'Unread', NOW())
             ")->execute([
                 $member_id,
-                "New member {$full_name} ({$membership_id}) registered with {$plan_name} (₱" . number_format($plan_price, 2) . ") and was auto-activated via {$payment_method}."
+                "New member {$full_name} ({$membership_id}) registered with {$plan_name} (₱" . number_format($plan_price, 2) . "). Checkout session generated ({$ref_code})."
             ]);
         } catch (Exception $nEx) {}
 
     } else {
-        // ── CASH (FRONT DESK) WAITS FOR STAFF PAYMENT COLLECTION ────
+        // ── CASH (FRONT DESK) PAYMENT ─────────────────────────────────
         if ($plan_id > 0) {
             try {
                 $req_stmt = $pdo->prepare("
@@ -258,8 +299,8 @@ try {
                 $req_stmt->execute([
                     $member_id,
                     $plan_id,
-                    $payment_method,
-                    $reference_no ?: null,
+                    'Cash',
+                    'REG-' . $membership_id,
                     "Initial Registration Fee — {$plan_name}"
                 ]);
             } catch (Exception $payEx) {
@@ -267,27 +308,40 @@ try {
             }
         }
 
-        // Admin notification for staff review
         try {
             $pdo->prepare("
                 INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)
                 VALUES (?, 'Registration', 'New Member Registration Awaiting Review', ?, 'Sent', 'Unread', NOW())
             ")->execute([
                 $member_id,
-                "New member {$full_name} ({$membership_id}) registered with {$plan_name} (₱" . number_format($plan_price, 2) . ", Method: {$payment_method}). Please verify payment at front desk."
+                "New member {$full_name} ({$membership_id}) registered with {$plan_name} (₱" . number_format($plan_price, 2) . ", Method: Cash). Please verify payment at front desk."
             ]);
         } catch (Exception $nEx) {}
     }
 
     $pdo->commit();
 
-    // Prepare JSON payload for instant response
+    // Prepare JSON response
     $response_data = [
         'success'          => true,
-        'pending_approval' => !$is_online_instant,
-        'is_active'        => $is_online_instant,
-        'message'          => $is_online_instant 
-            ? "Registration complete! Your membership has been instantly activated via {$payment_method}." 
+        'requires_payment' => ($is_online_payment && !empty($checkout_url)),
+        'pending_approval' => !$is_online_payment,
+        'is_active'        => false,
+        'checkout_url'     => $checkout_url,
+        'reference_code'   => $ref_code,
+        'checkout'         => ($is_online_payment && !empty($checkout_url)) ? [
+            'ref_code'         => $ref_code,
+            'checkout_url'     => $checkout_url,
+            'plan_id'          => $plan_id,
+            'plan_name'        => $plan_name,
+            'amount'           => $plan_price,
+            'amount_formatted' => '₱' . number_format($plan_price, 2),
+            'payment_method'   => $payment_method,
+            'member_name'      => $full_name,
+            'membership_id'    => $membership_id
+        ] : null,
+        'message'          => ($is_online_payment && !empty($checkout_url))
+            ? "Account created! Redirecting to secure online payment..." 
             : 'Registration submitted! Please settle your cash payment at the gym front desk upon your visit.',
         'membership_id'    => $membership_id,
         'full_name'        => $full_name,
@@ -298,8 +352,8 @@ try {
             'membership_id'  => $membership_id,
             'full_name'      => $full_name,
             'email'          => $email,
-            'account_status' => $initial_acc_status,
-            'status'         => $initial_status
+            'account_status' => 'Pending',
+            'status'         => 'Inactive'
         ]
     ];
 
