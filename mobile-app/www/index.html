@@ -5057,7 +5057,6 @@ async function submitRegistration() {
       setPendingScreen(regEmail, regFullName);
       showToast('Registration submitted! Please settle cash at the gym front desk upon your visit.');
       return;
-    }
     } else {
       const msg = data.message || 'Registration failed.';
       showToast(msg);
@@ -7169,23 +7168,37 @@ async function refreshDashboard() {
 }
 
 // ── STARTUP AUTHENTICATION INITIALIZATION ─────────────────────────
-window.addEventListener('DOMContentLoaded', async () => {
-  showScreen('view-splash');
+function initializeApp() {
+  if (window._appInitialized) return;
+  window._appInitialized = true;
 
-  const savedToken = localStorage.getItem('peg_token');
-  const savedMember = localStorage.getItem('peg_member');
+  try {
+    const savedToken = localStorage.getItem('peg_token');
+    const savedMember = localStorage.getItem('peg_member');
 
-  if (savedToken && savedMember) {
-    try {
-      currentMember = JSON.parse(savedMember);
-      initMainView(currentMember.id);
-    } catch (e) {
+    if (savedToken && savedMember) {
+      try {
+        currentMember = JSON.parse(savedMember);
+        initMainView(currentMember.id);
+      } catch (e) {
+        console.warn('Session parse error:', e);
+        showScreen('view-login');
+      }
+    } else {
+      setTimeout(() => showScreen('view-login'), 500);
+    }
+  } catch (err) {
+    console.error('App init error:', err);
+    showScreen('view-login');
+  }
+
+  // Safety fallback: ensure splash is never permanently stuck
+  setTimeout(() => {
+    const splash = document.getElementById('view-splash');
+    if (splash && splash.style.display !== 'none' && !currentMember) {
       showScreen('view-login');
     }
-  } else {
-    // Brief branded splash delay then show login
-    setTimeout(() => showScreen('view-login'), 500);
-  }
+  }, 1200);
 
   // Initialize Google Sign-In SDK
   if (GOOGLE_CLIENT_ID && typeof google !== 'undefined') {
@@ -7204,7 +7217,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (window.Capacitor && window.Capacitor.Plugins) {
       const { App, Browser } = window.Capacitor.Plugins;
 
-      // Handle deep links when returning from PayMongo: palmasgym://checkout/result?ref=...&status=...
       if (App && typeof App.addListener === 'function') {
         App.addListener('appUrlOpen', (data) => {
           console.log('[PalmasGym] Deep link received via appUrlOpen:', data);
@@ -7214,7 +7226,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         });
       }
 
-      // Handle in-app browser close/dismissal event
       if (Browser && typeof Browser.addListener === 'function') {
         Browser.addListener('browserFinished', () => {
           console.log('[PalmasGym] Browser dismissed or closed');
@@ -7228,14 +7239,19 @@ window.addEventListener('DOMContentLoaded', async () => {
     console.warn('[PalmasGym] Error initializing appUrlOpen/Browser listeners:', err);
   }
 
-  // Listen for window postMessage in case checkout opened in popup window
   window.addEventListener('message', (evt) => {
     if (evt && evt.data && evt.data.type === 'PALMAS_PAYMENT_RESULT') {
       console.log('[PalmasGym] Window postMessage payment result:', evt.data);
       handlePaymentReturn(`palmasgym://checkout/result?ref=${encodeURIComponent(evt.data.ref)}&status=${encodeURIComponent(evt.data.status)}`);
     }
   });
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+  initializeApp();
+}
 </script>
 </body>
 </html>
