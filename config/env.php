@@ -129,9 +129,9 @@
     // SMTP Email Configuration
     if (!defined('SMTP_HOST')) define('SMTP_HOST', $get_conf('SMTP_HOST', 'smtp.gmail.com'));
     if (!defined('SMTP_PORT')) define('SMTP_PORT', (int)$get_conf('SMTP_PORT', '587'));
-    if (!defined('SMTP_USER')) define('SMTP_USER', $get_conf('SMTP_USER', 'palmaselitegym.system@gmail.com'));
-    if (!defined('SMTP_PASS')) define('SMTP_PASS', $get_conf('SMTP_PASS', ''));
-    if (!defined('SMTP_FROM')) define('SMTP_FROM', $get_conf('SMTP_FROM', 'palmaselitegym.system@gmail.com'));
+    if (!defined('SMTP_USER')) define('SMTP_USER', $get_conf('SMTP_USER', 'official.palmas.gym@gmail.com'));
+    if (!defined('SMTP_PASS')) define('SMTP_PASS', $get_conf('SMTP_PASS', 'jdkk stbi hpvq odhs'));
+    if (!defined('SMTP_FROM')) define('SMTP_FROM', $get_conf('SMTP_FROM', 'official.palmas.gym@gmail.com'));
     if (!defined('SMTP_FROM_NAME')) define('SMTP_FROM_NAME', $get_conf('SMTP_FROM_NAME', "Palma's Elite Gym"));
 
     // System Binary Paths (optional overrides)

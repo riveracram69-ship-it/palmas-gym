@@ -249,7 +249,14 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
                 <p>Your <strong>Digital QR Pass</strong> is live and updated! You can present your pass at the gym entrance kiosk for immediate access.</p>
                 <p style=\"margin-top:16px;\">Thank you for staying committed to your fitness journey with Palma's Elite Gym! 💪</p>
             ";
-            @send_email_notification($member['email'], $email_subject, $email_title, $email_body);
+            try {
+                $email_res = send_email_notification($member['email'], $email_subject, $email_title, $email_body);
+                if (is_array($email_res) && empty($email_res['sent'])) {
+                    error_log("Payment activation email failed for member {$member['email']}: " . ($email_res['error'] ?? 'Unknown error'));
+                }
+            } catch (\Throwable $emEx) {
+                error_log("Payment activation email exception for member {$member['email']}: " . $emEx->getMessage());
+            }
         }
 
         return [

@@ -127,7 +127,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <p>Your <strong>Digital QR Pass</strong> has been updated. You can present it at the gym entrance kiosk for instant check-in.</p>
                     <p style=\"margin-top:16px;\">Thank you for staying with Palma's Elite Gym! 💪</p>
                 ";
-                @send_email_notification($member['email'], $email_subject, $email_title, $email_body);
+                try {
+                    send_email_notification($member['email'], $email_subject, $email_title, $email_body);
+                } catch (\Throwable $emEx) {
+                    error_log("Renewal email error in renew-member.php: " . $emEx->getMessage());
+                }
             }
 
             log_activity($pdo, 'Renewed Subscription', "Renewed {$member['full_name']} on plan: {$plan['name']}, expires {$expiry_date}", 'Subscription');
