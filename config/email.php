@@ -188,12 +188,15 @@ function send_email_notification($to, $subject, $title, $body_text) {
     $smtp_error = '';
     $status_text = '';
 
-    try {
-        // SMTP Configuration
-        if (defined('SMTP_PASS') && (empty(SMTP_PASS) || str_contains(SMTP_PASS, 'REPLACE'))) {
-            // Local development or placeholder credentials: skip SMTP network connection
-            return true;
-        }
+    // SMTP Configuration
+    if (defined('SMTP_PASS') && (empty(SMTP_PASS) || str_contains(SMTP_PASS, 'REPLACE'))) {
+        // Local development or placeholder credentials: skip SMTP network connection
+        return [
+            'sent'  => false,
+            'error' => 'SMTP password placeholder',
+            '__legacy_bool' => false
+        ];
+    }
 
         $configsToTry = [
             ['port' => (int)(defined('SMTP_PORT') ? SMTP_PORT : 587), 'secure' => (defined('SMTP_PORT') && (int)SMTP_PORT === 465) ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS],
