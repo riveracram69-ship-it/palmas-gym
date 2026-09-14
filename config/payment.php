@@ -44,6 +44,26 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             $pdo->prepare("UPDATE members SET account_status = 'Approved' WHERE id = ?")->execute([$member_id]);
         }
 
+        // Idempotency check: prevent duplicate subscription/payment entries for the same reference number
+        if (!empty($ref_no)) {
+            $existing_pay = $pdo->prepare("SELECT id, subscription_id, amount FROM payments WHERE reference_number = ? LIMIT 1");
+            $existing_pay->execute([$ref_no]);
+            $already_paid = $existing_pay->fetch(PDO::FETCH_ASSOC);
+            if ($already_paid) {
+                $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved' WHERE id = ?")->execute([$member_id]);
+                if ($should_manage_tx && $pdo->inTransaction()) {
+                    $pdo->commit();
+                }
+                return [
+                    'success'         => true,
+                    'is_duplicate'    => true,
+                    'subscription_id' => $already_paid['subscription_id'],
+                    'payment_id'      => $already_paid['id'],
+                    'message'         => 'Subscription payment verified and already active.'
+                ];
+            }
+        }
+
         // 2. Fetch Plan & Secure Server-Side Price & Duration
         $plan_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes, price, is_test_promo FROM membership_plans WHERE id = ?");
         $plan_stmt->execute([$plan_id]);

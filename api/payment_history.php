@@ -167,11 +167,25 @@ try {
         error_log("payment_history renewal query warn: " . $re->getMessage());
     }
 
-    // ── MERGE & SORT newest-first ────────────────────────────────────────────────
-    $allRows = array_merge($gatewayRows, $legacyRows, $renewalRows);
-    usort($allRows, function ($a, $b) {
+    // ── MERGE & DEDUPLICATE newest-first ─────────────────────────────────────────
+    $rawMerged = array_merge($gatewayRows, $legacyRows, $renewalRows);
+    usort($rawMerged, function ($a, $b) {
         return strtotime($b['created_at'] ?? '0') <=> strtotime($a['created_at'] ?? '0');
     });
+
+    $seenRefs = [];
+    $allRows  = [];
+    foreach ($rawMerged as $row) {
+        $refKey = trim($row['reference_id'] ?? '');
+        // Normalize ref key
+        if (!empty($refKey) && $refKey !== 'N/A' && !str_starts_with($refKey, 'PAY-') && !str_starts_with($refKey, 'REQ-')) {
+            if (isset($seenRefs[$refKey])) {
+                continue; // Skip duplicate gateway/legacy entry for the exact same transaction
+            }
+            $seenRefs[$refKey] = true;
+        }
+        $allRows[] = $row;
+    }
 
     $totalRecords = count($allRows);
     $pagedRows    = array_slice($allRows, $offset, $limit);
@@ -215,34 +229,19 @@ try {
         ];
     }
 
-    // ── SUMMARY: totals across all tables ───────────────────────────────────────
+    // ── SUMMARY: Accurate non-doubled totals across unique records ───────────────
     $totalSpent        = 0;
     $totalPaidCount    = 0;
     $totalPendingCount = 0;
-    try {
-        $sumGateway = $pdo->prepare("SELECT COALESCE(SUM(amount),0), COUNT(*) FROM payment_transactions WHERE member_id = ? AND status = 'PAID'");
-        $sumGateway->execute([$member_id]);
-        [$gAmt, $gCnt] = $sumGateway->fetch(PDO::FETCH_NUM);
 
-        $sumLegacy = $pdo->prepare("SELECT COALESCE(SUM(amount),0), COUNT(*) FROM payments WHERE member_id = ?");
-        $sumLegacy->execute([$member_id]);
-        [$lAmt, $lCnt] = $sumLegacy->fetch(PDO::FETCH_NUM);
-
-        $totalSpent     = (float)$gAmt + (float)$lAmt;
-        $totalPaidCount = (int)$gCnt   + (int)$lCnt;
-
-        // Pending count across gateway and renewal requests
-        $pGate = $pdo->prepare("SELECT COUNT(*) FROM payment_transactions WHERE member_id = ? AND status = 'PENDING'");
-        $pGate->execute([$member_id]);
-        $cntPGate = (int)$pGate->fetchColumn();
-
-        $pRnw = $pdo->prepare("SELECT COUNT(*) FROM renewal_requests WHERE member_id = ? AND status = 'Pending'");
-        $pRnw->execute([$member_id]);
-        $cntPRnw = (int)$pRnw->fetchColumn();
-
-        $totalPendingCount = $cntPGate + $cntPRnw;
-    } catch (Throwable $se) {
-        error_log("payment_history summary warn: " . $se->getMessage());
+    foreach ($allRows as $r) {
+        $st = strtoupper($r['status'] ?? '');
+        if ($st === 'PAID') {
+            $totalSpent += (float)($r['amount'] ?? 0);
+            $totalPaidCount++;
+        } elseif ($st === 'PENDING') {
+            $totalPendingCount++;
+        }
     }
 
     echo json_encode([
