@@ -10,23 +10,28 @@ require_once __DIR__ . '/../config/rate_limiter.php';
 $error = '';
 $success = '';
 $token = trim($_GET['token'] ?? '');
-$step = !empty($token) ? 'reset' : 'request';
+$step = !empty($token) ? 'reset_token' : 'request';
+$identifier_val = '';
+$masked_email = '';
 
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? 'request';
 
+    // ── STEP 1: REQUEST OTP / RESET ──────────────────────────
     if ($action === 'request') {
-        $email = strtolower(trim($_POST['email'] ?? ''));
-        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $error = 'Please enter a valid registered email address.';
+        $identifier = trim($_POST['identifier'] ?? $_POST['email'] ?? '');
+        $identifier_val = $identifier;
+        if (empty($identifier)) {
+            $error = 'Please enter your registered email address or Membership ID.';
         } else {
             try {
-                $stmt = $pdo->prepare("SELECT id, membership_id, full_name, email FROM members WHERE LOWER(email) = ? LIMIT 1");
-                $stmt->execute([$email]);
+                $stmt = $pdo->prepare("SELECT id, membership_id, full_name, email FROM members WHERE LOWER(email) = LOWER(?) OR LOWER(membership_id) = LOWER(?) LIMIT 1");
+                $stmt->execute([$identifier, $identifier]);
                 $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                if ($member) {
+                if ($member && !empty($member['email'])) {
+                    $email = strtolower(trim($member['email']));
                     $otp = strval(random_int(100000, 999999));
                     $reset_token = bin2hex(random_bytes(24));
 
@@ -39,7 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         expires_at DATETIME NOT NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         KEY idx_member (member_id),
-                        KEY idx_token (token)
+                        KEY idx_token (token),
+                        KEY idx_email_otp (email, otp)
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
                     $pdo->prepare("DELETE FROM password_resets WHERE member_id = ? OR email = ?")->execute([$member['id'], $email]);
@@ -50,43 +56,108 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $base = rtrim(defined('APP_URL') ? APP_URL : 'https://palmas-gym-4oxn.onrender.com', '/');
                     $reset_url = $base . '/member/forgot_password.php?token=' . urlencode($reset_token);
 
-                    $subject = "Password Reset Request — Palma's Elite Gym";
+                    $subject = "Password Reset Code: {$otp} — Palma's Elite Gym";
                     $title = "Reset Your Account Password";
                     $body = '
                     <p>Dear <strong>' . htmlspecialchars($member['full_name']) . '</strong>,</p>
-                    <p>We received a request to reset your password for your Palma\'s Elite Gym account (<strong>' . htmlspecialchars($member['membership_id']) . '</strong>).</p>
+                    <p>We received a request to reset the password for your Palma\'s Elite Gym account (<strong>' . htmlspecialchars($member['membership_id']) . '</strong>).</p>
                     
-                    <div style="background-color:#F4F9F6; border:1px solid #D8E6DC; border-radius:10px; padding:18px; margin:20px 0; text-align:center;">
-                        <p style="margin:0 0 6px; font-size:12px; color:#2D6A4F; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">Your 6-Digit Verification Code</p>
-                        <span style="font-size:28px; font-weight:800; letter-spacing:6px; color:#1B4332; font-family:monospace;">' . $otp . '</span>
-                        <p style="margin:8px 0 0; font-size:11px; color:#64748B;">This code is valid for 1 hour.</p>
+                    <div style="background-color:#F4F9F6; border:2px solid #52B788; border-radius:12px; padding:20px 16px; margin:22px 0; text-align:center;">
+                        <p style="margin:0 0 6px; font-size:12px; color:#2D6A4F; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">Your 6-Digit OTP Verification Code</p>
+                        <span style="font-size:32px; font-weight:900; letter-spacing:8px; color:#1B4332; font-family:monospace; display:block; margin:6px 0;">' . $otp . '</span>
+                        <p style="margin:6px 0 0; font-size:11px; color:#64748B;">Enter this code on the password reset page. Valid for 1 hour.</p>
                     </div>
 
-                    <p><a href="' . $reset_url . '" style="display:inline-block; padding:10px 20px; background:#1B4332; color:#fff; text-decoration:none; border-radius:8px; font-weight:bold;">Click Here to Reset Password</a></p>
+                    <p style="text-align:center; margin:20px 0;">
+                        <a href="' . $reset_url . '" style="display:inline-block; padding:12px 24px; background:#1B4332; color:#fff; text-decoration:none; border-radius:8px; font-weight:bold; font-size:14px;">Click Here to Reset in Browser</a>
+                    </p>
                     <p style="font-size:12px; color:#94A3B8; margin-top:20px;">If you did not make this request, you can safely ignore this email.</p>
                     ';
 
                     @send_email_notification($email, $subject, $title, $body);
-                    log_activity($pdo, 'Password Reset Requested', "Password reset requested for member {$member['full_name']} ({$member['membership_id']})", 'Auth', $member['id'], $member['full_name']);
-                }
+                    log_activity($pdo, 'Password Reset Requested', "OTP {$otp} sent to {$email} for member {$member['full_name']} ({$member['membership_id']})", 'Auth', $member['id'], $member['full_name']);
 
-                $success = 'If that email address is in our system, password reset instructions have been sent! Please check your email inbox and spam folder.';
+                    // Mask email
+                    $parts = explode('@', $email);
+                    $masked_email = substr($parts[0], 0, 2) . '***@' . $parts[1];
+                    $step = 'enter_otp';
+                    $success = "Verification code sent to {$masked_email}! Please enter the 6-digit code below.";
+                } else {
+                    $error = 'No registered account found with that email or Membership ID.';
+                }
             } catch (Throwable $e) {
-                $error = 'Unable to process password reset. Please try again or visit the gym front desk.';
+                $error = 'Unable to process request right now. Please try again.';
             }
         }
-    } elseif ($action === 'reset_with_token') {
+    }
+    // ── STEP 2: VERIFY OTP & RESET ───────────────────────────
+    elseif ($action === 'verify_otp') {
+        $identifier = trim($_POST['identifier'] ?? '');
+        $otp        = trim($_POST['otp'] ?? '');
+        $new_pass   = trim($_POST['password'] ?? '');
+        $cfm_pass   = trim($_POST['confirm_password'] ?? '');
+        $identifier_val = $identifier;
+
+        if (empty($identifier)) {
+            $error = 'Identifier missing. Please start over.';
+            $step = 'request';
+        } elseif (empty($otp) || strlen($otp) < 4) {
+            $error = 'Please enter the 6-digit OTP code sent to your email.';
+            $step = 'enter_otp';
+        } elseif (empty($new_pass) || strlen($new_pass) < 6) {
+            $error = 'Password must be at least 6 characters long.';
+            $step = 'enter_otp';
+        } elseif ($new_pass !== $cfm_pass) {
+            $error = 'Passwords do not match.';
+            $step = 'enter_otp';
+        } else {
+            try {
+                $stmt = $pdo->prepare("
+                    SELECT pr.id, pr.member_id, pr.email, m.full_name, m.membership_id
+                    FROM password_resets pr
+                    JOIN members m ON m.id = pr.member_id
+                    WHERE (LOWER(pr.email) = LOWER(?) OR LOWER(m.membership_id) = LOWER(?))
+                      AND pr.otp = ?
+                      AND pr.expires_at > NOW()
+                    ORDER BY pr.id DESC LIMIT 1
+                ");
+                $stmt->execute([$identifier, $identifier, $otp]);
+                $reset_row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$reset_row) {
+                    $error = 'Invalid or expired OTP verification code. Please check your email or request a new code.';
+                    $step = 'enter_otp';
+                } else {
+                    $member_id = $reset_row['member_id'];
+                    $password_hash = password_hash($new_pass, PASSWORD_DEFAULT);
+
+                    $pdo->prepare("UPDATE members SET password_hash = ? WHERE id = ?")->execute([$password_hash, $member_id]);
+                    $pdo->prepare("DELETE FROM password_resets WHERE member_id = ?")->execute([$member_id]);
+
+                    log_activity($pdo, 'Password Reset Completed', "Member {$reset_row['full_name']} ({$reset_row['membership_id']}) reset password via OTP.", 'Auth', $member_id, $reset_row['full_name']);
+
+                    $success = 'Your password has been successfully updated! You can now sign in with your new password.';
+                    $step = 'done';
+                }
+            } catch (Throwable $e) {
+                $error = 'An error occurred while updating your password. Please try again.';
+                $step = 'enter_otp';
+            }
+        }
+    }
+    // ── STEP 3: RESET WITH TOKEN LINK ────────────────────────
+    elseif ($action === 'reset_with_token') {
         $r_token  = trim($_POST['token'] ?? '');
         $new_pass = trim($_POST['password'] ?? '');
         $cfm_pass = trim($_POST['confirm_password'] ?? '');
 
         if (empty($new_pass) || strlen($new_pass) < 6) {
             $error = 'Password must be at least 6 characters long.';
-            $step = 'reset';
+            $step = 'reset_token';
             $token = $r_token;
         } elseif ($new_pass !== $cfm_pass) {
             $error = 'Passwords do not match.';
-            $step = 'reset';
+            $step = 'reset_token';
             $token = $r_token;
         } else {
             try {
@@ -104,14 +175,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pdo->prepare("UPDATE members SET password_hash = ? WHERE id = ?")->execute([$password_hash, $member_id]);
                     $pdo->prepare("DELETE FROM password_resets WHERE member_id = ?")->execute([$member_id]);
 
-                    log_activity($pdo, 'Password Reset Completed', "Member ID {$member_id} successfully reset their password.", 'Auth', $member_id);
+                    log_activity($pdo, 'Password Reset Completed', "Member ID {$member_id} successfully reset their password via token link.", 'Auth', $member_id);
 
                     $success = 'Your password has been successfully updated! You can now log in with your new password.';
                     $step = 'done';
                 }
             } catch (Throwable $e) {
                 $error = 'An error occurred while updating your password. Please try again.';
-                $step = 'reset';
+                $step = 'reset_token';
                 $token = $r_token;
             }
         }
@@ -125,7 +196,7 @@ $gym_name = htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym");
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Forgot Password | <?php echo $gym_name; ?></title>
+<title>Reset Password | <?php echo $gym_name; ?></title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -156,6 +227,9 @@ body{
   border-radius:var(--r-input);padding:0 14px;color:var(--c-h);font-size:0.95rem;outline:none;
 }
 .if:focus{border-color:var(--c-border-f);box-shadow:0 0 0 3px rgba(62,130,65,0.18);}
+.if-otp{
+  font-family:monospace;font-size:1.35rem;font-weight:800;letter-spacing:6px;text-align:center;
+}
 
 .btn-primary{
   width:100%;height:50px;background:linear-gradient(135deg,var(--c-p-lt) 0%,var(--c-p) 100%);
@@ -180,7 +254,7 @@ body{
 
 <div class="card">
   <div class="brand">
-    <img src="../assets/images/palmas-logo.png" alt="Logo">
+    <img src="../assets/images/palmas-logo.png" alt="Logo" onerror="this.style.display='none';">
     <h1>Reset Password</h1>
     <p>Palma's Elite Gym Member Portal</p>
   </div>
@@ -193,16 +267,45 @@ body{
     <div class="alert alert-ok"><i class="fa-solid fa-circle-check"></i> <div><?php echo htmlspecialchars($success); ?></div></div>
   <?php endif; ?>
 
-  <?php if ($step === 'request' && empty($success)): ?>
+  <!-- STEP 1: REQUEST OTP -->
+  <?php if ($step === 'request'): ?>
     <form method="POST">
       <input type="hidden" name="action" value="request">
       <div class="fg">
-        <label class="lbl" for="email">Enter Registered Email</label>
-        <input type="email" name="email" id="email" class="if" placeholder="e.g. yourname@example.com" required autofocus>
+        <label class="lbl" for="identifier">Enter Registered Email or Membership ID</label>
+        <input type="text" name="identifier" id="identifier" class="if" placeholder="e.g. member@example.com or MEM-2026-0001" value="<?php echo htmlspecialchars($identifier_val); ?>" required autofocus>
       </div>
-      <button type="submit" class="btn-primary"><i class="fa-solid fa-paper-plane"></i> Send Password Reset Link</button>
+      <button type="submit" class="btn-primary"><i class="fa-solid fa-paper-plane"></i> Send Verification Code</button>
     </form>
-  <?php elseif ($step === 'reset'): ?>
+
+  <!-- STEP 2: ENTER OTP & NEW PASSWORD -->
+  <?php elseif ($step === 'enter_otp'): ?>
+    <form method="POST">
+      <input type="hidden" name="action" value="verify_otp">
+      <input type="hidden" name="identifier" value="<?php echo htmlspecialchars($identifier_val); ?>">
+      
+      <div class="fg">
+        <label class="lbl" for="otp">6-Digit OTP Verification Code</label>
+        <input type="text" name="otp" id="otp" class="if if-otp" placeholder="123456" maxlength="6" pattern="[0-9]{6}" required autofocus>
+        <small style="color:var(--c-muted);font-size:0.75rem;margin-top:4px;display:block;">Check your email inbox or spam folder for the code.</small>
+      </div>
+      
+      <div class="fg">
+        <label class="lbl" for="password">New Password</label>
+        <input type="password" name="password" id="password" class="if" placeholder="At least 6 characters" required>
+      </div>
+      <div class="fg">
+        <label class="lbl" for="confirm_password">Confirm New Password</label>
+        <input type="password" name="confirm_password" id="confirm_password" class="if" placeholder="Re-enter new password" required>
+      </div>
+      <button type="submit" class="btn-primary"><i class="fa-solid fa-key"></i> Reset Password</button>
+    </form>
+    <div style="text-align:center; margin-top:14px;">
+      <a href="forgot_password.php" style="font-size:0.8rem; color:var(--c-p-mid); text-decoration:none;">Didn't receive code? Try again</a>
+    </div>
+
+  <!-- STEP 3: RESET VIA EMAIL TOKEN LINK -->
+  <?php elseif ($step === 'reset_token'): ?>
     <form method="POST">
       <input type="hidden" name="action" value="reset_with_token">
       <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
@@ -216,11 +319,19 @@ body{
       </div>
       <button type="submit" class="btn-primary"><i class="fa-solid fa-check"></i> Update Password</button>
     </form>
+
+  <!-- STEP 4: COMPLETED -->
+  <?php elseif ($step === 'done'): ?>
+    <div style="text-align:center; margin-top:10px;">
+      <a href="login.php" class="btn-primary" style="text-decoration:none;"><i class="fa-solid fa-right-to-bracket"></i> Sign In to Member Portal</a>
+    </div>
   <?php endif; ?>
 
+  <?php if ($step !== 'done'): ?>
   <div style="text-align:center;">
     <a href="login.php" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Sign In</a>
   </div>
+  <?php endif; ?>
 </div>
 
 </body>

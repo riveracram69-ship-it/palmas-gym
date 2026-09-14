@@ -4343,47 +4343,133 @@ async function processGoogleAuthentication(payload) {
   }
 }
 
-// ── FORGOT PASSWORD MODAL HANDLER ──────────────────────────────────
-function openForgotPasswordModal() {
-  const emailVal = document.getElementById('input-username')?.value.trim() || '';
-  const alert = document.createElement('ion-alert');
-  alert.header = 'Reset Password';
-  alert.subHeader = 'Enter your registered email address to receive password reset instructions.';
-  alert.inputs = [
+// ── FORGOT PASSWORD MODAL HANDLER (OTP WORKFLOW) ────────────────────
+async function openForgotPasswordModal() {
+  const usernameVal = document.getElementById('input-username')?.value.trim() || '';
+  const alertStep1 = document.createElement('ion-alert');
+  alertStep1.header = 'Reset Password';
+  alertStep1.subHeader = 'Enter your registered Email address or Membership ID to receive a 6-digit verification code.';
+  alertStep1.inputs = [
     {
-      name: 'email',
-      type: 'email',
-      placeholder: 'your.email@example.com',
-      value: emailVal.includes('@') ? emailVal : ''
+      name: 'identifier',
+      type: 'text',
+      placeholder: 'Email or Membership ID (e.g. MEM-...)',
+      value: usernameVal
     }
   ];
-  alert.buttons = [
+  alertStep1.buttons = [
     { text: 'Cancel', role: 'cancel' },
     {
-      text: 'Send Reset Link',
+      text: 'Send Code',
       handler: async (data) => {
-        const targetEmail = data?.email?.trim();
-        if (!targetEmail || !targetEmail.includes('@')) {
-          showToast('Please enter a valid email address.');
+        const idVal = data?.identifier?.trim();
+        if (!idVal) {
+          showToast('Please enter your email or Membership ID.');
           return false;
         }
-        showToast('Sending password reset email...');
+        showToast('Sending OTP verification code...');
         try {
           const res = await authFetch(`${API_URL}/member_forgot_password.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: targetEmail })
+            body: JSON.stringify({ action: 'request_otp', identifier: idVal })
           });
           const json = await res.json();
-          showToast(json.message || 'Password reset email sent! Check your inbox.', 5000);
+          if (json.success) {
+            showToast(json.message, 5000);
+            setTimeout(() => openOtpVerificationModal(idVal, json.masked_email || idVal), 400);
+          } else {
+            showToast(json.message || 'Unable to find account. Please verify your email or Membership ID.', 5000);
+          }
         } catch (err) {
-          showToast('Password reset instructions sent if email is registered. You can also visit front desk.', 5000);
+          showToast('Failed to send reset code. Please check your connection.', 4000);
         }
       }
     }
   ];
-  document.body.appendChild(alert);
-  return alert.present();
+  document.body.appendChild(alertStep1);
+  return alertStep1.present();
+}
+
+async function openOtpVerificationModal(identifier, maskedEmail) {
+  const alertStep2 = document.createElement('ion-alert');
+  alertStep2.header = 'Enter Verification Code';
+  alertStep2.subHeader = `A 6-digit code was sent to ${maskedEmail}. Enter the code and set your new password.`;
+  alertStep2.inputs = [
+    {
+      name: 'otp',
+      type: 'tel',
+      placeholder: '6-digit OTP code (e.g. 123456)',
+      attributes: { maxlength: 6 }
+    },
+    {
+      name: 'new_password',
+      type: 'password',
+      placeholder: 'New Password (min 6 chars)'
+    },
+    {
+      name: 'confirm_password',
+      type: 'password',
+      placeholder: 'Confirm New Password'
+    }
+  ];
+  alertStep2.buttons = [
+    { text: 'Cancel', role: 'cancel' },
+    {
+      text: 'Update Password',
+      handler: async (data) => {
+        const otp = data?.otp?.trim();
+        const newPass = data?.new_password?.trim();
+        const cfmPass = data?.confirm_password?.trim();
+
+        if (!otp || otp.length < 4) {
+          showToast('Please enter the 6-digit OTP code.');
+          return false;
+        }
+        if (!newPass || newPass.length < 6) {
+          showToast('Password must be at least 6 characters.');
+          return false;
+        }
+        if (newPass !== cfmPass) {
+          showToast('Passwords do not match. Please re-enter.');
+          return false;
+        }
+
+        showToast('Updating password...');
+        try {
+          const res = await authFetch(`${API_URL}/member_forgot_password.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'verify_otp_reset',
+              identifier: identifier,
+              otp: otp,
+              new_password: newPass
+            })
+          });
+          const json = await res.json();
+          if (json.success) {
+            showToast('🎉 Password reset successful! You can now log in.', 5000);
+            const uInp = document.getElementById('input-username');
+            if (uInp) uInp.value = json.membership_id || identifier;
+            const pInp = document.getElementById('input-password');
+            if (pInp) {
+              pInp.value = newPass;
+              pInp.type = 'password';
+            }
+          } else {
+            showToast(json.message || 'Invalid or expired OTP code. Please try again.', 5000);
+            return false;
+          }
+        } catch (err) {
+          showToast('Unable to update password. Please check your connection.', 4000);
+          return false;
+        }
+      }
+    }
+  ];
+  document.body.appendChild(alertStep2);
+  return alertStep2.present();
 }
 
 // ── TRADITIONAL LOGIN ──────────────────────────────────────────────
