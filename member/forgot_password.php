@@ -2,126 +2,226 @@
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/settings.php';
+require_once __DIR__ . '/../config/env.php';
 require_once __DIR__ . '/../config/email.php';
-
-if (isset($_SESSION['member_id'])) {
-    header('Location: index.php');
-    exit;
-}
+require_once __DIR__ . '/../config/logger.php';
+require_once __DIR__ . '/../config/rate_limiter.php';
 
 $error = '';
 $success = '';
+$token = trim($_GET['token'] ?? '');
+$step = !empty($token) ? 'reset' : 'request';
 
+// Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Rate limit check
-    if (isset($_SESSION['reset_lockout']) && time() < $_SESSION['reset_lockout']) {
-        $wait_time = ceil(($_SESSION['reset_lockout'] - time()) / 60);
-        $error = "Too many attempts. Please try again in {$wait_time} minutes.";
-    } else {
-        $email = trim($_POST['email'] ?? '');
-        
-        if (empty($email)) {
-            $error = "Please enter your registered email address.";
+    $action = $_POST['action'] ?? 'request';
+
+    if ($action === 'request') {
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Please enter a valid registered email address.';
         } else {
             try {
-                $stmt = $pdo->prepare("SELECT id, full_name, email FROM members WHERE email = ? AND (account_status = 'Approved' OR status = 'Active')");
+                $stmt = $pdo->prepare("SELECT id, membership_id, full_name, email FROM members WHERE LOWER(email) = ? LIMIT 1");
                 $stmt->execute([$email]);
                 $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if ($member) {
-                    $token = bin2hex(random_bytes(32));
-                    $expires_at = date('Y-m-d H:i:s', time() + 3600); // 1 hour expiry
+                    $otp = strval(random_int(100000, 999999));
+                    $reset_token = bin2hex(random_bytes(24));
+
+                    $pdo->exec("CREATE TABLE IF NOT EXISTS password_resets (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        member_id INT NOT NULL,
+                        email VARCHAR(191) NOT NULL,
+                        otp VARCHAR(10) NOT NULL,
+                        token VARCHAR(64) NOT NULL UNIQUE,
+                        expires_at DATETIME NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        KEY idx_member (member_id),
+                        KEY idx_token (token)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+                    $pdo->prepare("DELETE FROM password_resets WHERE member_id = ? OR email = ?")->execute([$member['id'], $email]);
+
+                    $insert = $pdo->prepare("INSERT INTO password_resets (member_id, email, otp, token, expires_at) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))");
+                    $insert->execute([$member['id'], $email, $otp, $reset_token]);
+
+                    $base = rtrim(defined('APP_URL') ? APP_URL : 'https://palmas-gym-4oxn.onrender.com', '/');
+                    $reset_url = $base . '/member/forgot_password.php?token=' . urlencode($reset_token);
+
+                    $subject = "Password Reset Request — Palma's Elite Gym";
+                    $title = "Reset Your Account Password";
+                    $body = '
+                    <p>Dear <strong>' . htmlspecialchars($member['full_name']) . '</strong>,</p>
+                    <p>We received a request to reset your password for your Palma\'s Elite Gym account (<strong>' . htmlspecialchars($member['membership_id']) . '</strong>).</p>
                     
-                    $update_stmt = $pdo->prepare("UPDATE members SET reset_token = ?, reset_expires_at = ? WHERE id = ?");
-                    $update_stmt->execute([$token, $expires_at, $member['id']]);
-                    
-                    if (defined('APP_URL') && APP_URL !== '') {
-                        $base_url = rtrim(APP_URL, '/');
-                    } else {
-                        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-                        $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'https' : 'http';
-                        $base_url = $protocol . '://' . $host . '/gym';
-                    }
-                    $reset_link = $base_url . "/member/reset_password.php?token=" . $token;
-                    
-                    $subject = "Password Reset Request - " . ($app_settings['gym_name'] ?? "Gym");
-                    $title = "Reset Your Password";
-                    $body = "Hi {$member['full_name']},<br><br>We received a request to reset your password. Click the link below to set a new password. This link will expire in 1 hour.<br><br><a href='{$reset_link}' style='display:inline-block; padding:10px 20px; background-color:#2d6a4f; color:#ffffff; text-decoration:none; border-radius:5px;'>Reset Password</a><br><br>If you did not request this, please ignore this email.";
-                    
-                    send_email_notification($member['email'], $subject, $title, $body);
+                    <div style="background-color:#F4F9F6; border:1px solid #D8E6DC; border-radius:10px; padding:18px; margin:20px 0; text-align:center;">
+                        <p style="margin:0 0 6px; font-size:12px; color:#2D6A4F; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">Your 6-Digit Verification Code</p>
+                        <span style="font-size:28px; font-weight:800; letter-spacing:6px; color:#1B4332; font-family:monospace;">' . $otp . '</span>
+                        <p style="margin:8px 0 0; font-size:11px; color:#64748B;">This code is valid for 1 hour.</p>
+                    </div>
+
+                    <p><a href="' . $reset_url . '" style="display:inline-block; padding:10px 20px; background:#1B4332; color:#fff; text-decoration:none; border-radius:8px; font-weight:bold;">Click Here to Reset Password</a></p>
+                    <p style="font-size:12px; color:#94A3B8; margin-top:20px;">If you did not make this request, you can safely ignore this email.</p>
+                    ';
+
+                    @send_email_notification($email, $subject, $title, $body);
+                    log_activity($pdo, 'Password Reset Requested', "Password reset requested for member {$member['full_name']} ({$member['membership_id']})", 'Auth', $member['id'], $member['full_name']);
                 }
-                
-                // Always show success message to prevent email enumeration
-                $success = "If an active account exists with that email, a password reset link has been sent.";
-                
-                // Track attempts
-                if (!isset($_SESSION['reset_attempts'])) $_SESSION['reset_attempts'] = 0;
-                $_SESSION['reset_attempts']++;
-                if ($_SESSION['reset_attempts'] >= 3) {
-                    $_SESSION['reset_lockout'] = time() + (15 * 60); // 15 mins
+
+                $success = 'If that email address is in our system, password reset instructions have been sent! Please check your email inbox and spam folder.';
+            } catch (Throwable $e) {
+                $error = 'Unable to process password reset. Please try again or visit the gym front desk.';
+            }
+        }
+    } elseif ($action === 'reset_with_token') {
+        $r_token  = trim($_POST['token'] ?? '');
+        $new_pass = trim($_POST['password'] ?? '');
+        $cfm_pass = trim($_POST['confirm_password'] ?? '');
+
+        if (empty($new_pass) || strlen($new_pass) < 6) {
+            $error = 'Password must be at least 6 characters long.';
+            $step = 'reset';
+            $token = $r_token;
+        } elseif ($new_pass !== $cfm_pass) {
+            $error = 'Passwords do not match.';
+            $step = 'reset';
+            $token = $r_token;
+        } else {
+            try {
+                $stmt = $pdo->prepare("SELECT member_id FROM password_resets WHERE token = ? AND expires_at > NOW() LIMIT 1");
+                $stmt->execute([$r_token]);
+                $reset_row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$reset_row) {
+                    $error = 'Invalid or expired password reset link. Please request a new one.';
+                    $step = 'request';
+                } else {
+                    $member_id = $reset_row['member_id'];
+                    $password_hash = password_hash($new_pass, PASSWORD_DEFAULT);
+
+                    $pdo->prepare("UPDATE members SET password_hash = ? WHERE id = ?")->execute([$password_hash, $member_id]);
+                    $pdo->prepare("DELETE FROM password_resets WHERE member_id = ?")->execute([$member_id]);
+
+                    log_activity($pdo, 'Password Reset Completed', "Member ID {$member_id} successfully reset their password.", 'Auth', $member_id);
+
+                    $success = 'Your password has been successfully updated! You can now log in with your new password.';
+                    $step = 'done';
                 }
-                
-            } catch (Exception $e) {
-                $error = "A system error occurred. Please try again.";
+            } catch (Throwable $e) {
+                $error = 'An error occurred while updating your password. Please try again.';
+                $step = 'reset';
+                $token = $r_token;
             }
         }
     }
 }
+
+$gym_name = htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym");
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Forgot Password | <?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?></title>
-    <link rel="stylesheet" href="../assets/css/member.css?v=<?php echo time(); ?>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-        body {
-            background: radial-gradient(ellipse at top, rgba(27,67,50,0.25) 0%, var(--bg-primary) 50%);
-            min-height: 100vh;
-        }
-        .input-wrap { position: relative; }
-        .input-wrap .input-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem; }
-        .input-wrap .form-control { padding-left: 2.5rem; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Forgot Password | <?php echo $gym_name; ?></title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c-bg:#F4F7F5;--c-card:#FFFFFF;--c-input:#FAFDFA;--c-border:#DCE5DD;--c-border-f:#3E8241;
+  --c-p:#3E8241;--c-p-mid:#2D6A4F;--c-p-lt:#52B788;--c-p-pale:#EDF4EE;
+  --c-h:#121A14;--c-body:#334337;--c-muted:#617567;--c-faint:#91A397;
+  --r-card:20px;--r-input:12px;--r-btn:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;background:var(--c-bg);font-family:'Inter',sans-serif;color:var(--c-body);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;
+}
+.card{
+  background:var(--c-card);border:1px solid var(--c-border);border-radius:var(--r-card);
+  padding:36px 30px;width:100%;max-width:440px;box-shadow:0 8px 30px rgba(27,67,50,0.06);
+}
+.brand{text-align:center;margin-bottom:24px;}
+.brand img{width:64px;height:64px;border-radius:50%;object-fit:contain;margin-bottom:12px;}
+.brand h1{font-family:'Outfit',sans-serif;font-size:1.35rem;font-weight:800;color:var(--c-h);letter-spacing:0.5px;}
+.brand p{font-size:0.85rem;color:var(--c-muted);margin-top:4px;}
+
+.fg{margin-bottom:18px;}
+.lbl{display:block;font-size:0.85rem;font-weight:600;color:var(--c-h);margin-bottom:6px;}
+.if{
+  width:100%;height:48px;background:var(--c-input);border:1.5px solid var(--c-border);
+  border-radius:var(--r-input);padding:0 14px;color:var(--c-h);font-size:0.95rem;outline:none;
+}
+.if:focus{border-color:var(--c-border-f);box-shadow:0 0 0 3px rgba(62,130,65,0.18);}
+
+.btn-primary{
+  width:100%;height:50px;background:linear-gradient(135deg,var(--c-p-lt) 0%,var(--c-p) 100%);
+  border:none;border-radius:var(--r-btn);color:#fff;font-family:'Outfit',sans-serif;
+  font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  gap:8px;box-shadow:0 4px 14px rgba(45,106,79,0.3);transition:all 0.2s;
+}
+.btn-primary:hover{opacity:0.95;transform:translateY(-1px);}
+
+.alert{padding:12px 16px;border-radius:10px;font-size:0.875rem;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.alert-err{background:#FEE2E2;border:1px solid #FECACA;color:#DC2626;}
+.alert-ok{background:#DCFCE7;border:1px solid #BBF7D0;color:#15803D;}
+
+.back-link{
+  display:inline-flex;align-items:center;gap:6px;color:var(--c-p-mid);
+  text-decoration:none;font-size:0.85rem;font-weight:600;margin-top:20px;
+}
+.back-link:hover{text-decoration:underline;}
+</style>
 </head>
 <body>
-<div class="mobile-container" style="padding-bottom:0;">
-    <div class="login-screen">
-        <div class="login-bg-glow"></div>
-        <div class="login-brand fade-up">
-            <div class="login-logo-wrap">
-                <img src="../assets/images/palmas-logo.png" alt="<?php echo htmlspecialchars($app_settings['gym_name'] ?? "Gym"); ?> Logo">
-            </div>
-            <h1>Forgot Password</h1>
-            <p>Enter your email to receive a reset link.</p>
-        </div>
 
-        <div class="login-form-card fade-up fade-up-d1">
-            <?php if ($error): ?>
-                <div class="error-banner"><i class="fas fa-triangle-exclamation"></i> <span><?php echo htmlspecialchars($error); ?></span></div>
-            <?php endif; ?>
-            <?php if ($success): ?>
-                <div class="error-banner" style="background:rgba(82,183,136,0.15); color:var(--accent); border-color:rgba(82,183,136,0.3);"><i class="fas fa-check-circle"></i> <span><?php echo htmlspecialchars($success); ?></span></div>
-            <?php else: ?>
-            <form action="" method="POST" id="reset-form">
-                <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
-                <div class="form-group">
-                    <label for="email"><i class="fas fa-envelope"></i> Registered Email</label>
-                    <div class="input-wrap">
-                        <i class="fas fa-at input-icon"></i>
-                        <input type="email" name="email" id="email" class="form-control" placeholder="john@example.com" required autofocus>
-                    </div>
-                </div>
-                <button type="submit" class="btn" id="submit-btn"><i class="fas fa-paper-plane"></i> Send Reset Link</button>
-            </form>
-            <?php endif; ?>
-            <div style="text-align:center; margin-top:1.5rem;">
-                <a href="login.php" style="color:var(--text-muted); font-size:0.85rem; text-decoration:none;"><i class="fas fa-arrow-left"></i> Back to Login</a>
-            </div>
-        </div>
-    </div>
+<div class="card">
+  <div class="brand">
+    <img src="../assets/images/palmas-logo.png" alt="Logo">
+    <h1>Reset Password</h1>
+    <p>Palma's Elite Gym Member Portal</p>
+  </div>
+
+  <?php if ($error): ?>
+    <div class="alert alert-err"><i class="fa-solid fa-circle-exclamation"></i> <div><?php echo htmlspecialchars($error); ?></div></div>
+  <?php endif; ?>
+
+  <?php if ($success): ?>
+    <div class="alert alert-ok"><i class="fa-solid fa-circle-check"></i> <div><?php echo htmlspecialchars($success); ?></div></div>
+  <?php endif; ?>
+
+  <?php if ($step === 'request' && empty($success)): ?>
+    <form method="POST">
+      <input type="hidden" name="action" value="request">
+      <div class="fg">
+        <label class="lbl" for="email">Enter Registered Email</label>
+        <input type="email" name="email" id="email" class="if" placeholder="e.g. yourname@example.com" required autofocus>
+      </div>
+      <button type="submit" class="btn-primary"><i class="fa-solid fa-paper-plane"></i> Send Password Reset Link</button>
+    </form>
+  <?php elseif ($step === 'reset'): ?>
+    <form method="POST">
+      <input type="hidden" name="action" value="reset_with_token">
+      <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
+      <div class="fg">
+        <label class="lbl" for="password">New Password</label>
+        <input type="password" name="password" id="password" class="if" placeholder="At least 6 characters" required autofocus>
+      </div>
+      <div class="fg">
+        <label class="lbl" for="confirm_password">Confirm New Password</label>
+        <input type="password" name="confirm_password" id="confirm_password" class="if" placeholder="Re-enter new password" required>
+      </div>
+      <button type="submit" class="btn-primary"><i class="fa-solid fa-check"></i> Update Password</button>
+    </form>
+  <?php endif; ?>
+
+  <div style="text-align:center;">
+    <a href="login.php" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Sign In</a>
+  </div>
 </div>
+
 </body>
 </html>

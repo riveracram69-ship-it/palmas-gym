@@ -419,7 +419,6 @@ img{max-width:100%;display:block}
       <div class="fg">
         <label class="lbl" for="credential">
           <span>Password</span>
-          <a href="forgot_password.php" class="forgot">Forgot Password?</a>
         </label>
         <div class="iw">
           <i class="fa-solid fa-lock ii" aria-hidden="true"></i>
@@ -430,9 +429,10 @@ img{max-width:100%;display:block}
             <i class="fa-regular fa-eye" aria-hidden="true"></i>
           </button>
         </div>
-        <div class="info-box" id="first-time-hint">
-          <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-          <span><strong>First-time login?</strong> Enter your registered email to set up your password.</span>
+        <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+          <a href="forgot_password.php" class="forgot" style="font-size:0.82rem; display:inline-flex; align-items:center; gap:5px;">
+            <i class="fa-solid fa-key" style="font-size:0.75rem;"></i> Forgot Password?
+          </a>
         </div>
       </div>
 

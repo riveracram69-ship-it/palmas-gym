@@ -22,9 +22,10 @@ try {
     $raw  = file_get_contents('php://input');
     $data = json_decode($raw, true) ?: $_POST;
 
-    $id_token = trim($data['id_token'] ?? '');
+    $id_token     = trim($data['id_token'] ?? '');
+    $access_token = trim($data['access_token'] ?? '');
 
-    if (empty($id_token)) {
+    if (empty($id_token) && empty($access_token)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Google authentication token is required.']);
         exit;
@@ -32,7 +33,14 @@ try {
 
     // ── 2. Verify Token with Google ───────────────────────────────────────────────
     $google_client_id = defined('GOOGLE_CLIENT_ID') ? GOOGLE_CLIENT_ID : '';
-    $google_info      = verify_google_id_token($id_token, $google_client_id);
+    $google_info = null;
+
+    if (!empty($access_token)) {
+        $google_info = verify_google_access_token($access_token);
+    }
+    if (!$google_info && !empty($id_token)) {
+        $google_info = verify_google_id_token($id_token, $google_client_id);
+    }
 
     if (!$google_info || empty($google_info['sub'])) {
         echo json_encode(['success' => false, 'message' => 'Google authentication failed. Please try signing in again.']);
@@ -183,6 +191,43 @@ try {
     echo json_encode(['success' => false, 'message' => 'Unable to complete Google Sign-In. Please check your connection and try again.']);
 }
 
+// ── Helper: Verify Google Access Token via userinfo endpoint ─────────────────
+function verify_google_access_token(string $token): ?array {
+    $url = 'https://www.googleapis.com/oauth2/v3/userinfo';
+    $ctx = stream_context_create([
+        'http' => [
+            'timeout' => 10,
+            'header'  => "Authorization: Bearer " . trim($token) . "\r\n"
+        ]
+    ]);
+    $response = @file_get_contents($url, false, $ctx);
+
+    if ($response === false && function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . trim($token)],
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    }
+
+    if (!$response) {
+        error_log('Google userinfo: Could not reach Google servers.');
+        return null;
+    }
+
+    $payload = json_decode($response, true);
+    if (empty($payload) || !empty($payload['error']) || empty($payload['sub'])) {
+        error_log('Google userinfo error: ' . ($payload['error_description'] ?? $payload['error'] ?? 'unknown'));
+        return null;
+    }
+
+    return $payload;
+}
+
 // ── Helper: Verify Google ID Token ───────────────────────────────────────────
 function verify_google_id_token(string $token, string $expected_client_id = ''): ?array {
     $url = 'https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode($token);
@@ -222,3 +267,4 @@ function verify_google_id_token(string $token, string $expected_client_id = ''):
 
     return $payload;
 }
+

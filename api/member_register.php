@@ -281,7 +281,43 @@ try {
 
     $pdo->commit();
 
-    // Activity Log (Non-blocking safeguard)
+    // Prepare JSON payload for instant response
+    $response_data = [
+        'success'          => true,
+        'pending_approval' => !$is_online_instant,
+        'is_active'        => $is_online_instant,
+        'message'          => $is_online_instant 
+            ? "Registration complete! Your membership has been instantly activated via {$payment_method}." 
+            : 'Registration submitted! Please settle your cash payment at the gym front desk upon your visit.',
+        'membership_id'    => $membership_id,
+        'full_name'        => $full_name,
+        'auth_provider'    => $auth_provider,
+        'token'            => $auth_token,
+        'member'           => [
+            'id'             => $member_id,
+            'membership_id'  => $membership_id,
+            'full_name'      => $full_name,
+            'email'          => $email,
+            'account_status' => $initial_acc_status,
+            'status'         => $initial_status
+        ]
+    ];
+
+    if (ob_get_length()) {
+        ob_clean();
+    }
+
+    echo json_encode($response_data);
+
+    // Fast-finish HTTP response if supported by server (Nginx/Apache/FPM)
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    } elseif (ob_get_level()) {
+        @ob_end_flush();
+        @flush();
+    }
+
+    // Activity Log (Safely run in background)
     try {
         $provider_label = ($auth_provider === 'google') ? ' (Google Sign-In)' : '';
         $log_status = $is_online_instant ? 'Auto-activated instantly.' : 'Pending staff cash collection.';
@@ -290,7 +326,7 @@ try {
         error_log("Registration log_activity warning: " . $logEx->getMessage());
     }
 
-    // Welcome email (Non-blocking safeguard)
+    // Welcome email (Safely run in background)
     try {
         require_once __DIR__ . '/../config/email.php';
         if ($is_online_instant) {
@@ -315,31 +351,6 @@ try {
     } catch (Throwable $emErr) {
         error_log("Registration send_email_notification warning: " . $emErr->getMessage());
     }
-
-    if (ob_get_length()) {
-        ob_clean();
-    }
-
-    echo json_encode([
-        'success'          => true,
-        'pending_approval' => !$is_online_instant,
-        'is_active'        => $is_online_instant,
-        'message'          => $is_online_instant 
-            ? "Registration complete! Your membership has been instantly activated via {$payment_method}." 
-            : 'Registration submitted! Please settle your cash payment at the gym front desk upon your visit.',
-        'membership_id'    => $membership_id,
-        'full_name'        => $full_name,
-        'auth_provider'    => $auth_provider,
-        'token'            => $auth_token,
-        'member'           => [
-            'id'             => $member_id,
-            'membership_id'  => $membership_id,
-            'full_name'      => $full_name,
-            'email'          => $email,
-            'account_status' => $initial_acc_status,
-            'status'         => $initial_status
-        ]
-    ]);
 
 } catch (Exception $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();

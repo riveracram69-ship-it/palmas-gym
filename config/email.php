@@ -249,33 +249,49 @@ function send_email_notification($to, $subject, $title, $body_text) {
     $log_entry .= str_repeat("-", 80) . "\n";
     @file_put_contents($log_file, $log_entry, FILE_APPEND);
 
-    // 5. Insert into notifications table
+    // 5. Insert into notifications table (best-effort)
     try {
         global $pdo;
-        if (!isset($pdo)) {
-            require_once __DIR__ . '/db.php';
+        if (!isset($pdo) && file_exists(__DIR__ . '/db.php')) {
+            // Only try if not already attempted and we have active DB
+            try {
+                $host = DB_HOST;
+                $port = defined('DB_PORT') ? DB_PORT : '3306';
+                $db   = DB_NAME;
+                $user = DB_USER;
+                $pass = DB_PASS;
+                $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4";
+                $pdo = new PDO($dsn, $user, $pass, [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_TIMEOUT => 2
+                ]);
+            } catch (\Throwable $dbe) {
+                $pdo = null;
+            }
         }
         
-        // Find member_id
-        $stmt = $pdo->prepare("SELECT id FROM members WHERE email = ? LIMIT 1");
-        $stmt->execute([$to]);
-        $member = $stmt->fetch();
-        $member_id = $member ? $member['id'] : null;
+        if ($pdo instanceof \PDO) {
+            // Find member_id
+            $stmt = $pdo->prepare("SELECT id FROM members WHERE email = ? LIMIT 1");
+            $stmt->execute([$to]);
+            $member = $stmt->fetch();
+            $member_id = $member ? $member['id'] : null;
 
-        // Guess notification type based on subject
-        $type = 'System';
-        $l_subj = strtolower($subject);
-        if (strpos($l_subj, 'welcome') !== false) $type = 'Registration';
-        elseif (strpos($l_subj, 'renew') !== false) $type = 'Renewal';
-        elseif (strpos($l_subj, 'expir') !== false) $type = 'Expiration';
-        elseif (strpos($l_subj, 'inactiv') !== false) $type = 'Inactivity';
+            // Guess notification type based on subject
+            $type = 'System';
+            $l_subj = strtolower($subject);
+            if (strpos($l_subj, 'welcome') !== false) $type = 'Registration';
+            elseif (strpos($l_subj, 'renew') !== false) $type = 'Renewal';
+            elseif (strpos($l_subj, 'expir') !== false) $type = 'Expiration';
+            elseif (strpos($l_subj, 'inactiv') !== false) $type = 'Inactivity';
 
-        $db_status = $mail_sent ? 'Sent' : 'Failed';
+            $db_status = $mail_sent ? 'Sent' : 'Failed';
 
-        $insert = $pdo->prepare("INSERT INTO notifications (member_id, type, title, message, delivery_status, sent_at) VALUES (?, ?, ?, ?, ?, NOW())");
-        $insert->execute([$member_id, $type, $subject, strip_tags($body_text), $db_status]);
-    } catch (Exception $e) {
-        // Fail silently if table doesn't exist yet
+            $insert = $pdo->prepare("INSERT INTO notifications (member_id, type, title, message, delivery_status, sent_at) VALUES (?, ?, ?, ?, ?, NOW())");
+            $insert->execute([$member_id, $type, $subject, strip_tags($body_text), $db_status]);
+        }
+    } catch (\Throwable $e) {
+        // Fail silently if DB table doesn't exist or is unreachable
     }
 
     return [

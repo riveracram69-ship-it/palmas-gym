@@ -29,7 +29,7 @@ if %ERRORLEVEL% neq 0 (
 )
 
 echo [2/3] Verified: APK successfully published to %DEST_APK%
-echo [3/3] Target Endpoint: https://palmas-gym.onrender.com/api
+echo [3/3] Target Endpoint: https://palmas-gym-4oxn.onrender.com/api
 echo.
 echo ====================================================
 echo  [BUILD & PUBLISH SUCCESSFUL]

@@ -2195,10 +2195,9 @@
         </div>
 
         <!-- Field 2: Password -->
-        <div class="login-field-group" style="margin-bottom:12px;">
+        <div class="login-field-group" style="margin-bottom:14px;">
           <div class="login-label">
             <span>Password</span>
-            <a class="login-forgot-link" onclick="openForgotPasswordModal()">Forgot Password?</a>
           </div>
           <div class="login-input-wrap">
             <i class="fa-solid fa-lock login-icon-left" style="color:#91A397;"></i>
@@ -2220,10 +2219,11 @@
             </button>
           </div>
 
-          <!-- First-time login callout box -->
-          <div class="login-first-time-box">
-            <i class="fa-solid fa-circle-info"></i>
-            <span><strong>First-time login?</strong> Enter your registered email to set up your password.</span>
+          <!-- Forgot Password Link placed directly below the password input -->
+          <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+            <a class="login-forgot-link" href="javascript:void(0)" onclick="openForgotPasswordModal()" style="font-size:0.82rem; color:var(--primary, #52B788); font-weight:600; text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+              <i class="fa-solid fa-key" style="font-size:0.75rem;"></i> Forgot Password?
+            </a>
           </div>
         </div>
 
@@ -3601,10 +3601,10 @@
       <p style="font-size:13px; color:var(--text-secondary); margin:0 0 16px; text-align:center;">Choose backend endpoint or enter custom IP for local testing.</p>
 
       <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
-        <button class="btn-outline" style="height:44px; font-size:12px; justify-content:flex-start; padding:0 14px;" onclick="selectEndpoint('https://palmas-gym.onrender.com/api')">
-          <i class="fa-solid fa-cloud" style="color:var(--primary); margin-right:8px;"></i> Live Cloud Server (Primary)
-        </button>
         <button class="btn-outline" style="height:44px; font-size:12px; justify-content:flex-start; padding:0 14px;" onclick="selectEndpoint('https://palmas-gym-4oxn.onrender.com/api')">
+          <i class="fa-solid fa-cloud" style="color:var(--primary); margin-right:8px;"></i> Live Cloud Server (Primary - Render)
+        </button>
+        <button class="btn-outline" style="height:44px; font-size:12px; justify-content:flex-start; padding:0 14px;" onclick="selectEndpoint('https://palmas-gym.onrender.com/api')">
           <i class="fa-solid fa-cloud" style="color:var(--text-muted); margin-right:8px;"></i> Backup Cloud Server (Failover)
         </button>
       </div>
@@ -3785,11 +3785,18 @@
 // ══════════════════════════════════════════════════════════════════
 // ── Primary & Failover API Endpoints ────────────────────────────────
 const DEFAULT_ENDPOINTS = [
-  'https://palmas-gym.onrender.com/api',
+  'https://palmas-gym-4oxn.onrender.com/api',
   'https://palmas-gym-4oxn.onrender.com/api'
 ];
 
-let API_URL = localStorage.getItem('peg_api_endpoint') || DEFAULT_ENDPOINTS[0];
+let storedEndpoint = localStorage.getItem('peg_api_endpoint');
+if (!storedEndpoint || storedEndpoint.includes('palmas-gym.onrender.com') || !storedEndpoint.includes('4oxn')) {
+  if (!storedEndpoint || !storedEndpoint.includes('192.168.')) {
+    storedEndpoint = 'https://palmas-gym-4oxn.onrender.com/api';
+    localStorage.setItem('peg_api_endpoint', storedEndpoint);
+  }
+}
+let API_URL = storedEndpoint || DEFAULT_ENDPOINTS[0];
 const GOOGLE_CLIENT_ID = '547166577828-q8asn3pta04j6o779g3vc6sqmvq76n39.apps.googleusercontent.com';
 
 function getFallbackEndpoint() {
@@ -4217,16 +4224,33 @@ function togglePasswordVisibility(inputId, btn) {
 
 // ── GOOGLE SIGN-IN ─────────────────────────────────────────────────
 let googleInitialized = false;
+let googleTokenClient = null;
 
 function initGoogleClient() {
-  if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+  if (typeof google !== 'undefined' && google.accounts) {
     try {
-      google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleCredential,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      });
+      if (google.accounts.id) {
+        google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleCredential,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+      }
+      if (google.accounts.oauth2) {
+        googleTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'openid email profile',
+          callback: async (tokenResponse) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              await processGoogleAuthentication({ access_token: tokenResponse.access_token });
+            } else if (tokenResponse && tokenResponse.error) {
+              console.warn('Google OAuth token error:', tokenResponse);
+              showToast('Google authentication was cancelled.');
+            }
+          },
+        });
+      }
       googleInitialized = true;
     } catch (e) {
       console.warn('GSI init error:', e);
@@ -4239,21 +4263,24 @@ window.addEventListener('load', initGoogleClient);
 document.addEventListener('DOMContentLoaded', initGoogleClient);
 
 function initiateGoogleSignIn() {
-  if (!googleInitialized && typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+  if (!googleInitialized || !googleTokenClient) {
     initGoogleClient();
   }
 
+  // Priority 1: Google OAuth2 Token Client (Opens Google account chooser popup on explicit click)
+  if (googleTokenClient && typeof googleTokenClient.requestAccessToken === 'function') {
+    showToast('Connecting to Google...');
+    googleTokenClient.requestAccessToken({ prompt: 'select_account' });
+    return;
+  }
+
+  // Priority 2: Google One Tap prompt fallback
   if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
     try {
-      google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleCredential,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      });
       google.accounts.id.prompt((notification) => {
         if (notification && (notification.isNotDisplayed() || notification.isSkippedMoment())) {
           console.log('GSI One Tap skipped/not displayed:', notification.getNotDisplayedReason());
+          showToast('Please check your internet connection or sign in with your credentials.');
         }
       });
       return;
@@ -4263,10 +4290,6 @@ function initiateGoogleSignIn() {
   }
 
   showToast('Connecting with Google accounts...');
-  // Direct Google OAuth URL fallback if GSI is blocked in WebView
-  const redirectUri = 'https://palmas-gym-4oxn.onrender.com/member/google_callback.php';
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20email%20profile&access_type=offline&prompt=select_account`;
-  window.open(authUrl, '_blank');
 }
 
 async function handleGoogleCredential(response) {
@@ -4274,13 +4297,17 @@ async function handleGoogleCredential(response) {
     showToast('Google authentication was cancelled.');
     return;
   }
+  await processGoogleAuthentication({ id_token: response.credential });
+}
+
+async function processGoogleAuthentication(payload) {
   showToast('Verifying Google credentials...');
 
   try {
     const res = await authFetch(`${API_URL}/google_auth.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id_token: response.credential })
+      body: JSON.stringify(payload)
     });
     const data = await res.json();
 
@@ -4333,12 +4360,24 @@ function openForgotPasswordModal() {
     { text: 'Cancel', role: 'cancel' },
     {
       text: 'Send Reset Link',
-      handler: (data) => {
-        if (!data.email || !data.email.includes('@')) {
+      handler: async (data) => {
+        const targetEmail = data?.email?.trim();
+        if (!targetEmail || !targetEmail.includes('@')) {
           showToast('Please enter a valid email address.');
           return false;
         }
-        showToast('Password reset instructions sent if email is registered. You can also visit front desk.', 5000);
+        showToast('Sending password reset email...');
+        try {
+          const res = await authFetch(`${API_URL}/member_forgot_password.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: targetEmail })
+          });
+          const json = await res.json();
+          showToast(json.message || 'Password reset email sent! Check your inbox.', 5000);
+        } catch (err) {
+          showToast('Password reset instructions sent if email is registered. You can also visit front desk.', 5000);
+        }
       }
     }
   ];
@@ -5018,7 +5057,14 @@ async function submitRegistration() {
       setPendingScreen(regEmail, regFullName);
       showToast('Registration submitted! Please settle cash at the gym front desk upon your visit.');
     } else {
-      showToast(data.message || 'Registration failed.');
+      const msg = data.message || 'Registration failed.';
+      showToast(msg);
+      if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('registered') || msg.toLowerCase().includes('exists')) {
+        setTimeout(() => {
+          showToast('Redirecting to Sign In...');
+          showScreen('view-login');
+        }, 2200);
+      }
     }
   } catch (err) {
     console.error('submitRegistration exception:', err);
