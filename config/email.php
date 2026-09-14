@@ -195,44 +195,60 @@ function send_email_notification($to, $subject, $title, $body_text) {
             return true;
         }
 
-        $mail->isSMTP();
-        $mail->Host       = SMTP_HOST;
-        $mail->SMTPAuth   = true;
-        $mail->Username   = SMTP_USER;
-        $mail->Password   = trim(str_replace(' ', '', (string)SMTP_PASS));
-        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = SMTP_PORT;
-        $mail->Timeout    = 5;
+        $configsToTry = [
+            ['port' => (int)(defined('SMTP_PORT') ? SMTP_PORT : 587), 'secure' => (defined('SMTP_PORT') && (int)SMTP_PORT === 465) ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS],
+            ['port' => 465, 'secure' => \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS],
+            ['port' => 587, 'secure' => \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS]
+        ];
 
-        // SSL options for local environment / Windows OpenSSL compatibility
-        $mail->SMTPOptions = array(
-            'ssl' => array(
-                'verify_peer' => false,
-                'verify_peer_name' => false,
-                'allow_self_signed' => true
-            )
-        );
+        $tried = [];
+        foreach ($configsToTry as $cfg) {
+            $k = $cfg['port'] . '-' . $cfg['secure'];
+            if (isset($tried[$k])) continue;
+            $tried[$k] = true;
 
-        // Recipients
-        $fromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : 'Palma\'s Elite Gym';
-        $mail->setFrom(SMTP_FROM, $fromName);
-        $mail->addAddress($to);
+            try {
+                $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+                $mail->isSMTP();
+                $mail->Host       = SMTP_HOST;
+                $mail->SMTPAuth   = true;
+                $mail->Username   = SMTP_USER;
+                $mail->Password   = trim(str_replace(' ', '', (string)SMTP_PASS));
+                $mail->SMTPSecure = $cfg['secure'];
+                $mail->Port       = $cfg['port'];
+                $mail->Timeout    = 5;
 
-        // Content
-        $mail->isHTML(true);
-        $mail->Subject = $subject;
-        $mail->Body    = $html_message;
-        $mail->AltBody = strip_tags($body_text);
+                $mail->SMTPOptions = array(
+                    'ssl' => array(
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                        'allow_self_signed' => true
+                    )
+                );
 
-        $mail->send();
-        $mail_sent = true;
-        $status_text = 'DELIVERED (Success)';
-    } catch (Exception $e) {
-        $smtp_error  = $mail->ErrorInfo ?: $e->getMessage();
-        $status_text = 'FAILED (SMTP Error: ' . $smtp_error . ')';
-        // [R-07 FIX] Log SMTP failures to server error log so they appear in Render/cPanel logs
-        error_log('[EMAIL-FAIL] To: ' . $to . ' | Subject: ' . $subject . ' | Error: ' . $smtp_error);
-    }
+                $fromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : 'Palma\'s Elite Gym';
+                $mail->setFrom(SMTP_FROM, $fromName);
+                $mail->addAddress($to);
+
+                $mail->isHTML(true);
+                $mail->Subject = $subject;
+                $mail->Body    = $html_message;
+                $mail->AltBody = strip_tags($body_text);
+
+                $mail->send();
+                $mail_sent = true;
+                $status_text = 'DELIVERED (Success via port ' . $cfg['port'] . ')';
+                $smtp_error = '';
+                break;
+            } catch (Exception $e) {
+                $smtp_error  = $mail->ErrorInfo ?: $e->getMessage();
+                $status_text = 'FAILED (Port ' . $cfg['port'] . ' Error: ' . $smtp_error . ')';
+            }
+        }
+
+        if (!$mail_sent) {
+            error_log('[EMAIL-FAIL] To: ' . $to . ' | Subject: ' . $subject . ' | Error: ' . $smtp_error);
+        }
 
     // 4. Accurate logging of success or failure
     $log_dir = __DIR__ . '/../backups/';
