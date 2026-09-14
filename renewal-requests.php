@@ -136,10 +136,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if (!empty($req['email'])) {
                     require_once 'config/email.php';
-                    $email_subject = "Renewal Approved - Palma's Elite Gym";
-                    $email_title = "Renewal Approved!";
-                    $email_body = "Hello {$req['full_name']}, your renewal request for the plan <strong>{$req['plan_name']}</strong> has been approved. Your subscription is active and will expire on " . date('F d, Y', strtotime($expiry_date)) . ". Thank you for your payment!";
-                    send_email_notification($req['email'], $email_subject, $email_title, $email_body);
+                    $formatted_expiry = date('F j, Y', strtotime($expiry_date));
+                    $email_subject = "Membership Successfully Renewed! — Palma's Elite Gym";
+                    $email_title = "Your Membership Has Been Successfully Renewed! 🔄";
+                    $email_body = "
+                        <p>Dear <strong>" . htmlspecialchars($req['full_name']) . "</strong>,</p>
+                        <p>Great news! Your renewal request for <strong>Palma's Elite Gym</strong> has been approved and your membership is now <strong>successfully renewed</strong>.</p>
+                        
+                        <div style=\"background-color:#F4F9F6; border:1px solid #D8E6DC; border-radius:10px; padding:18px; margin:20px 0;\">
+                            <p style=\"margin:0 0 10px; font-weight:bold; color:#1B4332; font-size:14px; text-transform:uppercase; letter-spacing:0.5px;\">Membership Summary</p>
+                            <table style=\"width:100%; font-size:13px; color:#334155; border-collapse:collapse;\">
+                                <tr><td style=\"padding:4px 0;\"><strong>Membership ID:</strong></td><td style=\"text-align:right; font-family:monospace; font-weight:bold; color:#1B4332;\">" . htmlspecialchars($req['membership_id'] ?? 'N/A') . "</td></tr>
+                                <tr><td style=\"padding:4px 0;\"><strong>Plan:</strong></td><td style=\"text-align:right; font-weight:bold;\">" . htmlspecialchars($req['plan_name']) . "</td></tr>
+                                <tr><td style=\"padding:4px 0;\"><strong>Payment Method:</strong></td><td style=\"text-align:right;\">" . htmlspecialchars($req['payment_method']) . "</td></tr>
+                                " . (!empty($req['reference_no']) ? "<tr><td style=\"padding:4px 0;\"><strong>Reference No:</strong></td><td style=\"text-align:right; font-family:monospace;\">" . htmlspecialchars($req['reference_no']) . "</td></tr>" : "") . "
+                                <tr style=\"border-top:1px dashed #CBD5E1;\"><td style=\"padding:8px 0 0;\"><strong>New Expiry Date:</strong></td><td style=\"padding:8px 0 0; text-align:right; font-weight:bold; color:#1B4332;\">{$formatted_expiry}</td></tr>
+                            </table>
+                        </div>
+
+                        <p>Your <strong>Digital QR Pass</strong> is now active and ready for check-in at the gym entrance kiosk.</p>
+                        <p style=\"margin-top:16px;\">Thank you for renewing and continuing your fitness journey with Palma's Elite Gym! 💪</p>
+                    ";
+                    @send_email_notification($req['email'], $email_subject, $email_title, $email_body);
                 }
 
                 log_activity(
