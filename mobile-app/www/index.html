@@ -5045,18 +5045,19 @@ async function submitRegistration() {
         localStorage.setItem('peg_token', data.token);
       }
       if (data.member) {
-        currentUser = data.member;
-        localStorage.setItem('peg_user', JSON.stringify(data.member));
+        currentMember = data.member;
+        localStorage.setItem('peg_member', JSON.stringify(data.member));
       }
       showToast('Registration complete! Membership pass activated! 🎉');
-      showView('dashboard');
-      loadDashboard();
+      initMainView(data.member ? data.member.id : 0);
       return;
     } else if (data.success || data.pending_approval) {
-      const regEmail = document.getElementById('reg-email').value.trim();
+      const regEmail = document.getElementById('reg-email')?.value.trim() || '';
       const regFullName = syncRegFullName();
       setPendingScreen(regEmail, regFullName);
       showToast('Registration submitted! Please settle cash at the gym front desk upon your visit.');
+      return;
+    }
     } else {
       const msg = data.message || 'Registration failed.';
       showToast(msg);
