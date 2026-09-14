@@ -38,7 +38,11 @@ $active = array_filter($members, fn($m) => $m['status'] === 'Active');
         <h1>Member Directory</h1>
         <p><?php echo $total; ?> total members registered in the system.</p>
     </div>
-    <a href="add-member.php" class="btn btn-primary"><i class="fas fa-plus"></i> Add New Member</a>
+    <div style="display:flex; gap:0.6rem; align-items:center;">
+        <button type="button" class="btn btn-primary" onclick="openAccountChoiceModal()">
+            <i class="fas fa-plus"></i> Add Account
+        </button>
+    </div>
 </div>
 
 <div class="card">
@@ -275,4 +279,8 @@ document.querySelectorAll('.status-toggle-btn').forEach(btn => {
 });
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php 
+require_once __DIR__ . '/includes/ui_components.php';
+render_create_account_modal();
+include 'includes/footer.php'; 
+?>

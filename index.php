@@ -363,9 +363,9 @@ try {
                 </select>
             </form>
 
-            <a href="add-member.php" class="btn btn-primary btn-action">
-                <i class="fas fa-user-plus"></i> Add Member
-            </a>
+            <button type="button" class="btn btn-primary btn-action" onclick="openAccountChoiceModal()">
+                <i class="fas fa-user-plus"></i> Add Account
+            </button>
         </div>
     </div>
 
@@ -1633,4 +1633,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php 
+require_once __DIR__ . '/includes/ui_components.php';
+render_create_account_modal();
+include 'includes/footer.php'; 
+?>

@@ -84,6 +84,11 @@ try {
                 <i class="fas fa-money-bill-wave"></i> Payments
             </a>
         </li>
+        <li class="nav-item">
+            <a href="users.php" class="nav-link <?php echo nav_active('users.php'); ?>">
+                <i class="fas fa-user-shield"></i> Staff &amp; Users
+            </a>
+        </li>
     </ul>
 
     <p class="nav-section-label">System</p>

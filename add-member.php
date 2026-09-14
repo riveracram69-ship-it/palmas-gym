@@ -163,9 +163,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="topbar">
     <div class="page-title">
         <h1>Register New Member</h1>
-        <p>Complete the profile and assign a membership plan.</p>
+        <p>Complete the client profile and assign a membership plan.</p>
     </div>
-    <a href="members.php" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Back to List</a>
+    <div style="display:flex; gap:0.6rem; align-items:center;">
+        <?php if (is_admin()): ?>
+        <a href="users.php?create=1" class="btn btn-outline" style="border-radius:10px; font-weight:600;">
+            <i class="fas fa-user-shield"></i> Create Staff User Instead
+        </a>
+        <?php endif; ?>
+        <a href="members.php" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Back to List</a>
+    </div>
 </div>
 
 <?php if ($message): ?>
