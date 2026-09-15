@@ -175,13 +175,15 @@ try {
         $p_check->execute([$tx['plan_id']]);
         $db_plan_price = (float)$p_check->fetchColumn();
 
-        if ((abs($paidAmount - $expectedAmount) > 0.05 || abs($paidAmount - $db_plan_price) > 0.05) && $paidAmount > 0) {
-            error_log("PayMongo Webhook: Amount mismatch for ref {$ref_code}. Expected: {$db_plan_price}, Received: {$paidAmount}");
+        $isAmountValid = (abs($paidAmount - $expectedAmount) <= 0.05) || (abs($paidAmount - $db_plan_price) <= 0.05);
+
+        if (!$isAmountValid && $paidAmount > 0) {
+            error_log("PayMongo Webhook: Amount mismatch for ref {$ref_code}. Expected: {$expectedAmount} (DB: {$db_plan_price}), Received: {$paidAmount}");
             $pdo->prepare("
                 UPDATE payment_transactions 
                 SET status = 'FAILED', failure_reason = ?, gateway_response = ? 
                 WHERE id = ?
-            ")->execute(["Amount mismatch: expected {$db_plan_price}, got {$paidAmount}", $rawPayload, $tx['id']]);
+            ")->execute(["Amount mismatch: expected {$expectedAmount}, got {$paidAmount}", $rawPayload, $tx['id']]);
             $pdo->commit();
 
             log_payment_audit($pdo, [
