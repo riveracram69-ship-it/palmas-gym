@@ -156,6 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <p>Your <strong>Digital QR Pass</strong> is now active and ready for check-in at the gym entrance kiosk.</p>
                         <p style=\"margin-top:16px;\">Thank you for renewing and continuing your fitness journey with Palma's Elite Gym! 💪</p>
+                    ";
                     try {
                         send_email_notification($req['email'], $email_subject, $email_title, $email_body);
                     } catch (\Throwable $emEx) {
