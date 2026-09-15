@@ -31,6 +31,7 @@ $res = send_email_notification($to, $email_subject, $email_title, $email_body);
 echo json_encode([
     'success' => $res['sent'] ?? false,
     'res' => $res,
-    'smtp_user' => SMTP_USER,
-    'has_pass' => !empty(SMTP_PASS)
+    'smtp_user' => defined('SMTP_USER') ? SMTP_USER : 'N/A',
+    'has_resend_key' => defined('RESEND_API_KEY') && !empty(RESEND_API_KEY),
+    'resend_key_prefix' => defined('RESEND_API_KEY') && !empty(RESEND_API_KEY) ? substr(RESEND_API_KEY, 0, 5) . '...' : 'NONE'
 ]);

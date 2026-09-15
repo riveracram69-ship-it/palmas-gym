@@ -221,8 +221,11 @@ function send_email_notification($to, $subject, $title, $body_text) {
         if (!$curlErr && $httpCode >= 200 && $httpCode < 300) {
             $mail_sent = true;
             $status_text = 'DELIVERED (via Resend HTTPS API)';
+            $smtp_error = '';
         } else {
-            $errDetail = $curlErr ?: ("Resend HTTP " . $httpCode . ": " . substr((string)$res, 0, 150));
+            $errDetail = $curlErr ?: ("Resend HTTP " . $httpCode . ": " . (string)$res);
+            $smtp_error = $errDetail;
+            $status_text = 'FAILED (' . $errDetail . ')';
             error_log('[RESEND-FAIL] ' . $errDetail);
         }
     }
@@ -258,8 +261,11 @@ function send_email_notification($to, $subject, $title, $body_text) {
         if (!$curlErr && $httpCode >= 200 && $httpCode < 300) {
             $mail_sent = true;
             $status_text = 'DELIVERED (via Brevo HTTPS API)';
+            $smtp_error = '';
         } else {
-            $errDetail = $curlErr ?: ("Brevo HTTP " . $httpCode . ": " . substr((string)$res, 0, 150));
+            $errDetail = $curlErr ?: ("Brevo HTTP " . $httpCode . ": " . (string)$res);
+            $smtp_error = $errDetail;
+            $status_text = 'FAILED (' . $errDetail . ')';
             error_log('[BREVO-FAIL] ' . $errDetail);
         }
     }
