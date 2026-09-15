@@ -199,10 +199,21 @@ function send_email_notification($to, $subject, $title, $body_text) {
     }
 
         $configsToTry = [
-            ['port' => (int)(defined('SMTP_PORT') ? SMTP_PORT : 587), 'secure' => (defined('SMTP_PORT') && (int)SMTP_PORT === 465) ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS],
             ['port' => 465, 'secure' => \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS],
-            ['port' => 587, 'secure' => \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS]
+            ['port' => 587, 'secure' => \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS],
+            ['port' => (int)(defined('SMTP_PORT') ? SMTP_PORT : 465), 'secure' => (defined('SMTP_PORT') && (int)SMTP_PORT === 587) ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS]
         ];
+
+        // Resolve active SMTP user and password
+        $active_user = defined('SMTP_USER') ? SMTP_USER : 'official.palmas.gym@gmail.com';
+        $active_pass = defined('SMTP_PASS') ? trim(str_replace(' ', '', (string)SMTP_PASS)) : '';
+        $active_from = defined('SMTP_FROM') ? SMTP_FROM : $active_user;
+
+        // If active_pass matches official app password, ensure user is official.palmas.gym@gmail.com
+        if ($active_pass === 'jdkkstbihpvqodhs' || str_contains($active_pass, 'jdkk')) {
+            $active_user = 'official.palmas.gym@gmail.com';
+            $active_from = 'official.palmas.gym@gmail.com';
+        }
 
         $tried = [];
         foreach ($configsToTry as $cfg) {
@@ -213,13 +224,13 @@ function send_email_notification($to, $subject, $title, $body_text) {
             try {
                 $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
                 $mail->isSMTP();
-                $mail->Host       = SMTP_HOST;
+                $mail->Host       = defined('SMTP_HOST') ? SMTP_HOST : 'smtp.gmail.com';
                 $mail->SMTPAuth   = true;
-                $mail->Username   = SMTP_USER;
-                $mail->Password   = trim(str_replace(' ', '', (string)SMTP_PASS));
+                $mail->Username   = $active_user;
+                $mail->Password   = $active_pass;
                 $mail->SMTPSecure = $cfg['secure'];
                 $mail->Port       = $cfg['port'];
-                $mail->Timeout    = 5;
+                $mail->Timeout    = 15;
 
                 $mail->SMTPOptions = array(
                     'ssl' => array(
@@ -230,7 +241,7 @@ function send_email_notification($to, $subject, $title, $body_text) {
                 );
 
                 $fromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : 'Palma\'s Elite Gym';
-                $mail->setFrom(SMTP_FROM, $fromName);
+                $mail->setFrom($active_from, $fromName);
                 $mail->addAddress($to);
 
                 $mail->isHTML(true);
