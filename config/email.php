@@ -188,16 +188,84 @@ function send_email_notification($to, $subject, $title, $body_text) {
     $smtp_error = '';
     $status_text = '';
 
-    // SMTP Configuration
-    if (defined('SMTP_PASS') && (empty(SMTP_PASS) || str_contains(SMTP_PASS, 'REPLACE'))) {
-        // Local development or placeholder credentials: skip SMTP network connection
-        return [
-            'sent'  => false,
-            'error' => 'SMTP password placeholder',
-            '__legacy_bool' => false
-        ];
+    // 1. Check if Resend HTTPS API is available (Bypasses Render cloud SMTP port blocking)
+    if (defined('RESEND_API_KEY') && !empty(RESEND_API_KEY)) {
+        $fromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : "Palma's Elite Gym";
+        $fromEmail = (defined('SMTP_FROM') && str_contains(SMTP_FROM, '@') && !str_contains(SMTP_FROM, 'gmail.com')) 
+            ? SMTP_FROM 
+            : 'onboarding@resend.dev';
+        $fullFrom = "{$fromName} <{$fromEmail}>";
+
+        $ch = curl_init('https://api.resend.com/emails');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . trim(RESEND_API_KEY),
+                'Content-Type: application/json'
+            ],
+            CURLOPT_POSTFIELDS => json_encode([
+                'from'    => $fullFrom,
+                'to'      => [$to],
+                'subject' => $subject,
+                'html'    => $html_message
+            ]),
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_SSL_VERIFYPEER => false
+        ]);
+        $res = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr = curl_error($ch);
+        curl_close($ch);
+
+        if (!$curlErr && $httpCode >= 200 && $httpCode < 300) {
+            $mail_sent = true;
+            $status_text = 'DELIVERED (via Resend HTTPS API)';
+        } else {
+            $errDetail = $curlErr ?: ("Resend HTTP " . $httpCode . ": " . substr((string)$res, 0, 150));
+            error_log('[RESEND-FAIL] ' . $errDetail);
+        }
     }
 
+    // 2. Check if Brevo HTTPS API is available
+    if (!$mail_sent && defined('BREVO_API_KEY') && !empty(BREVO_API_KEY)) {
+        $fromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : "Palma's Elite Gym";
+        $fromEmail = defined('SMTP_FROM') ? SMTP_FROM : 'official.palmas.gym@gmail.com';
+
+        $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => [
+                'api-key: ' . trim(BREVO_API_KEY),
+                'Content-Type: application/json',
+                'Accept: application/json'
+            ],
+            CURLOPT_POSTFIELDS => json_encode([
+                'sender'      => ['name' => $fromName, 'email' => $fromEmail],
+                'to'          => [['email' => $to]],
+                'subject'     => $subject,
+                'htmlContent' => $html_message
+            ]),
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_SSL_VERIFYPEER => false
+        ]);
+        $res = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr = curl_error($ch);
+        curl_close($ch);
+
+        if (!$curlErr && $httpCode >= 200 && $httpCode < 300) {
+            $mail_sent = true;
+            $status_text = 'DELIVERED (via Brevo HTTPS API)';
+        } else {
+            $errDetail = $curlErr ?: ("Brevo HTTP " . $httpCode . ": " . substr((string)$res, 0, 150));
+            error_log('[BREVO-FAIL] ' . $errDetail);
+        }
+    }
+
+    // 3. Fallback to PHPMailer SMTP (Gmail / Localhost)
+    if (!$mail_sent && defined('SMTP_PASS') && !empty(SMTP_PASS) && !str_contains(SMTP_PASS, 'REPLACE')) {
         $configsToTry = [
             ['port' => 465, 'secure' => \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS],
             ['port' => 587, 'secure' => \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS],
@@ -230,7 +298,7 @@ function send_email_notification($to, $subject, $title, $body_text) {
                 $mail->Password   = $active_pass;
                 $mail->SMTPSecure = $cfg['secure'];
                 $mail->Port       = $cfg['port'];
-                $mail->Timeout    = 15;
+                $mail->Timeout    = 4;
 
                 $mail->SMTPOptions = array(
                     'ssl' => array(
@@ -259,6 +327,7 @@ function send_email_notification($to, $subject, $title, $body_text) {
                 $status_text = 'FAILED (Port ' . $cfg['port'] . ' Error: ' . $smtp_error . ')';
             }
         }
+    }
 
         if (!$mail_sent) {
             error_log('[EMAIL-FAIL] To: ' . $to . ' | Subject: ' . $subject . ' | Error: ' . $smtp_error);

@@ -126,13 +126,15 @@
         }
     }
 
-    // SMTP Email Configuration
+    // SMTP & HTTP Email Service Configuration
     if (!defined('SMTP_HOST')) define('SMTP_HOST', $get_conf('SMTP_HOST', 'smtp.gmail.com'));
     if (!defined('SMTP_PORT')) define('SMTP_PORT', (int)$get_conf('SMTP_PORT', '465'));
     if (!defined('SMTP_USER')) define('SMTP_USER', $get_conf('SMTP_USER', 'official.palmas.gym@gmail.com'));
     if (!defined('SMTP_PASS')) define('SMTP_PASS', $get_conf('SMTP_PASS', 'jdkk stbi hpvq odhs'));
     if (!defined('SMTP_FROM')) define('SMTP_FROM', $get_conf('SMTP_FROM', 'official.palmas.gym@gmail.com'));
     if (!defined('SMTP_FROM_NAME')) define('SMTP_FROM_NAME', $get_conf('SMTP_FROM_NAME', "Palma's Elite Gym"));
+    if (!defined('RESEND_API_KEY')) define('RESEND_API_KEY', $get_conf('RESEND_API_KEY', ''));
+    if (!defined('BREVO_API_KEY')) define('BREVO_API_KEY', $get_conf('BREVO_API_KEY', ''));
 
     // System Binary Paths (optional overrides)
     if (!defined('MYSQLDUMP_PATH')) define('MYSQLDUMP_PATH', $get_conf('MYSQLDUMP_PATH', ''));
