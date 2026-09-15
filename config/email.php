@@ -194,11 +194,13 @@ function send_email_notification($to, $subject, $title, $body_text) {
         
         $sendersToTry = array_unique(array_filter([
             defined('BREVO_SENDER_EMAIL') ? BREVO_SENDER_EMAIL : null,
-            defined('SMTP_FROM') ? SMTP_FROM : null,
             'hadukenhehehe@gmail.com',
+            defined('SMTP_FROM') ? SMTP_FROM : null,
             'official.palmas.gym@gmail.com'
         ]));
 
+        $raw_api_response = '';
+        $sender_used = '';
         foreach ($sendersToTry as $fromEmail) {
             $ch = curl_init('https://api.brevo.com/v3/smtp/email');
             curl_setopt_array($ch, [
@@ -223,9 +225,11 @@ function send_email_notification($to, $subject, $title, $body_text) {
             $curlErr = curl_error($ch);
             curl_close($ch);
 
+            $raw_api_response = (string)$res;
             if (!$curlErr && $httpCode >= 200 && $httpCode < 300) {
                 $mail_sent = true;
-                $status_text = 'DELIVERED (via Brevo HTTPS API)';
+                $sender_used = $fromEmail;
+                $status_text = 'DELIVERED (via Brevo HTTPS API from ' . $fromEmail . ')';
                 $smtp_error = '';
                 break;
             } else {
@@ -409,8 +413,11 @@ function send_email_notification($to, $subject, $title, $body_text) {
     }
 
     return [
-        'sent'  => $mail_sent,
-        'error' => $smtp_error,
+        'sent'         => $mail_sent,
+        'error'        => $smtp_error,
+        'status'       => $status_text,
+        'sender'       => $sender_used ?? '',
+        'api_response' => isset($raw_api_response) ? @json_decode($raw_api_response, true) : null,
         // Legacy boolean compatibility: cast to bool for callers that use `if (send_email_notification(...))`
         '__legacy_bool' => $mail_sent,
     ];
