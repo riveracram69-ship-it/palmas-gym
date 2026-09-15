@@ -107,7 +107,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!empty($member['email'])) {
                 require_once __DIR__ . '/config/email.php';
-                $email_subject = "Membership Successfully Renewed! — Palma's Elite Gym";
+                $time_tag = date('M d, Y h:i A');
+                $email_subject = "Membership Successfully Renewed! [{$time_tag}] — Palma's Elite Gym";
                 $email_title = "Your Membership Has Been Successfully Renewed! 🔄";
                 $email_body = "
                     <p>Dear <strong>{$member['full_name']}</strong>,</p>

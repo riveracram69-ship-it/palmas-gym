@@ -137,7 +137,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!empty($req['email'])) {
                     require_once 'config/email.php';
                     $formatted_expiry = date('F j, Y', strtotime($expiry_date));
-                    $email_subject = "Membership Successfully Renewed! — Palma's Elite Gym";
+                    $time_tag = date('M d, Y h:i A');
+                    $email_subject = "Membership Successfully Renewed! [{$time_tag}] — Palma's Elite Gym";
                     $email_title = "Your Membership Has Been Successfully Renewed! 🔄";
                     $email_body = "
                         <p>Dear <strong>" . htmlspecialchars($req['full_name']) . "</strong>,</p>

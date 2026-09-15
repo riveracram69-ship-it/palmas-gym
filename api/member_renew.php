@@ -174,7 +174,8 @@ try {
     // Send confirmation email to member
     if (!empty($member['email'])) {
         require_once __DIR__ . '/../config/email.php';
-        $email_subject = "Renewal Request Received — Palma's Elite Gym";
+        $time_tag = date('M d, Y h:i A');
+        $email_subject = "Renewal Request Received [{$time_tag}] — Palma's Elite Gym";
         $email_title = "Renewal Request Submitted 📋";
         $email_body = "
             <p>Dear <strong>" . htmlspecialchars($member['full_name']) . "</strong>,</p>

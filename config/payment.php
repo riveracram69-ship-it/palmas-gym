@@ -223,9 +223,10 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
 
         // 10. Automated Email Receipt
         if (!empty($member['email'])) {
+            $time_tag = date('M d, Y h:i A');
             $email_subject = $is_first_activation 
-                ? "Membership Successfully Activated! — Palma's Elite Gym"
-                : "Membership Successfully Renewed! — Palma's Elite Gym";
+                ? "Membership Successfully Activated! [{$time_tag}] — Palma's Elite Gym"
+                : "Membership Successfully Renewed! [{$time_tag}] — Palma's Elite Gym";
             $email_title = $is_first_activation
                 ? "Your Membership is Now Active! 🎉"
                 : "Your Membership Has Been Successfully Renewed! 🔄";
