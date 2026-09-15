@@ -3,7 +3,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../config/env.php';
 require_once __DIR__ . '/../config/email.php';
 
-$to = 'santosemman90@gmail.com';
+$to = trim($_GET['email'] ?? 'santosemman90@gmail.com');
 $email_subject = "Membership Successfully Renewed! — Palma's Elite Gym";
 $email_title = "Your Membership Has Been Successfully Renewed! 🔄";
 $email_body = "
