@@ -27,39 +27,10 @@ $email_body = "
     <p style=\"margin-top:16px;\">Thank you for staying committed to your fitness journey with Palma's Elite Gym! 💪</p>
 ";
 
-$brevo_debug = [];
-if (defined('BREVO_API_KEY') && !empty(BREVO_API_KEY)) {
-    $ch = curl_init('https://api.brevo.com/v3/smtp/email');
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_HTTPHEADER => [
-            'api-key: ' . trim(BREVO_API_KEY),
-            'Content-Type: application/json',
-            'Accept: application/json'
-        ],
-        CURLOPT_POSTFIELDS => json_encode([
-            'sender'      => ['name' => "Palma's Elite Gym", 'email' => 'hadukenhehehe@gmail.com'],
-            'to'          => [['email' => $to]],
-            'subject'     => $email_subject,
-            'htmlContent' => $email_body
-        ]),
-        CURLOPT_TIMEOUT => 10,
-        CURLOPT_SSL_VERIFYPEER => false
-    ]);
-    $rawRes = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err = curl_error($ch);
-    curl_close($ch);
-    $brevo_debug = [
-        'http_code' => $httpCode,
-        'response' => json_decode($rawRes, true) ?: $rawRes,
-        'curl_error' => $err
-    ];
-}
+$res = send_email_notification($to, $email_subject, $email_title, $email_body);
 
 echo json_encode([
-    'has_brevo_key' => defined('BREVO_API_KEY') && !empty(BREVO_API_KEY),
-    'brevo_key_prefix' => defined('BREVO_API_KEY') && !empty(BREVO_API_KEY) ? substr(BREVO_API_KEY, 0, 8) . '...' : 'NONE',
-    'brevo_debug' => $brevo_debug
+    'success' => $res['sent'] ?? false,
+    'res' => $res,
+    'to' => $to
 ]);
