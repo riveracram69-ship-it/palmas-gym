@@ -27,11 +27,37 @@ $email_body = "
     <p style=\"margin-top:16px;\">Thank you for staying committed to your fitness journey with Palma's Elite Gym! 💪</p>
 ";
 
-$res = send_email_notification($to, $email_subject, $email_title, $email_body);
+$resend_debug = [];
+if (defined('RESEND_API_KEY') && !empty(RESEND_API_KEY)) {
+    $ch = curl_init('https://api.resend.com/emails');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . trim(RESEND_API_KEY),
+            'Content-Type: application/json'
+        ],
+        CURLOPT_POSTFIELDS => json_encode([
+            'from'    => "Palma's Elite Gym <onboarding@resend.dev>",
+            'to'      => [$to],
+            'subject' => $email_subject,
+            'html'    => "<h1>Test Delivery</h1><p>Testing live email from Palma's Elite Gym via Resend API.</p>"
+        ]),
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_SSL_VERIFYPEER => false
+    ]);
+    $rawRes = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+    $resend_debug = [
+        'http_code' => $httpCode,
+        'response' => json_decode($rawRes, true) ?: $rawRes,
+        'curl_error' => $err
+    ];
+}
+
 echo json_encode([
-    'success' => $res['sent'] ?? false,
-    'res' => $res,
-    'smtp_user' => defined('SMTP_USER') ? SMTP_USER : 'N/A',
     'has_resend_key' => defined('RESEND_API_KEY') && !empty(RESEND_API_KEY),
-    'resend_key_prefix' => defined('RESEND_API_KEY') && !empty(RESEND_API_KEY) ? substr(RESEND_API_KEY, 0, 5) . '...' : 'NONE'
+    'resend_debug' => $resend_debug
 ]);
