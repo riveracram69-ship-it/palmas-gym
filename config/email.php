@@ -194,9 +194,9 @@ function send_email_notification($to, $subject, $title, $body_text) {
         
         $sendersToTry = array_unique(array_filter([
             defined('BREVO_SENDER_EMAIL') ? BREVO_SENDER_EMAIL : null,
-            'palmaselitegym@gmail.com',
             'official.palmas.gym@gmail.com',
-            defined('SMTP_FROM') ? SMTP_FROM : null
+            defined('SMTP_FROM') ? SMTP_FROM : null,
+            'palmaselitegym@gmail.com'
         ]));
 
         $raw_api_response = '';
