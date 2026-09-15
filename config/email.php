@@ -188,8 +188,48 @@ function send_email_notification($to, $subject, $title, $body_text) {
     $smtp_error = '';
     $status_text = '';
 
-    // 1. Check if Resend HTTPS API is available (Bypasses Render cloud SMTP port blocking)
-    if (defined('RESEND_API_KEY') && !empty(RESEND_API_KEY)) {
+    // 1. Check if Brevo HTTPS API is available (Primary cloud delivery engine - unrestricted to any recipient)
+    if (defined('BREVO_API_KEY') && !empty(BREVO_API_KEY)) {
+        $fromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : "Palma's Elite Gym";
+        $fromEmail = defined('SMTP_FROM') ? SMTP_FROM : 'official.palmas.gym@gmail.com';
+
+        $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => [
+                'api-key: ' . trim(BREVO_API_KEY),
+                'Content-Type: application/json',
+                'Accept: application/json'
+            ],
+            CURLOPT_POSTFIELDS => json_encode([
+                'sender'      => ['name' => $fromName, 'email' => $fromEmail],
+                'to'          => [['email' => $to]],
+                'subject'     => $subject,
+                'htmlContent' => $html_message
+            ]),
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_SSL_VERIFYPEER => false
+        ]);
+        $res = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr = curl_error($ch);
+        curl_close($ch);
+
+        if (!$curlErr && $httpCode >= 200 && $httpCode < 300) {
+            $mail_sent = true;
+            $status_text = 'DELIVERED (via Brevo HTTPS API)';
+            $smtp_error = '';
+        } else {
+            $errDetail = $curlErr ?: ("Brevo HTTP " . $httpCode . ": " . (string)$res);
+            $smtp_error = $errDetail;
+            $status_text = 'FAILED (' . $errDetail . ')';
+            error_log('[BREVO-FAIL] ' . $errDetail);
+        }
+    }
+
+    // 2. Check if Resend HTTPS API is available
+    if (!$mail_sent && defined('RESEND_API_KEY') && !empty(RESEND_API_KEY)) {
         $fromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : "Palma's Elite Gym";
         $fromEmail = (defined('SMTP_FROM') && str_contains(SMTP_FROM, '@') && !str_contains(SMTP_FROM, 'gmail.com')) 
             ? SMTP_FROM 
@@ -227,46 +267,6 @@ function send_email_notification($to, $subject, $title, $body_text) {
             $smtp_error = $errDetail;
             $status_text = 'FAILED (' . $errDetail . ')';
             error_log('[RESEND-FAIL] ' . $errDetail);
-        }
-    }
-
-    // 2. Check if Brevo HTTPS API is available
-    if (!$mail_sent && defined('BREVO_API_KEY') && !empty(BREVO_API_KEY)) {
-        $fromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : "Palma's Elite Gym";
-        $fromEmail = defined('SMTP_FROM') ? SMTP_FROM : 'official.palmas.gym@gmail.com';
-
-        $ch = curl_init('https://api.brevo.com/v3/smtp/email');
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_HTTPHEADER => [
-                'api-key: ' . trim(BREVO_API_KEY),
-                'Content-Type: application/json',
-                'Accept: application/json'
-            ],
-            CURLOPT_POSTFIELDS => json_encode([
-                'sender'      => ['name' => $fromName, 'email' => $fromEmail],
-                'to'          => [['email' => $to]],
-                'subject'     => $subject,
-                'htmlContent' => $html_message
-            ]),
-            CURLOPT_TIMEOUT => 8,
-            CURLOPT_SSL_VERIFYPEER => false
-        ]);
-        $res = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlErr = curl_error($ch);
-        curl_close($ch);
-
-        if (!$curlErr && $httpCode >= 200 && $httpCode < 300) {
-            $mail_sent = true;
-            $status_text = 'DELIVERED (via Brevo HTTPS API)';
-            $smtp_error = '';
-        } else {
-            $errDetail = $curlErr ?: ("Brevo HTTP " . $httpCode . ": " . (string)$res);
-            $smtp_error = $errDetail;
-            $status_text = 'FAILED (' . $errDetail . ')';
-            error_log('[BREVO-FAIL] ' . $errDetail);
         }
     }
 
