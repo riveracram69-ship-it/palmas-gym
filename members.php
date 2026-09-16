@@ -53,13 +53,19 @@ $active = array_filter($members, function($m) {
             <i class="fas fa-search"></i>
             <input type="text" class="form-control" id="member-search" placeholder="Search name, email, or ID…">
         </div>
-        <div style="display:flex;gap:0.75rem;align-items:center;">
-            <select class="form-control" id="status-filter" style="width:auto;min-width:160px;">
+        <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
+            <select class="form-control" id="status-filter" style="width:auto;min-width:140px;">
                 <option value="">All Accounts</option>
                 <option value="Approved">Approved</option>
                 <option value="Pending">Pending Review</option>
                 <option value="Rejected">Rejected</option>
                 <option value="Suspended">Suspended</option>
+            </select>
+            <select class="form-control" id="per-page-select" style="width:auto;min-width:130px;">
+                <option value="10" selected>10 per page</option>
+                <option value="25">25 per page</option>
+                <option value="50">50 per page</option>
+                <option value="all">Show All</option>
             </select>
         </div>
     </div>
@@ -180,6 +186,16 @@ $active = array_filter($members, function($m) {
         </table>
     </div>
 
+    <!-- Table Pagination Footer -->
+    <div class="table-pagination" id="table-pagination" style="display:none;">
+        <div class="pagination-info" id="pagination-info">
+            Showing <strong>1</strong> to <strong>10</strong> of <strong><?php echo $total; ?></strong> members
+        </div>
+        <div class="pagination-controls" id="pagination-controls">
+            <!-- Dynamically injected pagination buttons -->
+        </div>
+    </div>
+
     <div id="no-results" style="display:none;text-align:center;padding:4rem;color:var(--text-muted);">
         <i class="fas fa-magnifying-glass" style="font-size:2rem;margin-bottom:1rem;opacity:0.2;display:block;"></i>
         No members match your search.
@@ -189,30 +205,112 @@ $active = array_filter($members, function($m) {
 <div id="toast" style="position:fixed;bottom:2rem;right:2rem;z-index:9999;display:none;"></div>
 
 <script>
-// Search & filter
+// Search, Filter & Pagination State
 const searchInput = document.getElementById('member-search');
 const statusFilter = document.getElementById('status-filter');
-const rows = document.querySelectorAll('.member-row');
+const perPageSelect = document.getElementById('per-page-select');
+const paginationBox = document.getElementById('table-pagination');
+const paginationInfo = document.getElementById('pagination-info');
+const paginationControls = document.getElementById('pagination-controls');
+const rows = Array.from(document.querySelectorAll('.member-row'));
 const noResults = document.getElementById('no-results');
 
+let currentPage = 1;
+let pageSize = 10;
+
+function renderPagination(matchingRows) {
+    const total = matchingRows.length;
+    if (total === 0) {
+        paginationBox.style.display = 'none';
+        return;
+    }
+
+    const effectivePageSize = (pageSize === 'all') ? total : parseInt(pageSize, 10);
+    const totalPages = Math.ceil(total / effectivePageSize);
+
+    if (currentPage > totalPages) currentPage = totalPages || 1;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIndex = (currentPage - 1) * effectivePageSize;
+    const endIndex = Math.min(startIndex + effectivePageSize, total);
+
+    matchingRows.forEach((row, idx) => {
+        if (idx >= startIndex && idx < endIndex) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    paginationInfo.innerHTML = `Showing <strong>${total > 0 ? startIndex + 1 : 0}</strong> to <strong>${endIndex}</strong> of <strong>${total}</strong> members`;
+
+    if (totalPages <= 1) {
+        paginationBox.style.display = total > 10 ? 'flex' : (pageSize === 'all' ? 'flex' : 'none');
+        paginationControls.innerHTML = '';
+        return;
+    }
+
+    paginationBox.style.display = 'flex';
+    let buttonsHtml = '';
+
+    buttonsHtml += `<button type="button" class="pagination-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} aria-label="Previous Page"><i class="fas fa-chevron-left" style="font-size:0.75rem;"></i> Prev</button>`;
+
+    for (let p = 1; p <= totalPages; p++) {
+        if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
+            buttonsHtml += `<button type="button" class="pagination-btn ${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+        } else if (p === currentPage - 2 || p === currentPage + 2) {
+            buttonsHtml += `<span style="padding:0 4px; color:var(--text-muted); font-size:0.8rem;">…</span>`;
+        }
+    }
+
+    buttonsHtml += `<button type="button" class="pagination-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} aria-label="Next Page">Next <i class="fas fa-chevron-right" style="font-size:0.75rem;"></i></button>`;
+
+    paginationControls.innerHTML = buttonsHtml;
+}
+
 function filterTable() {
-    const q = searchInput.value.toLowerCase();
+    const q = searchInput.value.toLowerCase().trim();
     const s = statusFilter.value;
-    let visible = 0;
+
+    const matchingRows = [];
     rows.forEach(row => {
         const nameMatch   = row.dataset.name.includes(q);
         const emailMatch  = row.dataset.email.includes(q);
         const idMatch     = row.dataset.id.includes(q);
         const statusMatch = !s || row.dataset.status === s;
-        const show = (nameMatch || emailMatch || idMatch) && statusMatch;
-        row.style.display = show ? '' : 'none';
-        if (show) visible++;
+        const match = (nameMatch || emailMatch || idMatch) && statusMatch;
+
+        if (match) {
+            matchingRows.push(row);
+        } else {
+            row.style.display = 'none';
+        }
     });
-    noResults.style.display = visible === 0 && rows.length > 0 ? 'block' : 'none';
+
+    noResults.style.display = (matchingRows.length === 0 && rows.length > 0) ? 'block' : 'none';
+    renderPagination(matchingRows);
 }
 
-searchInput.addEventListener('input', filterTable);
-statusFilter.addEventListener('change', filterTable);
+function goToPage(page) {
+    currentPage = page;
+    filterTable();
+    const cardEl = document.querySelector('.card');
+    if (cardEl) {
+        cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+perPageSelect.addEventListener('change', function() {
+    pageSize = this.value;
+    currentPage = 1;
+    filterTable();
+});
+
+searchInput.addEventListener('input', () => { currentPage = 1; filterTable(); });
+statusFilter.addEventListener('change', () => { currentPage = 1; filterTable(); });
+
+// Run initial filter on page load
+filterTable();
 
 // Admin Status Toggle logic (Deactivate / Reactivate)
 function handleStatusToggle(btn) {
