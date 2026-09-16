@@ -75,6 +75,7 @@ if (!empty($first_name) || !empty($last_name)) {
 $email          = trim($data['email'] ?? '');
 $password       = $data['password'] ?? '';
 $contact_number = trim($data['contact_number'] ?? '');
+$address        = trim($data['address'] ?? '');
 $gender         = $data['gender'] ?? 'Male';
 $plan_id        = intval($data['plan_id'] ?? 1);
 $auth_provider  = $data['auth_provider'] ?? 'password';
@@ -92,9 +93,19 @@ if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// Contact number validation (only validate if provided)
-if (!empty($contact_number) && !preg_match('/^09[0-9]{9}$/', $contact_number)) {
+// Contact number validation
+if (empty($contact_number)) {
+    echo json_encode(['success' => false, 'message' => 'Contact number is required.']);
+    exit;
+}
+if (!preg_match('/^09[0-9]{9}$/', $contact_number)) {
     echo json_encode(['success' => false, 'message' => 'Contact number must be 11 digits starting with 09 (e.g. 09171234567).']);
+    exit;
+}
+
+// Address validation
+if (empty($address)) {
+    echo json_encode(['success' => false, 'message' => 'Home address is required.']);
     exit;
 }
 
@@ -174,9 +185,9 @@ try {
 
     $stmt = $pdo->prepare("
         INSERT INTO members 
-            (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, gender, photo, google_id, google_picture,
+            (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, address, gender, photo, google_id, google_picture,
              auth_provider, account_status, status, selected_plan_id, password_hash, approved_at, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NOW())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NOW())
     ");
     $stmt->execute([
         $membership_id,
@@ -187,6 +198,7 @@ try {
         $full_name,
         $email,
         $contact_number ?: null,
+        $address ?: null,
         $gender,
         $photo_path ?: null,
         $google_id ?: null,

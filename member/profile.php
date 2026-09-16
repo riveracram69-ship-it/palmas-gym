@@ -19,8 +19,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $contact = trim($_POST['contact_number'] ?? '');
     $address = trim($_POST['address'] ?? '');
 
-    if (empty($email)) {
-        $contact_error = 'Email cannot be empty.';
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $contact_error = 'Please provide a valid email address.';
+    } elseif (empty($contact)) {
+        $contact_error = 'Contact number is required.';
+    } elseif (!preg_match('/^09[0-9]{9}$/', $contact)) {
+        $contact_error = 'Contact number must be 11 digits starting with 09 (e.g. 09123456789).';
+    } elseif (empty($address)) {
+        $contact_error = 'Home address is required.';
     } else {
         try {
             $s = $pdo->prepare("UPDATE members SET email = ?, contact_number = ?, address = ? WHERE id = ?");
@@ -379,21 +385,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
                 <input type="hidden" name="action" value="update_contact">
                 <div class="form-group">
-                    <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
+                    <label for="email"><i class="fas fa-envelope"></i> Email Address *</label>
                     <input type="email" name="email" id="email" class="form-control"
                            value="<?php echo htmlspecialchars($member['email']); ?>" required>
                 </div>
                 <div class="form-group">
-                    <label for="contact_number"><i class="fas fa-phone"></i> Contact Number</label>
+                    <label for="contact_number"><i class="fas fa-phone"></i> Contact Number *</label>
                     <input type="text" name="contact_number" id="contact_number" class="form-control"
                            value="<?php echo htmlspecialchars($member['contact_number'] ?? ''); ?>"
-                           placeholder="09xxxxxxxxx">
+                           placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}" required>
                 </div>
                 <div class="form-group">
-                    <label for="address"><i class="fas fa-location-dot"></i> Home Address</label>
+                    <label for="address"><i class="fas fa-location-dot"></i> Home Address *</label>
                     <input type="text" name="address" id="address" class="form-control"
                            value="<?php echo htmlspecialchars($member['address'] ?? ''); ?>"
-                           placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City">
+                           placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City" required>
                 </div>
                 <button type="submit" class="btn">
                     <i class="fas fa-floppy-disk"></i> Save Changes

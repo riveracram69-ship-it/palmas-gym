@@ -78,8 +78,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $validation_errors[] = "Please provide a valid email address.";
     }
 
-    if (!empty($contact_number) && !preg_match('/^09[0-9]{9}$/', $contact_number)) {
+    if (empty($contact_number)) {
+        $validation_errors[] = "Contact number is required.";
+    } elseif (!preg_match('/^09[0-9]{9}$/', $contact_number)) {
         $validation_errors[] = "Contact number must be 11 digits starting with 09 (e.g. 09123456789).";
+    }
+
+    if (empty($address)) {
+        $validation_errors[] = "Home address is required.";
     }
 
     if (empty($password) || strlen($password) < 6) {
@@ -799,13 +805,15 @@ select.if{
       <!-- Contact & Gender -->
       <div class="g2">
         <div class="fg">
-          <label class="lbl" for="contact_number">Contact Number</label>
+          <label class="lbl" for="contact_number">
+            Contact Number <span class="req" aria-hidden="true">*</span>
+          </label>
           <div class="iw">
             <i class="fa-solid fa-mobile-screen-button ii" aria-hidden="true"></i>
             <input type="tel" name="contact_number" id="contact_number" class="if"
-              placeholder="09XXXXXXXXX" maxlength="11"
+              placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}"
               value="<?php echo htmlspecialchars($_POST['contact_number'] ?? ''); ?>"
-              autocomplete="tel">
+              required autocomplete="tel" aria-required="true">
           </div>
         </div>
         <div class="fg">
@@ -830,14 +838,14 @@ select.if{
       <!-- Address -->
       <div class="fg">
         <label class="lbl" for="address">
-          Home Address <span style="font-size:0.75rem; color:#888;">(Optional)</span>
+          Home Address <span class="req" aria-hidden="true">*</span>
         </label>
         <div class="iw">
           <i class="fa-solid fa-location-dot ii" aria-hidden="true"></i>
           <input type="text" name="address" id="address" class="if"
             placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City"
             value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>"
-            autocomplete="street-address">
+            required autocomplete="street-address" aria-required="true">
         </div>
       </div>
 

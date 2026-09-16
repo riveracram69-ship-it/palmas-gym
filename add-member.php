@@ -74,8 +74,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($first_name)) $validation_errors[] = "First name is required.";
     if (empty($last_name)) $validation_errors[] = "Last name is required.";
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $validation_errors[] = "Invalid email address format.";
+    if (empty($contact)) {
+        $validation_errors[] = "Contact number is required.";
+    } elseif (!preg_match('/^09[0-9]{9}$/', $contact)) {
+        $validation_errors[] = "Contact number must be exactly 11 digits starting with 09.";
+    }
+    if (empty($address)) $validation_errors[] = "Home address is required.";
     if (!empty($_POST['age']) && ($age <= 0 || $age > 120)) $validation_errors[] = "Age must be between 1 and 120.";
-    if (!empty($contact) && !preg_match('/^09[0-9]{9}$/', $contact)) $validation_errors[] = "Contact number must be exactly 11 digits starting with 09.";
     if (empty($plan_id)) $validation_errors[] = "Please select a membership plan.";
 
     // Check for duplicate email
@@ -224,14 +229,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input type="email" name="email" class="form-control" placeholder="juan@example.com" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
                     </div>
                     <div class="form-group">
-                        <label>Contact Number <span style="font-size:0.75rem; color:#888;">(Optional)</span></label>
-                        <input type="text" name="contact_number" class="form-control" placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}" title="Optional: 11 digits starting with 09" value="<?php echo htmlspecialchars($_POST['contact_number'] ?? ''); ?>">
+                        <label>Contact Number *</label>
+                        <input type="text" name="contact_number" class="form-control" placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}" title="11 digits starting with 09" value="<?php echo htmlspecialchars($_POST['contact_number'] ?? ''); ?>" required>
                     </div>
                 </div>
 
                 <div class="form-group" style="margin-bottom:1rem;">
-                    <label>Home Address <span style="font-size:0.75rem; color:#888;">(Optional)</span></label>
-                    <input type="text" name="address" class="form-control" placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City" value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>">
+                    <label>Home Address *</label>
+                    <input type="text" name="address" class="form-control" placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City" value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>" required>
                 </div>
 
                 <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:1rem;">

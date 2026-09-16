@@ -42,8 +42,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($first_name) && empty($name)) $validation_errors[] = "First name is required.";
     if (empty($last_name) && empty($name))  $validation_errors[] = "Last name is required.";
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $validation_errors[] = "Invalid email address format.";
+    if (empty($contact)) {
+        $validation_errors[] = "Contact number is required.";
+    } elseif (!preg_match('/^09[0-9]{9}$/', $contact)) {
+        $validation_errors[] = "Contact number must be exactly 11 digits starting with 09.";
+    }
+    if (empty($address)) $validation_errors[] = "Home address is required.";
     if (!empty($_POST['age']) && ($age <= 0 || $age > 120)) $validation_errors[] = "Age must be between 1 and 120.";
-    if (!empty($contact) && !preg_match('/^09[0-9]{9}$/', $contact)) $validation_errors[] = "Contact number must be exactly 11 digits starting with 09.";
 
     // Handle Photo Upload
     $photo_path = null;
@@ -206,13 +211,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                        value="<?php echo htmlspecialchars($member['email']); ?>">
             </div>
             <div class="form-group">
-                <label for="contact_number">Contact Number</label>
+                <label for="contact_number">Contact Number *</label>
                 <input type="text" name="contact_number" id="contact_number" class="form-control" placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}" title="Must be exactly 11 digits starting with 09" required
                        value="<?php echo htmlspecialchars($member['contact_number'] ?? ''); ?>">
             </div>
             <div class="form-group" style="grid-column: 1 / -1;">
-                <label for="address">Home Address <span style="font-size:0.75rem;color:var(--text-muted);">(Optional)</span></label>
-                <input type="text" name="address" id="address" class="form-control" placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City"
+                <label for="address">Home Address *</label>
+                <input type="text" name="address" id="address" class="form-control" placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City" required
                        value="<?php echo htmlspecialchars($member['address'] ?? ''); ?>">
             </div>
             <div class="form-group">
