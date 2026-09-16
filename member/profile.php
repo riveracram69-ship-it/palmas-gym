@@ -13,24 +13,25 @@ $contact_error   = '';
 $pw_success    = '';
 $pw_error      = '';
 
-// Handle profile update (email / contact)
+// Handle profile update (email / contact / address)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_contact') {
     $email   = trim($_POST['email'] ?? '');
     $contact = trim($_POST['contact_number'] ?? '');
+    $address = trim($_POST['address'] ?? '');
 
     if (empty($email)) {
         $contact_error = 'Email cannot be empty.';
     } else {
         try {
-            $s = $pdo->prepare("UPDATE members SET email = ?, contact_number = ? WHERE id = ?");
-            $s->execute([$email, $contact, $member['id']]);
-            $contact_success = 'Contact info updated successfully.';
+            $s = $pdo->prepare("UPDATE members SET email = ?, contact_number = ?, address = ? WHERE id = ?");
+            $s->execute([$email, $contact, $address ?: null, $member['id']]);
+            $contact_success = 'Profile info updated successfully.';
             $member  = current_member($pdo); // refresh
             if (function_exists('log_activity')) {
-                log_activity($pdo, 'Member Contact Updated', "Member {$member['full_name']} updated their contact info.", 'Member');
+                log_activity($pdo, 'Member Contact Updated', "Member {$member['full_name']} updated their profile info.", 'Member');
             }
         } catch (\Throwable $e) {
-            $contact_error = 'Could not update contact info. Please try again.';
+            $contact_error = 'Could not update profile info. Please try again.';
         }
     }
 }
@@ -315,6 +316,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 <span class="info-field-value"><?php echo htmlspecialchars($member['gender']); ?></span>
             </div>
             <?php endif; ?>
+            <div class="info-field">
+                <span class="info-field-label">Address</span>
+                <span class="info-field-value"><?php echo htmlspecialchars($member['address'] ?: '—'); ?></span>
+            </div>
             <?php if (!empty($member['dob'])): ?>
             <div class="info-field">
                 <span class="info-field-label">Date of Birth</span>
@@ -383,6 +388,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <input type="text" name="contact_number" id="contact_number" class="form-control"
                            value="<?php echo htmlspecialchars($member['contact_number'] ?? ''); ?>"
                            placeholder="09xxxxxxxxx">
+                </div>
+                <div class="form-group">
+                    <label for="address"><i class="fas fa-location-dot"></i> Home Address</label>
+                    <input type="text" name="address" id="address" class="form-control"
+                           value="<?php echo htmlspecialchars($member['address'] ?? ''); ?>"
+                           placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City">
                 </div>
                 <button type="submit" class="btn">
                     <i class="fas fa-floppy-disk"></i> Save Changes

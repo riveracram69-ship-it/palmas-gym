@@ -106,6 +106,7 @@ if (!$member): ?>
             <div class="member-meta-grid">
                 <div><p class="stat-label">Email</p><p style="font-weight:600;"><?php echo htmlspecialchars($member['email']); ?></p></div>
                 <div><p class="stat-label">Contact</p><p style="font-weight:600;"><?php echo htmlspecialchars($member['contact_number'] ?: '—'); ?></p></div>
+                <div><p class="stat-label">Address</p><p style="font-weight:600;"><?php echo htmlspecialchars($member['address'] ?: '—'); ?></p></div>
                 <div><p class="stat-label">Plan</p><p style="font-weight:600; color:var(--accent);"><?php echo htmlspecialchars($member['plan_name'] ?: 'No Plan'); ?></p></div>
                 <div><p class="stat-label">Plan Expiry</p><p style="font-weight:600; color:<?php echo $is_sub_expired ? 'var(--danger)' : 'var(--text-main)'; ?>;"><?php echo $member['expiry_date'] ? date('M d, Y', strtotime($member['expiry_date'])) : '—'; ?></p></div>
             </div>

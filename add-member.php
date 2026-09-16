@@ -51,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $email     = trim($_POST['email'] ?? '');
     $contact   = trim($_POST['contact_number'] ?? '');
+    $address   = trim($_POST['address'] ?? '');
     $age       = intval($_POST['age'] ?? 0);
     $gender    = $_POST['gender'] ?? '';
     $plan_id   = intval($_POST['plan_id'] ?? 0);
@@ -93,8 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $created_by = $_SESSION['user_id'] ?? null;
             $membership_id = 'GYM-' . strtoupper(substr(uniqid(), -6));
 
-            $stmt = $pdo->prepare("INSERT INTO members (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, age, gender, photo, status, created_by, account_status, approved_by, approved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?, 'Approved', ?, NOW())");
-            $stmt->execute([$membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact, $age, $gender, $photo_path, $created_by, $created_by]);
+            $stmt = $pdo->prepare("INSERT INTO members (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, address, age, gender, photo, status, created_by, account_status, approved_by, approved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?, 'Approved', ?, NOW())");
+            $stmt->execute([$membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact, $address ?: null, $age, $gender, $photo_path, $created_by, $created_by]);
             $member_id = $pdo->lastInsertId();
 
             $plan_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes FROM membership_plans WHERE id = ?");
@@ -226,6 +227,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label>Contact Number <span style="font-size:0.75rem; color:#888;">(Optional)</span></label>
                         <input type="text" name="contact_number" class="form-control" placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}" title="Optional: 11 digits starting with 09" value="<?php echo htmlspecialchars($_POST['contact_number'] ?? ''); ?>">
                     </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:1rem;">
+                    <label>Home Address <span style="font-size:0.75rem; color:#888;">(Optional)</span></label>
+                    <input type="text" name="address" class="form-control" placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City" value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>">
                 </div>
 
                 <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:1rem;">

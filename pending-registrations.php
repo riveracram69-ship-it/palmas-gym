@@ -301,6 +301,9 @@ try {
                     <td>
                         <div style="font-size:0.85rem;color:var(--text-main);"><?php echo htmlspecialchars($pm['contact_number'] ?: '—'); ?></div>
                         <div style="font-size:0.75rem;color:var(--text-muted);"><?php echo htmlspecialchars($pm['gender'] ?: 'Male'); ?></div>
+                        <?php if (!empty($pm['address'])): ?>
+                            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;"><i class="fas fa-location-dot" style="color:var(--accent);font-size:0.7rem;"></i> <?php echo htmlspecialchars($pm['address']); ?></div>
+                        <?php endif; ?>
                     </td>
                     <td>
                         <?php if (!empty($pm['plan_name'])): ?>

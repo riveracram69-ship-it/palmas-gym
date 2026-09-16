@@ -32,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $email   = trim($_POST['email'] ?? '');
     $contact = trim($_POST['contact_number'] ?? '');
+    $address = trim($_POST['address'] ?? '');
     $age     = intval($_POST['age'] ?? 0);
     $gender  = $_POST['gender'] ?? 'Male';
     // Server-side guard: Only Admin can alter member status
@@ -75,16 +76,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if ($photo_path) {
                 $stmt = $pdo->prepare(
-                    "UPDATE members SET first_name=?, middle_name=?, last_name=?, extension=?, full_name=?, email=?, contact_number=?, age=?, gender=?, status=?, photo=?
+                    "UPDATE members SET first_name=?, middle_name=?, last_name=?, extension=?, full_name=?, email=?, contact_number=?, address=?, age=?, gender=?, status=?, photo=?
                      WHERE id=?"
                 );
-                $stmt->execute([$first_name ?: null, $middle_name ?: null, $last_name ?: null, $extension ?: null, $name, $email, $contact, $age ?: null, $gender, $status, $photo_path, $id]);
+                $stmt->execute([$first_name ?: null, $middle_name ?: null, $last_name ?: null, $extension ?: null, $name, $email, $contact, $address ?: null, $age ?: null, $gender, $status, $photo_path, $id]);
             } else {
                 $stmt = $pdo->prepare(
-                    "UPDATE members SET first_name=?, middle_name=?, last_name=?, extension=?, full_name=?, email=?, contact_number=?, age=?, gender=?, status=?
+                    "UPDATE members SET first_name=?, middle_name=?, last_name=?, extension=?, full_name=?, email=?, contact_number=?, address=?, age=?, gender=?, status=?
                      WHERE id=?"
                 );
-                $stmt->execute([$first_name ?: null, $middle_name ?: null, $last_name ?: null, $extension ?: null, $name, $email, $contact, $age ?: null, $gender, $status, $id]);
+                $stmt->execute([$first_name ?: null, $middle_name ?: null, $last_name ?: null, $extension ?: null, $name, $email, $contact, $address ?: null, $age ?: null, $gender, $status, $id]);
             }
             $message  = 'Member details updated successfully.';
             $msg_type = 'success';
@@ -208,6 +209,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label for="contact_number">Contact Number</label>
                 <input type="text" name="contact_number" id="contact_number" class="form-control" placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}" title="Must be exactly 11 digits starting with 09" required
                        value="<?php echo htmlspecialchars($member['contact_number'] ?? ''); ?>">
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="address">Home Address <span style="font-size:0.75rem;color:var(--text-muted);">(Optional)</span></label>
+                <input type="text" name="address" id="address" class="form-control" placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City"
+                       value="<?php echo htmlspecialchars($member['address'] ?? ''); ?>">
             </div>
             <div class="form-group">
                 <label for="age">Age</label>

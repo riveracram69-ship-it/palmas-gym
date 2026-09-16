@@ -59,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $email            = trim($_POST['email'] ?? '');
     $contact_number   = trim($_POST['contact_number'] ?? '');
+    $address          = trim($_POST['address'] ?? '');
     $gender           = trim($_POST['gender'] ?? 'Male');
     $plan_id          = intval($_POST['plan_id'] ?? 0);
     $password         = trim($_POST['password'] ?? '');
@@ -132,10 +133,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $initial_status     = $is_online_instant ? 'Active' : 'Inactive';
 
             $stmt = $pdo->prepare("
-                INSERT INTO members (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, gender, photo, account_status, status, selected_plan_id, password_hash, approved_at, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " . ($is_online_instant ? "NOW()" : "NULL") . ", NOW())
+                INSERT INTO members (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, address, gender, photo, account_status, status, selected_plan_id, password_hash, approved_at, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " . ($is_online_instant ? "NOW()" : "NULL") . ", NOW())
             ");
-            $stmt->execute([$membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact_number, $gender, $photo_path, $initial_acc_status, $initial_status, ($plan_id > 0 ? $plan_id : null), $password_hash]);
+            $stmt->execute([$membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact_number, $address ?: null, $gender, $photo_path, $initial_acc_status, $initial_status, ($plan_id > 0 ? $plan_id : null), $password_hash]);
             $member_id = (int)$pdo->lastInsertId();
 
             // Fetch plan price if plan selected
@@ -823,6 +824,20 @@ select.if{
               Other
             </label>
           </div>
+        </div>
+      </div>
+
+      <!-- Address -->
+      <div class="fg">
+        <label class="lbl" for="address">
+          Home Address <span style="font-size:0.75rem; color:#888;">(Optional)</span>
+        </label>
+        <div class="iw">
+          <i class="fa-solid fa-location-dot ii" aria-hidden="true"></i>
+          <input type="text" name="address" id="address" class="if"
+            placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City"
+            value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>"
+            autocomplete="street-address">
         </div>
       </div>
 
