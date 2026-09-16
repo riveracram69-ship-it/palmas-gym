@@ -59,7 +59,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $email            = trim($_POST['email'] ?? '');
     $contact_number   = trim($_POST['contact_number'] ?? '');
-    $address          = trim($_POST['address'] ?? '');
+    
+    // Structured Address components
+    $house_street     = trim($_POST['house_street'] ?? '');
+    $barangay         = trim($_POST['barangay'] ?? '');
+    $municipality     = trim($_POST['municipality'] ?? '');
+    $province         = trim($_POST['province'] ?? '');
+    $zip_code         = trim($_POST['zip_code'] ?? '');
+    $address          = compose_member_address_string($house_street, $barangay, $municipality, $province, $zip_code, trim($_POST['address'] ?? ''));
+
+    // Date of Birth & Dynamic Age
+    $dob              = trim($_POST['dob'] ?? '');
+    $age              = compute_member_age($dob, !empty($_POST['age']) ? intval($_POST['age']) : null);
     $gender           = trim($_POST['gender'] ?? 'Male');
     $plan_id          = intval($_POST['plan_id'] ?? 0);
     $password         = trim($_POST['password'] ?? '');
@@ -84,8 +95,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $validation_errors[] = "Contact number must be 11 digits starting with 09 (e.g. 09123456789).";
     }
 
-    if (empty($address)) {
-        $validation_errors[] = "Home address is required.";
+    if (empty($address) && empty($municipality)) {
+        $validation_errors[] = "Home address details are required.";
+    }
+
+    if (!empty($dob)) {
+        $dob_ts = strtotime($dob);
+        if ($dob_ts === false || $dob_ts > time()) {
+            $validation_errors[] = "Date of birth cannot be in the future.";
+        }
+    }
+    if ($age !== null && ($age < 5 || $age > 120)) {
+        $validation_errors[] = "Age must be between 5 and 120.";
     }
 
     if (empty($password) || strlen($password) < 6) {
@@ -139,10 +160,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $initial_status     = $is_online_instant ? 'Active' : 'Inactive';
 
             $stmt = $pdo->prepare("
-                INSERT INTO members (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, address, gender, photo, account_status, status, selected_plan_id, password_hash, approved_at, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " . ($is_online_instant ? "NOW()" : "NULL") . ", NOW())
+                INSERT INTO members (
+                    membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number,
+                    house_street, barangay, municipality, province, zip_code, address,
+                    dob, age, gender, photo, account_status, status, selected_plan_id, password_hash, approved_at, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " . ($is_online_instant ? "NOW()" : "NULL") . ", NOW())
             ");
-            $stmt->execute([$membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact_number, $address ?: null, $gender, $photo_path, $initial_acc_status, $initial_status, ($plan_id > 0 ? $plan_id : null), $password_hash]);
+            $stmt->execute([
+                $membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact_number,
+                $house_street ?: null, $barangay ?: null, $municipality ?: null, $province ?: null, $zip_code ?: null, $address ?: null,
+                $dob ?: null, $age, $gender, $photo_path, $initial_acc_status, $initial_status, ($plan_id > 0 ? $plan_id : null), $password_hash
+            ]);
             $member_id = (int)$pdo->lastInsertId();
 
             // Fetch plan price if plan selected
@@ -802,20 +831,22 @@ select.if{
         </div>
       </div>
 
-      <!-- Contact & Gender -->
+      <!-- Date of Birth & Gender -->
       <div class="g2">
         <div class="fg">
-          <label class="lbl" for="contact_number">
-            Contact Number <span class="req" aria-hidden="true">*</span>
+          <label class="lbl" for="dob">
+            Date of Birth <span class="req" aria-hidden="true">*</span>
+            <span id="computed-age-badge" style="font-size:0.75rem; color:var(--c-p, #3e8241); font-weight:700; margin-left:4px;"></span>
           </label>
           <div class="iw">
-            <i class="fa-solid fa-mobile-screen-button ii" aria-hidden="true"></i>
-            <input type="tel" name="contact_number" id="contact_number" class="if"
-              placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}"
-              value="<?php echo htmlspecialchars($_POST['contact_number'] ?? ''); ?>"
-              required autocomplete="tel" aria-required="true">
+            <i class="fa-solid fa-cake-candles ii" aria-hidden="true"></i>
+            <input type="date" name="dob" id="dob" class="if"
+              max="<?php echo date('Y-m-d'); ?>"
+              value="<?php echo htmlspecialchars($_POST['dob'] ?? ''); ?>"
+              required oninput="updateComputedAge(this.value)">
           </div>
         </div>
+
         <div class="fg">
           <div class="lbl" id="gender-lbl">Gender</div>
           <div class="chips" role="radiogroup" aria-labelledby="gender-lbl">
@@ -835,17 +866,59 @@ select.if{
         </div>
       </div>
 
-      <!-- Address -->
-      <div class="fg">
-        <label class="lbl" for="address">
-          Home Address <span class="req" aria-hidden="true">*</span>
+      <!-- Structured Address Section -->
+      <div style="background:var(--c-bg, #f8fbf9); border:1px solid var(--c-border, #d9e6de); border-radius:12px; padding:12px 14px; margin-bottom:1rem;">
+        <label style="display:block; font-weight:700; font-size:0.8rem; color:var(--c-h, #1a3328); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.4px;">
+          <i class="fa-solid fa-location-dot" style="color:var(--c-p, #3e8241); margin-right:5px;"></i> Home Address Details
         </label>
-        <div class="iw">
-          <i class="fa-solid fa-location-dot ii" aria-hidden="true"></i>
-          <input type="text" name="address" id="address" class="if"
-            placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City"
-            value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>"
-            required autocomplete="street-address" aria-required="true">
+        <div class="fg" style="margin-bottom:8px;">
+          <label class="lbl" for="house_street" style="font-size:0.78rem;">House No. / Street / Unit <span style="font-size:0.7rem; color:#888;">(Optional)</span></label>
+          <div class="iw">
+            <i class="fa-solid fa-house ii" aria-hidden="true"></i>
+            <input type="text" name="house_street" id="house_street" class="if"
+              placeholder="e.g. 123 Rizal St."
+              value="<?php echo htmlspecialchars($_POST['house_street'] ?? ''); ?>">
+          </div>
+        </div>
+        <div class="g2" style="margin-bottom:8px;">
+          <div class="fg" style="margin-bottom:0;">
+            <label class="lbl" for="barangay" style="font-size:0.78rem;">Barangay <span class="req" aria-hidden="true">*</span></label>
+            <div class="iw">
+              <i class="fa-solid fa-map-pin ii" aria-hidden="true"></i>
+              <input type="text" name="barangay" id="barangay" class="if"
+                placeholder="e.g. Poblacion"
+                value="<?php echo htmlspecialchars($_POST['barangay'] ?? ''); ?>" required>
+            </div>
+          </div>
+          <div class="fg" style="margin-bottom:0;">
+            <label class="lbl" for="municipality" style="font-size:0.78rem;">Municipality / City <span class="req" aria-hidden="true">*</span></label>
+            <div class="iw">
+              <i class="fa-solid fa-city ii" aria-hidden="true"></i>
+              <input type="text" name="municipality" id="municipality" class="if"
+                placeholder="e.g. Talavera"
+                value="<?php echo htmlspecialchars($_POST['municipality'] ?? ''); ?>" required>
+            </div>
+          </div>
+        </div>
+        <div class="g2">
+          <div class="fg" style="margin-bottom:0;">
+            <label class="lbl" for="province" style="font-size:0.78rem;">Province</label>
+            <div class="iw">
+              <i class="fa-solid fa-map ii" aria-hidden="true"></i>
+              <input type="text" name="province" id="province" class="if"
+                placeholder="e.g. Nueva Ecija"
+                value="<?php echo htmlspecialchars($_POST['province'] ?? 'Nueva Ecija'); ?>">
+            </div>
+          </div>
+          <div class="fg" style="margin-bottom:0;">
+            <label class="lbl" for="zip_code" style="font-size:0.78rem;">ZIP Code</label>
+            <div class="iw">
+              <i class="fa-solid fa-envelopes-bulk ii" aria-hidden="true"></i>
+              <input type="text" name="zip_code" id="zip_code" class="if"
+                placeholder="e.g. 3114" maxlength="10"
+                value="<?php echo htmlspecialchars($_POST['zip_code'] ?? ''); ?>">
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1061,6 +1134,37 @@ function chkMatch(){
 }
 pw1&&pw1.addEventListener('input',chkMatch);
 pw2&&pw2.addEventListener('input',chkMatch);
+
+function updateComputedAge(dobVal) {
+  const badge = document.getElementById('computed-age-badge');
+  if (!badge) return;
+  if (!dobVal) {
+    badge.textContent = '';
+    return;
+  }
+  const birthDate = new Date(dobVal);
+  const today = new Date();
+  if (isNaN(birthDate.getTime())) {
+    badge.textContent = '';
+    return;
+  }
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  if (age >= 0 && age <= 120) {
+    badge.textContent = `(${age} yrs old)`;
+  } else {
+    badge.textContent = '';
+  }
+}
+
+// Initialize on page load
+const dobEl = document.getElementById('dob');
+if (dobEl && dobEl.value) {
+  updateComputedAge(dobEl.value);
+}
 
 /* Submit guard */
 document.getElementById('reg-form')&&document.getElementById('reg-form').addEventListener('submit',function(e){

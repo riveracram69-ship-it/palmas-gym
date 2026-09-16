@@ -180,7 +180,7 @@ if ($is_expired && $member && ($member['status'] ?? '') === 'Active') {
 <div class="alert alert-error"><i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?></div>
 <?php endif; ?>
 
-<div style="display:grid; grid-template-columns: 1fr 340px; gap:2rem; align-items:start;">
+<div class="renew-page-grid" style="display:grid; grid-template-columns: 1fr 340px; gap:2rem; align-items:start;">
 
     <form method="POST" action="">
         <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">

@@ -23,7 +23,7 @@ try {
             <img src="assets/images/palmas-logo.png" alt="Palma's Elite Gym Logo" class="sidebar-brand-logo">
         </div>
         <div class="brand-text">
-            <h2><?php echo htmlspecialchars($app_settings['gym_name'] ?? 'GYM PRO'); ?></h2>
+            <h2><?php echo htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym"); ?></h2>
             <p>MANAGEMENT SYSTEM</p>
         </div>
         <button class="sidebar-close-btn" id="sidebarCloseBtn" type="button" aria-label="Close Navigation">
@@ -121,7 +121,15 @@ try {
             <div class="admin-avatar"><?php echo strtoupper(substr($user['name'] ?? 'A', 0, 1)); ?></div>
             <div class="sidebar-user-info">
                 <div class="sidebar-user-name"><?php echo htmlspecialchars($user['name'] ?? 'Admin'); ?></div>
-                <div class="sidebar-user-role"><?php echo htmlspecialchars($user['role'] ?? 'Administrator'); ?></div>
+                <div class="sidebar-user-role">
+                    <?php 
+                    $role_lower = strtolower($user['role'] ?? 'admin');
+                    if ($role_lower === 'admin'): ?>
+                        <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(82,183,136,0.2);color:#52b788;padding:1px 7px;border-radius:4px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;"><i class="fas fa-shield-halved" style="font-size:0.6rem;"></i> ADMIN</span>
+                    <?php else: ?>
+                        <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(96,165,250,0.2);color:#60a5fa;padding:1px 7px;border-radius:4px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;"><i class="fas fa-user" style="font-size:0.6rem;"></i> STAFF</span>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
         <a href="logout.php" class="sidebar-logout-btn" title="Sign Out">

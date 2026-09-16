@@ -178,6 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'status_type' => 'Expired',
                 'member_name' => $member['full_name'],
                 'membership_id' => $member['membership_id'],
+                'member_db_id' => $member['id'],
                 'photo' => $member['photo'],
                 'expiry_date' => $sub['expiry_date'] ?? 'No Subscription',
                 'message' => 'Membership Expired (' . ($sub['expiry_date'] ?? 'None') . '). Please renew at the desk.'

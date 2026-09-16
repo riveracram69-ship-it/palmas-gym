@@ -13,11 +13,18 @@ $contact_error   = '';
 $pw_success    = '';
 $pw_error      = '';
 
-// Handle profile update (email / contact / address)
+// Handle profile update (email / contact / structured address / dob)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_contact') {
-    $email   = trim($_POST['email'] ?? '');
-    $contact = trim($_POST['contact_number'] ?? '');
-    $address = trim($_POST['address'] ?? '');
+    $email        = trim($_POST['email'] ?? '');
+    $contact      = trim($_POST['contact_number'] ?? '');
+    $house_street = trim($_POST['house_street'] ?? '');
+    $barangay     = trim($_POST['barangay'] ?? '');
+    $municipality = trim($_POST['municipality'] ?? '');
+    $province     = trim($_POST['province'] ?? '');
+    $zip_code     = trim($_POST['zip_code'] ?? '');
+    $address      = compose_member_address_string($house_street, $barangay, $municipality, $province, $zip_code, trim($_POST['address'] ?? ''));
+    $dob          = trim($_POST['dob'] ?? '');
+    $age          = compute_member_age($dob, !empty($member['age']) ? intval($member['age']) : null);
 
     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $contact_error = 'Please provide a valid email address.';
@@ -25,12 +32,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $contact_error = 'Contact number is required.';
     } elseif (!preg_match('/^09[0-9]{9}$/', $contact)) {
         $contact_error = 'Contact number must be 11 digits starting with 09 (e.g. 09123456789).';
-    } elseif (empty($address)) {
-        $contact_error = 'Home address is required.';
+    } elseif (empty($address) && empty($municipality)) {
+        $contact_error = 'Home address details are required.';
     } else {
         try {
-            $s = $pdo->prepare("UPDATE members SET email = ?, contact_number = ?, address = ? WHERE id = ?");
-            $s->execute([$email, $contact, $address ?: null, $member['id']]);
+            $s = $pdo->prepare("
+                UPDATE members 
+                SET email = ?, contact_number = ?, house_street = ?, barangay = ?, municipality = ?, province = ?, zip_code = ?, address = ?, dob = ?, age = ?
+                WHERE id = ?
+            ");
+            $s->execute([
+                $email, $contact, $house_street ?: null, $barangay ?: null, $municipality ?: null, $province ?: null, $zip_code ?: null, $address ?: null,
+                $dob ?: null, $age, $member['id']
+            ]);
             $contact_success = 'Profile info updated successfully.';
             $member  = current_member($pdo); // refresh
             if (function_exists('log_activity')) {
@@ -323,15 +337,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             </div>
             <?php endif; ?>
             <div class="info-field">
-                <span class="info-field-label">Address</span>
-                <span class="info-field-value"><?php echo htmlspecialchars($member['address'] ?: '—'); ?></span>
-            </div>
-            <?php if (!empty($member['dob'])): ?>
-            <div class="info-field">
                 <span class="info-field-label">Date of Birth</span>
-                <span class="info-field-value"><?php echo date('M d, Y', strtotime($member['dob'])); ?></span>
+                <span class="info-field-value"><?php echo htmlspecialchars(format_member_dob($member['dob'] ?? null, $member['age'] ?? null)); ?></span>
             </div>
-            <?php endif; ?>
+            <div class="info-field" style="grid-column: 1 / -1;">
+                <span class="info-field-label">Address</span>
+                <span class="info-field-value"><?php echo htmlspecialchars(format_member_address($member)); ?></span>
+            </div>
         </div>
 
         <!-- Update Profile Picture -->
@@ -368,7 +380,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
         <!-- Edit Contact Info -->
         <div class="edit-section fade-up fade-up-d2">
-            <p class="section-title" style="margin-bottom:1rem;"><i class="fas fa-pen-to-square"></i> Update Contact Info</p>
+            <p class="section-title" style="margin-bottom:1rem;"><i class="fas fa-pen-to-square"></i> Update Personal &amp; Contact Info</p>
 
             <?php if ($contact_success): ?>
                 <div class="success-banner" style="margin-bottom:1rem;">
@@ -396,11 +408,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                            placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}" required>
                 </div>
                 <div class="form-group">
-                    <label for="address"><i class="fas fa-location-dot"></i> Home Address *</label>
-                    <input type="text" name="address" id="address" class="form-control"
-                           value="<?php echo htmlspecialchars($member['address'] ?? ''); ?>"
-                           placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City" required>
+                    <label for="dob"><i class="fas fa-cake-candles"></i> Date of Birth</label>
+                    <input type="date" name="dob" id="dob" class="form-control" max="<?php echo date('Y-m-d'); ?>"
+                           value="<?php echo htmlspecialchars($member['dob'] ?? ''); ?>">
                 </div>
+                
+                <!-- Structured Address -->
+                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(82,183,136,0.2); border-radius:12px; padding:12px; margin-bottom:1rem;">
+                    <label style="display:block; font-weight:700; font-size:0.8rem; color:var(--palmas-light, #8fcfbc); margin-bottom:8px; text-transform:uppercase;">
+                        <i class="fas fa-location-dot"></i> Home Address
+                    </label>
+                    <div class="form-group" style="margin-bottom:8px;">
+                        <label for="house_street" style="font-size:0.75rem;">House / Street / Unit</label>
+                        <input type="text" name="house_street" id="house_street" class="form-control"
+                               placeholder="e.g. 123 Rizal St."
+                               value="<?php echo htmlspecialchars($member['house_street'] ?? (!empty($member['address']) && empty($member['barangay']) ? $member['address'] : '')); ?>">
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="barangay" style="font-size:0.75rem;">Barangay *</label>
+                            <input type="text" name="barangay" id="barangay" class="form-control"
+                                   placeholder="e.g. Poblacion"
+                                   value="<?php echo htmlspecialchars($member['barangay'] ?? ''); ?>" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="municipality" style="font-size:0.75rem;">Municipality / City *</label>
+                            <input type="text" name="municipality" id="municipality" class="form-control"
+                                   placeholder="e.g. Talavera"
+                                   value="<?php echo htmlspecialchars($member['municipality'] ?? ''); ?>" required>
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="province" style="font-size:0.75rem;">Province</label>
+                            <input type="text" name="province" id="province" class="form-control"
+                                   placeholder="e.g. Nueva Ecija"
+                                   value="<?php echo htmlspecialchars($member['province'] ?? 'Nueva Ecija'); ?>">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="zip_code" style="font-size:0.75rem;">ZIP Code</label>
+                            <input type="text" name="zip_code" id="zip_code" class="form-control"
+                                   placeholder="e.g. 3114" maxlength="10"
+                                   value="<?php echo htmlspecialchars($member['zip_code'] ?? ''); ?>">
+                        </div>
+                    </div>
+                </div>
+
                 <button type="submit" class="btn">
                     <i class="fas fa-floppy-disk"></i> Save Changes
                 </button>

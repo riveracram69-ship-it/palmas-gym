@@ -75,7 +75,18 @@ if (!empty($first_name) || !empty($last_name)) {
 $email          = trim($data['email'] ?? '');
 $password       = $data['password'] ?? '';
 $contact_number = trim($data['contact_number'] ?? '');
-$address        = trim($data['address'] ?? '');
+
+// Structured Address components
+$house_street   = trim($data['house_street'] ?? '');
+$barangay       = trim($data['barangay'] ?? '');
+$municipality   = trim($data['municipality'] ?? '');
+$province       = trim($data['province'] ?? '');
+$zip_code       = trim($data['zip_code'] ?? '');
+$address        = compose_member_address_string($house_street, $barangay, $municipality, $province, $zip_code, trim($data['address'] ?? ''));
+
+// Date of Birth & Dynamic Age
+$dob            = trim($data['dob'] ?? '');
+$age            = compute_member_age($dob, !empty($data['age']) ? intval($data['age']) : null);
 $gender         = $data['gender'] ?? 'Male';
 $plan_id        = intval($data['plan_id'] ?? 1);
 $auth_provider  = $data['auth_provider'] ?? 'password';
@@ -104,7 +115,7 @@ if (!preg_match('/^09[0-9]{9}$/', $contact_number)) {
 }
 
 // Address validation
-if (empty($address)) {
+if (empty($address) && empty($municipality)) {
     echo json_encode(['success' => false, 'message' => 'Home address is required.']);
     exit;
 }
@@ -185,9 +196,11 @@ try {
 
     $stmt = $pdo->prepare("
         INSERT INTO members 
-            (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, address, gender, photo, google_id, google_picture,
+            (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number,
+             house_street, barangay, municipality, province, zip_code, address, dob, age,
+             gender, photo, google_id, google_picture,
              auth_provider, account_status, status, selected_plan_id, password_hash, approved_at, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NOW())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NOW())
     ");
     $stmt->execute([
         $membership_id,
@@ -198,7 +211,14 @@ try {
         $full_name,
         $email,
         $contact_number ?: null,
+        $house_street ?: null,
+        $barangay ?: null,
+        $municipality ?: null,
+        $province ?: null,
+        $zip_code ?: null,
         $address ?: null,
+        $dob ?: null,
+        $age,
         $gender,
         $photo_path ?: null,
         $google_id ?: null,

@@ -32,8 +32,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $email   = trim($_POST['email'] ?? '');
     $contact = trim($_POST['contact_number'] ?? '');
-    $address = trim($_POST['address'] ?? '');
-    $age     = intval($_POST['age'] ?? 0);
+    
+    // Structured Address components
+    $house_street = trim($_POST['house_street'] ?? '');
+    $barangay     = trim($_POST['barangay'] ?? '');
+    $municipality = trim($_POST['municipality'] ?? '');
+    $province     = trim($_POST['province'] ?? '');
+    $zip_code     = trim($_POST['zip_code'] ?? '');
+    $address      = compose_member_address_string($house_street, $barangay, $municipality, $province, $zip_code, trim($_POST['address'] ?? ''));
+
+    // Date of Birth & Dynamic Age
+    $dob     = trim($_POST['dob'] ?? '');
+    $age     = compute_member_age($dob, !empty($_POST['age']) ? intval($_POST['age']) : null);
     $gender  = $_POST['gender'] ?? 'Male';
     // Server-side guard: Only Admin can alter member status
     $status  = is_admin() ? ($_POST['status'] ?? $member['status']) : $member['status'];
@@ -47,8 +57,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!preg_match('/^09[0-9]{9}$/', $contact)) {
         $validation_errors[] = "Contact number must be exactly 11 digits starting with 09.";
     }
-    if (empty($address)) $validation_errors[] = "Home address is required.";
-    if (!empty($_POST['age']) && ($age <= 0 || $age > 120)) $validation_errors[] = "Age must be between 1 and 120.";
+    if (empty($address) && empty($municipality)) $validation_errors[] = "Home address details are required.";
+    if (!empty($dob)) {
+        $dob_ts = strtotime($dob);
+        if ($dob_ts === false || $dob_ts > time()) {
+            $validation_errors[] = "Date of birth cannot be in the future.";
+        }
+    }
+    if ($age !== null && ($age < 5 || $age > 120)) {
+        $validation_errors[] = "Age must be between 5 and 120.";
+    }
 
     // Handle Photo Upload
     $photo_path = null;
@@ -81,16 +99,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if ($photo_path) {
                 $stmt = $pdo->prepare(
-                    "UPDATE members SET first_name=?, middle_name=?, last_name=?, extension=?, full_name=?, email=?, contact_number=?, address=?, age=?, gender=?, status=?, photo=?
+                    "UPDATE members SET first_name=?, middle_name=?, last_name=?, extension=?, full_name=?, email=?, contact_number=?,
+                                        house_street=?, barangay=?, municipality=?, province=?, zip_code=?, address=?,
+                                        dob=?, age=?, gender=?, status=?, photo=?
                      WHERE id=?"
                 );
-                $stmt->execute([$first_name ?: null, $middle_name ?: null, $last_name ?: null, $extension ?: null, $name, $email, $contact, $address ?: null, $age ?: null, $gender, $status, $photo_path, $id]);
+                $stmt->execute([
+                    $first_name ?: null, $middle_name ?: null, $last_name ?: null, $extension ?: null, $name, $email, $contact,
+                    $house_street ?: null, $barangay ?: null, $municipality ?: null, $province ?: null, $zip_code ?: null, $address ?: null,
+                    $dob ?: null, $age, $gender, $status, $photo_path, $id
+                ]);
             } else {
                 $stmt = $pdo->prepare(
-                    "UPDATE members SET first_name=?, middle_name=?, last_name=?, extension=?, full_name=?, email=?, contact_number=?, address=?, age=?, gender=?, status=?
+                    "UPDATE members SET first_name=?, middle_name=?, last_name=?, extension=?, full_name=?, email=?, contact_number=?,
+                                        house_street=?, barangay=?, municipality=?, province=?, zip_code=?, address=?,
+                                        dob=?, age=?, gender=?, status=?
                      WHERE id=?"
                 );
-                $stmt->execute([$first_name ?: null, $middle_name ?: null, $last_name ?: null, $extension ?: null, $name, $email, $contact, $address ?: null, $age ?: null, $gender, $status, $id]);
+                $stmt->execute([
+                    $first_name ?: null, $middle_name ?: null, $last_name ?: null, $extension ?: null, $name, $email, $contact,
+                    $house_street ?: null, $barangay ?: null, $municipality ?: null, $province ?: null, $zip_code ?: null, $address ?: null,
+                    $dob ?: null, $age, $gender, $status, $id
+                ]);
             }
             $message  = 'Member details updated successfully.';
             $msg_type = 'success';
@@ -216,14 +246,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                        value="<?php echo htmlspecialchars($member['contact_number'] ?? ''); ?>">
             </div>
             <div class="form-group" style="grid-column: 1 / -1;">
-                <label for="address">Home Address *</label>
-                <input type="text" name="address" id="address" class="form-control" placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City" required
-                       value="<?php echo htmlspecialchars($member['address'] ?? ''); ?>">
+                <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:12px; padding:1rem;">
+                    <label style="display:block; font-weight:700; font-size:0.85rem; color:var(--text-main); margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">
+                        <i class="fas fa-location-dot" style="color:var(--palmas-primary, #10b981); margin-right:6px;"></i> Home Address Details
+                    </label>
+                    <div class="form-group" style="margin-bottom:0.75rem;">
+                        <label for="house_street" style="font-size:0.8rem;">House No. / Street / Building</label>
+                        <input type="text" name="house_street" id="house_street" class="form-control" placeholder="e.g. 123 Rizal St. or Unit 4B Sunshine Bldg."
+                               value="<?php echo htmlspecialchars($member['house_street'] ?? (!empty($member['address']) && empty($member['barangay']) ? $member['address'] : '')); ?>">
+                    </div>
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:0.75rem;">
+                        <div class="form-group">
+                            <label for="barangay" style="font-size:0.8rem;">Barangay *</label>
+                            <input type="text" name="barangay" id="barangay" class="form-control" placeholder="e.g. Poblacion or San Jose"
+                                   value="<?php echo htmlspecialchars($member['barangay'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label for="municipality" style="font-size:0.8rem;">Municipality / City *</label>
+                            <input type="text" name="municipality" id="municipality" class="form-control" placeholder="e.g. Talavera or Quezon City"
+                                   value="<?php echo htmlspecialchars($member['municipality'] ?? ''); ?>">
+                        </div>
+                    </div>
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div class="form-group">
+                            <label for="province" style="font-size:0.8rem;">Province</label>
+                            <input type="text" name="province" id="province" class="form-control" placeholder="e.g. Nueva Ecija"
+                                   value="<?php echo htmlspecialchars($member['province'] ?? 'Nueva Ecija'); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label for="zip_code" style="font-size:0.8rem;">ZIP Code</label>
+                            <input type="text" name="zip_code" id="zip_code" class="form-control" placeholder="e.g. 3114" maxlength="10"
+                                   value="<?php echo htmlspecialchars($member['zip_code'] ?? ''); ?>">
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="form-group">
-                <label for="age">Age</label>
-                <input type="number" name="age" id="age" class="form-control" min="1" max="120" required
-                       value="<?php echo htmlspecialchars($member['age'] ?? ''); ?>">
+                <label for="dob">Date of Birth <span id="computed-age-badge" style="font-size:0.75rem; color:var(--palmas-primary, #10b981); font-weight:700; margin-left:6px;"></span></label>
+                <input type="date" name="dob" id="dob" class="form-control" max="<?php echo date('Y-m-d'); ?>"
+                       value="<?php echo htmlspecialchars($member['dob'] ?? ''); ?>" oninput="updateComputedAge(this.value)">
+                <?php if (empty($member['dob']) && !empty($member['age'])): ?>
+                <input type="hidden" name="age" value="<?php echo htmlspecialchars($member['age']); ?>">
+                <?php endif; ?>
             </div>
             <div class="form-group">
                 <label for="gender">Gender</label>
@@ -263,6 +327,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </form>
 
 <script>
+function updateComputedAge(dobVal) {
+    const badge = document.getElementById('computed-age-badge');
+    if (!dobVal) {
+        <?php if (!empty($member['age'])): ?>
+        badge.textContent = '(Current: <?php echo intval($member['age']); ?> yrs old)';
+        <?php else: ?>
+        badge.textContent = '';
+        <?php endif; ?>
+        return;
+    }
+    const birthDate = new Date(dobVal);
+    const today = new Date();
+    if (isNaN(birthDate.getTime())) {
+        badge.textContent = '';
+        return;
+    }
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    if (age >= 0 && age <= 120) {
+        badge.textContent = `(${age} yrs old)`;
+    } else {
+        badge.textContent = '';
+    }
+}
+
+// Run age calculator on load
+const dobInput = document.getElementById('dob');
+if (dobInput) {
+    updateComputedAge(dobInput.value);
+}
+
 document.getElementById('edit-form').addEventListener('submit', function() {
     const btn = document.getElementById('save-btn');
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';

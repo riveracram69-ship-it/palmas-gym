@@ -2467,11 +2467,64 @@
 
 
           <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <label style="margin:0;">Date of Birth</label>
+              <span id="reg-dob-age-badge" style="display:none; font-size:0.75rem; background:rgba(82,183,136,0.15); color:var(--gym-light); padding:2px 8px; border-radius:6px; font-weight:700;"></span>
+            </div>
+            <div class="input-field-wrap">
+              <i class="fa-solid fa-cake-candles" style="color: var(--gym-light); font-size:0.9rem;"></i>
+              <input type="date" id="reg-dob" onchange="updateRegDobAge(this.value)" />
+            </div>
+          </div>
+
+          <div class="form-group">
             <label>Gender *</label>
             <div class="gender-group">
               <button class="gender-btn" type="button" id="gbtn-male" onclick="selectGender('Male')">Male</button>
               <button class="gender-btn" type="button" id="gbtn-female" onclick="selectGender('Female')">Female</button>
               <button class="gender-btn" type="button" id="gbtn-other" onclick="selectGender('Other')">Other</button>
+            </div>
+          </div>
+
+          <!-- Structured Address Details -->
+          <div class="dark-card" style="padding:14px; margin-bottom:14px; background:rgba(10,30,22,0.6); border:1px solid rgba(82,183,136,0.2); border-radius:14px;">
+            <label style="display:block; color:var(--gym-light); font-size:0.78rem; font-weight:800; text-transform:uppercase; margin-bottom:10px;">
+              <i class="fa-solid fa-location-dot" style="margin-right:4px;"></i> Address Details
+            </label>
+            <div class="form-group" style="margin-bottom:10px;">
+              <label style="font-size:0.75rem;">House No. / Building / Street</label>
+              <div class="input-field-wrap">
+                <i class="fa-solid fa-house" style="color: var(--gym-light); font-size:0.85rem;"></i>
+                <input type="text" id="reg-house-street" placeholder="e.g. 123 Rizal St." />
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:0.75rem;">Barangay</label>
+                <div class="input-field-wrap">
+                  <input type="text" id="reg-barangay" placeholder="e.g. Poblacion" />
+                </div>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:0.75rem;">Municipality / City</label>
+                <div class="input-field-wrap">
+                  <input type="text" id="reg-municipality" placeholder="e.g. Talavera" />
+                </div>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:10px; margin:0;">
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:0.75rem;">Province</label>
+                <div class="input-field-wrap">
+                  <input type="text" id="reg-province" placeholder="e.g. Nueva Ecija" />
+                </div>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:0.75rem;">ZIP Code</label>
+                <div class="input-field-wrap">
+                  <input type="text" id="reg-zip-code" placeholder="3114" maxlength="10" />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -2509,9 +2562,17 @@
               <span style="color:var(--gym-muted);">Contact:</span>
               <strong id="rv-phone" style="color:#fff;">—</strong>
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
+              <span style="color:var(--gym-muted);">Date of Birth:</span>
+              <strong id="rv-dob" style="color:#fff;">—</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
               <span style="color:var(--gym-muted);">Gender:</span>
               <strong id="rv-gender" style="color:#fff;">—</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+              <span style="color:var(--gym-muted);">Address:</span>
+              <strong id="rv-address" style="color:#fff; text-align:right; max-width:60%;">—</strong>
             </div>
           </div>
 
@@ -2963,9 +3024,17 @@
                 <span style="color:var(--text-muted);">Email</span>
                 <strong id="prof-email" style="color:var(--text-primary); text-align:right; max-width:60%; word-break:break-all;">--</strong>
               </div>
-              <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
                 <span style="color:var(--text-muted);">Contact</span>
                 <strong id="prof-phone" style="color:var(--text-primary);">--</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
+                <span style="color:var(--text-muted);">Date of Birth</span>
+                <strong id="prof-dob" style="color:var(--text-primary);">--</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+                <span style="color:var(--text-muted);">Address</span>
+                <strong id="prof-address" style="color:var(--text-primary); text-align:right; max-width:60%;">--</strong>
               </div>
             </div>
 
@@ -3134,6 +3203,57 @@
             <input type="tel" id="edit-phone" placeholder="09XXXXXXXXX" maxlength="11" />
           </div>
         </div>
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <label style="margin:0;">Date of Birth</label>
+            <span id="edit-dob-age-badge" style="display:none; font-size:0.75rem; background:rgba(82,183,136,0.15); color:var(--primary-light); padding:2px 8px; border-radius:6px; font-weight:700;"></span>
+          </div>
+          <div class="input-field-wrap">
+            <input type="date" id="edit-dob" onchange="updateEditDobAge(this.value)" />
+          </div>
+        </div>
+
+        <!-- Structured Address Details -->
+        <div style="margin-top:14px; margin-bottom:14px; padding:14px; background:rgba(10,30,22,0.6); border:1px solid var(--border); border-radius:14px;">
+          <label style="display:block; color:var(--primary-light); font-size:0.78rem; font-weight:800; text-transform:uppercase; margin-bottom:10px;">
+            <i class="fa-solid fa-location-dot" style="margin-right:4px;"></i> Address Details
+          </label>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label style="font-size:0.75rem;">House No. / Building / Street</label>
+            <div class="input-field-wrap">
+              <input type="text" id="edit-house-street" placeholder="e.g. 123 Rizal St." />
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:0.75rem;">Barangay</label>
+              <div class="input-field-wrap">
+                <input type="text" id="edit-barangay" placeholder="e.g. Poblacion" />
+              </div>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:0.75rem;">Municipality / City</label>
+              <div class="input-field-wrap">
+                <input type="text" id="edit-municipality" placeholder="e.g. Talavera" />
+              </div>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns: 2fr 1fr; gap:10px; margin:0;">
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:0.75rem;">Province</label>
+              <div class="input-field-wrap">
+                <input type="text" id="edit-province" placeholder="e.g. Nueva Ecija" />
+              </div>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:0.75rem;">ZIP Code</label>
+              <div class="input-field-wrap">
+                <input type="text" id="edit-zip-code" placeholder="3114" maxlength="10" />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-group">
           <label>Membership ID (Immutable)</label>
           <div class="input-field-wrap" style="opacity:0.65;">
@@ -4844,6 +4964,43 @@ function goToWizardStep(step) {
   }
 }
 
+function calculateAgeFromDob(dobString) {
+  if (!dobString) return null;
+  const birthDate = new Date(dobString);
+  if (isNaN(birthDate.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age >= 0 ? age : null;
+}
+
+function updateRegDobAge(dobVal) {
+  const badge = document.getElementById('reg-dob-age-badge');
+  if (!badge) return;
+  const age = calculateAgeFromDob(dobVal);
+  if (age !== null) {
+    badge.textContent = `Age: ${age} yrs old`;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function updateEditDobAge(dobVal) {
+  const badge = document.getElementById('edit-dob-age-badge');
+  if (!badge) return;
+  const age = calculateAgeFromDob(dobVal);
+  if (age !== null) {
+    badge.textContent = `Age: ${age} yrs old`;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
 function selectGender(g) {
   selectedGender = g;
   ['male', 'female', 'other'].forEach(opt => {
@@ -4859,11 +5016,18 @@ async function wizardNext(fromStep) {
     const name  = syncRegFullName();
     const email = document.getElementById('reg-email').value.trim();
     const phone = (document.getElementById('reg-phone')?.value || '').trim();
+    const dob   = (document.getElementById('reg-dob')?.value || '').trim();
+
     if (!fn) return showToast('Please enter your First Name.');
     if (!ln) return showToast('Please enter your Last Name.');
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('Please enter a valid email address.');
     if (phone && !/^09[0-9]{9}$/.test(phone)) return showToast('Contact number must be 11 digits starting with 09.');
     
+    if (dob) {
+      const computedAge = calculateAgeFromDob(dob);
+      if (computedAge === null || computedAge < 0) return showToast('Please enter a valid Date of Birth.');
+    }
+
     // Password check for non-Google signups
     if (!regPrefill.google_id) {
       const pass = (document.getElementById('reg-password')?.value || '').trim();
@@ -4921,8 +5085,36 @@ async function wizardNext(fromStep) {
     const full = syncRegFullName();
     document.getElementById('rv-name').textContent = full || '—';
     document.getElementById('rv-email').textContent = document.getElementById('reg-email').value.trim();
-    document.getElementById('rv-phone').textContent = document.getElementById('reg-phone').value.trim();
-    document.getElementById('rv-gender').textContent = selectedGender;
+    document.getElementById('rv-phone').textContent = document.getElementById('reg-phone').value.trim() || '—';
+
+    // Populate DOB in review
+    const dobVal = (document.getElementById('reg-dob')?.value || '').trim();
+    const computedAge = calculateAgeFromDob(dobVal);
+    if (dobVal && computedAge !== null) {
+      const d = new Date(dobVal);
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      document.getElementById('rv-dob').textContent = `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} (Age: ${computedAge})`;
+    } else {
+      document.getElementById('rv-dob').textContent = '—';
+    }
+
+    document.getElementById('rv-gender').textContent = selectedGender || '—';
+
+    // Populate Address in review
+    const hs   = (document.getElementById('reg-house-street')?.value || '').trim();
+    const brgy = (document.getElementById('reg-barangay')?.value || '').trim();
+    const muni = (document.getElementById('reg-municipality')?.value || '').trim();
+    const prov = (document.getElementById('reg-province')?.value || '').trim();
+    const zip  = (document.getElementById('reg-zip-code')?.value || '').trim();
+    let addrParts = [];
+    if (hs) addrParts.push(hs);
+    if (brgy) addrParts.push((brgy.toLowerCase().startsWith('brgy') || brgy.toLowerCase().startsWith('barangay')) ? brgy : 'Brgy. ' + brgy);
+    if (muni) addrParts.push(muni);
+    if (prov && zip) addrParts.push(`${prov} ${zip}`);
+    else if (prov) addrParts.push(prov);
+    else if (zip) addrParts.push(zip);
+    document.getElementById('rv-address').textContent = addrParts.join(', ') || '—';
+
     document.getElementById('rv-plan-name').textContent = selectedPlan?.name || 'Selected Plan';
     document.getElementById('rv-plan-price').textContent = selectedPlan ? '₱' + parseFloat(selectedPlan.price).toFixed(2) : '—';
     goToWizardStep(3);
@@ -5098,6 +5290,12 @@ async function submitRegistration() {
         full_name:      syncRegFullName(),
         email:          document.getElementById('reg-email').value.trim(),
         contact_number: document.getElementById('reg-phone').value.trim(),
+        dob:            document.getElementById('reg-dob')?.value || '',
+        house_street:   document.getElementById('reg-house-street')?.value.trim() || '',
+        barangay:       document.getElementById('reg-barangay')?.value.trim() || '',
+        municipality:   document.getElementById('reg-municipality')?.value.trim() || '',
+        province:       document.getElementById('reg-province')?.value.trim() || '',
+        zip_code:       document.getElementById('reg-zip-code')?.value.trim() || '',
         password:       document.getElementById('reg-password')?.value || '',
         gender:         selectedGender,
         plan_id:        selectedPlanId || 1,
@@ -5648,6 +5846,8 @@ async function loadDashboard(memberId) {
     setEl('prof-full-name',     m.full_name);
     setEl('prof-email',         m.email);
     setEl('prof-phone',         m.contact_number);
+    setEl('prof-dob',           m.formatted_dob || (m.dob ? m.dob : (m.computed_age ? `Age: ${m.computed_age}` : '--')));
+    setEl('prof-address',       m.formatted_address || m.address || '--');
     setEl('prof-plan-name',     m.plan_name);
     setEl('prof-valid-until',   formattedExpiry);
     setEl('prof-memid-display', m.membership_id);
@@ -6902,6 +7102,25 @@ function openEditProfileModal() {
   document.getElementById('edit-full-name').value = currentMember.full_name || '';
   document.getElementById('edit-phone').value     = currentMember.contact_number || '';
   document.getElementById('edit-memid').value     = currentMember.membership_id || '';
+
+  const edob = document.getElementById('edit-dob');
+  if (edob) {
+    edob.value = currentMember.dob || '';
+    updateEditDobAge(edob.value);
+  }
+
+  const ehs = document.getElementById('edit-house-street');
+  const ebrgy = document.getElementById('edit-barangay');
+  const emuni = document.getElementById('edit-municipality');
+  const eprov = document.getElementById('edit-province');
+  const ezip = document.getElementById('edit-zip-code');
+
+  if (ehs) ehs.value = currentMember.house_street || '';
+  if (ebrgy) ebrgy.value = currentMember.barangay || '';
+  if (emuni) emuni.value = currentMember.municipality || '';
+  if (eprov) eprov.value = currentMember.province || '';
+  if (ezip) ezip.value = currentMember.zip_code || '';
+
   document.getElementById('modal-edit-profile').isOpen = true;
 }
 
@@ -6916,10 +7135,20 @@ async function saveProfileChanges() {
   const ext  = (document.getElementById('edit-extension')?.value || '').trim();
   const name = [fn, mn, ln, ext].filter(Boolean).join(' ') || (document.getElementById('edit-full-name')?.value || '').trim();
   const phone = document.getElementById('edit-phone').value.trim();
+  const dob   = (document.getElementById('edit-dob')?.value || '').trim();
+  const hs    = (document.getElementById('edit-house-street')?.value || '').trim();
+  const brgy  = (document.getElementById('edit-barangay')?.value || '').trim();
+  const muni  = (document.getElementById('edit-municipality')?.value || '').trim();
+  const prov  = (document.getElementById('edit-province')?.value || '').trim();
+  const zip   = (document.getElementById('edit-zip-code')?.value || '').trim();
 
   if (!fn && !name) return showToast('First Name is required.');
   if (!ln && !name) return showToast('Last Name is required.');
   if (phone && !/^09[0-9]{9}$/.test(phone)) return showToast('Contact number must be 11 digits starting with 09.');
+  if (dob) {
+    const computedAge = calculateAgeFromDob(dob);
+    if (computedAge === null || computedAge < 0) return showToast('Please enter a valid Date of Birth.');
+  }
 
   const btn = document.getElementById('btn-save-profile');
   btn.disabled = true;
@@ -6936,7 +7165,13 @@ async function saveProfileChanges() {
         last_name:      ln,
         extension:      ext,
         full_name:      name,
-        contact_number: phone
+        contact_number: phone,
+        dob:            dob,
+        house_street:   hs,
+        barangay:       brgy,
+        municipality:   muni,
+        province:       prov,
+        zip_code:       zip
       })
     });
     const data = await res.json();

@@ -23,6 +23,8 @@ try {
         SELECT 
             m.id, m.membership_id, m.first_name, m.middle_name, m.last_name, m.extension,
             m.full_name, m.email, m.contact_number,
+            m.house_street, m.barangay, m.municipality, m.province, m.zip_code, m.address,
+            m.dob, m.age, m.gender,
             m.photo, m.google_picture, m.auth_provider, m.status,
             m.account_status,
             s.id    AS subscription_id,
@@ -52,6 +54,10 @@ try {
         echo json_encode(['success' => false, 'message' => 'Member not found.']);
         exit;
     }
+
+    $member['formatted_address'] = format_member_address($member);
+    $member['formatted_dob']     = format_member_dob($member['dob'] ?? null, $member['age'] ?? null);
+    $member['computed_age']      = compute_member_age($member['dob'] ?? null, $member['age'] ?? null);
 
     $now_time = time();
     $exp_ts = (!empty($member['expiry_date'])) 

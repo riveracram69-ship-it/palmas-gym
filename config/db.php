@@ -42,6 +42,7 @@ try {
      try {
          $pdo->exec("SET time_zone = '+08:00'");
      } catch (\Throwable $tzErr) {}
+     require_once __DIR__ . '/member_helpers.php';
 } catch (\PDOException $e) {
     error_log("DB Connection Failed: " . $e->getMessage() . " (Host: $host, Port: $port, User: $user, DB: $db)");
     // Graceful error handling for database connection failure

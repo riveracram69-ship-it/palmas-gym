@@ -45,7 +45,7 @@ try {
 
             <div id="reader" style="width:100%; border-radius:12px; overflow:hidden; border:1px solid var(--border); background:#000; transition:outline 0.2s ease;"></div>
             
-            <div id="scan-result" style="display:none; margin-top:1.5rem; padding:1.25rem; border-radius:12px;" role="alert"></div>
+            <div id="scan-result" style="display:none; margin-top:1.5rem; padding:1.25rem; border-radius:12px; position:relative;" role="alert"></div>
 
             <div style="margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--border);">
                 <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:1rem; font-weight:700; text-transform:uppercase; letter-spacing:1px;">Manual ID Entry</p>
@@ -219,10 +219,17 @@ function processCheckin(membershipId, isManual = false) {
             const safeErrName = escapeHtml(data.member_name || 'Unverified ID');
             const safeErrMsg = escapeHtml(data.message || 'Invalid scan.');
             const safeType = escapeHtml(data.status_type ? data.status_type.toUpperCase() : '');
+            const isExpired = (data.status_type && data.status_type.toLowerCase() === 'expired');
 
             res.style.background = '#fce8e6'; 
             res.style.color = '#c5221f'; 
             res.style.border = '1px solid rgba(217,48,37,0.2)';
+
+            let renewBtnHtml = '';
+            if (isExpired && data.member_db_id) {
+                renewBtnHtml = `<a href="renew-member.php?id=${encodeURIComponent(data.member_db_id)}" class="btn btn-primary" style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;padding:0.5rem 1.1rem;text-decoration:none;border-radius:8px;"><i class="fas fa-rotate-right"></i> Renew Now →</a>`;
+            }
+
             res.innerHTML = `
                 <div style="text-align:left;">
                     <div style="font-size:0.8rem;font-weight:800;text-transform:uppercase;color:#c5221f;margin-bottom:4px;">
@@ -230,6 +237,7 @@ function processCheckin(membershipId, isManual = false) {
                     </div>
                     <div style="font-weight:700;font-size:0.95rem;color:var(--text-main);">${safeErrName}</div>
                     <div style="font-size:0.85rem;color:#c5221f;margin-top:2px;">${safeErrMsg}</div>
+                    ${renewBtnHtml}
                 </div>
             `;
         }
@@ -238,7 +246,7 @@ function processCheckin(membershipId, isManual = false) {
         setTimeout(() => { 
             res.style.display = 'none'; 
             isProcessingCheckin = false;
-        }, 3500);
+        }, 10000);
     });
 }
 

@@ -40,7 +40,7 @@ $active = array_filter($members, function($m) {
         <h1>Member Directory</h1>
         <p><?php echo $total; ?> total members registered in the system.</p>
     </div>
-    <div style="display:flex; gap:0.6rem; align-items:center;">
+    <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
         <a href="add-member.php" class="btn btn-primary">
             <i class="fas fa-user-plus"></i> Add Member
         </a>

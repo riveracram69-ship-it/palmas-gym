@@ -66,12 +66,28 @@ if (!$member): ?>
     <div class="topbar"><h1>Member Not Found</h1></div>
 <?php else: ?>
 
+<?php if (!empty($_GET['renewed'])): ?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof palmasToast === 'function') {
+        palmasToast('Membership renewed successfully! New plan is now active.', 'success');
+    }
+    // Clean URL without reload
+    if (window.history.replaceState) {
+        const url = new URL(window.location);
+        url.searchParams.delete('renewed');
+        window.history.replaceState({}, '', url);
+    }
+});
+</script>
+<?php endif; ?>
+
 <div class="topbar">
     <div class="page-title">
         <h1>Member Account</h1>
         <p>Viewing profile for <?php echo htmlspecialchars($member['full_name']); ?></p>
     </div>
-    <div style="display:flex; gap:0.75rem;">
+    <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
         <a href="renew-member.php?id=<?php echo $id; ?>" class="btn btn-outline" style="color:var(--accent); border-color:var(--accent-border); background:var(--accent-dim); text-decoration:none; display:inline-flex; align-items:center; gap:0.5rem;"><i class="fas fa-rotate-right"></i> Renew Plan</a>
         <button class="btn btn-primary" onclick="showIDModal()"><i class="fas fa-id-card"></i> View E-ID Card</button>
         <a href="edit-member.php?id=<?php echo $id; ?>" class="btn btn-outline">Edit</a>
@@ -106,9 +122,12 @@ if (!$member): ?>
             <div class="member-meta-grid">
                 <div><p class="stat-label">Email</p><p style="font-weight:600;"><?php echo htmlspecialchars($member['email']); ?></p></div>
                 <div><p class="stat-label">Contact</p><p style="font-weight:600;"><?php echo htmlspecialchars($member['contact_number'] ?: '—'); ?></p></div>
-                <div><p class="stat-label">Address</p><p style="font-weight:600;"><?php echo htmlspecialchars($member['address'] ?: '—'); ?></p></div>
+                <div><p class="stat-label">Date of Birth</p><p style="font-weight:600;"><?php echo htmlspecialchars(format_member_dob($member['dob'] ?? null, $member['age'] ?? null)); ?></p></div>
+                <div><p class="stat-label">Gender</p><p style="font-weight:600;"><?php echo htmlspecialchars($member['gender'] ?: '—'); ?></p></div>
+                <div style="grid-column: 1 / -1;"><p class="stat-label">Home Address</p><p style="font-weight:600;"><?php echo htmlspecialchars(format_member_address($member)); ?></p></div>
                 <div><p class="stat-label">Plan</p><p style="font-weight:600; color:var(--accent);"><?php echo htmlspecialchars($member['plan_name'] ?: 'No Plan'); ?></p></div>
                 <div><p class="stat-label">Plan Expiry</p><p style="font-weight:600; color:<?php echo $is_sub_expired ? 'var(--danger)' : 'var(--text-main)'; ?>;"><?php echo $member['expiry_date'] ? date('M d, Y', strtotime($member['expiry_date'])) : '—'; ?></p></div>
+                <div><p class="stat-label">Date Joined</p><p style="font-weight:600;"><?php echo !empty($member['created_at']) ? date('M d, Y', strtotime($member['created_at'])) : '—'; ?></p></div>
             </div>
         </div>
 

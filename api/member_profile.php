@@ -25,10 +25,22 @@ try {
     $extension      = trim($data['extension'] ?? '');
     $full_name      = trim($data['full_name'] ?? '');
     $contact_number = trim($data['contact_number'] ?? '');
+    $house_street   = trim($data['house_street'] ?? '');
+    $barangay       = trim($data['barangay'] ?? '');
+    $municipality   = trim($data['municipality'] ?? '');
+    $province       = trim($data['province'] ?? '');
+    $zip_code       = trim($data['zip_code'] ?? '');
+    $address_input  = trim($data['address'] ?? '');
+    $dob            = trim($data['dob'] ?? '');
     $old_password   = trim($data['old_password'] ?? '');
     $new_password   = trim($data['new_password'] ?? '');
 
-    $stmt = $pdo->prepare("SELECT id, membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, photo, google_picture, auth_provider, status, account_status, password_hash FROM members WHERE id = ?");
+    $stmt = $pdo->prepare("
+        SELECT id, membership_id, first_name, middle_name, last_name, extension, full_name,
+               email, contact_number, house_street, barangay, municipality, province, zip_code, address,
+               dob, age, gender, photo, google_picture, auth_provider, status, account_status, password_hash
+        FROM members WHERE id = ?
+    ");
     $stmt->execute([$member_id]);
     $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -65,6 +77,30 @@ try {
         }
         $updates[] = "contact_number = ?";
         $params[] = $contact_number;
+    }
+
+    if (isset($data['house_street']) || isset($data['barangay']) || isset($data['municipality']) || isset($data['province']) || isset($data['zip_code']) || isset($data['address'])) {
+        $new_address = compose_member_address_string($house_street, $barangay, $municipality, $province, $zip_code, $address_input ?: ($member['address'] ?? ''));
+        $updates[] = "house_street = ?";
+        $params[]  = $house_street ?: null;
+        $updates[] = "barangay = ?";
+        $params[]  = $barangay ?: null;
+        $updates[] = "municipality = ?";
+        $params[]  = $municipality ?: null;
+        $updates[] = "province = ?";
+        $params[]  = $province ?: null;
+        $updates[] = "zip_code = ?";
+        $params[]  = $zip_code ?: null;
+        $updates[] = "address = ?";
+        $params[]  = $new_address ?: null;
+    }
+
+    if (!empty($dob)) {
+        $age = compute_member_age($dob, !empty($member['age']) ? intval($member['age']) : null);
+        $updates[] = "dob = ?";
+        $params[]  = $dob;
+        $updates[] = "age = ?";
+        $params[]  = $age;
     }
 
     // Handle photo upload (multipart file or base64)
@@ -124,10 +160,18 @@ try {
     }
 
     // Fetch updated member data
-    $stmt = $pdo->prepare("SELECT id, membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, photo, google_picture, auth_provider, status, account_status FROM members WHERE id = ?");
+    $stmt = $pdo->prepare("
+        SELECT id, membership_id, first_name, middle_name, last_name, extension, full_name,
+               email, contact_number, house_street, barangay, municipality, province, zip_code, address,
+               dob, age, gender, photo, google_picture, auth_provider, status, account_status
+        FROM members WHERE id = ?
+    ");
     $stmt->execute([$member_id]);
     $updated_member = $stmt->fetch(PDO::FETCH_ASSOC);
-    $updated_member['photo'] = $updated_member['photo'] ?: ($updated_member['google_picture'] ?? null);
+    $updated_member['photo']             = $updated_member['photo'] ?: ($updated_member['google_picture'] ?? null);
+    $updated_member['formatted_address'] = format_member_address($updated_member);
+    $updated_member['formatted_dob']     = format_member_dob($updated_member['dob'] ?? null, $updated_member['age'] ?? null);
+    $updated_member['computed_age']      = compute_member_age($updated_member['dob'] ?? null, $updated_member['age'] ?? null);
 
     echo json_encode([
         'success' => true,

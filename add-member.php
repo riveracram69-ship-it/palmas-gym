@@ -49,12 +49,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    $email     = trim($_POST['email'] ?? '');
-    $contact   = trim($_POST['contact_number'] ?? '');
-    $address   = trim($_POST['address'] ?? '');
-    $age       = intval($_POST['age'] ?? 0);
-    $gender    = $_POST['gender'] ?? '';
-    $plan_id   = intval($_POST['plan_id'] ?? 0);
+    $email        = trim($_POST['email'] ?? '');
+    $contact      = trim($_POST['contact_number'] ?? '');
+    
+    // Structured Address components
+    $house_street = trim($_POST['house_street'] ?? '');
+    $barangay     = trim($_POST['barangay'] ?? '');
+    $municipality = trim($_POST['municipality'] ?? '');
+    $province     = trim($_POST['province'] ?? '');
+    $zip_code     = trim($_POST['zip_code'] ?? '');
+    $address      = compose_member_address_string($house_street, $barangay, $municipality, $province, $zip_code, trim($_POST['address'] ?? ''));
+
+    // Date of Birth & Dynamic Age
+    $dob          = trim($_POST['dob'] ?? '');
+    $age          = compute_member_age($dob, !empty($_POST['age']) ? intval($_POST['age']) : null);
+    $gender       = $_POST['gender'] ?? 'Male';
+    $plan_id      = intval($_POST['plan_id'] ?? 0);
     
     // Handle Photo Upload via Defense-in-Depth Uploader
     $photo_path = null;
@@ -79,8 +89,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!preg_match('/^09[0-9]{9}$/', $contact)) {
         $validation_errors[] = "Contact number must be exactly 11 digits starting with 09.";
     }
-    if (empty($address)) $validation_errors[] = "Home address is required.";
-    if (!empty($_POST['age']) && ($age <= 0 || $age > 120)) $validation_errors[] = "Age must be between 1 and 120.";
+    if (empty($address) && empty($municipality)) $validation_errors[] = "Home address details are required.";
+    if (!empty($dob)) {
+        $dob_ts = strtotime($dob);
+        if ($dob_ts === false || $dob_ts > time()) {
+            $validation_errors[] = "Date of birth cannot be in the future.";
+        }
+    }
+    if ($age !== null && ($age < 5 || $age > 120)) {
+        $validation_errors[] = "Age must be between 5 and 120.";
+    }
     if (empty($plan_id)) $validation_errors[] = "Please select a membership plan.";
 
     // Check for duplicate email
@@ -99,8 +117,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $created_by = $_SESSION['user_id'] ?? null;
             $membership_id = 'GYM-' . strtoupper(substr(uniqid(), -6));
 
-            $stmt = $pdo->prepare("INSERT INTO members (membership_id, first_name, middle_name, last_name, extension, full_name, email, contact_number, address, age, gender, photo, status, created_by, account_status, approved_by, approved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?, 'Approved', ?, NOW())");
-            $stmt->execute([$membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact, $address ?: null, $age, $gender, $photo_path, $created_by, $created_by]);
+            $stmt = $pdo->prepare("
+                INSERT INTO members (
+                    membership_id, first_name, middle_name, last_name, extension, full_name,
+                    email, contact_number, house_street, barangay, municipality, province, zip_code, address,
+                    dob, age, gender, photo, status, created_by, account_status, approved_by, approved_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?, 'Approved', ?, NOW())
+            ");
+            $stmt->execute([
+                $membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name,
+                $email, $contact, $house_street ?: null, $barangay ?: null, $municipality ?: null, $province ?: null, $zip_code ?: null, $address ?: null,
+                $dob ?: null, $age, $gender, $photo_path, $created_by, $created_by
+            ]);
             $member_id = $pdo->lastInsertId();
 
             $plan_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes FROM membership_plans WHERE id = ?");
@@ -234,9 +262,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom:1rem;">
-                    <label>Home Address *</label>
-                    <input type="text" name="address" class="form-control" placeholder="e.g. 123 Fitness St., Brgy. San Jose, Quezon City" value="<?php echo htmlspecialchars($_POST['address'] ?? ''); ?>" required>
+                <!-- Structured Address Fields -->
+                <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:12px; padding:1rem; margin-bottom:1rem;">
+                    <label style="display:block; font-weight:700; font-size:0.85rem; color:var(--text-main); margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">
+                        <i class="fas fa-location-dot" style="color:var(--palmas-primary, #10b981); margin-right:6px;"></i> Home Address Details
+                    </label>
+                    <div class="form-group" style="margin-bottom:0.75rem;">
+                        <label style="font-size:0.8rem;">House No. / Street / Building</label>
+                        <input type="text" name="house_street" class="form-control" placeholder="e.g. 123 Rizal St. or Unit 4B Sunshine Bldg." value="<?php echo htmlspecialchars($_POST['house_street'] ?? ''); ?>">
+                    </div>
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:0.75rem;">
+                        <div class="form-group">
+                            <label style="font-size:0.8rem;">Barangay *</label>
+                            <input type="text" name="barangay" class="form-control" placeholder="e.g. Poblacion or San Jose" value="<?php echo htmlspecialchars($_POST['barangay'] ?? ''); ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size:0.8rem;">Municipality / City *</label>
+                            <input type="text" name="municipality" class="form-control" placeholder="e.g. Talavera or Quezon City" value="<?php echo htmlspecialchars($_POST['municipality'] ?? ''); ?>" required>
+                        </div>
+                    </div>
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div class="form-group">
+                            <label style="font-size:0.8rem;">Province</label>
+                            <input type="text" name="province" class="form-control" placeholder="e.g. Nueva Ecija" value="<?php echo htmlspecialchars($_POST['province'] ?? 'Nueva Ecija'); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size:0.8rem;">ZIP Code</label>
+                            <input type="text" name="zip_code" class="form-control" placeholder="e.g. 3114" maxlength="10" value="<?php echo htmlspecialchars($_POST['zip_code'] ?? ''); ?>">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:1rem;">
@@ -264,35 +318,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="hidden" name="amount_paid" id="amount_paid" value="<?php echo htmlspecialchars($_POST['amount_paid'] ?? ''); ?>">
                 <input type="hidden" name="payment_date" value="<?php echo htmlspecialchars($_POST['payment_date'] ?? date('Y-m-d')); ?>">
 
-                <!-- Collapsible Optional Details -->
+                <!-- Date of Birth & Personal Demographics -->
                 <div style="margin-top:1rem; border-top:1px dashed var(--border); padding-top:0.75rem;">
                     <button type="button" onclick="document.getElementById('extra-fields').style.display = (document.getElementById('extra-fields').style.display === 'none' ? 'block' : 'none')" class="btn btn-outline" style="font-size:0.8rem; padding:6px 14px; border-radius:8px; display:inline-flex; align-items:center; gap:6px;">
-                        <i class="fas fa-sliders"></i> Additional Details (Optional) <i class="fas fa-chevron-down" style="font-size:0.7rem;"></i>
+                        <i class="fas fa-sliders"></i> Date of Birth &amp; Additional Details <i class="fas fa-chevron-down" style="font-size:0.7rem;"></i>
                     </button>
 
-                    <div id="extra-fields" style="display:none; margin-top:1rem; padding:1rem; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:10px;">
+                    <div id="extra-fields" style="display:block; margin-top:1rem; padding:1rem; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:10px;">
                         <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:0.75rem;">
                             <div class="form-group">
-                                <label>Middle Name</label>
-                                <input type="text" name="middle_name" class="form-control" placeholder="Santos" value="<?php echo htmlspecialchars($_POST['middle_name'] ?? ''); ?>">
-                            </div>
-                            <div class="form-group">
-                                <label>Suffix</label>
-                                <select name="extension" class="form-control">
-                                    <?php $cur_ext = $_POST['extension'] ?? ''; ?>
-                                    <option value="" <?php echo $cur_ext === '' ? 'selected' : ''; ?>>None</option>
-                                    <option value="Jr." <?php echo $cur_ext === 'Jr.' ? 'selected' : ''; ?>>Jr.</option>
-                                    <option value="Sr." <?php echo $cur_ext === 'Sr.' ? 'selected' : ''; ?>>Sr.</option>
-                                    <option value="II" <?php echo $cur_ext === 'II' ? 'selected' : ''; ?>>II</option>
-                                    <option value="III" <?php echo $cur_ext === 'III' ? 'selected' : ''; ?>>III</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-                            <div class="form-group">
-                                <label>Age</label>
-                                <input type="number" name="age" class="form-control" placeholder="e.g. 25" min="1" max="120" value="<?php echo htmlspecialchars($_POST['age'] ?? ''); ?>">
+                                <label>Date of Birth <span id="computed-age-badge" style="font-size:0.75rem; color:var(--palmas-primary, #10b981); font-weight:700; margin-left:6px;"></span></label>
+                                <input type="date" name="dob" id="dob-input" class="form-control" max="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($_POST['dob'] ?? ''); ?>" oninput="updateComputedAge(this.value)">
                             </div>
                             <div class="form-group">
                                 <label>Gender</label>
@@ -301,6 +337,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <option value="Male" <?php echo $selected_gender === 'Male' ? 'selected' : ''; ?>>Male</option>
                                     <option value="Female" <?php echo $selected_gender === 'Female' ? 'selected' : ''; ?>>Female</option>
                                     <option value="Other" <?php echo $selected_gender === 'Other' ? 'selected' : ''; ?>>Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                            <div class="form-group">
+                                <label>Middle Name <span style="font-size:0.72rem; color:var(--text-muted);">(Optional)</span></label>
+                                <input type="text" name="middle_name" class="form-control" placeholder="Santos" value="<?php echo htmlspecialchars($_POST['middle_name'] ?? ''); ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Suffix <span style="font-size:0.72rem; color:var(--text-muted);">(Optional)</span></label>
+                                <select name="extension" class="form-control">
+                                    <?php $cur_ext = $_POST['extension'] ?? ''; ?>
+                                    <option value="" <?php echo $cur_ext === '' ? 'selected' : ''; ?>>None</option>
+                                    <option value="Jr." <?php echo $cur_ext === 'Jr.' ? 'selected' : ''; ?>>Jr.</option>
+                                    <option value="Sr." <?php echo $cur_ext === 'Sr.' ? 'selected' : ''; ?>>Sr.</option>
+                                    <option value="II" <?php echo $cur_ext === 'II' ? 'selected' : ''; ?>>II</option>
+                                    <option value="III" <?php echo $cur_ext === 'III' ? 'selected' : ''; ?>>III</option>
                                 </select>
                             </div>
                         </div>
@@ -336,6 +390,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </form>
 
 <script>
+function updateComputedAge(dobVal) {
+    const badge = document.getElementById('computed-age-badge');
+    if (!dobVal) {
+        badge.textContent = '';
+        return;
+    }
+    const birthDate = new Date(dobVal);
+    const today = new Date();
+    if (isNaN(birthDate.getTime())) {
+        badge.textContent = '';
+        return;
+    }
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    if (age >= 0 && age <= 120) {
+        badge.textContent = `(${age} yrs old)`;
+    } else {
+        badge.textContent = '';
+    }
+}
+
+// Initialize on page load if DOB prefilled
+const dobEl = document.getElementById('dob-input');
+if (dobEl && dobEl.value) {
+    updateComputedAge(dobEl.value);
+}
+
 document.getElementById('photo-input').onchange = function(e) {
     const [file] = this.files;
     if (file) {
