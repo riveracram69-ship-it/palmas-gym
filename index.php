@@ -262,54 +262,8 @@ try {
         </div>
     </div>
 
-    <!-- ── FAST ACTION SHORTCUT BUTTONS ────────────────────────────────────── -->
-    <div class="quick-actions-bar">
-        <a href="add-member.php" class="quick-action-btn">
-            <div class="quick-action-icon" style="background:#e8f5e9; color:#2e7d32;"><i class="fas fa-user-plus"></i></div>
-            <div>
-                <div>Register Member</div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">New profile &amp; pass</div>
-            </div>
-        </a>
-        <a href="members.php" class="quick-action-btn">
-            <div class="quick-action-icon" style="background:#e0f2fe; color:#0284c7;"><i class="fas fa-users"></i></div>
-            <div>
-                <div>Members Directory</div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Search &amp; manage</div>
-            </div>
-        </a>
-        <a href="attendance.php" class="quick-action-btn">
-            <div class="quick-action-icon" style="background:#fef3c7; color:#d97706;"><i class="fas fa-qrcode"></i></div>
-            <div>
-                <div>QR Kiosk Scanner</div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Turnstile check-in</div>
-            </div>
-        </a>
-        <a href="payments.php" class="quick-action-btn">
-            <div class="quick-action-icon" style="background:#dcfce7; color:#16a34a;"><i class="fas fa-money-bill-wave"></i></div>
-            <div>
-                <div>Record Payment</div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Cash &amp; transactions</div>
-            </div>
-        </a>
-        <a href="plans.php" class="quick-action-btn">
-            <div class="quick-action-icon" style="background:#f3e8ff; color:#7e22ce;"><i class="fas fa-tags"></i></div>
-            <div>
-                <div>Gym Packages</div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Plans &amp; pricing</div>
-            </div>
-        </a>
-        <a href="reports.php" class="quick-action-btn">
-            <div class="quick-action-icon" style="background:#fce7f3; color:#be185d;"><i class="fas fa-chart-line"></i></div>
-            <div>
-                <div>Financial Reports</div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">Ledger &amp; analytics</div>
-            </div>
-        </a>
-    </div>
-
     <!-- ── STREAMLINED 2-COLUMN OPERATIONAL WORKSPACE ───────────────────────── -->
-    <div class="dashboard-grid-2col" style="margin-top: 1.5rem;">
+    <div class="dashboard-grid-2col">
         
         <!-- LEFT COLUMN: TODAY'S ATTENDANCE & OVERDUE RENEWALS -->
         <div style="display:flex; flex-direction:column; gap:1.5rem;">
@@ -671,43 +625,6 @@ try {
     transition: width 0.3s ease;
 }
 
-/* Quick Actions Bar */
-.quick-actions-bar {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-}
-.quick-action-btn {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 0.85rem 1rem;
-    text-decoration: none;
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-weight: 600;
-    font-size: 0.84rem;
-    transition: all 0.2s ease;
-}
-.quick-action-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.06);
-    border-color: var(--accent);
-}
-.quick-action-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    flex-shrink: 0;
-}
-
 /* 2-Column Grid */
 .dashboard-grid-2col {
     display: grid;
@@ -769,13 +686,11 @@ try {
 
 @media (max-width: 1100px) {
     .kpi-master-grid { grid-template-columns: repeat(2, 1fr); }
-    .quick-actions-bar { grid-template-columns: repeat(3, 1fr); }
     .dashboard-grid-2col { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
     .kpi-master-grid { grid-template-columns: 1fr; }
-    .quick-actions-bar { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
 
