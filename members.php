@@ -54,14 +54,10 @@ $active = array_filter($members, function($m) {
             <input type="text" class="form-control" id="member-search" placeholder="Search name, email, or ID…">
         </div>
         <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
-            <select class="form-control" id="status-filter" style="width:auto;min-width:170px;">
-                <option value="">All Statuses</option>
-                <option value="Active">Active Subscription</option>
-                <option value="Expired">Expired Subscription</option>
-                <option value="Pending">Pending Review</option>
-                <option value="Approved">Approved Account</option>
-                <option value="Rejected">Rejected Account</option>
-                <option value="Suspended">Suspended / Inactive</option>
+            <select class="form-control" id="status-filter" style="width:auto;min-width:130px;">
+                <option value="">All Members</option>
+                <option value="Active">Active</option>
+                <option value="Expired">Expired</option>
             </select>
             <select class="form-control" id="per-page-select" style="width:auto;min-width:130px;">
                 <option value="10" selected>10 per page</option>
@@ -280,18 +276,7 @@ function filterTable() {
         const nameMatch   = row.dataset.name.includes(q);
         const emailMatch  = row.dataset.email.includes(q);
         const idMatch     = row.dataset.id.includes(q);
-        
-        let statusMatch = true;
-        if (s) {
-            if (s === 'Active' || s === 'Expired') {
-                statusMatch = (row.dataset.membershipStatus === s);
-            } else if (s === 'Suspended') {
-                statusMatch = (row.dataset.status === 'Suspended' || row.dataset.membershipStatus === 'Inactive');
-            } else {
-                statusMatch = (row.dataset.status === s);
-            }
-        }
-        
+        const statusMatch = !s || row.dataset.membershipStatus === s;
         const match = (nameMatch || emailMatch || idMatch) && statusMatch;
 
         if (match) {
