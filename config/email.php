@@ -14,7 +14,11 @@ function send_email_notification($to, $subject, $title, $body_text) {
     // Determine action button URL
     $cta_url = rtrim($base_url, '/') . '/member/login.php';
     if (str_contains(strtolower($subject), 'reset') || str_contains(strtolower($title), 'reset')) {
-        $cta_url = rtrim($base_url, '/') . '/member/forgot_password.php';
+        if (str_contains(strtolower($subject), 'staff') || str_contains(strtolower($title), 'staff') || str_contains(strtolower($subject), 'admin') || str_contains(strtolower($title), 'admin')) {
+            $cta_url = rtrim($base_url, '/') . '/forgot_password.php';
+        } else {
+            $cta_url = rtrim($base_url, '/') . '/member/forgot_password.php';
+        }
     }
 
     // Format body text for email rendering

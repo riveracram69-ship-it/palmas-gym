@@ -188,21 +188,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 4. Anti-Duplicate Check-in Cooldown & Active Session Check
         $last_checkin_stmt = $pdo->prepare("
             SELECT id, time_in, time_out, 
-                   TIMESTAMPDIFF(MINUTE, time_in, NOW()) as minutes_since_in
+                   TIMESTAMPDIFF(SECOND, time_in, NOW()) as seconds_since_in,
+                   TIMESTAMPDIFF(SECOND, time_out, NOW()) as seconds_since_out
             FROM attendance 
             WHERE member_id = ? AND date = CURDATE()
-            ORDER BY time_in DESC 
+            ORDER BY id DESC 
             LIMIT 1
         ");
         $last_checkin_stmt->execute([$member['id']]);
         $last_record = $last_checkin_stmt->fetch(PDO::FETCH_ASSOC);
 
-        // If currently inside (checked in, no checkout yet)
+        // Case A: Currently Inside (checked in, no checkout yet)
         if ($last_record && empty($last_record['time_out'])) {
-            $mins = intval($last_record['minutes_since_in'] ?? 0);
+            $secs_in = intval($last_record['seconds_since_in'] ?? 0);
             
-            // If scanned within 3 minutes of check-in, trigger anti-duplicate cooldown
-            if ($mins < 3) {
+            // If scanned within 5 seconds of check-in, ignore rapid double-scan from camera
+            if ($secs_in < 5) {
                 echo json_encode([
                     'success' => true,
                     'is_cooldown' => true,
@@ -215,12 +216,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'plan_name' => $member['plan_name'] ?: 'Standard',
                     'expiry_date' => date('M d, Y', strtotime($member['expiry_date'])),
                     'time' => date('h:i A', strtotime($last_record['time_in'])),
-                    'message' => 'Member already checked in at ' . date('h:i A', strtotime($last_record['time_in'])) . ' (Cooldown Active).'
+                    'message' => 'Member already checked in at ' . date('h:i A', strtotime($last_record['time_in'])) . '.'
                 ]);
                 exit;
             }
 
-            // Otherwise, perform Check-out
+            // Otherwise, perform Check-out (UPDATE the existing row's time_out, NO new row)
             $upd = $pdo->prepare("UPDATE attendance SET time_out = NOW() WHERE id = ?");
             $upd->execute([$last_record['id']]);
 
@@ -239,6 +240,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             log_activity($pdo, 'Member Check-out', "Member {$member['full_name']} ({$member['membership_id']}) checked out.", 'Attendance');
             exit;
+        }
+
+        // Case B: Already checked out within the last 5 seconds (ignore rapid double-scan on exit)
+        if ($last_record && !empty($last_record['time_out'])) {
+            $secs_out = intval($last_record['seconds_since_out'] ?? 0);
+            if ($secs_out < 5) {
+                echo json_encode([
+                    'success' => true,
+                    'is_cooldown' => true,
+                    'action' => 'cooldown',
+                    'member_name' => $member['full_name'],
+                    'membership_id' => $member['membership_id'],
+                    'photo' => $member['photo'],
+                    'account_status' => 'Approved',
+                    'membership_status' => 'Active',
+                    'plan_name' => $member['plan_name'] ?: 'Standard',
+                    'expiry_date' => date('M d, Y', strtotime($member['expiry_date'])),
+                    'time' => date('h:i A', strtotime($last_record['time_out'])),
+                    'message' => 'Member already checked out at ' . date('h:i A', strtotime($last_record['time_out'])) . '.'
+                ]);
+                exit;
+            }
         }
 
         // 5. Log New Check-in

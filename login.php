@@ -231,6 +231,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #334337;
             margin-bottom: 0.45rem;
         }
+        .label-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.45rem;
+        }
+        .label-row label {
+            margin-bottom: 0;
+        }
+        .forgot-link {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #2d6a4f;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .forgot-link:hover {
+            color: #1b4332;
+            text-decoration: underline;
+        }
         .input-wrap { position: relative; }
         .input-wrap .input-icon {
             position: absolute;
@@ -374,8 +394,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         autocomplete="off" required>
                 </div>
             </div>
-            <div class="form-group">
-                <label for="password">Password</label>
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+                <div class="label-row">
+                    <label for="password">Password</label>
+                </div>
                 <div class="input-wrap">
                     <i class="fas fa-lock input-icon"></i>
                     <input type="password" id="password" name="password"
@@ -385,8 +407,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <i class="fas fa-eye" id="eyeIcon"></i>
                     </button>
                 </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem;">
+                    <a href="forgot_password.php" class="forgot-link" style="color: #2d6a4f; font-weight: 700; font-size: 0.84rem; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-key" style="font-size: 0.75rem;"></i> Forgot Password?
+                    </a>
+                </div>
             </div>
-            <button type="submit" class="btn-login" id="submitBtn">
+            <button type="submit" class="btn-login" id="submitBtn" style="margin-top: 1rem;">
                 <i class="fas fa-arrow-right-to-bracket"></i> Sign In to Dashboard
             </button>
         </form>
