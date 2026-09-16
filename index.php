@@ -139,9 +139,9 @@ try {
                 </select>
             </form>
 
-            <button type="button" class="btn btn-primary btn-action" onclick="openAccountChoiceModal()">
-                <i class="fas fa-user-plus"></i> Add Account
-            </button>
+            <a href="add-member.php" class="btn btn-primary btn-action">
+                <i class="fas fa-user-plus"></i> Add Member
+            </a>
         </div>
     </div>
 

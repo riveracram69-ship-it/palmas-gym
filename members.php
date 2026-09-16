@@ -41,9 +41,9 @@ $active = array_filter($members, function($m) {
         <p><?php echo $total; ?> total members registered in the system.</p>
     </div>
     <div style="display:flex; gap:0.6rem; align-items:center;">
-        <button type="button" class="btn btn-primary" onclick="openAccountChoiceModal()">
-            <i class="fas fa-plus"></i> Add Account
-        </button>
+        <a href="add-member.php" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> Add Member
+        </a>
     </div>
 </div>
 
