@@ -34,7 +34,7 @@ try {
     </div>
 </div>
 <?php else: ?>
-<div class="stats-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+<div class="stats-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:1.25rem;">
     <?php foreach ($plans as $p): ?>
     <div class="card" style="display:flex; flex-direction:column; border-top: 4px solid var(--accent);">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">

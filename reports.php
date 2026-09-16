@@ -1430,7 +1430,7 @@ try {
     </div>
 
     <!-- ── GLOBAL INTERACTIVE KPI SUMMARY CARDS ───────────────────────────── -->
-    <div class="stats-grid" style="grid-template-columns: repeat(6, 1fr); gap: 1rem; margin-bottom: 1.75rem;">
+    <div class="stats-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.75rem;">
         <!-- KPI 1: Revenue -->
         <div class="card stat-card" style="padding: 1.25rem;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">

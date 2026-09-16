@@ -272,7 +272,7 @@ $total_users = count($users);
 <?php endif; ?>
 
 <!-- ── STATS CARDS ──────────────────────────────────────────────────────────── -->
-<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom:1.75rem;">
+<div class="stats-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:1.75rem;">
     <div class="card" style="padding:1.25rem; display:flex; align-items:center; gap:1rem; border-radius:14px;">
         <div style="width:48px; height:48px; border-radius:12px; background:rgba(45,106,79,0.12); color:#2D6A4F; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
             <i class="fas fa-users-gear"></i>

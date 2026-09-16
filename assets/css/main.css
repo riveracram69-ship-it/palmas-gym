@@ -517,7 +517,14 @@ textarea:focus-visible {
     margin-top: 2px;
 }
 
-/* ─── 8. EXECUTIVE KPI MASTER GRID ──────────────────────────────────────── */
+/* ─── 8. EXECUTIVE KPI MASTER GRID & STATS GRIDS ────────────────────────── */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
 .kpi-master-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
