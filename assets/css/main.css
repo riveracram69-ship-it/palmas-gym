@@ -658,11 +658,31 @@ textarea:focus-visible {
 /* ─── 9. DATA TABLES ────────────────────────────────────────────────────── */
 .table-container {
     width: 100%;
+    max-height: 580px;
     overflow-x: auto;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border);
     background: #ffffff;
+}
+
+.table-container::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f8fafc;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: rgba(45, 106, 79, 0.35);
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
 }
 
 table {
