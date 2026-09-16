@@ -19,14 +19,14 @@ try {
         $stmt = $pdo->prepare("SELECT m.*, 
                                       (SELECT s.expiry_date 
                                        FROM subscriptions s 
-                                       WHERE s.member_id = m.id AND s.expiry_date >= CURDATE()
-                                       ORDER BY s.expiry_date DESC, s.id DESC 
+                                       WHERE s.member_id = m.id 
+                                       ORDER BY s.id DESC 
                                        LIMIT 1) as expiry_date,
                                       (SELECT p.name 
                                        FROM subscriptions s 
                                        LEFT JOIN membership_plans p ON p.id = s.plan_id 
-                                       WHERE s.member_id = m.id AND s.expiry_date >= CURDATE()
-                                       ORDER BY s.expiry_date DESC, s.id DESC 
+                                       WHERE s.member_id = m.id 
+                                       ORDER BY s.id DESC 
                                        LIMIT 1) as plan_name 
                                FROM members m 
                                WHERE m.id = ?");
@@ -34,6 +34,13 @@ try {
         $member = $stmt->fetch();
 
         if ($member) {
+            $is_sub_expired = empty($member['expiry_date']) || strtotime($member['expiry_date']) < time();
+            if ($is_sub_expired && ($member['status'] ?? '') === 'Active') {
+                try {
+                    $pdo->prepare("UPDATE members SET status = 'Expired' WHERE id = ?")->execute([$id]);
+                    $member['status'] = 'Expired';
+                } catch (Exception $e) {}
+            }
             $attendance = $pdo->prepare("SELECT * FROM attendance WHERE member_id = ? ORDER BY date DESC LIMIT 5");
             $attendance->execute([$id]);
             $attendance = $attendance->fetchAll();
@@ -100,6 +107,7 @@ if (!$member): ?>
                 <div><p class="stat-label">Email</p><p style="font-weight:600;"><?php echo htmlspecialchars($member['email']); ?></p></div>
                 <div><p class="stat-label">Contact</p><p style="font-weight:600;"><?php echo htmlspecialchars($member['contact_number'] ?: '—'); ?></p></div>
                 <div><p class="stat-label">Plan</p><p style="font-weight:600; color:var(--accent);"><?php echo htmlspecialchars($member['plan_name'] ?: 'No Plan'); ?></p></div>
+                <div><p class="stat-label">Plan Expiry</p><p style="font-weight:600; color:<?php echo $is_sub_expired ? 'var(--danger)' : 'var(--text-main)'; ?>;"><?php echo $member['expiry_date'] ? date('M d, Y', strtotime($member['expiry_date'])) : '—'; ?></p></div>
             </div>
         </div>
 

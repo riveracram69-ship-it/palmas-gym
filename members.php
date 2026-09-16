@@ -17,7 +17,6 @@ try {
                  JOIN (
                      SELECT member_id, MAX(id) AS latest_sub_id
                      FROM subscriptions
-                     WHERE expiry_date >= CURDATE()
                      GROUP BY member_id
                  ) latest ON s.id = latest.latest_sub_id
                  LEFT JOIN membership_plans p ON p.id = s.plan_id
@@ -30,7 +29,10 @@ try {
 }
 
 $total = count($members);
-$active = array_filter($members, fn($m) => $m['status'] === 'Active');
+$active = array_filter($members, function($m) {
+    $is_expired = empty($m['expiry_date']) || strtotime($m['expiry_date']) < time();
+    return ($m['status'] === 'Active' && !$is_expired);
+});
 ?>
 
 <div class="topbar">
@@ -78,7 +80,14 @@ $active = array_filter($members, fn($m) => $m['status'] === 'Active');
                 <?php if (empty($members)): ?>
                 <?php render_empty_state('fas fa-user-group', 'No members found', '<a href="add-member.php" class="btn btn-primary btn-sm" style="margin-top:1rem;">Add First Member</a>', true); ?>
                 <?php else: ?>
-                <?php foreach ($members as $m): ?>
+                <?php foreach ($members as $m): 
+                    $has_plan = ($m['plan_name'] !== '—' && !empty($m['plan_name']));
+                    $is_sub_expired = empty($m['expiry_date']) || (strtotime($m['expiry_date']) < time());
+                    $effective_status = ($m['status'] === 'Inactive' || ($m['account_status'] ?? '') === 'Suspended') 
+                        ? 'Inactive' 
+                        : ($is_sub_expired ? 'Expired' : 'Active');
+                    $badge_class = ($effective_status === 'Active') ? 'badge-success' : 'badge-danger';
+                ?>
                 <tr class="member-row"
                     data-name="<?php echo htmlspecialchars(strtolower($m['full_name']), ENT_QUOTES, 'UTF-8'); ?>"
                     data-email="<?php echo htmlspecialchars(strtolower($m['email']), ENT_QUOTES, 'UTF-8'); ?>"
@@ -96,9 +105,11 @@ $active = array_filter($members, fn($m) => $m['status'] === 'Active');
                     </td>
                     <td><code style="font-size:0.85rem;color:var(--accent);font-weight:700;"><?php echo htmlspecialchars($m['membership_id']); ?></code></td>
                     <td>
-                        <?php if ($m['plan_name'] !== '—'): ?>
-                        <div style="font-weight:600;font-size:0.85rem;color:var(--text-main);"><i class="fas fa-tag" style="color:var(--accent);font-size:0.75rem;"></i> <?php echo htmlspecialchars($m['plan_name']); ?></div>
-                        <div style="font-size:0.75rem;color:var(--text-muted);"><?php echo $m['expiry_date'] ? 'Exp: ' . date('M d, Y', strtotime($m['expiry_date'])) : '—'; ?></div>
+                        <?php if ($has_plan): ?>
+                        <div style="font-weight:600;font-size:0.85rem;color:var(--text-main);"><i class="fas fa-tag" style="color:<?php echo $is_sub_expired ? 'var(--text-muted)' : 'var(--accent)'; ?>;font-size:0.75rem;"></i> <?php echo htmlspecialchars($m['plan_name']); ?></div>
+                        <div style="font-size:0.75rem;color:<?php echo $is_sub_expired ? 'var(--danger)' : 'var(--text-muted)'; ?>;font-weight:<?php echo $is_sub_expired ? '600' : 'normal'; ?>;">
+                            <?php echo $m['expiry_date'] ? ($is_sub_expired ? 'Expired: ' : 'Exp: ') . date('M d, Y', strtotime($m['expiry_date'])) : '—'; ?>
+                        </div>
                         <?php else: ?>
                         <span style="color:var(--text-muted);font-size:0.8rem;">No active plan</span>
                         <?php endif; ?>
@@ -118,9 +129,9 @@ $active = array_filter($members, fn($m) => $m['status'] === 'Active');
                     </td>
                     <td>
                         <?php if (($m['account_status'] ?? 'Approved') === 'Approved'): ?>
-                            <span class="badge <?php echo $m['status'] === 'Active' ? 'badge-success' : 'badge-danger'; ?>">
+                            <span class="badge <?php echo $badge_class; ?>">
                                 <i class="fas fa-circle" style="font-size:0.35rem;margin-right:4px;"></i>
-                                <?php echo htmlspecialchars($m['status']); ?>
+                                <?php echo htmlspecialchars($effective_status); ?>
                             </span>
                         <?php else: ?>
                             <span class="badge badge-gray">—</span>

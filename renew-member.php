@@ -151,9 +151,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $days_left = null;
 $is_expired = true;
-if ($current_sub && $current_sub['expiry_date']) {
-    $days_left  = ceil((strtotime($current_sub['expiry_date']) - time()) / 86400);
-    $is_expired = $days_left < 0;
+if ($current_sub && !empty($current_sub['expiry_date'])) {
+    $sub_exp_ts = (strpos($current_sub['expiry_date'], ':') !== false) 
+        ? strtotime($current_sub['expiry_date']) 
+        : strtotime($current_sub['expiry_date'] . ' 23:59:59');
+    $days_left  = ceil(($sub_exp_ts - time()) / 86400);
+    $is_expired = ($sub_exp_ts < time());
+}
+
+// Auto-sync status if subscription is expired
+if ($is_expired && $member && ($member['status'] ?? '') === 'Active') {
+    try {
+        $pdo->prepare("UPDATE members SET status = 'Expired' WHERE id = ?")->execute([$member_id]);
+        $member['status'] = 'Expired';
+    } catch (Exception $e) {}
 }
 ?>
 
@@ -276,8 +287,12 @@ if ($current_sub && $current_sub['expiry_date']) {
             <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border); text-align:left; display:flex; flex-direction:column; gap:0.6rem;">
                 <div class="cell-secondary"><span class="by-label">Email:</span> <span class="cell-primary"><?php echo htmlspecialchars($member['email']); ?></span></div>
                 <div class="cell-secondary"><span class="by-label">Status:</span>
-                    <span class="badge <?php echo $member['status']==='Active' ? 'badge-success' : 'badge-danger'; ?>" style="margin-left:4px;">
-                        <?php echo htmlspecialchars($member['status']); ?>
+                    <?php 
+                        $effective_status = ($is_expired) ? 'Expired' : ($member['status'] ?? 'Active');
+                        $badge_class = ($effective_status === 'Active') ? 'badge-success' : 'badge-danger';
+                    ?>
+                    <span class="badge <?php echo $badge_class; ?>" style="margin-left:4px;">
+                        <?php echo htmlspecialchars($effective_status); ?>
                     </span>
                 </div>
             </div>
@@ -289,7 +304,11 @@ if ($current_sub && $current_sub['expiry_date']) {
                 <span style="font-size:0.7rem; font-weight:800; color:#d97706; text-transform:uppercase; letter-spacing:1px;">Note</span>
             </div>
             <p style="font-size:0.82rem; color:#92400e; line-height:1.6;">
-                Renewing will <strong>expire the current active plan</strong> immediately and start the new one from today. The member's status will be set to Active.
+                <?php if ($is_expired): ?>
+                    Assigning a new plan will <strong>reactivate</strong> this member's subscription and set their status to <strong>Active</strong>.
+                <?php else: ?>
+                    Renewing will extend/renew the plan and keep the member's status Active.
+                <?php endif; ?>
             </p>
         </div>
     </div>
