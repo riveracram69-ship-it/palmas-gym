@@ -90,13 +90,14 @@ try {
         // ── 4. Top Active Members (Top 5 Loyalty Champions) ────────────────────
         $stmt_top = $pdo->query("
             SELECT m.id, m.full_name, m.membership_id, m.photo,
-                   COALESCE(p.name, 'Member') as plan_name,
+                   COALESCE(MAX(p.name), 'Standard') as plan_name,
                    COUNT(a.id) as visit_count
             FROM members m
             JOIN attendance a ON a.member_id = m.id
             LEFT JOIN subscriptions s ON s.member_id = m.id AND s.expiry_date >= CURDATE()
             LEFT JOIN membership_plans p ON s.plan_id = p.id
-            GROUP BY m.id
+            GROUP BY m.id, m.full_name, m.membership_id, m.photo
+            HAVING visit_count > 0
             ORDER BY visit_count DESC
             LIMIT 5
         ");
