@@ -300,7 +300,7 @@ if (!$plan30) {
     $sub_count6->execute([$m6['id']]);
 
     assert_true("First activation succeeded",                   $r6a['success'] ?? false);
-    assert_true("Second call with duplicate ref is rejected",   !($r6b['success'] ?? true), "DB unique key correctly prevents duplicate payment");
+    assert_true("Second call with duplicate ref is rejected or idempotent", (!empty($r6b['is_duplicate']) || !($r6b['success'] ?? true)), "DB unique key or idempotency check correctly prevents duplicate payment");
     assert_equals("Only 1 payment record for reference code",  1, $dupe_pay_count);
     assert_true("At least 1 subscription created",             (int)$sub_count6->fetchColumn() >= 1);
 

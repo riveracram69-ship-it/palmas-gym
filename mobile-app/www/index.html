@@ -6156,8 +6156,54 @@ function handleTabChange(e) {
     if (currentMember && currentMember.id) {
       loadDashboard(currentMember.id);
     }
-  } else if (currentActiveTab === 'tab-pass') {
+  }
+
+  if (currentActiveTab === 'tab-pass') {
+    fetchFreshQRToken();
     startQRCountdown();
+  } else {
+    if (qrCountdownTimer) {
+      clearInterval(qrCountdownTimer);
+      qrCountdownTimer = null;
+    }
+  }
+}
+
+
+let isFetchingQR = false;
+let lastQRFetchTime = 0;
+
+async function fetchFreshQRToken() {
+  if (isFetchingQR || !currentMember) return;
+  const token = localStorage.getItem('peg_token');
+  if (!token) return;
+
+  // Don't duplicate if fetched in the last 4 seconds
+  const now = Date.now();
+  if (now - lastQRFetchTime < 4000 && currentQrToken) return;
+
+  isFetchingQR = true;
+  try {
+    const res = await authFetch(`${API_URL}/get_qr_token.php`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.qr_token) {
+        currentQrToken = data.qr_token;
+        lastQRFetchTime = Date.now();
+        renderQRCode(currentQrToken);
+      }
+    } else if (res.status === 403) {
+      const errData = await res.json().catch(() => ({}));
+      if (errData.account_status === 'Suspended') {
+        showScreen('view-suspended');
+      }
+    }
+  } catch (e) {
+    console.warn('Dynamic QR fetch notice:', e);
+  } finally {
+    isFetchingQR = false;
   }
 }
 
@@ -6167,6 +6213,18 @@ function switchToTab(tabName) {
   if (tabs && typeof tabs.select === 'function') {
     tabs.select(tabName);
   }
+
+  if (tabName === 'tab-pass') {
+    // Immediate fresh token check and resume countdown
+    fetchFreshQRToken();
+    startQRCountdown();
+  } else {
+    // Pause QR polling when browsing other tabs to eliminate mobile network traffic
+    if (qrCountdownTimer) {
+      clearInterval(qrCountdownTimer);
+      qrCountdownTimer = null;
+    }
+  }
 }
 
 function startQRCountdown() {
@@ -6174,28 +6232,30 @@ function startQRCountdown() {
     clearInterval(qrCountdownTimer);
     qrCountdownTimer = null;
   }
-  // Auto-refresh dynamic rotating QR code every 14 seconds to ensure HMAC token remains valid at scanner
+  // Auto-refresh dynamic rotating QR code every 14 seconds only when on tab-pass and app is visible
   qrCountdownTimer = setInterval(async () => {
-    if (!currentMember || currentActiveTab !== 'tab-pass') return;
-    const token = localStorage.getItem('peg_token');
-    if (!token) return;
-
-    try {
-      const res = await authFetch(`${API_URL}/member_dashboard.php`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.qr_token) {
-          currentQrToken = data.qr_token;
-          renderQRCode(currentQrToken);
-        }
-      }
-    } catch (e) {
-      console.warn('Dynamic QR auto-refresh notice:', e);
-    }
+    if (!currentMember || currentActiveTab !== 'tab-pass' || (typeof document !== 'undefined' && document.hidden)) return;
+    await fetchFreshQRToken();
   }, 14000);
 }
+
+// Lifecycle listener: Pause polling on background, refresh on resume
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (qrCountdownTimer) {
+        clearInterval(qrCountdownTimer);
+        qrCountdownTimer = null;
+      }
+    } else {
+      if (currentMember && currentActiveTab === 'tab-pass') {
+        fetchFreshQRToken();
+        startQRCountdown();
+      }
+    }
+  });
+}
+
 
 
 // ── ATTENDANCE TAB ─────────────────────────────────────────────────
@@ -7766,6 +7826,19 @@ function executeSignOut() {
 function logout(silent = false) {
   clearInterval(qrCountdownTimer);
   clearInterval(promoCountdownTimer);
+  const oldToken = localStorage.getItem('peg_token');
+  if (oldToken) {
+    try {
+      fetch(API_BASE + '/member_logout.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + oldToken
+        },
+        body: JSON.stringify({ token: oldToken })
+      }).catch(() => {});
+    } catch (e) {}
+  }
   localStorage.removeItem('peg_member');
   localStorage.removeItem('peg_token');
   localStorage.removeItem('peg_pending_identifier');

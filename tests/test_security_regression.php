@@ -84,7 +84,7 @@ try {
     $stmt->execute([$test_mem_id]);
     $sec_member_id = (int)$pdo->lastInsertId();
 
-    $plan = $pdo->query("SELECT id FROM membership_plans LIMIT 1")->fetch();
+    $plan = $pdo->query("SELECT id FROM membership_plans WHERE is_active = 1 LIMIT 1")->fetch();
     $plan_id = (int)$plan['id'];
 
     $subs_before = (int)$pdo->query("SELECT COUNT(*) FROM subscriptions WHERE member_id = {$sec_member_id}")->fetchColumn();

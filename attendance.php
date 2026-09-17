@@ -40,6 +40,169 @@ try {
 } catch (Exception $e) {}
 ?>
 
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   STAFF SCANNER OVERHAUL — 9 DISTINCT BRANDED STATES
+   ══════════════════════════════════════════════════════════════════ */
+.scanner-state-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    transition: all 0.3s ease;
+}
+.scanner-state-banner .state-dot-pulse {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.scanner-state-banner .state-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.scanner-state-banner .state-label {
+    font-weight: 800;
+    font-size: 0.92rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.scanner-state-banner .state-desc {
+    font-size: 0.75rem;
+    opacity: 0.85;
+}
+.scanner-state-banner .state-badge-icon {
+    font-size: 1.25rem;
+}
+
+/* 1. READY */
+.state-ready {
+    background: rgba(45, 106, 79, 0.12);
+    border: 1px solid rgba(82, 183, 136, 0.35);
+    color: #52b788;
+}
+.state-ready .state-dot-pulse {
+    background: #52b788;
+    box-shadow: 0 0 0 0 rgba(82, 183, 136, 0.7);
+    animation: pulseReady 1.8s infinite;
+}
+
+/* 2. SCANNING */
+.state-scanning {
+    background: rgba(26, 115, 232, 0.12);
+    border: 1px solid rgba(26, 115, 232, 0.35);
+    color: #3b82f6;
+}
+.state-scanning .state-dot-pulse {
+    background: #3b82f6;
+    animation: pulseScanning 0.8s infinite;
+}
+
+/* 3. SUCCESS */
+.state-success {
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #10b981;
+}
+.state-success .state-dot-pulse {
+    background: #10b981;
+}
+
+/* 4. ALREADY SCANNED */
+.state-cooldown {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #f59e0b;
+}
+.state-cooldown .state-dot-pulse {
+    background: #f59e0b;
+}
+
+/* 5. INVALID */
+.state-invalid {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+}
+.state-invalid .state-dot-pulse {
+    background: #ef4444;
+}
+
+/* 6. EXPIRED */
+.state-expired {
+    background: rgba(249, 115, 22, 0.15);
+    border: 1px solid rgba(249, 115, 22, 0.4);
+    color: #f97316;
+}
+.state-expired .state-dot-pulse {
+    background: #f97316;
+}
+
+/* 7. BLOCKED */
+.state-blocked {
+    background: rgba(220, 38, 38, 0.18);
+    border: 1px solid rgba(220, 38, 38, 0.5);
+    color: #dc2626;
+}
+.state-blocked .state-dot-pulse {
+    background: #dc2626;
+}
+
+/* 8. SERVER ERROR */
+.state-server-error {
+    background: rgba(168, 85, 247, 0.15);
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    color: #a855f7;
+}
+.state-server-error .state-dot-pulse {
+    background: #a855f7;
+}
+
+/* 9. CAMERA ERROR */
+.state-camera-error {
+    background: rgba(100, 116, 139, 0.18);
+    border: 1px solid rgba(100, 116, 139, 0.4);
+    color: #94a3b8;
+}
+.state-camera-error .state-dot-pulse {
+    background: #ef4444;
+}
+
+@keyframes pulseReady {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(82, 183, 136, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(82, 183, 136, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(82, 183, 136, 0); }
+}
+
+@keyframes pulseScanning {
+    0% { opacity: 0.4; }
+    50% { opacity: 1; }
+    100% { opacity: 0.4; }
+}
+
+.scanner-laser-line {
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #52b788, #74c69d, #52b788, transparent);
+    box-shadow: 0 0 10px #52b788;
+    z-index: 5;
+    pointer-events: none;
+    animation: laserScan 2.4s ease-in-out infinite;
+    display: block;
+}
+
+@keyframes laserScan {
+    0% { top: 15%; opacity: 0.2; }
+    50% { top: 85%; opacity: 1; }
+    100% { top: 15%; opacity: 0.2; }
+}
+</style>
+
 <div class="topbar">
     <div class="page-title">
         <h1>QR Attendance</h1>
@@ -55,23 +218,57 @@ try {
 
     <!-- Left: Scanner Section -->
     <div style="display:flex; flex-direction:column; gap:1.5rem;">
-        <div class="card">
-            <h3 class="section-title" style="margin-bottom:1rem;"><i class="fas fa-camera" style="color:var(--accent);"></i> Live Scanner</h3>
+        <div class="card scanner-card-container">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                <h3 class="section-title" style="margin:0;"><i class="fas fa-qrcode" style="color:var(--accent);"></i> Live Attendance Scanner</h3>
+                <span class="badge" style="background:rgba(82,183,136,0.15); color:#52b788; border:1px solid rgba(82,183,136,0.3); font-size:0.75rem; font-weight:700;">
+                    <i class="fas fa-shield-halved"></i> HMAC Secured
+                </span>
+            </div>
+
+            <!-- Prominent Scanner State Bar -->
+            <div id="scanner-state-bar" class="scanner-state-banner state-ready">
+                <div class="state-dot-pulse" id="scanner-state-dot"></div>
+                <div class="state-info">
+                    <span class="state-label" id="scanner-state-title">Ready to Scan</span>
+                    <span class="state-desc" id="scanner-state-desc">Position member QR code inside the viewfinder</span>
+                </div>
+                <i class="fas fa-camera state-badge-icon" id="scanner-state-icon"></i>
+            </div>
             
             <div class="camera-tip-pill" style="display:flex; align-items:center; gap:8px; background:rgba(62,130,65,0.08); border:1px solid rgba(62,130,65,0.2); padding:8px 12px; border-radius:10px; margin-bottom:14px; font-size:0.75rem; color:#2d6a4f; line-height:1.4;">
                 <i class="fas fa-mobile-screen-button" style="color:#52b788; font-size:1.1rem; flex-shrink:0;"></i>
-                <span><strong>Mobile Phone Scan Tip:</strong> Set phone brightness to 80%+, hold phone ~15–20cm away from lens, and angle slightly to avoid direct ceiling light glare.</span>
+                <span><strong>Scan Guidance:</strong> Member should present their rotating pass from the mobile app (~15–20cm from lens).</span>
             </div>
 
-            <div id="reader" style="width:100%; border-radius:12px; overflow:hidden; border:1px solid var(--border); background:#000; transition:outline 0.2s ease;"></div>
+            <!-- Viewfinder with Scanner Frame -->
+            <div class="scanner-viewport-wrap" style="position:relative; width:100%; border-radius:12px; overflow:hidden; border:2px solid var(--border); background:#0a1912; min-height:260px;">
+                <div id="reader" style="width:100%;"></div>
+                
+                <!-- Laser line overlay -->
+                <div id="scanner-laser" class="scanner-laser-line"></div>
+                
+                <!-- Camera Error Card (Hidden by default) -->
+                <div id="camera-error-overlay" style="display:none; position:absolute; inset:0; background:rgba(10,25,18,0.95); z-index:10; flex-direction:column; align-items:center; justify-content:center; padding:1.5rem; text-align:center;">
+                    <i class="fas fa-video-slash" style="font-size:2.5rem; color:#ef4444; margin-bottom:12px;"></i>
+                    <h4 style="color:#ffffff; margin-bottom:6px; font-weight:700;">Camera Unavailable</h4>
+                    <p id="camera-error-msg" style="color:var(--text-muted); font-size:0.82rem; margin-bottom:16px; max-width:280px; line-height:1.4;">Unable to access the camera. Please ensure camera permissions are granted.</p>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="restartCameraScanner()" style="padding:0.5rem 1.25rem;">
+                        <i class="fas fa-rotate-right"></i> Restart Camera
+                    </button>
+                </div>
+            </div>
             
-            <div id="scan-result" style="display:none; margin-top:1.5rem; padding:1.25rem; border-radius:12px; position:relative;" role="alert"></div>
+            <div id="scan-result" style="display:none; margin-top:1.25rem; padding:1.25rem; border-radius:12px; position:relative; animation:fadeIn 0.3s ease;" role="alert"></div>
 
-            <div style="margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--border);">
-                <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:1rem; font-weight:700; text-transform:uppercase; letter-spacing:1px;">Manual ID Entry</p>
+            <div style="margin-top:1.5rem; padding-top:1.25rem; border-top:1px solid var(--border);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                    <p style="font-size:0.75rem; color:var(--text-muted); margin:0; font-weight:700; text-transform:uppercase; letter-spacing:1px;">Manual ID Entry (Staff Only)</p>
+                    <span style="font-size:0.7rem; color:var(--text-muted);"><i class="fas fa-keyboard"></i> Press Enter to Submit</span>
+                </div>
                 <div style="display:flex; gap:0.75rem;">
-                    <input type="text" id="manual-id" class="form-control" placeholder="Enter Member ID..." style="flex:1;">
-                    <button class="btn btn-primary" onclick="manualCheckin()"><i class="fas fa-check"></i></button>
+                    <input type="text" id="manual-id" class="form-control" placeholder="Enter Member ID (e.g. GYM9537F6)..." style="flex:1;">
+                    <button class="btn btn-primary" id="btn-manual-checkin" onclick="manualCheckin()"><i class="fas fa-check"></i> Submit</button>
                 </div>
             </div>
         </div>
@@ -202,6 +399,91 @@ try {
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script>
 let logCount = <?php echo count($today_logs); ?>;
+let isProcessingCheckin = false;
+let scanner = null;
+let resetStateTimer = null;
+
+// ── 9 SCANNER STATES MANAGER ─────────────────────────────────────────
+const SCANNER_STATES = {
+    READY: {
+        className: 'state-ready',
+        title: 'Ready to Scan',
+        desc: 'Position member QR code inside the viewfinder',
+        icon: 'fa-camera'
+    },
+    SCANNING: {
+        className: 'state-scanning',
+        title: 'Scanning QR Code...',
+        desc: 'Verifying cryptographic HMAC token...',
+        icon: 'fa-spinner fa-spin'
+    },
+    SUCCESS: {
+        className: 'state-success',
+        title: '✓ Attendance Recorded',
+        desc: 'Member check-in/out verified and logged',
+        icon: 'fa-circle-check'
+    },
+    ALREADY_SCANNED: {
+        className: 'state-cooldown',
+        title: 'Attendance Already Recorded',
+        desc: 'Duplicate scan ignored within cooldown period',
+        icon: 'fa-clock'
+    },
+    INVALID: {
+        className: 'state-invalid',
+        title: 'Invalid QR Code',
+        desc: 'Malformed or unrecognized QR code format',
+        icon: 'fa-circle-xmark'
+    },
+    EXPIRED: {
+        className: 'state-expired',
+        title: 'QR Code Expired',
+        desc: 'Dynamic QR token or membership plan has expired',
+        icon: 'fa-hourglass-end'
+    },
+    BLOCKED: {
+        className: 'state-blocked',
+        title: 'Member Not Allowed',
+        desc: 'Account is pending review, rejected, or suspended',
+        icon: 'fa-ban'
+    },
+    SERVER_ERROR: {
+        className: 'state-server-error',
+        title: 'Unable to Connect',
+        desc: 'Network timeout or server unavailable',
+        icon: 'fa-triangle-exclamation'
+    },
+    CAMERA_ERROR: {
+        className: 'state-camera-error',
+        title: 'Camera Unavailable',
+        desc: 'Camera access denied or device disconnected',
+        icon: 'fa-video-slash'
+    }
+};
+
+function setScannerState(stateKey, customDesc = null) {
+    const bar = document.getElementById('scanner-state-bar');
+    const title = document.getElementById('scanner-state-title');
+    const desc = document.getElementById('scanner-state-desc');
+    const icon = document.getElementById('scanner-state-icon');
+    const state = SCANNER_STATES[stateKey] || SCANNER_STATES.READY;
+
+    if (!bar || !title || !desc || !icon) return;
+
+    // Reset classes
+    bar.className = 'scanner-state-banner ' + state.className;
+    title.textContent = state.title;
+    desc.textContent = customDesc || state.desc;
+    icon.className = 'fas ' + state.icon + ' state-badge-icon';
+
+    // Auto-revert back to READY after 7 seconds if in a terminal feedback state
+    if (resetStateTimer) clearTimeout(resetStateTimer);
+    if (stateKey !== 'READY' && stateKey !== 'SCANNING' && stateKey !== 'CAMERA_ERROR') {
+        resetStateTimer = setTimeout(() => {
+            setScannerState('READY');
+        }, 7000);
+    }
+}
 
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
@@ -213,13 +495,74 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
+// Audio Chime Synthesizer via Web Audio API
+function playScanBeep(isSuccess = true) {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        if (isSuccess) {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.12);
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.18);
+        } else {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(320, ctx.currentTime);
+            osc.frequency.linearRampToValueAtTime(180, ctx.currentTime + 0.22);
+            gain.gain.setValueAtTime(0.25, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.25);
+        }
+    } catch (e) {}
+}
+
+function triggerVibration(isSuccess = true) {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        try {
+            navigator.vibrate(isSuccess ? 80 : [100, 50, 100]);
+        } catch (e) {}
+    }
+}
+
+function flashReaderBorder(isSuccess = true) {
+    const readerEl = document.getElementById('reader');
+    if (!readerEl) return;
+    readerEl.style.outline = isSuccess ? '5px solid #10B981' : '5px solid #EF4444';
+    readerEl.style.outlineOffset = '-5px';
+    setTimeout(() => {
+        readerEl.style.outline = 'none';
+    }, 600);
+}
+
 function processCheckin(membershipId, isManual = false) {
+    if (isProcessingCheckin) return;
+    isProcessingCheckin = true;
+
+    setScannerState('SCANNING', 'Processing Member ID: ' + membershipId);
+    
     const safeInputId = escapeHtml(membershipId);
     const res = document.getElementById('scan-result');
     res.style.display = 'block';
     res.className = 'alert alert-info';
     res.style.background = '#e8f0fe'; res.style.color = 'var(--info)'; res.style.border = '1px solid rgba(26,115,232,0.2)';
     res.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing ID: ' + safeInputId;
+
+    const btnManual = document.getElementById('btn-manual-checkin');
+    if (btnManual) btnManual.disabled = true;
 
     fetch('modules/attendance/log_attendance.php', {
         method: 'POST',
@@ -229,10 +572,25 @@ function processCheckin(membershipId, isManual = false) {
         },
         body: 'membership_id=' + encodeURIComponent(membershipId) + (isManual ? '&is_manual=1' : '')
     })
-    .then(r => r.json())
+    .then(r => {
+        if (!r.ok && r.status >= 500) throw new Error('Server returned HTTP ' + r.status);
+        return r.json();
+    })
     .then(data => {
         if (data.success) {
             const isCooldown = data.is_cooldown;
+            
+            if (isCooldown) {
+                setScannerState('ALREADY_SCANNED', data.message);
+                playScanBeep(false);
+                triggerVibration(false);
+            } else {
+                setScannerState('SUCCESS', data.action === 'check-out' ? 'Check-out Recorded' : 'Check-in Recorded');
+                playScanBeep(true);
+                triggerVibration(true);
+                flashReaderBorder(true);
+            }
+
             const bg = isCooldown ? '#fffbe7' : '#e6f4ea';
             const color = isCooldown ? '#b45309' : '#137333';
             const border = isCooldown ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(30,142,62,0.2)';
@@ -244,6 +602,8 @@ function processCheckin(membershipId, isManual = false) {
             const safeAcc = escapeHtml(data.account_status || 'Approved');
             const safeMemStatus = escapeHtml(data.membership_status || 'Active');
             const safeExpiry = escapeHtml(data.expiry_date || '');
+            const safeTime = escapeHtml(data.time || new Date().toLocaleTimeString('en-PH', {hour:'2-digit',minute:'2-digit'}));
+            const safeDate = escapeHtml(data.date || new Date().toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'}));
 
             const safeFloor = escapeHtml(data.floor_label || 'Ground + 2nd Floor');
             const safeTier = escapeHtml(data.member_tier_label || (data.is_official_member ? 'Official Member' : 'Non-Member'));
@@ -258,9 +618,9 @@ function processCheckin(membershipId, isManual = false) {
             let photoHtml = '';
             if (data.photo) {
                 const safePhoto = escapeHtml(data.photo);
-                photoHtml = `<img src="${safePhoto}" alt="${safeName} Photo" style="width:54px;height:54px;border-radius:12px;object-fit:cover;border:2px solid ${isCooldown ? '#F59E0B' : '#10B981'};">`;
+                photoHtml = `<img src="${safePhoto}" alt="${safeName} Photo" style="width:58px;height:58px;border-radius:12px;object-fit:cover;border:2px solid ${isCooldown ? '#F59E0B' : '#10B981'};">`;
             } else {
-                photoHtml = `<div style="width:54px;height:54px;border-radius:12px;background:${isCooldown ? '#FEF3C7' : '#D1FAE5'};color:${isCooldown ? '#B45309' : '#047857'};display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;">${safeName.charAt(0).toUpperCase()}</div>`;
+                photoHtml = `<div style="width:58px;height:58px;border-radius:12px;background:${isCooldown ? '#FEF3C7' : '#D1FAE5'};color:${isCooldown ? '#B45309' : '#047857'};display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;">${safeName.charAt(0).toUpperCase()}</div>`;
             }
 
             res.style.background = bg;
@@ -271,10 +631,12 @@ function processCheckin(membershipId, isManual = false) {
                     ${photoHtml}
                     <div style="flex:1;">
                         <div style="font-size:0.75rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:${color};margin-bottom:2px;">
-                            <i class="fas ${icon}"></i> ${isCooldown ? 'COOLDOWN ACTIVE' : (data.action === 'check-out' ? 'CHECK-OUT SUCCESSFUL' : 'VALID MEMBER • CHECK-IN SUCCESS')}
+                            <i class="fas ${icon}"></i> ${isCooldown ? 'ATTENDANCE ALREADY RECORDED' : (data.action === 'check-out' ? 'CHECK-OUT SUCCESSFUL' : '✓ ATTENDANCE RECORDED')}
                         </div>
-                        <div style="font-size:1.05rem;font-weight:700;color:var(--text-main);">${safeName}</div>
-                        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;">ID: <code>${safeMid}</code> • Plan: <strong>${safePlan}</strong></div>
+                        <div style="font-size:1.15rem;font-weight:800;color:var(--text-main);">${safeName}</div>
+                        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;">
+                            ID: <code>${safeMid}</code> • Date: <strong>${safeDate}</strong> • Time: <strong>${safeTime}</strong>
+                        </div>
                         <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;">
                             <span class="badge" style="${tierBadgeStyle} font-size:0.72rem; padding:3px 8px; font-weight:700;">
                                 <i class="fas fa-id-card"></i> ${safeTier}
@@ -282,7 +644,7 @@ function processCheckin(membershipId, isManual = false) {
                             <span class="badge" style="${floorBadgeStyle} font-size:0.72rem; padding:3px 8px; font-weight:700;">
                                 <i class="fas fa-building"></i> ${safeFloor}
                             </span>
-                            <span class="badge ${safeMemStatus === 'Active' ? 'badge-gold' : 'badge-danger'}" style="font-size:0.7rem;padding:3px 8px;">${safeMemStatus} (Exp: ${safeExpiry})</span>
+                            <span class="badge ${safeMemStatus === 'Active' ? 'badge-gold' : 'badge-danger'}" style="font-size:0.7rem;padding:3px 8px;">Plan: ${safePlan} (${safeMemStatus})</span>
                         </div>
                     </div>
                 </div>
@@ -290,8 +652,6 @@ function processCheckin(membershipId, isManual = false) {
 
             const noLogs = document.getElementById('no-logs');
             if (noLogs) noLogs.remove();
-
-            const time = escapeHtml(data.time || new Date().toLocaleTimeString('en-PH', {hour:'2-digit',minute:'2-digit'}));
             
             if (data.action === 'check-in' && !isCooldown) {
                 const row = document.getElementById('logs-body').insertRow(0);
@@ -324,7 +684,7 @@ function processCheckin(membershipId, isManual = false) {
                         </div>
                     </td>
                     <td>${floorBadgeHtml}</td>
-                    <td class="cell-primary" style="font-weight:600;">${time}</td>
+                    <td class="cell-primary" style="font-weight:600;">${safeTime}</td>
                     <td class="cell-secondary">—</td>
                     <td><span class="badge badge-success"><i class="fas fa-circle" style="font-size:0.35rem; margin-right:4px;"></i> Inside</span></td>`;
                 logCount++;
@@ -333,44 +693,80 @@ function processCheckin(membershipId, isManual = false) {
                 setTimeout(() => location.reload(), 1500);
             }
         } else {
+            playScanBeep(false);
+            triggerVibration(false);
+            flashReaderBorder(false);
+
             const safeErrName = escapeHtml(data.member_name || 'Unverified ID');
             const safeErrMsg = escapeHtml(data.message || 'Invalid scan.');
-            const safeType = escapeHtml(data.status_type ? data.status_type.toUpperCase() : '');
-            const isExpired = (data.status_type && data.status_type.toLowerCase() === 'expired');
+            const rawType = (data.status_type || '').toLowerCase();
+            
+            let mappedState = 'INVALID';
+            if (rawType.includes('expired')) {
+                mappedState = 'EXPIRED';
+            } else if (rawType.includes('pending') || rawType.includes('rejected') || rawType.includes('suspended')) {
+                mappedState = 'BLOCKED';
+            } else if (rawType.includes('server')) {
+                mappedState = 'SERVER_ERROR';
+            }
+            setScannerState(mappedState, safeErrMsg);
 
             res.style.background = '#fce8e6'; 
             res.style.color = '#c5221f'; 
             res.style.border = '1px solid rgba(217,48,37,0.2)';
 
             let renewBtnHtml = '';
-            if (isExpired && data.member_db_id) {
-                renewBtnHtml = `<a href="renew-member.php?id=${encodeURIComponent(data.member_db_id)}" class="btn btn-primary" style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;padding:0.5rem 1.1rem;text-decoration:none;border-radius:8px;"><i class="fas fa-rotate-right"></i> Renew Now →</a>`;
+            if (mappedState === 'EXPIRED' && data.member_db_id) {
+                renewBtnHtml = `<a href="renew-member.php?id=${encodeURIComponent(data.member_db_id)}" class="btn btn-primary" style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;padding:0.5rem 1.1rem;text-decoration:none;border-radius:8px;"><i class="fas fa-rotate-right"></i> Renew Membership →</a>`;
             }
 
             res.innerHTML = `
                 <div style="text-align:left;">
                     <div style="font-size:0.8rem;font-weight:800;text-transform:uppercase;color:#c5221f;margin-bottom:4px;">
-                        <i class="fas fa-circle-xmark"></i> ${safeType ? 'CHECK-IN BLOCKED (' + safeType + ')' : 'SCAN FAILED'}
+                        <i class="fas fa-circle-xmark"></i> ${SCANNER_STATES[mappedState].title}
                     </div>
-                    <div style="font-weight:700;font-size:0.95rem;color:var(--text-main);">${safeErrName}</div>
+                    <div style="font-weight:700;font-size:1rem;color:var(--text-main);">${safeErrName}</div>
                     <div style="font-size:0.85rem;color:#c5221f;margin-top:2px;">${safeErrMsg}</div>
                     ${renewBtnHtml}
                 </div>
             `;
         }
     })
+    .catch(err => {
+        playScanBeep(false);
+        triggerVibration(false);
+        flashReaderBorder(false);
+        setScannerState('SERVER_ERROR', err.message || 'Unable to connect to attendance API');
+
+        res.style.background = '#fce8e6'; 
+        res.style.color = '#c5221f'; 
+        res.style.border = '1px solid rgba(217,48,37,0.2)';
+        res.innerHTML = `
+            <div style="text-align:left;">
+                <div style="font-size:0.8rem;font-weight:800;text-transform:uppercase;color:#c5221f;margin-bottom:4px;">
+                    <i class="fas fa-triangle-exclamation"></i> UNABLE TO CONNECT
+                </div>
+                <div style="font-size:0.85rem;color:#c5221f;">Network error or server unavailable. Please check system connection.</div>
+            </div>
+        `;
+    })
     .finally(() => {
+        if (btnManual) btnManual.disabled = false;
         setTimeout(() => { 
             res.style.display = 'none'; 
             isProcessingCheckin = false;
-        }, 10000);
+        }, 8000);
     });
 }
 
 function manualCheckin() {
+    if (isProcessingCheckin) return;
     const inp = document.getElementById('manual-id');
     const id = inp.value.trim();
-    if (id) { processCheckin(id, true); inp.value = ''; }
+    if (id) { 
+        processCheckin(id, true); 
+        inp.value = ''; 
+    }
 }
 
 function manualCheckout(attendanceId, memberName) {
@@ -437,83 +833,66 @@ function manualCheckout(attendanceId, memberName) {
     }
 }
 
-document.getElementById('manual-id').addEventListener('keydown', e => { if(e.key === 'Enter') manualCheckin(); });
-
-let isProcessingCheckin = false;
-
-// Audio Chime Synthesizer via Web Audio API (No external sound files required)
-function playScanBeep(isSuccess = true) {
-    try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
-        if (ctx.state === 'suspended') ctx.resume();
-
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        if (isSuccess) {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 note
-            osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.12); // A6 note
-            gain.gain.setValueAtTime(0.2, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.18);
-        } else {
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(320, ctx.currentTime);
-            osc.frequency.linearRampToValueAtTime(180, ctx.currentTime + 0.22);
-            gain.gain.setValueAtTime(0.25, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.25);
-        }
-    } catch (e) {
-        // AudioContext not allowed before gesture or unsupported
-    }
-}
-
-function flashReaderBorder(isSuccess = true) {
-    const readerEl = document.getElementById('reader');
-    if (!readerEl) return;
-    readerEl.style.outline = isSuccess ? '5px solid #10B981' : '5px solid #EF4444';
-    readerEl.style.outlineOffset = '-5px';
-    setTimeout(() => {
-        readerEl.style.outline = 'none';
-    }, 600);
-}
+document.getElementById('manual-id').addEventListener('keydown', e => { 
+    if(e.key === 'Enter') manualCheckin(); 
+});
 
 function onScanSuccess(text) {
     if (isProcessingCheckin) return;
     if (!text || !text.trim()) return;
-
-    isProcessingCheckin = true;
-    playScanBeep(true);
-    flashReaderBorder(true);
     processCheckin(text.trim());
 }
 
-// Optimized Html5QrcodeScanner tailored specifically for mobile phone screens
-let scanner = new Html5QrcodeScanner('reader', { 
-    fps: 20, 
-    qrbox: function(viewfinderWidth, viewfinderHeight) {
-        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-        const qrboxSize = Math.max(220, Math.floor(minEdge * 0.75));
-        return { width: qrboxSize, height: qrboxSize };
-    },
-    aspectRatio: 1.0,
-    formatsToSupport: (typeof Html5QrcodeSupportedFormats !== 'undefined') ? [ Html5QrcodeSupportedFormats.QR_CODE ] : undefined,
-    experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true
-    },
-    rememberLastUsedCamera: true
-});
-scanner.render(onScanSuccess);
+function onScanFailure(error) {
+    // Normal continuous scanning cycle — ignore frame-by-frame misses
+}
+
+function handleCameraError(err) {
+    console.warn('Camera Error:', err);
+    setScannerState('CAMERA_ERROR', 'Camera Unavailable — ensure permission is granted');
+    const overlay = document.getElementById('camera-error-overlay');
+    const msg = document.getElementById('camera-error-msg');
+    if (overlay) overlay.style.display = 'flex';
+    if (msg && err) msg.textContent = String(err.message || err);
+}
+
+function startCameraScanner() {
+    const overlay = document.getElementById('camera-error-overlay');
+    if (overlay) overlay.style.display = 'none';
+
+    try {
+        scanner = new Html5QrcodeScanner('reader', { 
+            fps: 20, 
+            qrbox: function(viewfinderWidth, viewfinderHeight) {
+                const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                const qrboxSize = Math.max(220, Math.floor(minEdge * 0.75));
+                return { width: qrboxSize, height: qrboxSize };
+            },
+            aspectRatio: 1.0,
+            formatsToSupport: (typeof Html5QrcodeSupportedFormats !== 'undefined') ? [ Html5QrcodeSupportedFormats.QR_CODE ] : undefined,
+            experimentalFeatures: {
+                useBarCodeDetectorIfSupported: true
+            },
+            rememberLastUsedCamera: true
+        });
+        scanner.render(onScanSuccess, onScanFailure);
+        setScannerState('READY');
+    } catch (e) {
+        handleCameraError(e);
+    }
+}
+
+function restartCameraScanner() {
+    if (scanner) {
+        try { scanner.clear(); } catch (e) {}
+        scanner = null;
+    }
+    startCameraScanner();
+}
+
+// Initialize Camera
+startCameraScanner();
 </script>
 
 <?php include 'includes/footer.php'; ?>
+

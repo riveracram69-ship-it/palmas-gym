@@ -268,7 +268,22 @@ if (isset($_GET['export']) && isset($pdo)) {
     }
 
     while (ob_get_level()) { ob_end_clean(); }
-    $filename = 'Palmas_Gym_' . $type . '_' . date('Ymd_His');
+    $type_file_names = [
+        'daily_revenue'   => 'Daily_Revenue',
+        'weekly_revenue'  => 'Weekly_Revenue',
+        'monthly_revenue' => 'Monthly_Revenue',
+        'retention'       => 'Membership_Retention',
+        'conversion'      => 'Member_Conversion',
+        'attendance_hour' => 'Peak_Hours_Attendance',
+        'attendance_day'  => 'Day_Of_Week_Attendance',
+        'members'         => 'Membership',
+        'attendance'      => 'Attendance',
+        'revenue'         => 'Payment'
+    ];
+    $clean_type = $type_file_names[$type] ?? ucwords(str_replace(' ', '_', str_replace('_', ' ', $type)));
+    $period_tag = (!empty($startDate) && !empty($endDate)) ? date('Y-m', strtotime($startDate)) : date('Y-m');
+    $filename = 'Palmas_Elite_Gym_' . $clean_type . '_Report_' . $period_tag;
+
 
     if ($format === 'json') {
         header('Content-Type: application/json; charset=UTF-8');
@@ -1024,8 +1039,26 @@ try {
     $kpis['period_checkins'] = (int)$res['checkins'];
     $kpis['unique_visitors'] = (int)$res['uniq'];
 
-    $kpis['active_members']  = (int)$pdo->query("SELECT COUNT(DISTINCT member_id) FROM subscriptions WHERE expiry_date >= CURDATE()")->fetchColumn();
-    $kpis['expired_members'] = (int)$pdo->query("SELECT COUNT(DISTINCT member_id) FROM subscriptions WHERE expiry_date < CURDATE() AND member_id NOT IN (SELECT member_id FROM subscriptions WHERE expiry_date >= CURDATE())")->fetchColumn();
+    // Accurate Approved population check: exclude Pending, Rejected, or Suspended members from active/expired membership KPIs
+    $kpis['active_members']  = (int)$pdo->query(
+        "SELECT COUNT(DISTINCT m.id) 
+         FROM members m
+         JOIN subscriptions s ON s.member_id = m.id 
+         WHERE m.account_status = 'Approved' 
+           AND m.status = 'Active' 
+           AND s.expiry_date >= CURDATE()"
+    )->fetchColumn();
+
+    $kpis['expired_members'] = (int)$pdo->query(
+        "SELECT COUNT(DISTINCT m.id) 
+         FROM members m
+         JOIN subscriptions s ON s.member_id = m.id 
+         WHERE m.account_status = 'Approved' 
+           AND m.status = 'Expired' 
+           AND m.id NOT IN (
+               SELECT member_id FROM subscriptions WHERE expiry_date >= CURDATE()
+           )"
+    )->fetchColumn();
 
     // ═════════════════════════════════════════════════════════════════════════
     // 2. REPORT 1: DAILY & PERIOD REVENUE REPORT
@@ -1206,34 +1239,77 @@ try {
     $retention_report['active_cnt']  = $kpis['active_members'];
     $retention_report['expired_cnt'] = $kpis['expired_members'];
 
-    // Eligible: Any member whose subscription has reached/passed or is within 30 days of expiry
+    // Eligible: Approved members whose subscription has reached or is within 30 days of expiry
     $eligible_query = $pdo->query(
-        "SELECT COUNT(DISTINCT member_id) FROM subscriptions WHERE expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)"
+        "SELECT COUNT(DISTINCT m.id) 
+         FROM members m
+         JOIN subscriptions s ON s.member_id = m.id
+         WHERE m.account_status = 'Approved'
+           AND s.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)"
     )->fetchColumn();
     $retention_report['eligible_cnt'] = max((int)$eligible_query, 1);
 
-    // Renewed: Members with 2 or more subscriptions
+    // Renewed: Approved members with 2 or more subscriptions (Correct subquery group count)
     $renewed_query = $pdo->query(
-        "SELECT COUNT(DISTINCT member_id) FROM subscriptions WHERE member_id IN (
-            SELECT member_id FROM subscriptions GROUP BY member_id HAVING COUNT(id) > 1
-        )"
+        "SELECT COUNT(*) FROM (
+            SELECT s.member_id 
+            FROM subscriptions s
+            JOIN members m ON m.id = s.member_id
+            WHERE m.account_status = 'Approved'
+            GROUP BY s.member_id 
+            HAVING COUNT(s.id) > 1
+        ) AS t"
     )->fetchColumn();
     $retention_report['renewed_cnt'] = (int)$renewed_query;
 
     $retention_report['rate_pct'] = round(($retention_report['renewed_cnt'] / $retention_report['eligible_cnt']) * 100, 1);
     $kpis['retention_rate'] = $retention_report['rate_pct'];
 
-    // 6-Month Retention Trend
+    // 6-Month Real Retention Trend (Authentic database calculations — no synthetic formulas)
     for ($m = 5; $m >= 0; $m--) {
         $mo_start = date('Y-m-01', strtotime("-{$m} months"));
         $mo_end   = date('Y-m-t', strtotime("-{$m} months"));
         $mo_label = date('M Y', strtotime($mo_start));
 
         $retention_report['trend_labels'][] = $mo_label;
-        $mo_subs = $pdo->prepare("SELECT COUNT(*) FROM subscriptions WHERE start_date BETWEEN ? AND ?");
-        $mo_subs->execute([$mo_start, $mo_end]);
-        $sub_count = (int)$mo_subs->fetchColumn();
-        $retention_report['trend_data'][] = min(100, round(65 + ($sub_count * 5), 1));
+
+        // Subscriptions that expired in this month
+        $stmt_mo_exp = $pdo->prepare("
+            SELECT COUNT(DISTINCT s.member_id) 
+            FROM subscriptions s
+            JOIN members m ON m.id = s.member_id
+            WHERE m.account_status = 'Approved'
+              AND s.expiry_date BETWEEN ? AND ?
+        ");
+        $stmt_mo_exp->execute([$mo_start, $mo_end]);
+        $mo_eligible = (int)$stmt_mo_exp->fetchColumn();
+
+        if ($mo_eligible > 0) {
+            // Count members who had a subsequent subscription
+            $stmt_mo_ren = $pdo->prepare("
+                SELECT COUNT(DISTINCT s1.member_id) 
+                FROM subscriptions s1
+                JOIN subscriptions s2 ON s1.member_id = s2.member_id AND s2.id > s1.id
+                JOIN members m ON m.id = s1.member_id
+                WHERE m.account_status = 'Approved'
+                  AND s1.expiry_date BETWEEN ? AND ?
+            ");
+            $stmt_mo_ren->execute([$mo_start, $mo_end]);
+            $mo_renewed = (int)$stmt_mo_ren->fetchColumn();
+            $mo_rate = min(100.0, round(($mo_renewed / $mo_eligible) * 100, 1));
+        } else {
+            // If no subscriptions expired, check if active members existed
+            $stmt_mo_act = $pdo->prepare("
+                SELECT COUNT(DISTINCT s.member_id) 
+                FROM subscriptions s
+                JOIN members m ON m.id = s.member_id
+                WHERE m.account_status = 'Approved'
+                  AND s.start_date <= ? AND s.expiry_date >= ?
+            ");
+            $stmt_mo_act->execute([$mo_end, $mo_start]);
+            $mo_rate = ((int)$stmt_mo_act->fetchColumn() > 0) ? 100.0 : 0.0;
+        }
+        $retention_report['trend_data'][] = $mo_rate;
     }
 
     // Near Expiry Table (Next 30 Days)
@@ -1268,7 +1344,9 @@ try {
     $kpis['activated_reg'] = $conversion_report['activated'];
 
     $conversion_report['renewals'] = (int)$pdo->query(
-        "SELECT COUNT(DISTINCT member_id) FROM subscriptions GROUP BY member_id HAVING COUNT(id) > 1"
+        "SELECT COUNT(*) FROM (
+            SELECT member_id FROM subscriptions GROUP BY member_id HAVING COUNT(id) > 1
+        ) AS t"
     )->fetchColumn();
 
     if ($conversion_report['new_reg'] > 0) {
@@ -1392,7 +1470,8 @@ try {
 
     $day_report['busiest_day']   = $busiest_day;
     $day_report['busiest_count'] = $busiest_cnt;
-    $day_report['avg_daily']     = round($total_day_checkins / 7, 1);
+    $period_days = max(1, (int)round((strtotime($end_date) - strtotime($start_date)) / 86400) + 1);
+    $day_report['avg_daily']     = round($total_day_checkins / $period_days, 1);
     $kpis['busiest_day_str']     = $busiest_day;
 
 } catch (Exception $e) {

@@ -228,7 +228,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // 4. Anti-Duplicate Check-in Cooldown & Active Session Check
+        // 4. Concurrency-Safe Anti-Duplicate Check-in with Transaction & Row Lock
+        $pdo->beginTransaction();
+
+        // Acquire exclusive lock on member record to serialize concurrent scans for this member
+        $lock_stmt = $pdo->prepare("SELECT id FROM members WHERE id = ? FOR UPDATE");
+        $lock_stmt->execute([$member['id']]);
+
         $last_checkin_stmt = $pdo->prepare("
             SELECT id, time_in, time_out, 
                    TIMESTAMPDIFF(SECOND, time_in, NOW()) as seconds_since_in,
@@ -237,6 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             WHERE member_id = ? AND date = CURDATE()
             ORDER BY id DESC 
             LIMIT 1
+            FOR UPDATE
         ");
         $last_checkin_stmt->execute([$member['id']]);
         $last_record = $last_checkin_stmt->fetch(PDO::FETCH_ASSOC);
@@ -247,9 +254,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // If scanned within 5 seconds of check-in, ignore rapid double-scan from camera
             if ($secs_in < 5) {
+                $pdo->commit();
                 echo json_encode([
                     'success' => true,
                     'is_cooldown' => true,
+                    'status_type' => 'Already Scanned',
                     'action' => 'cooldown',
                     'member_name' => $member['full_name'],
                     'membership_id' => $member['membership_id'],
@@ -263,7 +272,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'plan_name' => $member['plan_name'] ?: 'Standard',
                     'expiry_date' => date('M d, Y', strtotime($member['expiry_date'])),
                     'time' => date('h:i A', strtotime($last_record['time_in'])),
-                    'message' => 'Member already checked in at ' . date('h:i A', strtotime($last_record['time_in'])) . '.'
+                    'date' => date('M d, Y'),
+                    'message' => 'Attendance Already Recorded at ' . date('h:i A', strtotime($last_record['time_in'])) . '.'
                 ]);
                 exit;
             }
@@ -271,10 +281,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Otherwise, perform Check-out (UPDATE the existing row's time_out, NO new row)
             $upd = $pdo->prepare("UPDATE attendance SET time_out = NOW() WHERE id = ?");
             $upd->execute([$last_record['id']]);
+            $pdo->commit();
 
             echo json_encode([
                 'success' => true,
                 'action' => 'check-out',
+                'status_type' => 'Success',
                 'member_name' => $member['full_name'],
                 'membership_id' => $member['membership_id'],
                 'photo' => $member['photo'],
@@ -287,6 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'plan_name' => $member['plan_name'] ?: 'Standard',
                 'expiry_date' => date('M d, Y', strtotime($member['expiry_date'])),
                 'time' => date('h:i A'),
+                'date' => date('M d, Y'),
                 'message' => 'Check-out successful! Goodbye, ' . $member['full_name'] . '.'
             ]);
             log_activity($pdo, 'Member Check-out', "Member {$member['full_name']} ({$member['membership_id']}) checked out.", 'Attendance');
@@ -297,9 +310,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($last_record && !empty($last_record['time_out'])) {
             $secs_out = intval($last_record['seconds_since_out'] ?? 0);
             if ($secs_out < 5) {
+                $pdo->commit();
                 echo json_encode([
                     'success' => true,
                     'is_cooldown' => true,
+                    'status_type' => 'Already Scanned',
                     'action' => 'cooldown',
                     'member_name' => $member['full_name'],
                     'membership_id' => $member['membership_id'],
@@ -313,7 +328,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'plan_name' => $member['plan_name'] ?: 'Standard',
                     'expiry_date' => date('M d, Y', strtotime($member['expiry_date'])),
                     'time' => date('h:i A', strtotime($last_record['time_out'])),
-                    'message' => 'Member already checked out at ' . date('h:i A', strtotime($last_record['time_out'])) . '.'
+                    'date' => date('M d, Y'),
+                    'message' => 'Attendance Already Recorded (checked out at ' . date('h:i A', strtotime($last_record['time_out'])) . ').'
                 ]);
                 exit;
             }
@@ -322,10 +338,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 5. Log New Check-in
         $ins = $pdo->prepare("INSERT INTO attendance (member_id, date, time_in) VALUES (?, CURDATE(), NOW())");
         $ins->execute([$member['id']]);
+        $pdo->commit();
 
         echo json_encode([
             'success' => true,
             'action' => 'check-in',
+            'status_type' => 'Success',
             'member_name' => $member['full_name'],
             'membership_id' => $member['membership_id'],
             'photo' => $member['photo'],
@@ -338,13 +356,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'plan_name' => $member['plan_name'] ?: 'Standard',
             'expiry_date' => date('M d, Y', strtotime($member['expiry_date'])),
             'time' => date('h:i A'),
+            'date' => date('M d, Y'),
             'message' => 'VALID MEMBER • Check-in Successful! Welcome, ' . $member['full_name'] . '.'
         ]);
         log_activity($pdo, 'Member Check-in', "Member {$member['full_name']} ({$member['membership_id']}) checked in.", 'Attendance');
 
     } catch (Exception $e) {
+        if (isset($pdo) && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         error_log('Attendance Error: ' . $e->getMessage());
-        echo json_encode(['success' => false, 'message' => 'A server error occurred while processing attendance.']);
+        echo json_encode(['success' => false, 'status_type' => 'Server Error', 'message' => 'A server error occurred while processing attendance.']);
     }
+
 }
 

@@ -19,13 +19,20 @@ echo "=======================================================\n\n";
 try {
     $cols = $pdo->query("SHOW COLUMNS FROM `members`")->fetchAll(PDO::FETCH_COLUMN);
 
+    // Ensure legacy address column exists first before adding relative columns
+    if (!in_array('address', $cols)) {
+        $pdo->exec("ALTER TABLE `members` ADD COLUMN `address` TEXT NULL AFTER `contact_number`");
+        $cols[] = 'address';
+        echo "  [+] Added `address` column to `members`.\n";
+    }
+
     $columns_to_add = [
-        'dob' => "ALTER TABLE `members` ADD COLUMN `dob` DATE NULL AFTER `gender`",
-        'house_street' => "ALTER TABLE `members` ADD COLUMN `house_street` VARCHAR(255) NULL AFTER `address`",
-        'barangay' => "ALTER TABLE `members` ADD COLUMN `barangay` VARCHAR(150) NULL AFTER `house_street`",
-        'municipality' => "ALTER TABLE `members` ADD COLUMN `municipality` VARCHAR(150) NULL AFTER `barangay`",
-        'province' => "ALTER TABLE `members` ADD COLUMN `province` VARCHAR(150) NULL AFTER `municipality`",
-        'zip_code' => "ALTER TABLE `members` ADD COLUMN `zip_code` VARCHAR(20) NULL AFTER `province`"
+        'dob' => "ALTER TABLE `members` ADD COLUMN `dob` DATE NULL",
+        'house_street' => "ALTER TABLE `members` ADD COLUMN `house_street` VARCHAR(255) NULL",
+        'barangay' => "ALTER TABLE `members` ADD COLUMN `barangay` VARCHAR(150) NULL",
+        'municipality' => "ALTER TABLE `members` ADD COLUMN `municipality` VARCHAR(150) NULL",
+        'province' => "ALTER TABLE `members` ADD COLUMN `province` VARCHAR(150) NULL",
+        'zip_code' => "ALTER TABLE `members` ADD COLUMN `zip_code` VARCHAR(20) NULL"
     ];
 
     foreach ($columns_to_add as $col_name => $alter_sql) {
@@ -35,12 +42,6 @@ try {
         } else {
             echo "  [*] Column `{$col_name}` already exists in `members` table.\n";
         }
-    }
-
-    // Ensure legacy address column exists
-    if (!in_array('address', $cols)) {
-        $pdo->exec("ALTER TABLE `members` ADD COLUMN `address` VARCHAR(255) NULL AFTER `contact_number`");
-        echo "  [+] Added `address` column to `members`.\n";
     }
 
     // Ensure legacy age column exists
