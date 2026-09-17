@@ -102,7 +102,8 @@ function apply_cors_headers(): void {
         header('Access-Control-Allow-Origin: ' . $request_origin);
         header('Vary: Origin');
     } else {
-        header('Access-Control-Allow-Origin: ' . $request_origin);
+        // Do NOT reflect the origin back — browser will block cross-origin access.
+        // Only add Vary so CDNs don't incorrectly cache an allowed response for this origin.
         header('Vary: Origin');
     }
 

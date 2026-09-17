@@ -265,9 +265,9 @@ try {
         }
     }
 
-    $auth_token = bin2hex(random_bytes(32));
-    $pdo->prepare("INSERT INTO auth_tokens (member_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))")
-        ->execute([$member_id, $auth_token]);
+    // Do NOT issue an auth token yet — account is Pending until staff approval.
+    // A token will be issued only after the member logs in with an approved account.
+    $auth_token = null;
 
     $checkout_url = null;
     $ref_code     = null;
@@ -427,7 +427,7 @@ try {
     // Activity Log (Safely run in background)
     try {
         $provider_label = ($auth_provider === 'google') ? ' (Google Sign-In)' : '';
-        $log_status = $is_online_instant ? 'Auto-activated instantly.' : 'Pending staff cash collection.';
+        $log_status = $is_online_payment ? 'Online payment checkout initiated.' : 'Pending staff cash collection.';
         log_activity($pdo, 'Member Registration', "New member registered{$provider_label}: {$full_name} ({$membership_id}) via {$payment_method}. {$log_status}", 'Member');
     } catch (Throwable $logEx) {
         error_log("Registration log_activity warning: " . $logEx->getMessage());
@@ -436,25 +436,20 @@ try {
     // Welcome email (Safely run in background)
     try {
         require_once __DIR__ . '/../config/email.php';
-        if ($is_online_instant) {
-            @send_email_notification(
-                $email,
-                "Membership Activated! — Palma's Elite Gym",
-                "Welcome, {$full_name}!",
-                "Thank you for registering with Palma's Elite Gym!<br><br>Your payment via <strong>{$payment_method}</strong> has been processed, and your gym membership has been <strong>instantly activated</strong>!<br><br>Your Membership ID is: <strong>{$membership_id}</strong>.<br>You can now sign in to your mobile app to access your Digital QR Pass."
-            );
-        } else {
-            $auth_text = ($auth_provider === 'google')
-                ? "You can use <strong>Continue with Google</strong> in the Palma's Elite Gym Mobile App once your front-desk cash payment is verified."
-                : "Your Membership Reference ID is: <strong>{$membership_id}</strong>.";
+        // All newly registered members are Pending — send the awaiting-approval email.
+        $auth_text = ($auth_provider === 'google')
+            ? "You can use <strong>Continue with Google</strong> in the Palma's Elite Gym Mobile App once your account is verified."
+            : "Your Membership Reference ID is: <strong>{$membership_id}</strong>.";
+        $pay_note = $is_online_payment
+            ? "You have initiated an online payment. Please complete the checkout to finalize your registration."
+            : "Please settle your cash payment at the gym front desk upon your first visit.";
 
-            @send_email_notification(
-                $email,
-                "Registration Received — Palma's Elite Gym",
-                "Welcome, {$full_name}!",
-                "Thank you for registering with Palma's Elite Gym!<br><br>Your account is currently <strong>Pending Review</strong>. Please settle your cash payment at the gym front desk upon your visit. {$auth_text}"
-            );
-        }
+        @send_email_notification(
+            $email,
+            "Registration Received — Palma's Elite Gym",
+            "Welcome, {$full_name}!",
+            "Thank you for registering with Palma's Elite Gym!<br><br>Your account is currently <strong>Pending Review</strong>. {$pay_note} {$auth_text}"
+        );
     } catch (Throwable $emErr) {
         error_log("Registration send_email_notification warning: " . $emErr->getMessage());
     }

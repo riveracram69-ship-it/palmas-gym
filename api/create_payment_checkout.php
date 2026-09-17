@@ -165,7 +165,9 @@ try {
     // 4. Standardize Payment Method
     $upper_m = strtoupper($payment_method);
     $std_method = 'GCASH';
-    if (strpos($upper_m, 'CASH') !== false) {
+    if (strpos($upper_m, 'GCASH') !== false) {
+        $std_method = 'GCASH';
+    } elseif (strpos($upper_m, 'CASH') !== false) {
         $std_method = 'CASH';
     } elseif (strpos($upper_m, 'MAYA') !== false) {
         $std_method = 'MAYA';
