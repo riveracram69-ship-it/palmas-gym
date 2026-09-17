@@ -14,7 +14,7 @@ try {
         sync_attendance_auto_checkout($pdo);
 
         $stmt = $pdo->prepare(
-            "SELECT a.id, a.date, a.time_in, a.time_out, m.full_name, m.membership_id,
+            "SELECT a.id, a.date, a.time_in, a.time_out, m.id AS member_id, m.full_name, m.membership_id, m.photo,
                     m.annual_membership_expiry,
                     COALESCE(sub.plan_name, 'No Plan') AS plan_name,
                     COALESCE(sub.floor_access, 'all') AS floor_access,
@@ -128,10 +128,18 @@ try {
                     <tr id="att-row-<?php echo $log['id']; ?>">
                         <td>
                             <div class="member-cell">
-                                <div class="member-avatar"><?php echo strtoupper(substr($log['full_name'], 0, 1)); ?></div>
+                                <div class="member-avatar" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <?php if (!empty($log['photo'])): ?>
+                                        <img src="<?php echo htmlspecialchars($log['photo']); ?>" alt="Photo" style="width:100%; height:100%; object-fit:cover;">
+                                    <?php else: ?>
+                                        <?php echo strtoupper(substr($log['full_name'], 0, 1)); ?>
+                                    <?php endif; ?>
+                                </div>
                                 <div>
-                                    <div class="cell-primary" style="font-weight:700;"><?php echo htmlspecialchars($log['full_name']); ?></div>
-                                    <code class="cell-secondary" style="font-weight:600; color:var(--accent); font-size:0.75rem;"><?php echo htmlspecialchars($log['membership_id']); ?></code>
+                                    <a href="view-member.php?id=<?php echo $log['member_id']; ?>" class="cell-primary" style="font-weight:700; color:var(--text-main); text-decoration:none;">
+                                        <?php echo htmlspecialchars($log['full_name']); ?>
+                                    </a>
+                                    <div style="font-size:0.75rem; color:var(--text-muted); font-family:monospace;"><?php echo htmlspecialchars($log['membership_id']); ?></div>
                                 </div>
                             </div>
                         </td>
@@ -295,10 +303,14 @@ function processCheckin(membershipId, isManual = false) {
                     ? `<span class="badge" style="background:rgba(16,185,129,0.15); color:#059669; border:1px solid rgba(16,185,129,0.3); font-size:0.68rem; font-weight:700;"><i class="fas fa-id-card"></i> Official Member</span>`
                     : `<span class="badge" style="background:rgba(100,116,139,0.12); color:#64748b; border:1px solid rgba(100,116,139,0.25); font-size:0.68rem; font-weight:600;"><i class="fas fa-user"></i> Non-Member</span>`;
 
+                const rowAvatarHtml = data.photo 
+                    ? `<img src="${escapeHtml(data.photo)}" alt="Photo" style="width:100%; height:100%; object-fit:cover;">`
+                    : safeName.charAt(0).toUpperCase();
+
                 row.innerHTML = `
                     <td>
                         <div class="member-cell">
-                            <div class="member-avatar">${safeName.charAt(0).toUpperCase()}</div>
+                            <div class="member-avatar" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${rowAvatarHtml}</div>
                             <div>
                                 <div class="cell-primary" style="font-weight:700;">${safeName}</div>
                                 <code class="cell-secondary" style="font-weight:600; color:var(--accent); font-size:0.75rem;">${safeMid}</code>
