@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1350 780" width="100%" height="100%" style="background:#ffffff; font-family:'Segoe UI', Arial, Helvetica, sans-serif;">
+  <defs>
+    <!-- Arrowhead markers -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#1e293b"/>
+    </marker>
+    <filter id="card-shadow" x="-4%" y="-4%" width="108%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Header Banner -->
+  <rect x="0" y="0" width="1350" height="60" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="675" y="36" text-anchor="middle" font-size="18" font-weight="800" fill="#0f172a" letter-spacing="1">DFD LEVEL 2 — PROCESS 5.0: TRACK ATTENDANCE</text>
+  <text x="675" y="52" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">Member-Only Check-in Flow | Standard Gane &amp; Sarson Notation | Pure Noun-Phrase Data Flows</text>
+
+  <!-- ================================================================= -->
+  <!-- EXTERNAL ENTITY (MEMBER ONLY)                                     -->
+  <!-- ================================================================= -->
+
+  <!-- MEMBER ENTITY (Left Column: centered vertically) -->
+  <g id="entity-member">
+    <rect x="60" y="240" width="180" height="90" rx="3" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" filter="url(#card-shadow)"/>
+    <rect x="60" y="240" width="180" height="10" fill="#e2e8f0" stroke="#0f172a" stroke-width="2.5"/>
+    <text x="150" y="292" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">MEMBER</text>
+    <text x="150" y="312" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">External Entity</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- SUB-PROCESSES (CENTER COLUMN: x=480 to x=740, Width=260)         -->
+  <!-- ================================================================= -->
+
+  <!-- 5.1 Scan QR Code -->
+  <g id="subproc-5-1">
+    <rect x="480" y="100" width="260" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="130" x2="740" y2="130" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="610" y="122" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">5.1</text>
+    <text x="610" y="158" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Scan QR Code</text>
+  </g>
+
+  <!-- 5.2 Validate Subscription Status -->
+  <g id="subproc-5-2">
+    <rect x="480" y="290" width="260" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="320" x2="740" y2="320" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="610" y="312" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">5.2</text>
+    <text x="610" y="348" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Validate Subscription Status</text>
+  </g>
+
+  <!-- 5.3 Record Attendance Log -->
+  <g id="subproc-5-3">
+    <rect x="480" y="490" width="260" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="520" x2="740" y2="520" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="610" y="512" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">5.3</text>
+    <text x="610" y="548" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Record Attendance Log</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- DATA STORES (RIGHT COLUMN: D1, D4, D6)                            -->
+  <!-- ================================================================= -->
+
+  <!-- D1 Members (Read by 5.2) -->
+  <g id="ds-d1">
+    <line x1="980" y1="275" x2="980" y2="320" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="275" x2="1260" y2="275" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="320" x2="1260" y2="320" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1025" y1="275" x2="1025" y2="320" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1002" y="303" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D1</text>
+    <text x="1142" y="303" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Members</text>
+  </g>
+
+  <!-- D4 Subscriptions (Read by 5.2) -->
+  <g id="ds-d4">
+    <line x1="980" y1="345" x2="980" y2="390" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="345" x2="1260" y2="345" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="390" x2="1260" y2="390" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1025" y1="345" x2="1025" y2="390" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1002" y="373" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D4</text>
+    <text x="1142" y="373" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Subscriptions</text>
+  </g>
+
+  <!-- D6 Attendance (Written by 5.3) -->
+  <g id="ds-d6">
+    <line x1="980" y1="505" x2="980" y2="550" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="505" x2="1260" y2="505" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="550" x2="1260" y2="550" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1025" y1="505" x2="1025" y2="550" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1002" y="533" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D6</text>
+    <text x="1142" y="533" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Attendance</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- LEFT-SIDE DATA FLOWS (MEMBER INTERACTIONS)                        -->
+  <!-- ================================================================= -->
+
+  <!-- 1. MEMBER -> 5.1 (Member QR Code Payload) -->
+  <path d="M 240 260 L 340 260 L 340 125 L 478 125" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="380" y="118" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Member QR Code Payload</text>
+
+  <!-- 2. 5.2 -> MEMBER (Check-in Denial Message) Direct Horizontal Line -->
+  <line x1="480" y1="305" x2="242" y2="305" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="360" y="298" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Check-in Denial Message</text>
+
+  <!-- 3. 5.3 -> MEMBER (Check-in Confirmation & Pass Status) -->
+  <path d="M 480 515 L 290 515 L 290 325 L 242 325" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="380" y="508" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Check-in Confirmation &amp; Pass Status</text>
+
+  <!-- ================================================================= -->
+  <!-- CENTER SUB-PROCESS FLOWS                                          -->
+  <!-- ================================================================= -->
+
+  <!-- 5.1 -> 5.2 (Check-in Candidate Payload) -->
+  <line x1="610" y1="175" x2="610" y2="288" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="620" y="235" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Check-in Candidate Payload</text>
+
+  <!-- 5.2 -> 5.3 (Validated Check-in Payload) -->
+  <line x1="610" y1="365" x2="610" y2="488" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="620" y="430" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Validated Check-in Payload</text>
+
+  <!-- ================================================================= -->
+  <!-- RIGHT-SIDE DATA STORE FLOWS                                       -->
+  <!-- ================================================================= -->
+
+  <!-- D1 -> 5.2 (Member Account Status) -->
+  <line x1="978" y1="298" x2="742" y2="298" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="291" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Member Account Status</text>
+
+  <!-- D4 -> 5.2 (Subscription Validity Status) -->
+  <line x1="978" y1="368" x2="742" y2="368" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="361" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Subscription Validity Status</text>
+
+  <!-- 5.3 -> D6 (Attendance Timestamp Log) -->
+  <line x1="740" y1="528" x2="978" y2="528" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="521" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Attendance Timestamp Log</text>
+
+  <!-- ================================================================= -->
+  <!-- FOOTER LEGEND AND CONVENTIONS NOTE                                -->
+  <!-- ================================================================= -->
+  <rect x="40" y="690" width="1270" height="60" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="60" y="716" font-size="12" font-weight="800" fill="#0f172a">DFD Level 2 (Process 5.0) Validation Legend:</text>
+  <text x="60" y="735" font-size="11" font-weight="600" fill="#475569">Sub-processes: 5.1 Scan QR Code | 5.2 Validate Subscription Status | 5.3 Record Attendance Log | Pure Noun Phrases</text>
+</svg>

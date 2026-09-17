@@ -63,12 +63,12 @@ try {
     }
 
     // 2. Fetch Plan & Secure Server-Side Pricing
-    $p_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes, price, is_test_promo FROM membership_plans WHERE id = ?");
+    $p_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes, price, is_test_promo, is_active, plan_category FROM membership_plans WHERE id = ?");
     $p_stmt->execute([$plan_id]);
     $plan = $p_stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$plan) {
-        echo json_encode(['success' => false, 'message' => 'Selected membership plan was not found.']);
+    if (!$plan || (int)($plan['is_active'] ?? 0) !== 1 || ($plan['plan_category'] ?? '') === 'legacy') {
+        echo json_encode(['success' => false, 'message' => 'This plan is no longer available. Please select an active plan.']);
         exit;
     }
 

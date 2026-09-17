@@ -1,0 +1,365 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1450 1620" width="100%" height="100%" style="background:#ffffff; font-family:'Segoe UI', Arial, Helvetica, sans-serif;">
+  <defs>
+    <!-- Arrowhead markers -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#1e293b"/>
+    </marker>
+    <filter id="card-shadow" x="-4%" y="-4%" width="108%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Header Banner -->
+  <rect x="0" y="0" width="1450" height="60" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="725" y="36" text-anchor="middle" font-size="19" font-weight="800" fill="#0f172a" letter-spacing="1">GYM MANAGEMENT SYSTEM — DATA FLOW DIAGRAM (DFD) LEVEL 1</text>
+  <text x="725" y="52" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">Standard Gane &amp; Sarson Notation | Verified Full Workflow Data Stores | Clean Orthogonal Parallel Tracks</text>
+
+  <!-- ================================================================= -->
+  <!-- EXTERNAL ENTITIES (LEFT COLUMN)                                  -->
+  <!-- ================================================================= -->
+
+  <!-- MEMBER ENTITY (Top-Left: x=30 to x=230, width=200) -->
+  <g id="entity-member">
+    <rect x="30" y="75" width="200" height="75" rx="3" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" filter="url(#card-shadow)"/>
+    <rect x="30" y="75" width="200" height="10" fill="#e2e8f0" stroke="#0f172a" stroke-width="2.5"/>
+    <text x="130" y="120" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">MEMBER</text>
+    <text x="130" y="138" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">External Entity</text>
+  </g>
+
+  <!-- ADMIN ENTITY (Bottom-Left) -->
+  <g id="entity-admin">
+    <rect x="30" y="1400" width="200" height="70" rx="3" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" filter="url(#card-shadow)"/>
+    <rect x="30" y="1400" width="200" height="10" fill="#e2e8f0" stroke="#0f172a" stroke-width="2.5"/>
+    <text x="130" y="1443" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">ADMIN</text>
+    <text x="130" y="1460" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">External Entity</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- PROCESSES (CENTER COLUMN: x=460 to x=720, Width=260)             -->
+  <!-- ================================================================= -->
+
+  <!-- 1.0 Verify User Credentials -->
+  <g id="process-1">
+    <rect x="460" y="80" width="260" height="70" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="460" y1="110" x2="720" y2="110" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="590" y="102" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">1.0</text>
+    <text x="590" y="136" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Verify User Credentials</text>
+  </g>
+
+  <!-- 2.0 Register Member -->
+  <g id="process-2">
+    <rect x="460" y="245" width="260" height="70" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="460" y1="275" x2="720" y2="275" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="590" y="267" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">2.0</text>
+    <text x="590" y="301" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Register Member</text>
+  </g>
+
+  <!-- 3.0 Manage Subscriptions & Plans -->
+  <g id="process-3">
+    <rect x="460" y="410" width="260" height="70" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="460" y1="440" x2="720" y2="440" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="590" y="432" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">3.0</text>
+    <text x="590" y="466" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Manage Subscriptions &amp; Plans</text>
+  </g>
+
+  <!-- 4.0 Process Payments -->
+  <g id="process-4">
+    <rect x="460" y="575" width="260" height="70" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="460" y1="605" x2="720" y2="605" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="590" y="597" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">4.0</text>
+    <text x="590" y="631" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Process Payments</text>
+  </g>
+
+  <!-- 5.0 Track Attendance -->
+  <g id="process-5">
+    <rect x="460" y="740" width="260" height="70" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="460" y1="770" x2="720" y2="770" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="590" y="762" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">5.0</text>
+    <text x="590" y="796" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Track Attendance</text>
+  </g>
+
+  <!-- 6.0 Handle Renewal Requests -->
+  <g id="process-6">
+    <rect x="460" y="905" width="260" height="70" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="460" y1="935" x2="720" y2="935" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="590" y="927" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">6.0</text>
+    <text x="590" y="961" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Handle Renewal Requests</text>
+  </g>
+
+  <!-- 7.0 Dispatch Notifications & Alerts -->
+  <g id="process-7">
+    <rect x="460" y="1070" width="260" height="70" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="460" y1="1100" x2="720" y2="1100" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="590" y="1092" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">7.0</text>
+    <text x="590" y="1126" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Dispatch Notifications &amp; Alerts</text>
+  </g>
+
+  <!-- 8.0 Generate Reports & Audit Logs -->
+  <g id="process-8">
+    <rect x="460" y="1235" width="260" height="70" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="460" y1="1265" x2="720" y2="1265" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="590" y="1257" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">8.0</text>
+    <text x="590" y="1291" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Generate Reports &amp; Audit Logs</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- DATA STORES (RIGHT COLUMN: D1 to D9, x=1000 to x=1280)           -->
+  <!-- Gane and Sarson open rectangle notation                           -->
+  <!-- ================================================================= -->
+
+  <!-- D1 Members -->
+  <g id="ds-d1">
+    <line x1="1000" y1="75" x2="1000" y2="120" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="75" x2="1280" y2="75" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="120" x2="1280" y2="120" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1045" y1="75" x2="1045" y2="120" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1022" y="103" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D1</text>
+    <text x="1160" y="103" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Members</text>
+  </g>
+
+  <!-- D2 Users -->
+  <g id="ds-d2">
+    <line x1="1000" y1="135" x2="1000" y2="180" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="135" x2="1280" y2="135" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="180" x2="1280" y2="180" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1045" y1="135" x2="1045" y2="180" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1022" y="163" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D2</text>
+    <text x="1160" y="163" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Users</text>
+  </g>
+
+  <!-- D3 Membership_Plans -->
+  <g id="ds-d3">
+    <line x1="1000" y1="270" x2="1000" y2="315" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="270" x2="1280" y2="270" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="315" x2="1280" y2="315" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1045" y1="270" x2="1045" y2="315" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1022" y="297" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D3</text>
+    <text x="1160" y="297" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Membership_Plans</text>
+  </g>
+
+  <!-- D4 Subscriptions -->
+  <g id="ds-d4">
+    <line x1="1000" y1="435" x2="1000" y2="480" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="435" x2="1280" y2="435" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="480" x2="1280" y2="480" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1045" y1="435" x2="1045" y2="480" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1022" y="462" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D4</text>
+    <text x="1160" y="462" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Subscriptions</text>
+  </g>
+
+  <!-- D5 Payments -->
+  <g id="ds-d5">
+    <line x1="1000" y1="600" x2="1000" y2="645" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="600" x2="1280" y2="600" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="645" x2="1280" y2="645" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1045" y1="600" x2="1045" y2="645" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1022" y="627" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D5</text>
+    <text x="1160" y="627" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Payments</text>
+  </g>
+
+  <!-- D6 Attendance -->
+  <g id="ds-d6">
+    <line x1="1000" y1="765" x2="1000" y2="810" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="765" x2="1280" y2="765" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="810" x2="1280" y2="810" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1045" y1="765" x2="1045" y2="810" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1022" y="792" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D6</text>
+    <text x="1160" y="792" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Attendance</text>
+  </g>
+
+  <!-- D7 Renewal_Requests -->
+  <g id="ds-d7">
+    <line x1="1000" y1="930" x2="1000" y2="975" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="930" x2="1280" y2="930" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="975" x2="1280" y2="975" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1045" y1="930" x2="1045" y2="975" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1022" y="957" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D7</text>
+    <text x="1160" y="957" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Renewal_Requests</text>
+  </g>
+
+  <!-- D8 Notifications -->
+  <g id="ds-d8">
+    <line x1="1000" y1="1080" x2="1000" y2="1125" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="1080" x2="1280" y2="1080" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="1125" x2="1280" y2="1125" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1045" y1="1080" x2="1045" y2="1125" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1022" y="1107" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D8</text>
+    <text x="1160" y="1107" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Notifications</text>
+  </g>
+
+  <!-- D9 Activity_Logs -->
+  <g id="ds-d9">
+    <line x1="1000" y1="1255" x2="1000" y2="1300" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="1255" x2="1280" y2="1255" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="1300" x2="1280" y2="1300" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1045" y1="1255" x2="1045" y2="1300" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1022" y="1282" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D9</text>
+    <text x="1160" y="1282" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Activity_Logs</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- LEFT-SIDE DATA FLOWS (ENTITIES TO/FROM PROCESSES)                 -->
+  <!-- ================================================================= -->
+
+  <!-- Process 1.0 Flows -->
+  <!-- Member to 1.0 (Login Credentials) -->
+  <line x1="230" y1="95" x2="458" y2="95" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="345" y="88" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Login Credentials</text>
+
+  <!-- 1.0 to Member (Login Status and Session) -->
+  <line x1="458" y1="130" x2="232" y2="130" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="345" y="123" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Login Status &amp; Session</text>
+
+  <!-- Process 2.0 Flows -->
+  <!-- Member to 2.0 (Registration Information) Track: x=105 -->
+  <path d="M 105 150 L 105 255 L 458 255" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="345" y="249" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Registration Information</text>
+
+  <!-- Admin to 2.0 (Account Approval and Role Data) Track: x=125, Horizontal at y=280 -->
+  <path d="M 125 1400 L 125 280 L 458 280" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="345" y="274" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Account Approval &amp; Role Data</text>
+
+  <!-- 2.0 to Member (Membership ID and QR Pass) Track: x=145 -->
+  <path d="M 458 300 L 145 300 L 145 152" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="345" y="295" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Membership ID &amp; QR Pass</text>
+
+  <!-- Process 3.0 Flows -->
+  <!-- Admin to 3.0 (Plan Rates and Terms Data) Track: x=100, Horizontal at y=445 -->
+  <path d="M 100 1400 L 100 445 L 458 445" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="345" y="439" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Plan Rates &amp; Terms Data</text>
+
+  <!-- Process 4.0 Flows -->
+  <!-- Member to 4.0 (Payment Information and Proof) Track: x=85 -->
+  <path d="M 85 150 L 85 590 L 458 590" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="345" y="584" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Payment Information &amp; Proof</text>
+
+  <!-- Admin to 4.0 (Payment Verification Data) Track: x=140, Horizontal at y=608 -->
+  <path d="M 140 1400 L 140 608 L 458 608" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="345" y="602" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Payment Verification Data</text>
+
+  <!-- 4.0 to Member (Payment Receipt and Invoice) Track: x=165 -->
+  <path d="M 458 625 L 165 625 L 165 152" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="345" y="620" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Payment Receipt &amp; Invoice</text>
+
+  <!-- Process 5.0 Flows -->
+  <!-- Member to 5.0 (QR Code Scan Data) Track: x=65 -->
+  <path d="M 65 150 L 65 755 L 458 755" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="345" y="749" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">QR Code Scan Data</text>
+
+  <!-- 5.0 to Member (Check-in Status and Confirmation) Track: x=185 -->
+  <path d="M 458 790 L 185 790 L 185 152" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="345" y="784" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Check-in Status &amp; Confirmation</text>
+
+  <!-- Process 6.0 Flows -->
+  <!-- Member to 6.0 (Renewal Application Data) Track: x=45 -->
+  <path d="M 45 150 L 45 920 L 458 920" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="345" y="914" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Renewal Application Data</text>
+
+  <!-- Admin to 6.0 (Renewal Decision Data) Track: x=160, Horizontal at y=955 -->
+  <path d="M 160 1400 L 160 955 L 458 955" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="345" y="949" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Renewal Decision Data</text>
+
+  <!-- Process 7.0 Flows -->
+  <!-- 7.0 to Member (Expiry and Renewal Notifications) Track: x=205 -->
+  <path d="M 458 1105 L 205 1105 L 205 152" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="345" y="1100" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Expiry &amp; Renewal Notifications</text>
+
+  <!-- Process 8.0 Flows -->
+  <!-- Admin to 8.0 (Report Criteria and Filter Parameters) Track: x=180 -->
+  <path d="M 180 1400 L 180 1252 L 458 1252" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="345" y="1246" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Report Criteria &amp; Filter Parameters</text>
+
+  <!-- 8.0 to Admin (Financial and Member Analytics Reports) Track: x=200 -->
+  <path d="M 458 1288 L 200 1288 L 200 1398" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="345" y="1282" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Financial &amp; Member Analytics Reports</text>
+
+  <!-- ================================================================= -->
+  <!-- RIGHT-SIDE DATA FLOWS (PROCESSES TO/FROM DATA STORES D1 to D9)    -->
+  <!-- DISTINCT PARALLEL TRACKS (x=740, 760, 780, 800, 820, 840, 860, 880, 900) -->
+  <!-- ================================================================= -->
+
+  <!-- D1 to 1.0 (Member Account Data) Direct Straight Line at y=95 -->
+  <line x1="998" y1="95" x2="722" y2="95" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="88" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Member Account Data</text>
+
+  <!-- D2 to 1.0 (Staff Account Data) Direct Straight Line at y=155 -->
+  <line x1="998" y1="155" x2="722" y2="155" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="148" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Staff Account Data</text>
+
+  <!-- 1.0 to D9 (Login Audit Entry) Dedicated Track: x=740 [CORRECTION 1 VERIFIED] -->
+  <path d="M 720 120 L 740 120 L 740 1270 L 998 1270" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="880" y="1264" text-anchor="middle" font-size="10" font-weight="700" fill="#1e293b">Login Audit Entry</text>
+
+  <!-- 2.0 to D1 (New Member Record) Dedicated Track: x=760 -->
+  <path d="M 720 255 L 760 255 L 760 108 L 998 108" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="870" y="249" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">New Member Record</text>
+
+  <!-- D3 to 2.0 (Available Plan Details) Direct Straight Line at y=295 -->
+  <line x1="998" y1="295" x2="722" y2="295" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="289" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Available Plan Details</text>
+
+  <!-- 3.0 to D3 (Membership Plan Data) Dedicated Track: x=780 -->
+  <path d="M 720 428 L 780 428 L 780 305 L 998 305" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="880" y="422" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Membership Plan Data</text>
+
+  <!-- 3.0 to D4 (Subscription Record) Direct Straight Line at y=450 -->
+  <line x1="720" y1="450" x2="998" y2="450" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="444" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Subscription Record</text>
+
+  <!-- 4.0 to D4 (Updated Subscription Status) Dedicated Track: x=800 going UP into D4 -->
+  <path d="M 720 588 L 800 588 L 800 460 L 998 460" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="900" y="454" text-anchor="middle" font-size="10" font-weight="700" fill="#1e293b">Updated Subscription Status</text>
+
+  <!-- 4.0 to D5 (Payment Transaction Record) Direct Straight Line at y=620 -->
+  <line x1="720" y1="620" x2="998" y2="620" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="614" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Payment Transaction Record</text>
+
+  <!-- D1 to 5.0 (Membership Validity Check) Dedicated Track: x=820 -->
+  <path d="M 998 116 L 820 116 L 820 755 L 722 755" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="890" y="749" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Membership Validity Check</text>
+
+  <!-- 5.0 to D6 (Attendance Timestamp Log) Direct Straight Line at y=790 -->
+  <line x1="720" y1="790" x2="998" y2="790" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="784" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Attendance Timestamp Log</text>
+
+  <!-- 6.0 to D4 (Subscription Validity Extension) Dedicated Track: x=840 [CORRECTION 2 ADDED] -->
+  <path d="M 720 920 L 840 920 L 840 468 L 998 468" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="910" y="462" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1e293b">Subscription Validity Extension</text>
+
+  <!-- D4 to 6.0 (Subscription Expiration Status) Dedicated Track: x=860 -->
+  <path d="M 998 474 L 860 474 L 860 945 L 722 945" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="890" y="939" text-anchor="middle" font-size="10" font-weight="700" fill="#1e293b">Subscription Expiration Status</text>
+
+  <!-- 6.0 to D7 (Renewal Request Details) Direct Straight Line at y=955 -->
+  <line x1="720" y1="955" x2="998" y2="955" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="949" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Renewal Request Details</text>
+
+  <!-- D4 to 7.0 (Subscription Expiry Data) Dedicated Track: x=880 [CORRECTION 3 ADDED] -->
+  <path d="M 998 478 L 880 478 L 880 1085 L 722 1085" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="890" y="1079" text-anchor="middle" font-size="10" font-weight="700" fill="#1e293b">Subscription Expiry Data</text>
+
+  <!-- 7.0 to D8 (Notification Dispatch Log) Direct Straight Line at y=1105 -->
+  <line x1="720" y1="1105" x2="998" y2="1105" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="1099" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Notification Dispatch Log</text>
+
+  <!-- D5 to 8.0 (Revenue & Transaction Metrics) Dedicated Track: x=900 -->
+  <path d="M 998 635 L 900 635 L 900 1252 L 722 1252" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="890" y="1246" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">Revenue &amp; Transaction Metrics</text>
+
+  <!-- D6 to 8.0 (Attendance & Peak Hours Data) Dedicated Track: x=920 -->
+  <path d="M 998 805 L 920 805 L 920 1270 L 722 1270" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="890" y="1264" text-anchor="middle" font-size="10" font-weight="700" fill="#1e293b">Attendance &amp; Peak Hours Data</text>
+
+  <!-- D9 to 8.0 (System Activity & Audit Trail) Direct Straight Line at y=1288 -->
+  <line x1="998" y1="1288" x2="722" y2="1288" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="1282" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b">System Activity &amp; Audit Trail</text>
+
+  <!-- ================================================================= -->
+  <!-- FOOTER LEGEND AND CONVENTIONS NOTE                                -->
+  <!-- ================================================================= -->
+  <rect x="40" y="1520" width="1370" height="75" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="60" y="1548" font-size="12" font-weight="800" fill="#0f172a">DFD Level 1 Notation &amp; Validation Legend:</text>
+  <text x="60" y="1572" font-size="11" font-weight="600" fill="#475569">1. Line Styles: Uniform Solid Lines (—) for all standard data flows.</text>
+  <text x="470" y="1572" font-size="11" font-weight="600" fill="#475569">2. Arrow Directions: Direction of arrowhead indicates input vs output flow between entities, processes, and stores.</text>
+  <text x="1200" y="1572" font-size="11" font-weight="600" fill="#475569">3. Labels: Pure Noun Phrases Only.</text>
+</svg>

@@ -18,7 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // 1. Fetch request details with ROW LOCK to prevent concurrent double-approvals
         $stmt = $pdo->prepare("
-            SELECT r.*, m.full_name, m.email, m.status as member_status, p.name as plan_name, p.price as plan_price, p.duration_months, p.duration_minutes, p.is_test_promo 
+            SELECT r.*, m.full_name, m.email, m.membership_id, m.status as member_status, m.annual_membership_expiry,
+                   p.name as plan_name, p.price as plan_price, p.duration_months, p.duration_minutes, p.is_test_promo,
+                   p.plan_category, p.floor_access
             FROM renewal_requests r
             JOIN members m ON r.member_id = m.id
             JOIN membership_plans p ON r.plan_id = p.id
@@ -44,14 +46,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $cur_sub_stmt->execute([$req['member_id']]);
                 $active_sub = $cur_sub_stmt->fetch(PDO::FETCH_ASSOC);
 
+                $plan_category    = $req['plan_category'] ?? 'legacy';
                 $duration_minutes = intval($req['duration_minutes'] ?? 0);
                 $duration_months  = intval($req['duration_months'] ?? 0);
-                if ($duration_minutes <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $req['plan_name'] ?? '', $pm)) {
+
+                // Only extract minute duration from plan name for genuine minute-based test promos, not daily passes
+                $is_daily_pass   = ($duration_minutes === 1440);
+                $is_minute_promo = ($duration_minutes > 0 && !$is_daily_pass);
+                if ($is_minute_promo && $duration_minutes <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $req['plan_name'] ?? '', $pm)) {
                     $duration_minutes = intval($pm[1]);
                 }
 
-                if ($duration_minutes > 0) {
-                    // Minute-based test promos always start NOW unless currently active and expiring within 5 minutes
+                // Handle membership_fee plan: update annual_membership_expiry, do NOT create a regular gym-access subscription
+                if ($plan_category === 'membership_fee') {
+                    $current_ann_expiry = $req['annual_membership_expiry'] ?? null;
+                    if ($current_ann_expiry && strtotime($current_ann_expiry) >= strtotime(date('Y-m-d'))) {
+                        $new_ann_expiry = date('Y-m-d', strtotime($current_ann_expiry . ' +1 year'));
+                    } else {
+                        $new_ann_expiry = date('Y-m-d', strtotime('+1 year'));
+                    }
+                    $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved', annual_membership_expiry = ? WHERE id = ?")
+                        ->execute([$new_ann_expiry, $req['member_id']]);
+
+                    // Create a placeholder subscription record so payment can still be linked (subscription_id required by payments table)
+                    $start_date  = date('Y-m-d H:i:s');
+                    $expiry_date = $new_ann_expiry . ' 23:59:59';
+                    $sub_stmt = $pdo->prepare("
+                        INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_by)
+                        VALUES (?, ?, ?, ?, ?)
+                    ");
+                    $sub_stmt->execute([$req['member_id'], $req['plan_id'], $start_date, $expiry_date, $admin_id]);
+                    $subscription_id = $pdo->lastInsertId();
+
+                    $pay_stmt = $pdo->prepare("
+                        INSERT INTO payments (member_id, subscription_id, amount, payment_method, reference_number, payment_date, verified_by, notes, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                    ");
+                    $payment_notes = 'Annual Membership Fee — ' . ($req['payment_method'] === 'Cash' ? 'Front Desk Cash' : ('Verified ' . $req['payment_method'] . ($req['reference_no'] ? ' | Ref: ' . $req['reference_no'] : '')));
+                    $pay_stmt->execute([
+                        $req['member_id'], $subscription_id, $req['plan_price'],
+                        $req['payment_method'], $req['reference_no'] ?: null,
+                        date('Y-m-d'), $admin_id, $payment_notes
+                    ]);
+
+                    $up_stmt = $pdo->prepare("UPDATE renewal_requests SET status = 'Approved', processed_by = ?, notes = ?, updated_at = NOW() WHERE id = ?");
+                    $up_stmt->execute([$admin_id, 'Approved by ' . ($_SESSION['user_name'] ?? 'Admin'), $request_id]);
+
+                    $pdo->commit();
+
+                    try {
+                        require_once __DIR__ . '/config/notifications.php';
+                        create_notification($pdo, (int)$req['member_id'], 'MEMBERSHIP_RENEWED', 'Membership Fee Approved! 🎉',
+                            "Your ₱1,000 Annual Membership Fee has been approved. You are now an Official Member until " . date('F j, Y', strtotime($new_ann_expiry)) . ". Member rates now apply!");
+                    } catch (Exception $nE) {}
+
+                    if (!empty($req['email'])) {
+                        require_once 'config/email.php';
+                        $formatted_expiry = date('F j, Y', strtotime($new_ann_expiry));
+                        $time_tag = date('M d, Y h:i A');
+                        $email_subject = "Annual Membership Fee Approved! [{$time_tag}] — Palma's Elite Gym";
+                        $email_title = "You Are Now an Official Member! 🏆";
+                        $email_body = "
+                            <p>Dear <strong>" . htmlspecialchars($req['full_name']) . "</strong>,</p>
+                            <p>Your <strong>₱1,000 Annual Membership Fee</strong> has been approved by Palma's Elite Gym staff.</p>
+                            <div style=\"background-color:#F4F9F6; border:1px solid #D8E6DC; border-radius:10px; padding:18px; margin:20px 0;\">
+                                <p style=\"margin:0 0 10px; font-weight:bold; color:#1B4332; font-size:14px;\">Membership Summary</p>
+                                <table style=\"width:100%; font-size:13px; color:#334155; border-collapse:collapse;\">
+                                    <tr><td style=\"padding:4px 0;\"><strong>Status:</strong></td><td style=\"text-align:right; font-weight:bold; color:#1B4332;\">Official Member</td></tr>
+                                    <tr><td style=\"padding:4px 0;\"><strong>Membership Valid Until:</strong></td><td style=\"text-align:right; font-weight:bold; color:#1B4332;\">{$formatted_expiry}</td></tr>
+                                    <tr><td style=\"padding:4px 0;\"><strong>Rate Eligibility:</strong></td><td style=\"text-align:right;\">Member Rates (₱750/mo, ₱7,500/yr, ₱40/₱50 daily)</td></tr>
+                                </table>
+                            </div>
+                            <p>You may now purchase gym access using your <strong>Member discount rates</strong>.</p>
+                            <p style=\"margin-top:16px;\">Thank you for becoming an Official Member of Palma's Elite Gym! 💪</p>
+                        ";
+                        try {
+                            send_email_notification($req['email'], $email_subject, $email_title, $email_body);
+                        } catch (Throwable $emEx) {}
+                    }
+                    $message = 'Annual Membership Fee approved. ' . htmlspecialchars($req['full_name']) . ' is now an Official Member until ' . date('F j, Y', strtotime($new_ann_expiry)) . '.';
+
+                } else {
+                // Regular gym-access subscription (monthly, yearly, or daily)
+
+                if ($is_minute_promo) {
                     $base_time = time();
                     if ($active_sub && !empty($active_sub['expiry_date'])) {
                         $active_ts = strtotime($active_sub['expiry_date']);
@@ -60,14 +138,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $base_time = $active_ts;
                         }
                     }
-                    $start_date = date('Y-m-d H:i:s', $base_time);
+                    $start_date  = date('Y-m-d H:i:s', $base_time);
                     $expiry_date = date('Y-m-d H:i:s', strtotime("+{$duration_minutes} minutes", $base_time));
+                } elseif ($is_daily_pass) {
+                    $start_date  = date('Y-m-d H:i:s');
+                    $expiry_date = date('Y-m-d 23:59:59'); // Valid until end of today only
                 } else {
                     if ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time()) {
-                        $base_time = strtotime($active_sub['expiry_date']);
+                        $base_time  = strtotime($active_sub['expiry_date']);
                         $start_date = $active_sub['expiry_date'];
                     } else {
-                        $base_time = time();
+                        $base_time  = time();
                         $start_date = date('Y-m-d H:i:s', $base_time);
                     }
                     if ($duration_months <= 0) $duration_months = 1;
@@ -175,6 +256,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
 
                 $message = "Renewal request for <strong>" . htmlspecialchars($req['full_name']) . "</strong> has been approved successfully! Expiry extended to <strong>" . date('M d, Y', strtotime($expiry_date)) . "</strong>.";
+
+                } // end else (regular gym-access subscription)
+
             } elseif ($action === 'reject') {
                 if (empty($notes)) {
                     $error = 'Please select or provide a reason for rejecting the renewal.';

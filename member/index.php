@@ -59,7 +59,7 @@ try {
 // Membership plans for renewal modal
 $plans = [];
 try {
-    $plans = $pdo->query("SELECT id, name, price, duration_months, benefits FROM membership_plans ORDER BY price ASC")->fetchAll();
+    $plans = $pdo->query("SELECT id, name, price, duration_months, duration_minutes, benefits, plan_category, floor_access FROM membership_plans WHERE is_active = 1 ORDER BY price ASC")->fetchAll();
 } catch (Exception $e) {}
 
 // Check for pending renewal request
@@ -354,27 +354,56 @@ try {
                 Your membership has expired. Choose a plan to reactivate your access.
             </p>
 
-            <!-- Plan Cards -->
-            <div id="plan-list" style="display:flex; flex-direction:column; gap:0.65rem; margin-bottom:1.25rem;">
-                <?php foreach($plans as $plan): ?>
-                <label class="plan-option" for="plan-<?php echo $plan['id']; ?>">
-                    <input type="radio" name="plan" id="plan-<?php echo $plan['id']; ?>"
-                           value="<?php echo $plan['id']; ?>"
-                           data-price="<?php echo $plan['price']; ?>"
-                           data-name="<?php echo htmlspecialchars($plan['name']); ?>"
-                           data-months="<?php echo $plan['duration_months']; ?>">
-                    <div class="plan-card-inner">
-                        <div style="flex:1;">
-                            <div class="plan-card-name"><?php echo htmlspecialchars($plan['name']); ?></div>
-                            <div class="plan-card-duration"><?php echo $plan['duration_months']; ?> month<?php echo $plan['duration_months'] > 1 ? 's' : ''; ?></div>
-                            <?php if(!empty($plan['benefits'])): ?>
-                            <div class="plan-card-benefits"><?php echo htmlspecialchars($plan['benefits']); ?></div>
-                            <?php endif; ?>
+            <!-- Plan Cards Grouped by Section -->
+            <div id="plan-list" style="display:flex; flex-direction:column; gap:1.1rem; margin-bottom:1.25rem;">
+                <?php 
+                $sec_fee = array_filter($plans, fn($p) => ($p['plan_category'] ?? '') === 'membership_fee' || stripos($p['name'], 'Annual Membership') !== false);
+                $sec_daily = array_filter($plans, fn($p) => (intval($p['duration_minutes'] ?? 0) === 1440 || (intval($p['duration_months'] ?? 0) === 0 && (intval($p['duration_minutes'] ?? 0) > 0 || stripos($p['name'], 'Daily') !== false))) && ($p['plan_category'] ?? '') !== 'membership_fee');
+                $sec_monthly = array_filter($plans, fn($p) => intval($p['duration_months'] ?? 0) > 0 && ($p['plan_category'] ?? '') !== 'membership_fee' && stripos($p['name'], 'Annual Membership') === false);
+
+                $sections = [
+                    ['title' => '🏅 Membership Fee', 'desc' => 'Annual eligibility for discounted member rates', 'items' => $sec_fee],
+                    ['title' => '⚡ Daily Passes', 'desc' => 'Same-day gym access', 'items' => $sec_daily],
+                    ['title' => '📅 Monthly / Yearly', 'desc' => 'Recurring membership registrations', 'items' => $sec_monthly],
+                ];
+                ?>
+
+                <?php foreach ($sections as $sec): if (empty($sec['items'])) continue; ?>
+                <div>
+                    <div style="margin-bottom:0.45rem; padding-bottom:3px; border-bottom:1px solid rgba(62,130,65,0.2);">
+                        <div style="font-size:0.8rem; font-weight:800; color:var(--palmas-primary); text-transform:uppercase; letter-spacing:0.4px;">
+                            <?php echo $sec['title']; ?>
                         </div>
-                        <div class="plan-card-price">₱<?php echo number_format($plan['price'], 0); ?></div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">
+                            <?php echo $sec['desc']; ?>
+                        </div>
                     </div>
-                    <span class="plan-check"><i class="fas fa-circle-check"></i></span>
-                </label>
+                    <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:0.35rem;">
+                        <?php foreach($sec['items'] as $plan): 
+                            $is_daily = (intval($plan['duration_minutes'] ?? 0) === 1440);
+                            $dur_text = $is_daily ? '1 Day' : ($plan['duration_months'] > 0 ? ($plan['duration_months'] . ' month' . ($plan['duration_months'] > 1 ? 's' : '')) : ($plan['duration_minutes'] . ' mins'));
+                        ?>
+                        <label class="plan-option" for="plan-<?php echo $plan['id']; ?>">
+                            <input type="radio" name="plan" id="plan-<?php echo $plan['id']; ?>"
+                                   value="<?php echo $plan['id']; ?>"
+                                   data-price="<?php echo $plan['price']; ?>"
+                                   data-name="<?php echo htmlspecialchars($plan['name']); ?>"
+                                   data-months="<?php echo $plan['duration_months']; ?>">
+                            <div class="plan-card-inner">
+                                <div style="flex:1;">
+                                    <div class="plan-card-name"><?php echo htmlspecialchars($plan['name']); ?></div>
+                                    <div class="plan-card-duration"><?php echo $dur_text; ?></div>
+                                    <?php if(!empty($plan['benefits'])): ?>
+                                    <div class="plan-card-benefits"><?php echo htmlspecialchars($plan['benefits']); ?></div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="plan-card-price">₱<?php echo number_format($plan['price'], 0); ?></div>
+                            </div>
+                            <span class="plan-check"><i class="fas fa-circle-check"></i></span>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
                 <?php endforeach; ?>
             </div>
 

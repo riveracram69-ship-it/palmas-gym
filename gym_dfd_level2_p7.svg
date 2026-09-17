@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1350 900" width="100%" height="100%" style="background:#ffffff; font-family:'Segoe UI', Arial, Helvetica, sans-serif;">
+  <defs>
+    <!-- Arrowhead markers -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#1e293b"/>
+    </marker>
+    <filter id="card-shadow" x="-4%" y="-4%" width="108%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Header Banner -->
+  <rect x="0" y="0" width="1350" height="60" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="675" y="36" text-anchor="middle" font-size="18" font-weight="800" fill="#0f172a" letter-spacing="1">DFD LEVEL 2 — PROCESS 7.0: DISPATCH NOTIFICATIONS &amp; ALERTS</text>
+  <text x="675" y="52" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">Fully Automated Background Milestone Engine | Strict DFD Level 1 Balance | Pure Noun-Phrase Data Flows</text>
+
+  <!-- ================================================================= -->
+  <!-- EXTERNAL ENTITY (LEFT COLUMN: x=80 to x=280, width=200)           -->
+  <!-- ================================================================= -->
+
+  <!-- MEMBER ENTITY (Centered vertically with Dispatch sub-process: y=470 to y=550) -->
+  <g id="entity-member">
+    <rect x="80" y="470" width="200" height="80" rx="3" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" filter="url(#card-shadow)"/>
+    <rect x="80" y="470" width="200" height="10" fill="#e2e8f0" stroke="#0f172a" stroke-width="2.5"/>
+    <text x="180" y="518" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">MEMBER</text>
+    <text x="180" y="536" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">External Entity</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- SUB-PROCESSES (CENTER COLUMN: x=500 to x=780, Width=280)         -->
+  <!-- ================================================================= -->
+
+  <!-- 7.1 Monitor Subscription Milestones -->
+  <g id="subproc-7-1">
+    <rect x="500" y="110" width="280" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="500" y1="140" x2="780" y2="140" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="640" y="132" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">7.1</text>
+    <text x="640" y="168" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Monitor Subscription Milestones</text>
+  </g>
+
+  <!-- 7.2 Compose Notification Payload -->
+  <g id="subproc-7-2">
+    <rect x="500" y="290" width="280" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="500" y1="320" x2="780" y2="320" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="640" y="312" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">7.2</text>
+    <text x="640" y="348" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Compose Notification Payload</text>
+  </g>
+
+  <!-- 7.3 Dispatch Member Notification -->
+  <g id="subproc-7-3">
+    <rect x="500" y="470" width="280" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="500" y1="500" x2="780" y2="500" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="640" y="492" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">7.3</text>
+    <text x="640" y="528" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Dispatch Member Notification</text>
+  </g>
+
+  <!-- 7.4 Log Notification Dispatch -->
+  <g id="subproc-7-4">
+    <rect x="500" y="650" width="280" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="500" y1="680" x2="780" y2="680" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="640" y="672" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">7.4</text>
+    <text x="640" y="708" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Log Notification Dispatch</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- DATA STORES (RIGHT COLUMN: D1, D4, D8)                            -->
+  <!-- ================================================================= -->
+
+  <!-- D1 Members (Read by 7.1) -->
+  <g id="ds-d1">
+    <line x1="1000" y1="105" x2="1000" y2="150" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="105" x2="1280" y2="105" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="150" x2="1280" y2="150" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1045" y1="105" x2="1045" y2="150" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1022" y="133" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D1</text>
+    <text x="1162" y="133" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Members</text>
+  </g>
+
+  <!-- D4 Subscriptions (Read by 7.1) -->
+  <g id="ds-d4">
+    <line x1="1000" y1="180" x2="1000" y2="225" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="180" x2="1280" y2="180" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="225" x2="1280" y2="225" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1045" y1="180" x2="1045" y2="225" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1022" y="208" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D4</text>
+    <text x="1162" y="208" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Subscriptions</text>
+  </g>
+
+  <!-- D8 Notifications (Written by 7.4) -->
+  <g id="ds-d8">
+    <line x1="1000" y1="665" x2="1000" y2="710" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="665" x2="1280" y2="665" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1000" y1="710" x2="1280" y2="710" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1045" y1="665" x2="1045" y2="710" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1022" y="693" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D8</text>
+    <text x="1162" y="693" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Notifications</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- LEFT-SIDE DATA FLOW (SUB-PROCESS 7.3 TO MEMBER ENTITY)            -->
+  <!-- ================================================================= -->
+
+  <!-- Flow 1: 7.3 to MEMBER (Expiry & Renewal Notifications) Direct Straight Line at y=510 -->
+  <line x1="498" y1="510" x2="282" y2="510" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="390" y="502" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Expiry &amp; Renewal Notifications</text>
+
+  <!-- ================================================================= -->
+  <!-- CENTER VERTICAL DATA FLOWS (BETWEEN SUB-PROCESSES)               -->
+  <!-- ================================================================= -->
+
+  <!-- Flow 2: 7.1 to 7.2 (Expiring Milestone Data) -->
+  <line x1="640" y1="185" x2="640" y2="288" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="648" y="242" text-anchor="start" font-size="11.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Expiring Milestone Data</text>
+
+  <!-- Flow 3: 7.2 to 7.3 (Notification Message Payload) -->
+  <line x1="640" y1="365" x2="640" y2="468" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="648" y="422" text-anchor="start" font-size="11.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Notification Message Payload</text>
+
+  <!-- Flow 4: 7.3 to 7.4 (Dispatch Status & Timestamp) -->
+  <line x1="640" y1="545" x2="640" y2="648" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="648" y="602" text-anchor="start" font-size="11.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Dispatch Status &amp; Timestamp</text>
+
+  <!-- ================================================================= -->
+  <!-- RIGHT-SIDE DATA FLOWS (SUB-PROCESSES TO/FROM DATA STORES)         -->
+  <!-- ================================================================= -->
+
+  <!-- Flow 5: D1 to 7.1 (Member Contact Details) Direct Straight Line at y=127 -->
+  <line x1="998" y1="127" x2="782" y2="127" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="890" y="120" text-anchor="middle" font-size="11" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Member Contact Details</text>
+
+  <!-- Flow 6: D4 to 7.1 (Subscription Expiry Data) -->
+  <path d="M 998 202 L 840 202 L 840 160 L 782 160" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="890" y="196" text-anchor="middle" font-size="11" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Subscription Expiry Data</text>
+
+  <!-- Flow 7: 7.4 to D8 (Notification Dispatch Record) Direct Straight Line at y=687 -->
+  <line x1="780" y1="687" x2="998" y2="687" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="890" y="680" text-anchor="middle" font-size="11" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Notification Dispatch Record</text>
+
+  <!-- ================================================================= -->
+  <!-- FOOTER LEGEND AND CONVENTIONS NOTE                                -->
+  <!-- ================================================================= -->
+  <rect x="40" y="810" width="1270" height="65" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="60" y="835" font-size="12" font-weight="800" fill="#0f172a">DFD Level 2 (Process 7.0) Architecture &amp; Balance Verification Legend:</text>
+  <text x="60" y="857" font-size="11" font-weight="600" fill="#475569">1. Pure Automation: Fully scheduled background engine (no Admin intervention).  2. External Balance: Exact match with DFD Level 1 boundary.</text>
+  <text x="930" y="857" font-size="11" font-weight="600" fill="#475569">3. Data Stores: D1 (Members), D4 (Subscriptions), D8 (Notifications).</text>
+</svg>

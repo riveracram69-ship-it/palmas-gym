@@ -27,6 +27,7 @@ try {
             m.dob, m.age, m.gender,
             m.photo, m.google_picture, m.auth_provider, m.status,
             m.account_status,
+            m.annual_membership_expiry,
             s.id    AS subscription_id,
             s.expiry_date,
             s.start_date,
@@ -34,7 +35,9 @@ try {
             p.id    AS plan_id,
             p.duration_months,
             p.duration_minutes,
-            p.is_test_promo
+            p.is_test_promo,
+            p.plan_category,
+            p.floor_access
         FROM members m
         LEFT JOIN subscriptions s 
             ON s.id = (
@@ -65,6 +68,26 @@ try {
         : 0;
     $is_expired = (!empty($member['expiry_date']) && $exp_ts < $now_time);
     $member['is_expired'] = $is_expired;
+
+    // Membership Tier (Official Member vs Non-Member based on annual_membership_expiry)
+    $annual_exp = $member['annual_membership_expiry'] ?? null;
+    $is_official_member = false;
+    $annual_status = 'Non-Member';
+    if (!empty($annual_exp)) {
+        $annual_ts = strtotime($annual_exp . ' 23:59:59');
+        if ($annual_ts >= $now_time) {
+            $is_official_member = true;
+            $annual_status = 'Official Member';
+        } else {
+            $annual_status = 'Expired Member';
+        }
+    }
+    $member['annual_membership_expiry'] = $annual_exp;
+    $member['annual_membership_expiry_formatted'] = !empty($annual_exp) ? date('M d, Y', strtotime($annual_exp)) : null;
+    $member['is_official_member'] = $is_official_member;
+    $member['membership_tier'] = $annual_status;
+    $member['plan_category'] = $member['plan_category'] ?? 'member_pass';
+    $member['floor_access'] = $member['floor_access'] ?? 'all';
 
     $is_active = ($member['status'] === 'Active' && !$is_expired && ($member['account_status'] ?? 'Approved') === 'Approved');
     $member['is_active'] = $is_active;
@@ -166,15 +189,52 @@ try {
         error_log("Dashboard payments query warning: " . $e->getMessage());
     }
 
-    // ── QUERY 4: Membership Plans (Safe Fallback) ──
+    // ── QUERY 4: Membership Plans (Active Only) ──
     $plans = [];
     try {
         $plans_stmt = $pdo->query("
-            SELECT id, name, price, duration_months, duration_minutes, is_test_promo, benefits 
+            SELECT id, name, price, duration_months, duration_minutes, is_test_promo, benefits,
+                   plan_category, floor_access
             FROM membership_plans 
-            ORDER BY price ASC
+            WHERE is_active = 1
+            ORDER BY 
+                CASE plan_category 
+                    WHEN 'membership_fee' THEN 1 
+                    WHEN 'member_pass' THEN 2 
+                    WHEN 'non_member_pass' THEN 3 
+                    WHEN 'test_promo' THEN 4 
+                    ELSE 5 
+                END, 
+                price ASC
         ");
-        $plans = $plans_stmt->fetchAll(PDO::FETCH_ASSOC);
+        $raw_plans = $plans_stmt ? $plans_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        foreach ($raw_plans as $p) {
+            $dur_min = (int)($p['duration_minutes'] ?? 0);
+            $dur_mo  = (int)$p['duration_months'];
+            $is_daily = ($dur_min === 1440);
+
+            if ($is_daily) {
+                $duration_label = '1 Day';
+            } elseif ($dur_min > 0) {
+                $duration_label = $dur_min . ' Minute' . ($dur_min > 1 ? 's' : '');
+            } else {
+                $duration_label = $dur_mo . ' Month' . ($dur_mo > 1 ? 's' : '');
+            }
+
+            $plans[] = [
+                'id'               => (int)$p['id'],
+                'name'             => $p['name'],
+                'price'            => (float)$p['price'],
+                'price_formatted'  => '₱' . number_format((float)$p['price'], 2),
+                'duration_months'  => $dur_mo,
+                'duration_minutes' => $dur_min,
+                'duration_label'   => $duration_label,
+                'benefits'         => $p['benefits'] ?? '',
+                'is_test_promo'    => ((int)($p['is_test_promo'] ?? 0) === 1),
+                'plan_category'    => $p['plan_category'] ?? 'member_pass',
+                'floor_access'     => $p['floor_access'] ?? 'all',
+            ];
+        }
     } catch (Throwable $e) {
         error_log("Dashboard plans query warning: " . $e->getMessage());
     }

@@ -35,42 +35,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $plan_id = intval($pending_member['selected_plan_id'] ?? 0);
                 $plan_info = null;
                 if ($plan_id <= 0) {
-                    $first_plan = $pdo->query("SELECT id, name, duration_months, duration_minutes FROM membership_plans ORDER BY price ASC LIMIT 1")->fetch();
+                    $first_plan = $pdo->query("SELECT id, name, duration_months, duration_minutes, price, is_test_promo, plan_category FROM membership_plans WHERE is_active = 1 ORDER BY price ASC LIMIT 1")->fetch();
                     if ($first_plan) {
                         $plan_id = (int)$first_plan['id'];
                         $plan_info = $first_plan;
                     }
                 } else {
-                    $p_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes FROM membership_plans WHERE id = ?");
+                    $p_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes, price, is_test_promo, plan_category FROM membership_plans WHERE id = ?");
                     $p_stmt->execute([$plan_id]);
-                    $plan_info = $p_stmt->fetch();
+                    $plan_info = $p_stmt->fetch(PDO::FETCH_ASSOC);
                 }
 
                 $duration_minutes = intval($plan_info['duration_minutes'] ?? 0);
                 $duration_months  = intval($plan_info['duration_months'] ?? 0);
-                if ($duration_minutes <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $plan_info['name'] ?? '', $pm)) {
+                $plan_category    = $plan_info['plan_category'] ?? 'legacy';
+
+                $is_daily_pass     = ($duration_minutes === 1440 || ($duration_months === 0 && stripos($plan_info['name'] ?? '', 'Daily') !== false));
+                $is_minute_promo   = ($duration_minutes > 0 && !$is_daily_pass);
+                if ($is_minute_promo && $duration_minutes <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $plan_info['name'] ?? '', $pm)) {
                     $duration_minutes = intval($pm[1]);
                 }
+                $is_membership_fee = ($plan_category === 'membership_fee' || stripos($plan_info['name'] ?? '', 'Annual Membership Fee') !== false);
+                $is_test_payment   = ((int)($plan_info['is_test_promo'] ?? 0) === 1 || $plan_category === 'test_promo') ? 1 : 0;
 
                 $start_date = date('Y-m-d H:i:s');
-                if ($duration_minutes > 0) {
+                $ann_expiry = null;
+
+                if ($is_membership_fee) {
+                    $ann_expiry = date('Y-m-d', strtotime('+1 year'));
+                    $expiry_date = $ann_expiry . ' 23:59:59';
+                } elseif ($is_minute_promo) {
                     $expiry_date = date('Y-m-d H:i:s', strtotime("+{$duration_minutes} minutes"));
+                } elseif ($is_daily_pass) {
+                    $expiry_date = date('Y-m-d 23:59:59'); // Daily pass expires at end of today
                 } else {
                     if ($duration_months <= 0) $duration_months = 1;
                     $expiry_date = date('Y-m-d H:i:s', strtotime("+{$duration_months} months"));
                 }
 
-                // 1. Update Member status
-                $upd = $pdo->prepare("
-                    UPDATE members 
-                    SET account_status = 'Approved', 
-                        status = 'Active', 
-                        approved_by = ?, 
-                        approved_at = NOW(),
-                        rejection_reason = NULL
-                    WHERE id = ?
-                ");
-                $upd->execute([$admin_id, $member_id]);
+                // 1. Update Member status (and annual_membership_expiry if membership fee)
+                if ($is_membership_fee) {
+                    $upd = $pdo->prepare("
+                        UPDATE members 
+                        SET account_status = 'Approved', 
+                            status = 'Active', 
+                            annual_membership_expiry = ?,
+                            approved_by = ?, 
+                            approved_at = NOW(),
+                            rejection_reason = NULL
+                        WHERE id = ?
+                    ");
+                    $upd->execute([$ann_expiry, $admin_id, $member_id]);
+                } else {
+                    $upd = $pdo->prepare("
+                        UPDATE members 
+                        SET account_status = 'Approved', 
+                            status = 'Active', 
+                            approved_by = ?, 
+                            approved_at = NOW(),
+                            rejection_reason = NULL
+                        WHERE id = ?
+                    ");
+                    $upd->execute([$admin_id, $member_id]);
+                }
 
                 // 2. Create Active Subscription if plan exists
                 if ($plan_id > 0) {
@@ -82,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $subscription_id = $pdo->lastInsertId();
 
                     // 2b. Record Payment in payments table so it appears in Payment History
-                    $plan_price = floatval($pending_member['plan_price'] ?? 0);
+                    $plan_price = floatval($plan_info['price'] ?? 0);
                     if ($plan_price <= 0) {
                         $p_fetch = $pdo->prepare("SELECT price FROM membership_plans WHERE id = ?");
                         $p_fetch->execute([$plan_id]);
@@ -94,10 +121,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $rr_row = $rr->fetch(PDO::FETCH_ASSOC);
                     $pay_method = $rr_row['payment_method'] ?? 'Cash';
                     $pay_ref = !empty($rr_row['reference_no']) ? $rr_row['reference_no'] : ('REG-' . $pending_member['membership_id']);
+                    $pay_notes = $is_membership_fee ? 'Annual Membership Fee Approved by Staff' : 'Registration Fee Approved by Staff';
 
                     $pay_stmt = $pdo->prepare("
-                        INSERT INTO payments (member_id, subscription_id, amount, payment_method, reference_number, payment_date, verified_by, notes, created_at)
-                        VALUES (?, ?, ?, ?, ?, CURDATE(), ?, 'Registration Fee Approved by Staff', NOW())
+                        INSERT INTO payments (member_id, subscription_id, amount, payment_method, reference_number, payment_date, verified_by, notes, is_test, created_at)
+                        VALUES (?, ?, ?, ?, ?, CURDATE(), ?, ?, ?, NOW())
                     ");
                     $pay_stmt->execute([
                         $member_id,
@@ -105,7 +133,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $plan_price,
                         $pay_method,
                         $pay_ref,
-                        $admin_id
+                        $admin_id,
+                        $pay_notes,
+                        $is_test_payment
                     ]);
 
                     // Close any open renewal/registration request

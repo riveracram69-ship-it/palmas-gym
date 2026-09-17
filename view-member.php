@@ -126,8 +126,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div><p class="stat-label">Gender</p><p style="font-weight:600;"><?php echo htmlspecialchars($member['gender'] ?: '—'); ?></p></div>
                 <div style="grid-column: 1 / -1;"><p class="stat-label">Home Address</p><p style="font-weight:600;"><?php echo htmlspecialchars(format_member_address($member)); ?></p></div>
                 <div><p class="stat-label">Plan</p><p style="font-weight:600; color:var(--accent);"><?php echo htmlspecialchars($member['plan_name'] ?: 'No Plan'); ?></p></div>
-                <div><p class="stat-label">Plan Expiry</p><p style="font-weight:600; color:<?php echo $is_sub_expired ? 'var(--danger)' : 'var(--text-main)'; ?>;"><?php echo $member['expiry_date'] ? date('M d, Y', strtotime($member['expiry_date'])) : '—'; ?></p></div>
+                <div><p class="stat-label">Plan Expiry (Gym Access)</p><p style="font-weight:600; color:<?php echo $is_sub_expired ? 'var(--danger)' : 'var(--text-main)'; ?>;"><?php echo $member['expiry_date'] ? date('M d, Y', strtotime($member['expiry_date'])) : '—'; ?></p></div>
                 <div><p class="stat-label">Date Joined</p><p style="font-weight:600;"><?php echo !empty($member['created_at']) ? date('M d, Y', strtotime($member['created_at'])) : '—'; ?></p></div>
+                <div style="grid-column: 1 / -1; border-top:1px solid var(--border); padding-top:1rem; margin-top:0.25rem;">
+                    <?php
+                    $ann_exp = $member['annual_membership_expiry'] ?? null;
+                    $is_official_member = (!empty($ann_exp) && strtotime($ann_exp) >= strtotime(date('Y-m-d')));
+                    ?>
+                    <p class="stat-label">Membership Tier (Annual ₱1,000 Fee)</p>
+                    <?php if ($is_official_member): ?>
+                        <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+                            <span class="badge badge-success" style="font-size:0.85rem; padding:0.35rem 0.75rem;">
+                                <i class="fas fa-id-card"></i> Official Member
+                            </span>
+                            <span style="font-size:0.82rem; color:var(--text-muted);">Member rates valid until <strong style="color:var(--text-main);"><?php echo date('F j, Y', strtotime($ann_exp)); ?></strong></span>
+                        </div>
+                        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Eligible for Member rates: ₱750/mo, ₱7,500/yr, ₱40–₱50 daily.</p>
+                    <?php else: ?>
+                        <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+                            <span class="badge badge-gray" style="font-size:0.85rem; padding:0.35rem 0.75rem;">
+                                <i class="fas fa-user"></i> Non-Member
+                            </span>
+                            <span style="font-size:0.82rem; color:var(--text-muted);"><?php echo $ann_exp ? 'Membership expired: ' . date('M d, Y', strtotime($ann_exp)) : 'No Annual Membership Fee on record'; ?></span>
+                        </div>
+                        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Non-Member rates apply: ₱850/mo, ₱50–₱60 daily. Purchase ₱1,000 Annual Fee for Member rates.</p>
+                    <?php endif; ?>
+                </div>
+
             </div>
         </div>
 

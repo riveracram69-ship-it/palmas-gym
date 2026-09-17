@@ -14,7 +14,7 @@ try {
         $stmt->execute([$member_id]);
         $member = $stmt->fetch();
 
-        $plans = $pdo->query("SELECT id, name, price, duration_months, duration_minutes, is_test_promo FROM membership_plans ORDER BY price ASC")->fetchAll();
+        $plans = $pdo->query("SELECT id, name, price, duration_months, duration_minutes, is_test_promo, plan_category FROM membership_plans WHERE is_active = 1 ORDER BY (plan_category = 'membership_fee') DESC, (plan_category = 'member_pass') DESC, price ASC")->fetchAll();
 
         $sub_stmt = $pdo->prepare(
             "SELECT s.*, p.name as plan_name FROM subscriptions s
@@ -37,73 +37,109 @@ $error   = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $plan_id        = intval($_POST['plan_id'] ?? 0);
-    $amount_paid    = floatval($_POST['amount_paid'] ?? 0);
     $payment_method = $_POST['payment_method'] ?? 'Cash';
     $payment_date   = $_POST['payment_date'] ?? date('Y-m-d');
     $notes          = trim($_POST['notes'] ?? '');
 
     if (!$plan_id) {
         $error = 'Please select a membership plan.';
-    } elseif ($amount_paid < 0) {
-        $error = 'Amount paid cannot be negative.';
     } else {
-        try {
-            $pdo->beginTransaction();
+        // Fetch and validate selected plan
+        $p_stmt = $pdo->prepare("SELECT id, name, price, duration_months, duration_minutes, is_test_promo, plan_category FROM membership_plans WHERE id = ?");
+        $p_stmt->execute([$plan_id]);
+        $plan = $p_stmt->fetch(PDO::FETCH_ASSOC);
 
-            $now_str = date('Y-m-d H:i:s');
+        if (!$plan || (int)($plan['is_active'] ?? 0) !== 1) {
+            $error = 'The selected membership plan is invalid or no longer active.';
+        } else {
+            $plan_category = $plan['plan_category'] ?? 'legacy';
+            $has_active_annual = (!empty($member['annual_membership_expiry']) && strtotime($member['annual_membership_expiry']) >= strtotime(date('Y-m-d')));
 
-            // Get plan duration
-            $p_stmt = $pdo->prepare("SELECT duration_months, duration_minutes, name FROM membership_plans WHERE id = ?");
-            $p_stmt->execute([$plan_id]);
-            $plan = $p_stmt->fetch();
-
-            $duration_minutes = intval($plan['duration_minutes'] ?? 0);
-            $duration_months  = intval($plan['duration_months'] ?? 0);
-            if ($duration_minutes <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $plan['name'] ?? '', $pm)) {
-                $duration_minutes = intval($pm[1]);
+            // Enforce member rate eligibility
+            if ($plan_category === 'member_pass' && !$has_active_annual) {
+                $error = 'This member does not have an active Annual Membership. Member discounted rates require an active ₱1,000 Annual Membership. Please renew their Annual Membership Fee or select a Non-Member pass.';
             }
+        }
+    }
 
-            if ($duration_minutes > 0) {
-                // Minute promos start now unless actively expiring within 5 minutes
-                $base_datetime = $now_str;
-                if ($current_sub && !empty($current_sub['expiry_date'])) {
-                    $diff_sec = strtotime($current_sub['expiry_date']) - time();
-                    if ($diff_sec > 0 && $diff_sec <= 300) {
-                        $base_datetime = $current_sub['expiry_date'];
+        if (empty($error) && $plan) {
+            try {
+                $pdo->beginTransaction();
+
+                $now_str = date('Y-m-d H:i:s');
+                $duration_minutes = intval($plan['duration_minutes'] ?? 0);
+                $duration_months  = intval($plan['duration_months'] ?? 0);
+
+                $is_daily_pass     = ($duration_minutes === 1440 || ($duration_months === 0 && stripos($plan['name'] ?? '', 'Daily') !== false));
+                $is_minute_promo   = ($duration_minutes > 0 && !$is_daily_pass);
+                if ($is_minute_promo && $duration_minutes <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $plan['name'] ?? '', $pm)) {
+                    $duration_minutes = intval($pm[1]);
+                }
+                $is_membership_fee = ($plan_category === 'membership_fee' || stripos($plan['name'] ?? '', 'Annual Membership Fee') !== false);
+                $is_test_payment   = ((int)($plan['is_test_promo'] ?? 0) === 1 || $plan_category === 'test_promo') ? 1 : 0;
+
+                if ($is_membership_fee) {
+                    $current_ann_expiry = $member['annual_membership_expiry'] ?? null;
+                    if ($current_ann_expiry && strtotime($current_ann_expiry) >= strtotime(date('Y-m-d'))) {
+                        $new_ann_expiry = date('Y-m-d', strtotime($current_ann_expiry . ' +1 year'));
+                    } else {
+                        $new_ann_expiry = date('Y-m-d', strtotime('+1 year'));
                     }
-                }
-                $start_date = $base_datetime;
-                $expiry_date = date('Y-m-d H:i:s', strtotime("{$base_datetime} + {$duration_minutes} minutes"));
-            } else {
-                if ($current_sub && !empty($current_sub['expiry_date']) && strtotime($current_sub['expiry_date']) > time()) {
-                    $base_datetime = $current_sub['expiry_date'];
-                } else {
+                    $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved', annual_membership_expiry = ? WHERE id = ?")
+                        ->execute([$new_ann_expiry, $member_id]);
+
+                    $start_date  = $now_str;
+                    $expiry_date = $new_ann_expiry . ' 23:59:59';
+                } elseif ($is_minute_promo) {
                     $base_datetime = $now_str;
+                    if ($current_sub && !empty($current_sub['expiry_date'])) {
+                        $diff_sec = strtotime($current_sub['expiry_date']) - time();
+                        if ($diff_sec > 0 && $diff_sec <= 300) {
+                            $base_datetime = $current_sub['expiry_date'];
+                        }
+                    }
+                    $start_date  = $base_datetime;
+                    $expiry_date = date('Y-m-d H:i:s', strtotime("{$base_datetime} + {$duration_minutes} minutes"));
+                } elseif ($is_daily_pass) {
+                    $start_date  = $now_str;
+                    $expiry_date = date('Y-m-d 23:59:59'); // Valid until end of today only
+                } else {
+                    if ($current_sub && !empty($current_sub['expiry_date']) && strtotime($current_sub['expiry_date']) > time()) {
+                        $base_datetime = $current_sub['expiry_date'];
+                    } else {
+                        $base_datetime = $now_str;
+                    }
+                    $start_date = $base_datetime;
+                    if ($duration_months <= 0) $duration_months = 1;
+                    $expiry_date = date('Y-m-d 23:59:59', strtotime("{$base_datetime} + {$duration_months} months"));
                 }
-                $start_date = $base_datetime;
-                if ($duration_months <= 0) $duration_months = 1;
-                $expiry_date = date('Y-m-d 23:59:59', strtotime("{$base_datetime} + {$duration_months} months"));
-            }
 
-            // Insert new subscription
-            $stmt = $pdo->prepare("INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_by) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$member_id, $plan_id, $start_date, $expiry_date, $_SESSION['user_id'] ?? null]);
-            $subscription_id = $pdo->lastInsertId();
+                // Insert new subscription
+                $stmt = $pdo->prepare("INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_by) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$member_id, $plan_id, $start_date, $expiry_date, $_SESSION['user_id'] ?? null]);
+                $subscription_id = $pdo->lastInsertId();
 
-            // Reactivate member status
-            $pdo->prepare("UPDATE members SET status = 'Active' WHERE id = ?")->execute([$member_id]);
+                // Reactivate member status
+                $pdo->prepare("UPDATE members SET status = 'Active' WHERE id = ?")->execute([$member_id]);
 
-            // Record payment
-            $reference_num = trim($_POST['reference_number'] ?? '');
-            if (in_array($payment_method, ['GCash', 'Bank Transfer']) && empty($reference_num)) {
-                throw new Exception("Reference number is required for GCash and Bank Transfer.");
-            }
-            $verified_by = $_SESSION['user_id'] ?? null;
+                // Authoritative server-side price
+                $amount_paid = floatval($plan['price']);
 
-            $stmt = $pdo->prepare("INSERT INTO payments (member_id, subscription_id, amount, payment_method, reference_number, payment_date, verified_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
-            $stmt->execute([$member_id, $subscription_id, $amount_paid, $payment_method, $reference_num ?: null, $payment_date, $verified_by]);
+                // Record payment
+                $reference_num = trim($_POST['reference_number'] ?? '');
+                if (in_array($payment_method, ['GCash', 'Bank Transfer']) && empty($reference_num)) {
+                    throw new Exception("Reference number is required for GCash and Bank Transfer.");
+                }
+                $verified_by = $_SESSION['user_id'] ?? null;
+                $payment_notes = $notes ?: ($is_membership_fee ? 'Annual Membership Fee Renewal' : 'Subscription Renewal');
 
-            $pdo->commit();
+                $stmt = $pdo->prepare("
+                    INSERT INTO payments (member_id, subscription_id, amount, payment_method, reference_number, payment_date, verified_by, notes, is_test, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                ");
+                $stmt->execute([$member_id, $subscription_id, $amount_paid, $payment_method, $reference_num ?: null, $payment_date, $verified_by, $payment_notes, $is_test_payment]);
+
+                $pdo->commit();
 
             if (!empty($member['email'])) {
                 require_once __DIR__ . '/config/email.php';
@@ -182,7 +218,7 @@ if ($is_expired && $member && ($member['status'] ?? '') === 'Active') {
 
 <div class="renew-page-grid" style="display:grid; grid-template-columns: 1fr 340px; gap:2rem; align-items:start;">
 
-    <form method="POST" action="">
+    <form method="POST" action="" onsubmit="const btn=this.querySelector('button[type=submit]'); if(btn && !btn.disabled){ btn.disabled=true; btn.innerHTML='<i class=\'fas fa-spinner fa-spin\'></i> Processing Renewal...'; return true; } return false;">
         <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
         <div style="display:flex; flex-direction:column; gap:2rem;">
 
@@ -218,17 +254,42 @@ if ($is_expired && $member && ($member['status'] ?? '') === 'Active') {
                     <label>Membership Plan *</label>
                     <select name="plan_id" id="plan-select" class="form-control" required>
                         <option value="" disabled selected>Choose a plan…</option>
-                        <?php foreach ($plans as $p): 
-                            $is_min = intval($p['duration_minutes'] ?? 0) > 0;
-                            $dur_label = $is_min ? ($p['duration_minutes'] . ' min') : ($p['duration_months'] . ' mo.');
+                        <?php 
+                        $sec_fee = array_filter($plans, fn($p) => ($p['plan_category'] ?? '') === 'membership_fee' || stripos($p['name'], 'Annual Membership') !== false);
+                        $sec_daily = array_filter($plans, fn($p) => (intval($p['duration_minutes'] ?? 0) === 1440 || (intval($p['duration_months'] ?? 0) === 0 && (intval($p['duration_minutes'] ?? 0) > 0 || stripos($p['name'], 'Daily') !== false))) && ($p['plan_category'] ?? '') !== 'membership_fee');
+                        $sec_monthly = array_filter($plans, fn($p) => intval($p['duration_months'] ?? 0) > 0 && ($p['plan_category'] ?? '') !== 'membership_fee' && stripos($p['name'], 'Annual Membership') === false);
                         ?>
-                        <option value="<?php echo $p['id']; ?>"
-                                data-price="<?php echo $p['price']; ?>"
-                                data-months="<?php echo $p['duration_months']; ?>"
-                                data-minutes="<?php echo $p['duration_minutes']; ?>">
-                            <?php echo htmlspecialchars($p['name']); ?> — ₱<?php echo number_format($p['price'], 2); ?> / <?php echo $dur_label; ?>
-                        </option>
-                        <?php endforeach; ?>
+                        <?php if (!empty($sec_fee)): ?>
+                        <optgroup label="🏅 Membership Fee">
+                            <?php foreach ($sec_fee as $p): ?>
+                            <option value="<?php echo $p['id']; ?>" data-price="<?php echo $p['price']; ?>" data-months="<?php echo $p['duration_months']; ?>" data-minutes="<?php echo $p['duration_minutes'] ?? 0; ?>">
+                                <?php echo htmlspecialchars($p['name']); ?> — ₱<?php echo number_format($p['price'], 2); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <?php endif; ?>
+
+                        <?php if (!empty($sec_daily)): ?>
+                        <optgroup label="⚡ Daily Access Passes">
+                            <?php foreach ($sec_daily as $p): ?>
+                            <option value="<?php echo $p['id']; ?>" data-price="<?php echo $p['price']; ?>" data-months="<?php echo $p['duration_months']; ?>" data-minutes="<?php echo $p['duration_minutes'] ?? 0; ?>">
+                                <?php echo htmlspecialchars($p['name']); ?> — ₱<?php echo number_format($p['price'], 2); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <?php endif; ?>
+
+                        <?php if (!empty($sec_monthly)): ?>
+                        <optgroup label="📅 Monthly / Yearly Registrations">
+                            <?php foreach ($sec_monthly as $p): 
+                                $dur_label = $p['duration_months'] . ' mo.';
+                            ?>
+                            <option value="<?php echo $p['id']; ?>" data-price="<?php echo $p['price']; ?>" data-months="<?php echo $p['duration_months']; ?>" data-minutes="<?php echo $p['duration_minutes'] ?? 0; ?>">
+                                <?php echo htmlspecialchars($p['name']); ?> — ₱<?php echo number_format($p['price'], 2); ?> / <?php echo $dur_label; ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <?php endif; ?>
                     </select>
                 </div>
 

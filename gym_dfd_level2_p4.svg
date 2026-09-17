@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1350 920" width="100%" height="100%" style="background:#ffffff; font-family:'Segoe UI', Arial, Helvetica, sans-serif;">
+  <defs>
+    <!-- Arrowhead markers -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#1e293b"/>
+    </marker>
+    <filter id="card-shadow" x="-4%" y="-4%" width="108%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Header Banner -->
+  <rect x="0" y="0" width="1350" height="60" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="675" y="36" text-anchor="middle" font-size="18" font-weight="800" fill="#0f172a" letter-spacing="1">DFD LEVEL 2 — PROCESS 4.0: PROCESS PAYMENTS</text>
+  <text x="675" y="52" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">Sub-process Decomposition | Verified Admin Payment Approval | Pure Noun-Phrase Data Flows</text>
+
+  <!-- ================================================================= -->
+  <!-- EXTERNAL ENTITIES (LEFT COLUMN: x=60 to x=240, width=180)         -->
+  <!-- ================================================================= -->
+
+  <!-- MEMBER ENTITY (Top-Left: y=90 to y=170) -->
+  <g id="entity-member">
+    <rect x="60" y="90" width="180" height="80" rx="3" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" filter="url(#card-shadow)"/>
+    <rect x="60" y="90" width="180" height="10" fill="#e2e8f0" stroke="#0f172a" stroke-width="2.5"/>
+    <text x="150" y="138" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">MEMBER</text>
+    <text x="150" y="156" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">External Entity</text>
+  </g>
+
+  <!-- ADMIN ENTITY (Bottom-Left: y=700 to y=780) -->
+  <g id="entity-admin">
+    <rect x="60" y="700" width="180" height="80" rx="3" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" filter="url(#card-shadow)"/>
+    <rect x="60" y="700" width="180" height="10" fill="#e2e8f0" stroke="#0f172a" stroke-width="2.5"/>
+    <text x="150" y="748" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">ADMIN</text>
+    <text x="150" y="766" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">External Entity</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- SUB-PROCESSES (CENTER COLUMN: x=480 to x=740, Width=260)         -->
+  <!-- ================================================================= -->
+
+  <!-- 4.1 Receive Payment Submission -->
+  <g id="subproc-4-1">
+    <rect x="480" y="90" width="260" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="120" x2="740" y2="120" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="610" y="112" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">4.1</text>
+    <text x="610" y="148" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Receive Payment Submission</text>
+  </g>
+
+  <!-- 4.2 Verify Payment Details -->
+  <g id="subproc-4-2">
+    <rect x="480" y="280" width="260" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="310" x2="740" y2="310" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="610" y="302" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">4.2</text>
+    <text x="610" y="338" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Verify Payment Details</text>
+  </g>
+
+  <!-- 4.3 Record Payment Transaction -->
+  <g id="subproc-4-3">
+    <rect x="480" y="470" width="260" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="500" x2="740" y2="500" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="610" y="492" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">4.3</text>
+    <text x="610" y="528" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Record Payment Transaction</text>
+  </g>
+
+  <!-- 4.4 Activate Member Subscription -->
+  <g id="subproc-4-4">
+    <rect x="480" y="700" width="260" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="730" x2="740" y2="730" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="610" y="722" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">4.4</text>
+    <text x="610" y="758" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Activate Member Subscription</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- DATA STORES (RIGHT COLUMN: D4, D5)                                -->
+  <!-- ================================================================= -->
+
+  <!-- D4 Subscriptions (Read by 4.2) -->
+  <g id="ds-d4-top">
+    <line x1="980" y1="280" x2="980" y2="325" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="280" x2="1260" y2="280" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="325" x2="1260" y2="325" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1025" y1="280" x2="1025" y2="325" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1002" y="308" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D4</text>
+    <text x="1142" y="308" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Subscriptions</text>
+  </g>
+
+  <!-- D5 Payments (Written by 4.3) -->
+  <g id="ds-d5">
+    <line x1="980" y1="485" x2="980" y2="530" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="485" x2="1260" y2="485" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="530" x2="1260" y2="530" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1025" y1="485" x2="1025" y2="530" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1002" y="513" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D5</text>
+    <text x="1142" y="513" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Payments</text>
+  </g>
+
+  <!-- D4 Subscriptions (Written by 4.4) -->
+  <g id="ds-d4-bottom">
+    <line x1="980" y1="715" x2="980" y2="760" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="715" x2="1260" y2="715" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="760" x2="1260" y2="760" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1025" y1="715" x2="1025" y2="760" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1002" y="743" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D4</text>
+    <text x="1142" y="743" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Subscriptions</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- LEFT-SIDE DATA FLOWS (ZERO CROSSING DEDICATED LANES)              -->
+  <!-- ================================================================= -->
+
+  <!-- 1. MEMBER -> 4.1 (Payment Transaction Data) -->
+  <line x1="240" y1="115" x2="478" y2="115" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="360" y="108" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Payment Transaction Data</text>
+
+  <!-- 2. ADMIN -> 4.1 (Cash Payment Record) Dedicated Outer Left Lane (x=30) -->
+  <path d="M 60 740 L 30 740 L 30 65 L 560 65 L 560 88" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="290" y="58" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Cash Payment Record</text>
+
+  <!-- 3. ADMIN -> 4.2 (Payment Verification Confirmation) Lane at x=400 -->
+  <path d="M 240 715 L 400 715 L 400 345 L 478 345" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="360" y="339" text-anchor="middle" font-size="10" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Payment Verification Confirmation</text>
+
+  <!-- 4. 4.2 -> MEMBER (Payment Failure Notice) Lane at x=320 -->
+  <path d="M 480 295 L 320 295 L 320 135 L 242 135" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="380" y="288" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Payment Failure Notice</text>
+
+  <!-- 5. 4.2 -> ADMIN (Payment Failure Notice) Lane at x=360 -->
+  <path d="M 480 320 L 360 320 L 360 725 L 242 725" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="410" y="313" text-anchor="middle" font-size="10" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Payment Failure Notice</text>
+
+  <!-- 6. 4.4 -> MEMBER (Official Payment Receipt) Dedicated Lane at x=275 entering MEMBER at y=155 -->
+  <path d="M 480 715 L 275 715 L 275 155 L 242 155" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="355" y="162" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Official Payment Receipt</text>
+
+  <!-- 7. 4.4 -> ADMIN (Transaction Summary Notice) Direct Horizontal Line -->
+  <line x1="480" y1="755" x2="242" y2="755" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="360" y="748" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Transaction Summary Notice</text>
+
+  <!-- ================================================================= -->
+  <!-- CENTER SUB-PROCESS FLOWS                                          -->
+  <!-- ================================================================= -->
+
+  <!-- 4.1 -> 4.2 (Payment Verification Payload) -->
+  <line x1="610" y1="165" x2="610" y2="278" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="620" y="225" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Payment Verification Payload</text>
+
+  <!-- 4.2 -> 4.3 (Validated Payment Details) -->
+  <line x1="610" y1="355" x2="610" y2="468" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="620" y="415" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Validated Payment Details</text>
+
+  <!-- 4.3 -> 4.4 (Payment Confirmation Payload) -->
+  <line x1="610" y1="545" x2="610" y2="698" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="620" y="625" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Payment Confirmation Payload</text>
+
+  <!-- ================================================================= -->
+  <!-- RIGHT-SIDE DATA STORE FLOWS                                       -->
+  <!-- ================================================================= -->
+
+  <!-- D4 -> 4.2 (Pending Subscription Bill) -->
+  <line x1="978" y1="302" x2="742" y2="302" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="295" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Pending Subscription Bill</text>
+
+  <!-- 4.3 -> D5 (Payment Transaction Record) -->
+  <line x1="740" y1="508" x2="978" y2="508" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="501" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Payment Transaction Record</text>
+
+  <!-- 4.4 -> D4 (Updated Subscription Status) -->
+  <line x1="740" y1="738" x2="978" y2="738" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="860" y="731" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Updated Subscription Status</text>
+
+  <!-- ================================================================= -->
+  <!-- FOOTER LEGEND AND CONVENTIONS NOTE                                -->
+  <!-- ================================================================= -->
+  <rect x="40" y="830" width="1270" height="60" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="60" y="856" font-size="12" font-weight="800" fill="#0f172a">DFD Level 2 (Process 4.0) Validation Legend:</text>
+  <text x="60" y="875" font-size="11" font-weight="600" fill="#475569">Sub-processes: 4.1 Receive Payment Submission | 4.2 Verify Payment Details | 4.3 Record Payment Transaction | 4.4 Activate Member Subscription | Pure Noun Phrases</text>
+</svg>

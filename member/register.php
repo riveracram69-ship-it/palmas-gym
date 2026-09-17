@@ -13,7 +13,20 @@ if (isset($_SESSION['member_id'])) {
 $plans = [];
 try {
     if (isset($pdo) && $pdo) {
-        $stmt = $pdo->query("SELECT id, name, price, duration_months, duration_minutes, is_test_promo, benefits FROM membership_plans ORDER BY price ASC");
+        $stmt = $pdo->query("
+            SELECT id, name, price, duration_months, duration_minutes, is_test_promo, benefits, plan_category 
+            FROM membership_plans 
+            WHERE is_active = 1 
+            ORDER BY 
+                CASE plan_category 
+                    WHEN 'membership_fee' THEN 1 
+                    WHEN 'member_pass' THEN 2 
+                    WHEN 'non_member_pass' THEN 3 
+                    WHEN 'test_promo' THEN 4 
+                    ELSE 5 
+                END, 
+                price ASC
+        ");
         $plans = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 } catch (Exception $e) {}
@@ -926,26 +939,48 @@ select.if{
       <?php if (!empty($plans)): ?>
       <div class="fg">
         <div class="lbl" id="plan-lbl">Membership Plan</div>
-        <div class="plans" role="radiogroup" aria-labelledby="plan-lbl">
-          <?php foreach($plans as $p): $sel=($selected_plan_id===(int)$p['id']); ?>
-          <label class="plan <?php echo $sel?'on':''; ?>">
-            <input type="radio" name="plan_id" value="<?php echo $p['id']; ?>" <?php echo $sel?'checked':''; ?>>
-            <div class="plan-l">
-              <div class="radio-dot" aria-hidden="true"></div>
-              <div>
-                <div class="plan-name"><?php echo htmlspecialchars($p['name']); ?></div>
-                <div class="plan-dur"><i class="fa-regular fa-clock" aria-hidden="true"></i> <?php 
-                  if (!empty($p['duration_minutes']) && (int)$p['duration_minutes'] > 0) {
-                      echo (int)$p['duration_minutes'] . ' minute' . ((int)$p['duration_minutes'] != 1 ? 's' : '');
-                  } else {
-                      $d_m = max(1, (int)($p['duration_months'] ?? 1));
-                      echo $d_m . ' month' . ($d_m != 1 ? 's' : '');
-                  }
-                ?></div>
-              </div>
+        <div class="plans" role="radiogroup" aria-labelledby="plan-lbl" style="display:flex; flex-direction:column; gap:12px;">
+          <?php 
+          $sec_fee = array_filter($plans, fn($p) => ($p['plan_category'] ?? '') === 'membership_fee' || stripos($p['name'], 'Annual Membership') !== false);
+          $sec_daily = array_filter($plans, fn($p) => (intval($p['duration_minutes'] ?? 0) === 1440 || (intval($p['duration_months'] ?? 0) === 0 && (intval($p['duration_minutes'] ?? 0) > 0 || stripos($p['name'], 'Daily') !== false))) && ($p['plan_category'] ?? '') !== 'membership_fee');
+          $sec_monthly = array_filter($plans, fn($p) => intval($p['duration_months'] ?? 0) > 0 && ($p['plan_category'] ?? '') !== 'membership_fee' && stripos($p['name'], 'Annual Membership') === false);
+
+          $reg_sections = [
+              ['title' => '🏅 Membership Fee', 'desc' => 'Annual eligibility pass for discounted rates', 'items' => $sec_fee],
+              ['title' => '⚡ Daily Passes', 'desc' => 'Same-day gym access passes', 'items' => $sec_daily],
+              ['title' => '📅 Monthly / Yearly', 'desc' => 'Full membership registration periods', 'items' => $sec_monthly],
+          ];
+          ?>
+          <?php foreach ($reg_sections as $sec): if (empty($sec['items'])) continue; ?>
+          <div>
+            <div style="font-size:0.78rem; font-weight:800; color:var(--c-p, #3e8241); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px; padding-bottom:2px; border-bottom:1px solid #d9e6de;">
+              <?php echo $sec['title']; ?>
             </div>
-            <div class="plan-price">&#8369;<?php echo number_format($p['price'],2); ?></div>
-          </label>
+            <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+              <?php foreach($sec['items'] as $p): $sel=($selected_plan_id===(int)$p['id']); ?>
+              <label class="plan <?php echo $sel?'on':''; ?>">
+                <input type="radio" name="plan_id" value="<?php echo $p['id']; ?>" <?php echo $sel?'checked':''; ?>>
+                <div class="plan-l">
+                  <div class="radio-dot" aria-hidden="true"></div>
+                  <div>
+                    <div class="plan-name"><?php echo htmlspecialchars($p['name']); ?></div>
+                    <div class="plan-dur"><i class="fa-regular fa-clock" aria-hidden="true"></i> <?php 
+                      if (!empty($p['duration_minutes']) && (int)$p['duration_minutes'] === 1440) {
+                          echo '1 Day';
+                      } elseif (!empty($p['duration_minutes']) && (int)$p['duration_minutes'] > 0) {
+                          echo (int)$p['duration_minutes'] . ' minute' . ((int)$p['duration_minutes'] != 1 ? 's' : '');
+                      } else {
+                          $d_m = max(1, (int)($p['duration_months'] ?? 1));
+                          echo $d_m . ' month' . ($d_m != 1 ? 's' : '');
+                      }
+                    ?></div>
+                  </div>
+                </div>
+                <div class="plan-price">&#8369;<?php echo number_format($p['price'],2); ?></div>
+              </label>
+              <?php endforeach; ?>
+            </div>
+          </div>
           <?php endforeach; ?>
         </div>
       </div>

@@ -64,8 +64,8 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             }
         }
 
-        // 2. Fetch Plan & Secure Server-Side Price & Duration
-        $plan_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes, price, is_test_promo FROM membership_plans WHERE id = ?");
+        // 2. Fetch Plan & Secure Server-Side Price & Duration (including new plan_category, floor_access, is_active)
+        $plan_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes, price, is_test_promo, plan_category, floor_access, is_active FROM membership_plans WHERE id = ?");
         $plan_stmt->execute([$plan_id]);
         $plan = $plan_stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -74,17 +74,30 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             return ['success' => false, 'message' => 'Membership plan not found.'];
         }
 
+        // Block inactive / legacy plans from being purchased
+        $plan_is_active = intval($plan['is_active'] ?? 0);
+        $plan_category  = $plan['plan_category'] ?? 'legacy';
+        if ($plan_is_active === 0 || $plan_category === 'legacy') {
+            if ($should_manage_tx) $pdo->rollBack();
+            return ['success' => false, 'message' => 'This plan is no longer available. Please select a current plan.'];
+        }
+
         // Always enforce server-side pricing from database
         $amount = floatval($plan['price']);
         $duration_minutes = intval($plan['duration_minutes'] ?? 0);
-        $duration_months = intval($plan['duration_months'] ?? 0);
-        if ($duration_minutes <= 0 && preg_match('/(\d+)\s*(?:min|minute)/i', $plan['name'] ?? '', $pm)) {
+        $duration_months  = intval($plan['duration_months'] ?? 0);
+
+        // Only extract minute duration from plan name for genuine minute-based promos (not daily passes)
+        if ($duration_minutes <= 0 && $plan_category === 'test_promo' && preg_match('/(\d+)\s*(?:min|minute)/i', $plan['name'] ?? '', $pm)) {
             $duration_minutes = intval($pm[1]);
         }
         $is_test_promo = intval($plan['is_test_promo'] ?? 0);
 
-        // Determine if this is a test transaction
-        $is_test = ($is_test_promo === 1 || $duration_minutes > 0 || is_payment_demo() || is_payment_test() || (defined('PAYMENT_MODE') && in_array(PAYMENT_MODE, ['demo', 'test']))) ? 1 : 0;
+        // Determine if this is a test transaction.
+        // IMPORTANT: daily passes (duration_minutes = 1440) are NOT test transactions even though they use duration_minutes.
+        $is_daily_pass = ($duration_minutes === 1440);
+        $is_minute_promo = ($duration_minutes > 0 && !$is_daily_pass);
+        $is_test = ($is_test_promo === 1 || $is_minute_promo || is_payment_demo() || is_payment_test() || (defined('PAYMENT_MODE') && in_array(PAYMENT_MODE, ['demo', 'test']))) ? 1 : 0;
 
         // 3. Check Prior Subscriptions to determine if this is First Activation or Renewal
         $prior_stmt = $pdo->prepare("SELECT COUNT(*) FROM subscriptions WHERE member_id = ?");
@@ -92,7 +105,7 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         $prior_count = (int)$prior_stmt->fetchColumn();
         $is_first_activation = ($prior_count === 0);
 
-        // 4. Calculate Subscription Dates (Extension from active expiry or new start)
+        // 4. Calculate Subscription Dates
         $sub_stmt = $pdo->prepare("
             SELECT id, expiry_date 
             FROM subscriptions 
@@ -104,17 +117,21 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         $active_sub = $sub_stmt->fetch(PDO::FETCH_ASSOC);
         $now_str = date('Y-m-d H:i:s');
 
-        if ($duration_minutes > 0) {
-            // Temporary-duration promotion (e.g. 30 or 60 minutes)
-            // If active sub exists, extend from current expiry date; otherwise start from now
+        if ($is_minute_promo) {
+            // Short-duration test promos (30 min, 60 min) — extend from active expiry if any
             $base_datetime = ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time())
                 ? $active_sub['expiry_date']
                 : $now_str;
             $start_date = $base_datetime;
             $new_expiry = date('Y-m-d H:i:s', strtotime("{$base_datetime} + {$duration_minutes} minutes"));
-            $duration_label = "{$duration_minutes} Minute" . ($duration_minutes > 1 ? "s" : "");
+            $duration_label = "{$duration_minutes} Minute" . ($duration_minutes > 1 ? 's' : '');
+        } elseif ($is_daily_pass) {
+            // Daily access pass (1440 min = 1 day) — access is valid until end of today only
+            $start_date    = $now_str;
+            $new_expiry    = date('Y-m-d 23:59:59'); // expires at midnight tonight
+            $duration_label = '1 Day';
         } else {
-            // Month-based plan
+            // Month-based plan (Monthly, Yearly, Annual Membership Fee)
             if ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time()) {
                 $base_datetime = $active_sub['expiry_date'];
             } else {
@@ -123,7 +140,7 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             $start_date = $base_datetime;
             if ($duration_months <= 0) $duration_months = 1;
             $new_expiry = date('Y-m-d 23:59:59', strtotime("{$base_datetime} + {$duration_months} months"));
-            $duration_label = "{$duration_months} Month" . ($duration_months > 1 ? "s" : "");
+            $duration_label = "{$duration_months} Month" . ($duration_months > 1 ? 's' : '');
         }
 
         // Insert Subscription with full DATETIME precision
@@ -181,8 +198,29 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         }
 
         // 7. Update Member Status to Active
-        $update_mem = $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved' WHERE id = ?");
-        $update_mem->execute([$member_id]);
+        // For membership_fee plans: update annual_membership_expiry (extends if still valid; otherwise +1 year from today)
+        // For all other plans: set member status Active as usual
+        $annual_expiry_updated = null;
+        if ($plan_category === 'membership_fee') {
+            // Fetch current annual_membership_expiry
+            $ann_stmt = $pdo->prepare("SELECT annual_membership_expiry FROM members WHERE id = ? FOR UPDATE");
+            $ann_stmt->execute([$member_id]);
+            $ann_row = $ann_stmt->fetch(PDO::FETCH_ASSOC);
+            $current_ann_expiry = $ann_row['annual_membership_expiry'] ?? null;
+
+            if ($current_ann_expiry && strtotime($current_ann_expiry) >= strtotime(date('Y-m-d'))) {
+                // Extend from current valid expiry
+                $annual_expiry_updated = date('Y-m-d', strtotime($current_ann_expiry . ' +1 year'));
+            } else {
+                // Fresh start from today
+                $annual_expiry_updated = date('Y-m-d', strtotime('+1 year'));
+            }
+            $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved', annual_membership_expiry = ? WHERE id = ?")
+                ->execute([$annual_expiry_updated, $member_id]);
+        } else {
+            $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved' WHERE id = ?")
+                ->execute([$member_id]);
+        }
 
         // 8. Close/Approve any Pending Renewal Requests
         $update_req = $pdo->prepare("
@@ -260,17 +298,24 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             }
         }
 
-        return [
-            'success' => true,
-            'message' => "Payment successful! Your '{$plan['name']}' membership is now active until {$formatted_expiry}.",
-            'plan_name' => $plan['name'],
-            'amount' => $amount,
-            'reference_no' => $ref_code,
-            'expiry_date' => $new_expiry,
-            'duration' => $duration_label,
-            'member_status' => 'Active',
-            'subscription_id' => (int)$subscription_id
+        $response = [
+            'success'          => true,
+            'message'          => "Payment successful! Your '{$plan['name']}' membership is now active until {$formatted_expiry}.",
+            'plan_name'        => $plan['name'],
+            'plan_category'    => $plan_category,
+            'floor_access'     => $plan['floor_access'] ?? 'all',
+            'amount'           => $amount,
+            'reference_no'     => $ref_code,
+            'expiry_date'      => $new_expiry,
+            'duration'         => $duration_label,
+            'member_status'    => 'Active',
+            'subscription_id'  => (int)$subscription_id
         ];
+        if ($plan_category === 'membership_fee' && $annual_expiry_updated) {
+            $response['annual_membership_expiry'] = $annual_expiry_updated;
+            $response['message'] = "Annual Membership Fee processed! You are now an Official Member until {$annual_expiry_updated}. You may now select Member rates for gym access.";
+        }
+        return $response;
 
     } catch (Exception $e) {
         if ($should_manage_tx && $pdo->inTransaction()) {

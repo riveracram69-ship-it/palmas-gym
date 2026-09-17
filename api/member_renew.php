@@ -53,15 +53,18 @@ try {
     }
 
     // 2. Verify Plan exists & fetch official price
-    $plan_stmt = $pdo->prepare("SELECT id, name, price, duration_months, duration_minutes, is_test_promo FROM membership_plans WHERE id = ?");
+    $plan_stmt = $pdo->prepare("SELECT id, name, price, duration_months, duration_minutes, is_test_promo, plan_category, floor_access, is_active FROM membership_plans WHERE id = ?");
     $plan_stmt->execute([$plan_id]);
     $plan = $plan_stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$plan) {
-        echo json_encode(['success' => false, 'message' => 'Selected plan not found.']);
+    if (!$plan || (int)($plan['is_active'] ?? 0) !== 1 || ($plan['plan_category'] ?? '') === 'legacy') {
+        echo json_encode(['success' => false, 'message' => 'This plan is no longer available. Please select an active plan.']);
         exit;
     }
 
-    // 2.5 Enforce business rule: renewal is ONLY permitted when expired or expiring soon
+    // 2.5 Enforce business rule: gym pass renewal is ONLY permitted when expired or expiring soon
+    // Note: Annual Membership Fee (plan_category = 'membership_fee') is an eligibility fee and is always purchasable
+    $is_membership_fee = (($plan['plan_category'] ?? '') === 'membership_fee');
+
     // Fetch member's latest subscription
     $cur_sub_stmt = $pdo->prepare("
         SELECT s.id, s.expiry_date, 
@@ -79,7 +82,7 @@ try {
     $is_active_member = (strcasecmp($member['status'] ?? '', 'Active') === 0);
     $sub_has_future_expiry = ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time());
 
-    if ($is_active_member && $sub_has_future_expiry) {
+    if (!$is_membership_fee && $is_active_member && $sub_has_future_expiry) {
         $expiry_ts = strtotime($active_sub['expiry_date']);
         $diff_sec = $expiry_ts - time();
         $is_minute_promo = (!empty($active_sub['duration_minutes']) && $active_sub['duration_minutes'] > 0)

@@ -2748,11 +2748,19 @@
               <!-- Membership Details Footer -->
               <div style="padding-top:14px; border-top:1px solid var(--border); font-size:0.88rem;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                  <span style="color:var(--text-secondary);">Membership Plan:</span>
+                  <span style="color:var(--text-secondary);">Membership Tier:</span>
+                  <strong id="card-tier" style="color:var(--primary);">Non-Member</strong>
+                </div>
+                <div style="display:none; justify-content:space-between; margin-bottom:8px;" id="card-annual-expiry-row">
+                  <span style="color:var(--text-secondary);">Annual Member Expiry:</span>
+                  <strong id="card-annual-expiry" style="color:var(--text-primary);">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                  <span style="color:var(--text-secondary);">Current Pass:</span>
                   <strong id="card-plan" style="color:var(--text-primary);">--</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                  <span style="color:var(--text-secondary);">Valid Until:</span>
+                  <span style="color:var(--text-secondary);">Pass Valid Until:</span>
                   <strong id="card-expiry" style="color:var(--text-primary);">--</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between;" id="card-time-remaining-row">
@@ -3041,14 +3049,22 @@
             <!-- Card C: Membership Info -->
             <div class="card" style="margin-bottom:14px;">
               <h4 style="color:var(--text-primary); font-size:0.82rem; text-transform:uppercase; font-weight:800; margin:0 0 14px; border-bottom:1px solid var(--border); padding-bottom:10px; letter-spacing:0.5px;">
-                <i class="fa-solid fa-id-card-clip" style="color:var(--primary); margin-right:6px;"></i> Membership
+                <i class="fa-solid fa-id-card-clip" style="color:var(--primary); margin-right:6px;"></i> Membership &amp; Pass
               </h4>
               <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Current Plan</span>
+                <span style="color:var(--text-muted);">Membership Tier</span>
+                <strong id="prof-tier-name" style="color:var(--primary);">Non-Member</strong>
+              </div>
+              <div style="display:none; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;" id="prof-annual-expiry-row">
+                <span style="color:var(--text-muted);">Annual Fee Valid Until</span>
+                <strong id="prof-annual-expiry" style="color:var(--text-primary);">--</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
+                <span style="color:var(--text-muted);">Current Pass</span>
                 <strong id="prof-plan-name" style="color:var(--primary);">--</strong>
               </div>
               <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Valid Until</span>
+                <span style="color:var(--text-muted);">Pass Valid Until</span>
                 <strong id="prof-valid-until" style="color:var(--text-primary);">--</strong>
               </div>
               <div style="display:flex; justify-content:space-between; font-size:0.88rem; margin-bottom:8px;">
@@ -3377,17 +3393,17 @@
           
           <div class="card card-elevated" style="margin-bottom:18px;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-              <h3 id="summary-plan-name" style="margin:0; color:var(--text-primary); font-size:1.15rem; font-weight:800;">Standard Membership</h3>
+              <h3 id="summary-plan-name" style="margin:0; color:var(--text-primary); font-size:1.15rem; font-weight:800;">Selected Plan</h3>
               <span id="summary-plan-badge" class="status-pill pill-active">ACTIVE PASS</span>
             </div>
 
             <div class="checkout-row">
               <span class="lbl">Duration</span>
-              <span class="val" id="summary-duration">30 Days</span>
+              <span class="val" id="summary-duration">--</span>
             </div>
             <div class="checkout-row">
               <span class="lbl">Membership Fee</span>
-              <span class="val" id="summary-fee">₱1,500.00</span>
+              <span class="val" id="summary-fee">₱0.00</span>
             </div>
             <div class="checkout-row">
               <span class="lbl">Discount</span>
@@ -3395,7 +3411,7 @@
             </div>
             <div class="checkout-row total">
               <span class="lbl">Total Amount</span>
-              <span class="val" id="summary-total">₱1,500.00</span>
+              <span class="val" id="summary-total">₱0.00</span>
             </div>
           </div>
 
@@ -3493,14 +3509,14 @@
               <h2 style="color:var(--text-primary); font-size:1.35rem; font-weight:800; margin:0 0 4px;">Payment Successful</h2>
               <p style="color:var(--text-secondary); font-size:0.86rem; margin:0 0 14px;">Your payment has been confirmed! Your gym pass is now active.</p>
               
-              <div style="font-size:2rem; font-weight:900; color:var(--primary); font-family:'Outfit';" id="res-success-amount">₱1,500.00</div>
+              <div style="font-size:2rem; font-weight:900; color:var(--primary); font-family:'Outfit';" id="res-success-amount">₱0.00</div>
               
               <div style="text-align:left; background:rgba(6,31,24,0.7); border:1px solid var(--border); border-radius:16px; padding:16px; margin:18px 0;">
                 <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Payment Method</span><strong class="val" id="res-success-method">GCash</strong></div>
                 <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Reference Number</span><code class="val" id="res-success-ref" style="font-size:0.8rem; color:var(--primary);">PEG-XXXX</code></div>
-                <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Membership</span><strong class="val" id="res-success-plan">Standard Plan</strong></div>
-                <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Status</span><span class="badge-paid">● ACTIVE MEMBER</span></div>
-                <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Valid Until</span><strong class="val" id="res-success-valid">Oct 4, 2026</strong></div>
+                <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Membership</span><strong class="val" id="res-success-plan">Gym Pass</strong></div>
+                <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Status</span><span class="badge-paid">● ACTIVE PASS</span></div>
+                <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Valid Until</span><strong class="val" id="res-success-valid">--</strong></div>
               </div>
 
               <div style="display:flex; flex-direction:column; gap:10px;">
@@ -5187,18 +5203,58 @@ function getValidQrUrl(rawUrl) {
   return `${baseSiteUrl}/${cleaned.replace(/^\/+/, '')}`;
 }
 
+const OFFICIAL_FALLBACK_PLANS = [
+  { id: 8,  name: 'Annual Membership Fee',                  price: 1000.00, duration_months: 12, duration_minutes: 0,    plan_category: 'membership_fee',  floor_access: 'all',              duration_label: '12 Months', price_formatted: '₱1,000.00' },
+  { id: 11, name: 'Member — Daily (2nd Floor Only)',        price: 40.00,   duration_months: 0,  duration_minutes: 1440, plan_category: 'member_pass',     floor_access: 'second_floor_only', duration_label: '1 Day',    price_formatted: '₱40.00' },
+  { id: 12, name: 'Member — Daily (Ground + 2nd Floor)',    price: 50.00,   duration_months: 0,  duration_minutes: 1440, plan_category: 'member_pass',     floor_access: 'ground_and_second', duration_label: '1 Day',    price_formatted: '₱50.00' },
+  { id: 9,  name: 'Member — Monthly Registration',          price: 750.00,  duration_months: 1,  duration_minutes: 0,    plan_category: 'member_pass',     floor_access: 'all',              duration_label: '1 Month',   price_formatted: '₱750.00' },
+  { id: 10, name: 'Member — Yearly Registration',           price: 7500.00, duration_months: 12, duration_minutes: 0,    plan_category: 'member_pass',     floor_access: 'all',              duration_label: '12 Months', price_formatted: '₱7,500.00' },
+  { id: 14, name: 'Non-Member — Daily (2nd Floor Only)',    price: 50.00,   duration_months: 0,  duration_minutes: 1440, plan_category: 'non_member_pass', floor_access: 'second_floor_only', duration_label: '1 Day',    price_formatted: '₱50.00' },
+  { id: 15, name: 'Non-Member — Daily (Ground + 2nd Floor)',price: 60.00,   duration_months: 0,  duration_minutes: 1440, plan_category: 'non_member_pass', floor_access: 'ground_and_second', duration_label: '1 Day',    price_formatted: '₱60.00' },
+  { id: 13, name: 'Non-Member — Monthly Registration',      price: 850.00,  duration_months: 1,  duration_minutes: 0,    plan_category: 'non_member_pass', floor_access: 'all',              duration_label: '1 Month',   price_formatted: '₱850.00' }
+];
+
+function getPlanCategoryBadge(p) {
+  if (!p) return '';
+  if (p.plan_category === 'membership_fee') {
+    return `<span style="display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:800; background:rgba(99,102,241,0.22); color:#a5b4fc; border:1px solid rgba(99,102,241,0.45); padding:2px 8px; border-radius:6px; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px;"><i class="fa-solid fa-crown" style="color:#c7d2fe;"></i> ANNUAL MEMBERSHIP FEE</span>`;
+  } else if (p.plan_category === 'member_pass') {
+    return `<span style="display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:800; background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); padding:2px 8px; border-radius:6px; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px;"><i class="fa-solid fa-id-badge" style="color:#6ee7b7;"></i> MEMBER RATE</span>`;
+  } else if (p.plan_category === 'non_member_pass') {
+    return `<span style="display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:800; background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid rgba(245,158,11,0.4); padding:2px 8px; border-radius:6px; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px;"><i class="fa-solid fa-user" style="color:#fde68a;"></i> NON-MEMBER RATE</span>`;
+  } else if (p.plan_category === 'test_promo' || p.is_test_promo) {
+    return `<span style="display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:800; background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4); padding:2px 8px; border-radius:6px; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px;"><i class="fa-solid fa-flask" style="color:#fca5a5;"></i> TEST PASS</span>`;
+  }
+  return '';
+}
+
+function getPlanDurationSubtitle(p) {
+  if (!p) return '';
+  if (p.plan_category === 'membership_fee') {
+    return '1 Year Official Member Eligibility & Discounted Rates';
+  }
+  const isDaily = (p.duration_minutes === 1440 || p.duration_label === '1 Day');
+  let floorLabel = '';
+  if (p.floor_access === 'second_floor_only') floorLabel = ' • 2nd Floor Only';
+  else if (p.floor_access === 'ground_and_second') floorLabel = ' • Ground + 2nd Floor';
+  else if (isDaily) floorLabel = ' • All Floors';
+
+  if (isDaily) {
+    return `1 Day Pass${floorLabel}`;
+  } else if (p.duration_minutes > 0) {
+    return `${p.duration_label || (p.duration_minutes + ' Min')} Test Pass`;
+  } else {
+    return `${p.duration_label || (p.duration_months + ' Month(s)')} Full Gym Access${floorLabel}`;
+  }
+}
+
 async function loadPlansForRegistration() {
   const container = document.getElementById('plans-container-reg');
   if (!container) return;
 
   // Immediate instant render so screen is never blank
   if (!availablePlans || availablePlans.length === 0) {
-    availablePlans = [
-      { id: 2, name: 'Basic', price: 300.00, duration_months: 1 },
-      { id: 1, name: 'STANDARD', price: 500.00, duration_months: 2 },
-      { id: 3, name: 'Premium', price: 1000.00, duration_months: 6 },
-      { id: 4, name: 'VIP', price: 4000.00, duration_months: 12 }
-    ];
+    availablePlans = OFFICIAL_FALLBACK_PLANS;
   }
   renderPlanCards(availablePlans, container);
 
@@ -5227,24 +5283,73 @@ function renderPlanCards(plans, container) {
     selectedPlanId = plans[0].id;
     selectedPlan = plans[0];
   }
-  plans.forEach(p => {
-    const card = document.createElement('div');
-    card.className = `plan-card ${selectedPlanId === p.id ? 'selected' : ''}`;
-    card.onclick = () => {
-      selectedPlanId = p.id;
-      selectedPlan = p;
-      container.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      updateRegAmountDisplay();
-    };
-    card.innerHTML = `
-      <div class="plan-check"><i class="fa-solid fa-check"></i></div>
-      <h3 style="color:#fff; margin:0 0 4px; font-weight:800; font-size:1.05rem;">${p.name}</h3>
-      <h2 style="color:var(--gym-light); margin:0; font-size:1.4rem; font-weight:900;">₱${parseFloat(p.price).toFixed(2)}</h2>
-      <p style="color:var(--gym-muted); font-size:0.8rem; margin:4px 0 0;">${p.duration_months} Month(s) Full Gym Access</p>
+
+  const sections = [
+    {
+      title: '🏅 Membership Fee',
+      desc: 'Annual eligibility pass for discounted member rates (Valid 1 Year)',
+      filter: p => p.plan_category === 'membership_fee' || p.name.toLowerCase().includes('annual membership')
+    },
+    {
+      title: '⚡ Daily Passes',
+      desc: 'Same-day gym access passes',
+      filter: p => (p.duration_minutes === 1440 || (p.duration_months === 0 && (p.duration_minutes > 0 || p.name.toLowerCase().includes('daily')))) && p.plan_category !== 'membership_fee' && !p.name.toLowerCase().includes('annual membership')
+    },
+    {
+      title: '📅 Monthly / Yearly',
+      desc: 'Full recurring membership registrations',
+      filter: p => p.duration_months > 0 && p.plan_category !== 'membership_fee' && !p.name.toLowerCase().includes('annual membership')
+    }
+  ];
+
+  sections.forEach(sec => {
+    const secPlans = plans.filter(sec.filter);
+    if (secPlans.length === 0) return;
+
+    const groupWrap = document.createElement('div');
+    groupWrap.style.marginBottom = '14px';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'margin: 10px 0 6px; padding-bottom: 4px; border-bottom: 1px solid rgba(82,183,136,0.2);';
+    header.innerHTML = `
+      <div style="font-size: 0.82rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.4px;">
+        ${sec.title}
+      </div>
+      <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 1px;">
+        ${sec.desc}
+      </div>
     `;
-    container.appendChild(card);
+    groupWrap.appendChild(header);
+
+    const cardsWrap = document.createElement('div');
+    cardsWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-top: 6px;';
+
+    secPlans.forEach(p => {
+      const card = document.createElement('div');
+      card.className = `plan-card ${selectedPlanId === p.id ? 'selected' : ''}`;
+      card.onclick = () => {
+        selectedPlanId = p.id;
+        selectedPlan = p;
+        container.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        updateRegAmountDisplay();
+      };
+      const badge = getPlanCategoryBadge(p);
+      const subtitle = getPlanDurationSubtitle(p);
+      card.innerHTML = `
+        <div class="plan-check"><i class="fa-solid fa-check"></i></div>
+        ${badge}
+        <h3 style="color:#fff; margin:0 0 4px; font-weight:800; font-size:1.02rem;">${p.name}</h3>
+        <h2 style="color:var(--gym-light); margin:0; font-size:1.32rem; font-weight:900;">₱${parseFloat(p.price).toFixed(2)}</h2>
+        <p style="color:var(--gym-muted); font-size:0.78rem; margin:3px 0 0;">${subtitle}</p>
+      `;
+      cardsWrap.appendChild(card);
+    });
+
+    groupWrap.appendChild(cardsWrap);
+    container.appendChild(groupWrap);
   });
+
   updateRegAmountDisplay();
 }
 
@@ -5298,7 +5403,7 @@ async function submitRegistration() {
         zip_code:       document.getElementById('reg-zip-code')?.value.trim() || '',
         password:       document.getElementById('reg-password')?.value || '',
         gender:         selectedGender,
-        plan_id:        selectedPlanId || 1,
+        plan_id:        selectedPlanId || (availablePlans && availablePlans.length > 0 ? availablePlans[0].id : 8),
         payment_method: selectedRegPaymentMethod || 'GCash',
         reference_no:   '',
         photo_base64:   regSelectedPhotoBase64 || '',
@@ -5852,6 +5957,27 @@ async function loadDashboard(memberId) {
     setEl('prof-valid-until',   formattedExpiry);
     setEl('prof-memid-display', m.membership_id);
     setEl('prof-days-remaining', timeRemainingStr);
+
+    // Membership Tier & Annual Membership Expiry Display
+    const isOfficial = !!m.is_official_member;
+    const tierName = m.membership_tier || (isOfficial ? 'Official Member' : 'Non-Member');
+    setEl('card-tier', tierName);
+    setEl('prof-tier-name', tierName);
+
+    const cardAnnRow = document.getElementById('card-annual-expiry-row');
+    const cardAnnExp = document.getElementById('card-annual-expiry');
+    const profAnnRow = document.getElementById('prof-annual-expiry-row');
+    const profAnnExp = document.getElementById('prof-annual-expiry');
+
+    if (m.annual_membership_expiry_formatted) {
+      if (cardAnnRow) cardAnnRow.style.display = 'flex';
+      if (cardAnnExp) cardAnnExp.textContent = m.annual_membership_expiry_formatted;
+      if (profAnnRow) profAnnRow.style.display = 'flex';
+      if (profAnnExp) profAnnExp.textContent = m.annual_membership_expiry_formatted;
+    } else {
+      if (cardAnnRow) cardAnnRow.style.display = 'none';
+      if (profAnnRow) profAnnRow.style.display = 'none';
+    }
 
     // Context-Aware Pass Renewal Prompt Card
     const renewCard = document.getElementById('pass-renew-prompt-card');
@@ -6483,12 +6609,7 @@ async function openRenewalModal(preselectedPlanId = null) {
   showCheckoutStep('plans');
 
   if (!availablePlans || availablePlans.length === 0) {
-    availablePlans = [
-      { id: 2, name: 'Basic', price: 300.00, duration_months: 1 },
-      { id: 1, name: 'STANDARD', price: 500.00, duration_months: 2 },
-      { id: 3, name: 'Premium', price: 1000.00, duration_months: 6 },
-      { id: 4, name: 'VIP', price: 4000.00, duration_months: 12 }
-    ];
+    availablePlans = OFFICIAL_FALLBACK_PLANS;
   }
 
   if (preselectedPlanId) {
@@ -6536,22 +6657,69 @@ function renderCheckoutPlanCards(plans) {
     selectedRenewPlan = plans[0];
   }
 
-  plans.forEach(p => {
-    const card = document.createElement('div');
-    card.className = `plan-card ${selectedRenewPlanId == p.id ? 'selected' : ''}`;
-    card.onclick = () => {
-      selectedRenewPlanId = p.id;
-      selectedRenewPlan = p;
-      container.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-    };
-    card.innerHTML = `
-      <div class="plan-check"><i class="fa-solid fa-check"></i></div>
-      <h3 style="color:#fff; margin:0 0 4px; font-weight:800; font-size:1.05rem;">${p.name}</h3>
-      <h2 style="color:var(--gym-light); margin:0; font-size:1.38rem; font-weight:900;">₱${parseFloat(p.price).toFixed(2)}</h2>
-      <p style="color:var(--gym-muted); font-size:0.8rem; margin:3px 0 0;">${p.duration_months} Month(s) Gym Access</p>
+  const sections = [
+    {
+      title: '🏅 Membership Fee',
+      desc: 'Annual eligibility pass for discounted member rates (Valid 1 Year)',
+      filter: p => p.plan_category === 'membership_fee' || p.name.toLowerCase().includes('annual membership')
+    },
+    {
+      title: '⚡ Daily Passes',
+      desc: 'Same-day gym access passes',
+      filter: p => (p.duration_minutes === 1440 || (p.duration_months === 0 && (p.duration_minutes > 0 || p.name.toLowerCase().includes('daily')))) && p.plan_category !== 'membership_fee' && !p.name.toLowerCase().includes('annual membership')
+    },
+    {
+      title: '📅 Monthly / Yearly',
+      desc: 'Full recurring membership registrations',
+      filter: p => p.duration_months > 0 && p.plan_category !== 'membership_fee' && !p.name.toLowerCase().includes('annual membership')
+    }
+  ];
+
+  sections.forEach(sec => {
+    const secPlans = plans.filter(sec.filter);
+    if (secPlans.length === 0) return;
+
+    const groupWrap = document.createElement('div');
+    groupWrap.style.marginBottom = '14px';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'margin: 10px 0 6px; padding-bottom: 4px; border-bottom: 1px solid rgba(82,183,136,0.2);';
+    header.innerHTML = `
+      <div style="font-size: 0.82rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.4px;">
+        ${sec.title}
+      </div>
+      <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 1px;">
+        ${sec.desc}
+      </div>
     `;
-    container.appendChild(card);
+    groupWrap.appendChild(header);
+
+    const cardsWrap = document.createElement('div');
+    cardsWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-top: 6px;';
+
+    secPlans.forEach(p => {
+      const card = document.createElement('div');
+      card.className = `plan-card ${selectedRenewPlanId == p.id ? 'selected' : ''}`;
+      card.onclick = () => {
+        selectedRenewPlanId = p.id;
+        selectedRenewPlan = p;
+        container.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+      };
+      const badge = getPlanCategoryBadge(p);
+      const subtitle = getPlanDurationSubtitle(p);
+      card.innerHTML = `
+        <div class="plan-check"><i class="fa-solid fa-check"></i></div>
+        ${badge}
+        <h3 style="color:#fff; margin:0 0 4px; font-weight:800; font-size:1.02rem;">${p.name}</h3>
+        <h2 style="color:var(--gym-light); margin:0; font-size:1.32rem; font-weight:900;">₱${parseFloat(p.price).toFixed(2)}</h2>
+        <p style="color:var(--gym-muted); font-size:0.78rem; margin:3px 0 0;">${subtitle}</p>
+      `;
+      cardsWrap.appendChild(card);
+    });
+
+    groupWrap.appendChild(cardsWrap);
+    container.appendChild(groupWrap);
   });
 }
 
@@ -6562,9 +6730,10 @@ function proceedToCheckoutSummary() {
 
   const p = selectedRenewPlan;
   const priceFormatted = '₱' + parseFloat(p.price).toFixed(2);
+  const subtitle = getPlanDurationSubtitle(p);
 
   document.getElementById('summary-plan-name').textContent = p.name;
-  document.getElementById('summary-duration').textContent  = `${p.duration_months} Month(s) Access`;
+  document.getElementById('summary-duration').textContent  = subtitle;
   document.getElementById('summary-fee').textContent       = priceFormatted;
   document.getElementById('summary-total').textContent     = priceFormatted;
 

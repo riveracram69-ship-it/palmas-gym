@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1480 880" width="100%" height="100%" style="background:#ffffff; font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Arrowhead markers -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#0f172a"/>
+    </marker>
+    <filter id="card-shadow" x="-4%" y="-4%" width="108%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Header Banner -->
+  <rect x="0" y="0" width="1480" height="60" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="740" y="36" text-anchor="middle" font-size="18" font-weight="800" fill="#0f172a" letter-spacing="1">DATA FLOW DIAGRAM (DFD) LEVEL 0 — CONTEXT DIAGRAM</text>
+  <text x="740" y="52" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">Complete System Boundaries | Pure Noun-Phrase Data Flows | Gane &amp; Sarson Notation</text>
+
+  <!-- ========================================== -->
+  <!-- LEFT ENTITY: MEMBER                        -->
+  <!-- ========================================== -->
+  <g id="entity-member">
+    <rect x="40" y="350" width="200" height="180" rx="4" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" filter="url(#card-shadow)"/>
+    <rect x="40" y="350" width="200" height="14" fill="#e2e8f0" stroke="#0f172a" stroke-width="2.5"/>
+    <text x="140" y="440" text-anchor="middle" font-size="20" font-weight="800" fill="#0f172a" letter-spacing="1">MEMBER</text>
+    <text x="140" y="465" text-anchor="middle" font-size="11.5" font-weight="600" fill="#64748b">External Entity</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- CENTRAL PROCESS: 0.0                       -->
+  <!-- ========================================== -->
+  <g id="center-system">
+    <rect x="520" y="210" width="440" height="460" rx="24" fill="#ffffff" stroke="#0f172a" stroke-width="2.8" filter="url(#card-shadow)"/>
+    <line x1="520" y1="260" x2="960" y2="260" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="740" y="246" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">0.0</text>
+    <text text-anchor="middle" fill="#0f172a">
+      <tspan x="740" y="390" font-size="20" font-weight="800" letter-spacing="-0.2">Palma's Elite Gym</tspan>
+      <tspan x="740" y="425" font-size="16" font-weight="700">Membership and Attendance</tspan>
+      <tspan x="740" y="455" font-size="16" font-weight="700">Management System</tspan>
+      <tspan x="740" y="520" font-size="12" font-weight="700" fill="#64748b">[ Context Diagram — DFD Level 0 ]</tspan>
+    </text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- RIGHT ENTITY: ADMIN                        -->
+  <!-- ========================================== -->
+  <g id="entity-admin">
+    <rect x="1240" y="350" width="200" height="180" rx="4" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" filter="url(#card-shadow)"/>
+    <rect x="1240" y="350" width="200" height="14" fill="#e2e8f0" stroke="#0f172a" stroke-width="2.5"/>
+    <text x="1340" y="440" text-anchor="middle" font-size="20" font-weight="800" fill="#0f172a" letter-spacing="1">ADMIN</text>
+    <text x="1340" y="465" text-anchor="middle" font-size="11.5" font-weight="600" fill="#64748b">External Entity</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 1. MEMBER -> SYSTEM (6 Flows)              -->
+  <!-- ========================================== -->
+  <g stroke="#0f172a" stroke-width="1.4" fill="none">
+    <path d="M 240 365 L 350 365 L 350 250 L 518 250" marker-end="url(#arrow)"/>
+    <path d="M 240 385 L 370 385 L 370 280 L 518 280" marker-end="url(#arrow)"/>
+    <path d="M 240 405 L 390 405 L 390 310 L 518 310" marker-end="url(#arrow)"/>
+    <path d="M 240 425 L 410 425 L 410 340 L 518 340" marker-end="url(#arrow)"/>
+    <path d="M 240 445 L 430 445 L 430 370 L 518 370" marker-end="url(#arrow)"/>
+    <path d="M 240 465 L 450 465 L 450 400 L 518 400" marker-end="url(#arrow)"/>
+  </g>
+  <g font-size="11" font-weight="700" fill="#0f172a" text-anchor="middle">
+    <text x="430" y="244" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Registration Data</text>
+    <text x="440" y="274" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Login Credentials</text>
+    <text x="445" y="304" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Selected Membership Plan</text>
+    <text x="455" y="334" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Payment Reference &amp; Details</text>
+    <text x="465" y="364" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">QR Scan Data</text>
+    <text x="475" y="394" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Renewal Request Data</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 2. SYSTEM -> MEMBER (6 Flows)              -->
+  <!-- ========================================== -->
+  <g stroke="#0f172a" stroke-width="1.4" fill="none">
+    <path d="M 520 480 L 450 480 L 450 485 L 242 485" marker-end="url(#arrow)"/>
+    <path d="M 520 510 L 430 510 L 430 505 L 242 505" marker-end="url(#arrow)"/>
+    <path d="M 520 540 L 410 540 L 410 525 L 242 525" marker-end="url(#arrow)"/>
+    <path d="M 520 570 L 390 570 L 390 545 L 242 545" marker-end="url(#arrow)"/>
+    <path d="M 520 600 L 370 600 L 370 565 L 242 565" marker-end="url(#arrow)"/>
+    <path d="M 520 630 L 350 630 L 350 585 L 242 585" marker-end="url(#arrow)"/>
+  </g>
+  <g font-size="11" font-weight="700" fill="#0f172a" text-anchor="middle">
+    <text x="475" y="474" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Authentication Result</text>
+    <text x="465" y="504" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Electronic Membership ID</text>
+    <text x="455" y="534" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Digital QR Pass</text>
+    <text x="445" y="564" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Payment Receipt</text>
+    <text x="440" y="594" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Attendance Confirmation</text>
+    <text x="430" y="624" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Renewal Status</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 3. ADMIN -> SYSTEM (5 Flows)               -->
+  <!-- ========================================== -->
+  <g stroke="#0f172a" stroke-width="1.4" fill="none">
+    <path d="M 1240 375 L 1130 375 L 1130 265 L 962 265" marker-end="url(#arrow)"/>
+    <path d="M 1240 395 L 1110 395 L 1110 295 L 962 295" marker-end="url(#arrow)"/>
+    <path d="M 1240 415 L 1090 415 L 1090 325 L 962 325" marker-end="url(#arrow)"/>
+    <path d="M 1240 435 L 1070 435 L 1070 355 L 962 355" marker-end="url(#arrow)"/>
+    <path d="M 1240 455 L 1050 455 L 1050 385 L 962 385" marker-end="url(#arrow)"/>
+  </g>
+  <g font-size="11" font-weight="700" fill="#0f172a" text-anchor="middle">
+    <text x="1050" y="259" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Admin Credentials</text>
+    <text x="1040" y="289" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Member Account &amp; Approval Data</text>
+    <text x="1035" y="319" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Membership Plan &amp; Pricing Data</text>
+    <text x="1025" y="349" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Payment &amp; Renewal Verification Data</text>
+    <text x="1015" y="379" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Report Criteria &amp; Filter Parameters</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 4. SYSTEM -> ADMIN (6 Flows)               -->
+  <!-- ========================================== -->
+  <g stroke="#0f172a" stroke-width="1.4" fill="none">
+    <path d="M 960 480 L 1040 480 L 1040 475 L 1238 475" marker-end="url(#arrow)"/>
+    <path d="M 960 510 L 1060 510 L 1060 495 L 1238 495" marker-end="url(#arrow)"/>
+    <path d="M 960 540 L 1080 540 L 1080 515 L 1238 515" marker-end="url(#arrow)"/>
+    <path d="M 960 570 L 1100 570 L 1100 535 L 1238 535" marker-end="url(#arrow)"/>
+    <path d="M 960 600 L 1120 600 L 1120 555 L 1238 555" marker-end="url(#arrow)"/>
+    <path d="M 960 630 L 1140 630 L 1140 575 L 1238 575" marker-end="url(#arrow)"/>
+  </g>
+  <g font-size="11" font-weight="700" fill="#0f172a" text-anchor="middle">
+    <text x="1010" y="474" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Authentication Result</text>
+    <text x="1020" y="504" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Dashboard Information</text>
+    <text x="1030" y="534" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Financial Reports</text>
+    <text x="1040" y="564" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Attendance Analytics</text>
+    <text x="1050" y="594" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Member Information</text>
+    <text x="1060" y="624" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">System Activity Logs</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- FOOTER LEGEND AND CONVENTIONS NOTE         -->
+  <!-- ========================================== -->
+  <rect x="40" y="790" width="1400" height="60" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="60" y="816" font-size="12" font-weight="800" fill="#0f172a">DFD Level 0 (Context Diagram) Validation Legend:</text>
+  <text x="60" y="835" font-size="11" font-weight="600" fill="#475569">External Entities: MEMBER, ADMIN | Pure Noun-Phrase Data Flows | Standard Gane &amp; Sarson Notation</text>
+</svg>

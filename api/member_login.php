@@ -51,7 +51,8 @@ try {
     $stmt = $pdo->prepare("
         SELECT id, membership_id, first_name, middle_name, last_name, extension,
                full_name, email, contact_number, photo, google_picture,
-               account_status, status, rejection_reason, password_hash
+               account_status, status, rejection_reason, password_hash,
+               annual_membership_expiry
         FROM members
         WHERE membership_id = ?
            OR email = ?
@@ -140,6 +141,12 @@ try {
             try { clear_rate_limit($pdo, $username, 'api_member_login'); } catch (Throwable $e) {}
             unset($member['password_hash']);
             $member['photo'] = $member['photo'] ?: ($member['google_picture'] ?? null);
+            $ann_exp = $member['annual_membership_expiry'] ?? null;
+            $is_official = (!empty($ann_exp) && strtotime($ann_exp . ' 23:59:59') >= time());
+            $member['is_official_member'] = $is_official;
+            $member['membership_tier'] = $is_official ? 'Official Member' : (!empty($ann_exp) ? 'Expired Member' : 'Non-Member');
+            $member['annual_membership_expiry_formatted'] = !empty($ann_exp) ? date('M d, Y', strtotime($ann_exp)) : null;
+
             $token = bin2hex(random_bytes(32));
 
             // Ensure auth_tokens table exists

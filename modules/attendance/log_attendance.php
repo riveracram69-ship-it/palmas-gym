@@ -104,7 +104,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     LEFT JOIN membership_plans p ON p.id = s.plan_id 
                     WHERE s.member_id = m.id 
                     ORDER BY s.id DESC 
-                    LIMIT 1) as plan_name
+                    LIMIT 1) as plan_name,
+                   (SELECT p.floor_access 
+                    FROM subscriptions s 
+                    LEFT JOIN membership_plans p ON p.id = s.plan_id 
+                    WHERE s.member_id = m.id 
+                    ORDER BY s.id DESC 
+                    LIMIT 1) as floor_access,
+                   (SELECT p.plan_category 
+                    FROM subscriptions s 
+                    LEFT JOIN membership_plans p ON p.id = s.plan_id 
+                    WHERE s.member_id = m.id 
+                    ORDER BY s.id DESC 
+                    LIMIT 1) as plan_category
             FROM members m 
             WHERE m.membership_id = ? OR REPLACE(UPPER(m.membership_id), '-', '') = REPLACE(UPPER(?), '-', '')
             LIMIT 1
@@ -122,6 +134,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $acc_status = $member['account_status'] ?? 'Approved';
 
+        // Compute Member Tier & Floor Access
+        $ann_exp = $member['annual_membership_expiry'] ?? null;
+        $is_official_member = (!empty($ann_exp) && strtotime($ann_exp) >= strtotime(date('Y-m-d')));
+        $member_tier_label = $is_official_member ? 'Official Member' : 'Non-Member';
+
+        $floor_access = $member['floor_access'] ?? 'all';
+        if ($floor_access === 'second_floor_only') {
+            $floor_label = '2nd Floor Only';
+        } elseif ($floor_access === 'ground_and_second') {
+            $floor_label = 'Ground + 2nd Floor';
+        } else {
+            $floor_label = 'Ground + 2nd Floor (All Access)';
+        }
+
         // 2. Validate Account Status
         if ($acc_status === 'Pending') {
             echo json_encode([
@@ -130,6 +156,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'member_name' => $member['full_name'],
                 'membership_id' => $member['membership_id'],
                 'photo' => $member['photo'],
+                'is_official_member' => $is_official_member,
+                'member_tier_label' => $member_tier_label,
+                'floor_access' => $floor_access,
+                'floor_label' => $floor_label,
                 'message' => 'Account is Pending Review. Please approve the registration first.'
             ]);
             exit;
@@ -142,6 +172,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'member_name' => $member['full_name'],
                 'membership_id' => $member['membership_id'],
                 'photo' => $member['photo'],
+                'is_official_member' => $is_official_member,
+                'member_tier_label' => $member_tier_label,
+                'floor_access' => $floor_access,
+                'floor_label' => $floor_label,
                 'message' => 'Account Rejected. ' . ($member['rejection_reason'] ?: 'Please contact front desk.')
             ]);
             exit;
@@ -154,6 +188,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'member_name' => $member['full_name'],
                 'membership_id' => $member['membership_id'],
                 'photo' => $member['photo'],
+                'is_official_member' => $is_official_member,
+                'member_tier_label' => $member_tier_label,
+                'floor_access' => $floor_access,
+                'floor_label' => $floor_label,
                 'message' => 'Member account is currently Suspended.'
             ]);
             exit;
@@ -180,6 +218,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'membership_id' => $member['membership_id'],
                 'member_db_id' => $member['id'],
                 'photo' => $member['photo'],
+                'is_official_member' => $is_official_member,
+                'member_tier_label' => $member_tier_label,
+                'floor_access' => $floor_access,
+                'floor_label' => $floor_label,
                 'expiry_date' => $sub['expiry_date'] ?? 'No Subscription',
                 'message' => 'Membership Expired (' . ($sub['expiry_date'] ?? 'None') . '). Please renew at the desk.'
             ]);
@@ -214,6 +256,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'photo' => $member['photo'],
                     'account_status' => 'Approved',
                     'membership_status' => 'Active',
+                    'is_official_member' => $is_official_member,
+                    'member_tier_label' => $member_tier_label,
+                    'floor_access' => $floor_access,
+                    'floor_label' => $floor_label,
                     'plan_name' => $member['plan_name'] ?: 'Standard',
                     'expiry_date' => date('M d, Y', strtotime($member['expiry_date'])),
                     'time' => date('h:i A', strtotime($last_record['time_in'])),
@@ -234,6 +280,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'photo' => $member['photo'],
                 'account_status' => 'Approved',
                 'membership_status' => 'Active',
+                'is_official_member' => $is_official_member,
+                'member_tier_label' => $member_tier_label,
+                'floor_access' => $floor_access,
+                'floor_label' => $floor_label,
                 'plan_name' => $member['plan_name'] ?: 'Standard',
                 'expiry_date' => date('M d, Y', strtotime($member['expiry_date'])),
                 'time' => date('h:i A'),
@@ -256,6 +306,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'photo' => $member['photo'],
                     'account_status' => 'Approved',
                     'membership_status' => 'Active',
+                    'is_official_member' => $is_official_member,
+                    'member_tier_label' => $member_tier_label,
+                    'floor_access' => $floor_access,
+                    'floor_label' => $floor_label,
                     'plan_name' => $member['plan_name'] ?: 'Standard',
                     'expiry_date' => date('M d, Y', strtotime($member['expiry_date'])),
                     'time' => date('h:i A', strtotime($last_record['time_out'])),
@@ -277,6 +331,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'photo' => $member['photo'],
             'account_status' => 'Approved',
             'membership_status' => 'Active',
+            'is_official_member' => $is_official_member,
+            'member_tier_label' => $member_tier_label,
+            'floor_access' => $floor_access,
+            'floor_label' => $floor_label,
             'plan_name' => $member['plan_name'] ?: 'Standard',
             'expiry_date' => date('M d, Y', strtotime($member['expiry_date'])),
             'time' => date('h:i A'),

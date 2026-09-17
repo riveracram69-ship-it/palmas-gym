@@ -72,12 +72,12 @@ if ($payment_mode === 'live') {
 
 // ── DEMO MODE: Instant Activation ─────────────────────────────────────────────
 // Fetch official plan price from DB (never trust client-supplied amount)
-$plan_stmt = $pdo->prepare("SELECT id, name, price FROM membership_plans WHERE id = ?");
+$plan_stmt = $pdo->prepare("SELECT id, name, price, is_active, plan_category FROM membership_plans WHERE id = ?");
 $plan_stmt->execute([$plan_id]);
 $plan = $plan_stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$plan) {
-    echo json_encode(['success' => false, 'message' => 'Plan not found.']);
+if (!$plan || (int)($plan['is_active'] ?? 0) !== 1 || ($plan['plan_category'] ?? '') === 'legacy') {
+    echo json_encode(['success' => false, 'message' => 'This plan is no longer available. Please select an active plan.']);
     exit;
 }
 

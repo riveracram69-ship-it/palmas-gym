@@ -226,6 +226,11 @@ try {
                             <span class="cell-primary" style="font-weight:600;">
                                 <?php echo htmlspecialchars($p['plan_name'] ?? 'Membership Renewal'); ?>
                             </span>
+                            <?php if (!empty($p['is_test']) && (int)$p['is_test'] === 1): ?>
+                                <span class="badge" style="background:rgba(245,158,11,0.15); color:#d97706; border:1px solid rgba(245,158,11,0.3); font-size:0.68rem; margin-left:4px;">
+                                    <i class="fas fa-flask"></i> Sandbox Test
+                                </span>
+                            <?php endif; ?>
                         </td>
 
                         <!-- Payment Method -->

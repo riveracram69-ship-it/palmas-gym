@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Palma's Elite Gym - System Diagrams (DFD Level 0, 1 & 2)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 30px 20px; }
+    .header { text-align: center; margin-bottom: 25px; }
+    .header h1 { font-size: 24px; font-weight: 800; color: #38bdf8; margin-bottom: 6px; }
+    .header p { color: #94a3b8; font-size: 14px; }
+    .nav-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; }
+    .tab-btn { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 14px; }
+    .tab-btn.active { background: #2563eb; color: #ffffff; border-color: #2563eb; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+    .tab-btn:hover:not(.active) { background: #334155; color: #ffffff; }
+    .toolbar { display: flex; gap: 12px; margin-bottom: 20px; }
+    .btn { background: #10b981; color: #ffffff; border: none; padding: 9px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; font-size: 13.5px; }
+    .btn:hover { background: #059669; transform: translateY(-1px); }
+    .btn-blue { background: #2563eb; }
+    .btn-blue:hover { background: #1d4ed8; }
+    .card { background: #ffffff; padding: 25px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); max-width: 1450px; width: 100%; }
+    .diagram-view { display: none; width: 100%; }
+    .diagram-view.active { display: block; }
+    img, svg { width: 100%; height: auto; display: block; border-radius: 8px; }
+    @media print {
+      body { background: #ffffff; padding: 0; }
+      .nav-tabs, .toolbar, .header { display: none; }
+      .card { box-shadow: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Palma's Elite Gym Management System</h1>
+    <p>Official System Architecture & Data Flow Diagrams (DFD)</p>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('dfd0', this)">🌐 DFD Level 0 (Context)</button>
+    <button class="tab-btn" onclick="switchTab('dfd1', this)">📊 DFD Level 1 (Decomposition)</button>
+    <button class="tab-btn" onclick="switchTab('dfd2_p1', this)">🔐 DFD Level 2 (1.0 Verify Credentials)</button>
+    <button class="tab-btn" onclick="switchTab('dfd2_p2', this)">📝 DFD Level 2 (2.0 Register Member)</button>
+    <button class="tab-btn" onclick="switchTab('dfd2_p3', this)">💳 DFD Level 2 (3.0 Manage Subscriptions &amp; Plans)</button>
+    <button class="tab-btn" onclick="switchTab('dfd2_p4', this)">💰 DFD Level 2 (4.0 Process Payments)</button>
+    <button class="tab-btn" onclick="switchTab('dfd2_p5', this)">📋 DFD Level 2 (5.0 Track Attendance)</button>
+    <button class="tab-btn" onclick="switchTab('dfd2_p6', this)">🔄 DFD Level 2 (6.0 Handle Renewals)</button>
+    <button class="tab-btn" onclick="switchTab('dfd2_p7', this)">🔔 DFD Level 2 (7.0 Dispatch Notifications)</button>
+    <button class="tab-btn" onclick="switchTab('dfd2_p8', this)">📈 DFD Level 2 (8.0 Generate Reports)</button>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn btn-blue" onclick="window.print()">🖨️ Print / Save as PDF</button>
+    <a id="download-link" href="gym_context_diagram.svg" download="Palmas_Elite_Gym_DFD_Level0.svg" class="btn">⬇️ Download Current SVG</a>
+  </div>
+
+  <div class="card">
+    <div id="dfd0" class="diagram-view active">
+      <img src="gym_context_diagram.svg?v=21" alt="DFD Level 0 Context Diagram" style="width:100%; height:auto;">
+    </div>
+    <div id="dfd1" class="diagram-view">
+      <img src="gym_dfd_level1.svg?v=21" alt="DFD Level 1 Diagram" style="width:100%; height:auto;">
+    </div>
+    <div id="dfd2_p1" class="diagram-view">
+      <img src="gym_dfd_level2_p1.svg?v=21" alt="DFD Level 2 Process 1.0 Diagram" style="width:100%; height:auto;">
+    </div>
+    <div id="dfd2_p2" class="diagram-view">
+      <img src="gym_dfd_level2_p2.svg?v=21" alt="DFD Level 2 Process 2.0 Diagram" style="width:100%; height:auto;">
+    </div>
+    <div id="dfd2_p3" class="diagram-view">
+      <img src="gym_dfd_level2_p3.svg?v=21" alt="DFD Level 2 Process 3.0 Diagram" style="width:100%; height:auto;">
+    </div>
+    <div id="dfd2_p4" class="diagram-view">
+      <img src="gym_dfd_level2_p4.svg?v=21" alt="DFD Level 2 Process 4.0 Diagram" style="width:100%; height:auto;">
+    </div>
+    <div id="dfd2_p5" class="diagram-view">
+      <img src="gym_dfd_level2_p5.svg?v=21" alt="DFD Level 2 Process 5.0 Diagram" style="width:100%; height:auto;">
+    </div>
+    <div id="dfd2_p6" class="diagram-view">
+      <img src="gym_dfd_level2_p6.svg?v=21" alt="DFD Level 2 Process 6.0 Diagram" style="width:100%; height:auto;">
+    </div>
+    <div id="dfd2_p7" class="diagram-view">
+      <img src="gym_dfd_level2_p7.svg?v=21" alt="DFD Level 2 Process 7.0 Diagram" style="width:100%; height:auto;">
+    </div>
+    <div id="dfd2_p8" class="diagram-view">
+      <img src="gym_dfd_level2_p8.svg?v=21" alt="DFD Level 2 Process 8.0 Diagram" style="width:100%; height:auto;">
+    </div>
+  </div>
+
+  <script>
+    function switchTab(viewId, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.diagram-view').forEach(v => v.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(viewId).classList.add('active');
+      const downloadLink = document.getElementById('download-link');
+      if(viewId === 'dfd0') {
+        downloadLink.href = 'gym_context_diagram.svg';
+        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level0.svg';
+      } else if(viewId === 'dfd1') {
+        downloadLink.href = 'gym_dfd_level1.svg';
+        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level1.svg';
+      } else if(viewId === 'dfd2_p1') {
+        downloadLink.href = 'gym_dfd_level2_p1.svg';
+        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process1.svg';
+      } else if(viewId === 'dfd2_p2') {
+        downloadLink.href = 'gym_dfd_level2_p2.svg';
+        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process2.svg';
+      } else if(viewId === 'dfd2_p3') {
+        downloadLink.href = 'gym_dfd_level2_p3.svg';
+        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process3.svg';
+      } else if(viewId === 'dfd2_p4') {
+        downloadLink.href = 'gym_dfd_level2_p4.svg';
+        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process4.svg';
+      } else if(viewId === 'dfd2_p5') {
+        downloadLink.href = 'gym_dfd_level2_p5.svg';
+        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process5.svg';
+      } else if(viewId === 'dfd2_p6') {
+        downloadLink.href = 'gym_dfd_level2_p6.svg';
+        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process6.svg';
+      } else if(viewId === 'dfd2_p7') {
+        downloadLink.href = 'gym_dfd_level2_p7.svg';
+        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process7.svg';
+      } else if(viewId === 'dfd2_p8') {
+        downloadLink.href = 'gym_dfd_level2_p8.svg';
+        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process8.svg';
+      }
+    }
+  </script>
+
+</body>
+</html>

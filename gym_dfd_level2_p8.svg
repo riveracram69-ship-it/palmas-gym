@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1350 920" width="100%" height="100%" style="background:#ffffff; font-family:'Segoe UI', Arial, Helvetica, sans-serif;">
+  <defs>
+    <!-- Arrowhead markers -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#1e293b"/>
+    </marker>
+    <filter id="card-shadow" x="-4%" y="-4%" width="108%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Header Banner -->
+  <rect x="0" y="0" width="1350" height="60" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="675" y="36" text-anchor="middle" font-size="18" font-weight="800" fill="#0f172a" letter-spacing="1">DFD LEVEL 2 — PROCESS 8.0: GENERATE REPORTS &amp; AUDIT LOGS</text>
+  <text x="675" y="52" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">Sub-process Decomposition | Financial, Attendance &amp; Audit Trail Analytics | Pure Noun-Phrase Data Flows</text>
+
+  <!-- ================================================================= -->
+  <!-- EXTERNAL ENTITY (LEFT COLUMN: x=60 to x=240, width=180)           -->
+  <!-- ================================================================= -->
+
+  <!-- ADMIN ENTITY (Centered vertically: y=380 to y=460) -->
+  <g id="entity-admin">
+    <rect x="60" y="380" width="180" height="80" rx="3" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" filter="url(#card-shadow)"/>
+    <rect x="60" y="380" width="180" height="10" fill="#e2e8f0" stroke="#0f172a" stroke-width="2.5"/>
+    <text x="150" y="428" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">ADMIN</text>
+    <text x="150" y="446" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">External Entity</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- SUB-PROCESSES (CENTER COLUMN: x=480 to x=760, Width=280)         -->
+  <!-- ================================================================= -->
+
+  <!-- 8.1 Parse Query Parameters -->
+  <g id="subproc-8-1">
+    <rect x="480" y="90" width="280" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="120" x2="760" y2="120" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="620" y="112" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">8.1</text>
+    <text x="620" y="148" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Parse Query Parameters</text>
+  </g>
+
+  <!-- 8.2 Aggregate Financial & Operational Metrics -->
+  <g id="subproc-8-2">
+    <rect x="480" y="275" width="280" height="85" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="305" x2="760" y2="305" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="620" y="297" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">8.2</text>
+    <text x="620" y="328" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">Aggregate Financial &amp;</text>
+    <text x="620" y="346" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">Operational Metrics</text>
+  </g>
+
+  <!-- 8.3 Compile System Audit Trail -->
+  <g id="subproc-8-3">
+    <rect x="480" y="475" width="280" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="505" x2="760" y2="505" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="620" y="497" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">8.3</text>
+    <text x="620" y="533" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Compile System Audit Trail</text>
+  </g>
+
+  <!-- 8.4 Generate Analytics & Export Report -->
+  <g id="subproc-8-4">
+    <rect x="480" y="670" width="280" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="700" x2="760" y2="700" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="620" y="692" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">8.4</text>
+    <text x="620" y="728" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Generate Analytics &amp; Export Report</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- DATA STORES (RIGHT COLUMN: D5, D6, D9)                            -->
+  <!-- ================================================================= -->
+
+  <!-- D5 Payments (Read by 8.2) -->
+  <g id="ds-d5">
+    <line x1="980" y1="260" x2="980" y2="305" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="260" x2="1260" y2="260" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="305" x2="1260" y2="305" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1025" y1="260" x2="1025" y2="305" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1002" y="288" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D5</text>
+    <text x="1142" y="288" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Payments</text>
+  </g>
+
+  <!-- D6 Attendance (Read by 8.2) -->
+  <g id="ds-d6">
+    <line x1="980" y1="335" x2="980" y2="380" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="335" x2="1260" y2="335" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="380" x2="1260" y2="380" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1025" y1="335" x2="1025" y2="380" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1002" y="363" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D6</text>
+    <text x="1142" y="363" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Attendance</text>
+  </g>
+
+  <!-- D9 Activity_Logs (Read by 8.3) -->
+  <g id="ds-d9">
+    <line x1="980" y1="485" x2="980" y2="530" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="485" x2="1260" y2="485" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="980" y1="530" x2="1260" y2="530" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1025" y1="485" x2="1025" y2="530" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1002" y="513" text-anchor="middle" font-size="13.5" font-weight="800" fill="#0f172a">D9</text>
+    <text x="1142" y="513" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Activity_Logs</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- LEFT-SIDE DATA FLOWS (ADMIN ENTITY TO/FROM SUB-PROCESSES)         -->
+  <!-- ================================================================= -->
+
+  <!-- Flow 1: ADMIN to 8.1 (Report Criteria & Filter Parameters) -->
+  <path d="M 150 380 L 150 127 L 478 127" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="314" y="120" text-anchor="middle" font-size="11" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Report Criteria &amp; Filter Parameters</text>
+
+  <!-- Flow 2: 8.4 to ADMIN (Financial & Operational Analytics Reports) -->
+  <path d="M 478 707 L 150 707 L 150 462" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="314" y="700" text-anchor="middle" font-size="11" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Financial &amp; Operational Analytics Reports</text>
+
+  <!-- ================================================================= -->
+  <!-- INTERNAL SUB-PROCESS DATA FLOWS                                   -->
+  <!-- ================================================================= -->
+
+  <!-- Flow 3: 8.1 to 8.2 (Metrics Query Criteria) -->
+  <line x1="580" y1="165" x2="580" y2="273" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="588" y="222" text-anchor="start" font-size="11" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Metrics Query Criteria</text>
+
+  <!-- Flow 4: 8.1 to 8.3 (Audit Query Criteria) Bypass track on the left: x=510 -->
+  <path d="M 510 165 L 510 473" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="502" y="325" text-anchor="end" font-size="11" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Audit Query Criteria</text>
+
+  <!-- Flow 5: 8.2 to 8.4 (Consolidated Metrics Dataset) Bypass track on the right: x=720 -->
+  <path d="M 720 360 L 720 668" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="728" y="525" text-anchor="start" font-size="11" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Consolidated Metrics Dataset</text>
+
+  <!-- Flow 6: 8.3 to 8.4 (Consolidated Audit Dataset) Direct vertical at x=620 -->
+  <line x1="620" y1="550" x2="620" y2="668" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="628" y="612" text-anchor="start" font-size="11" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Consolidated Audit Dataset</text>
+
+  <!-- ================================================================= -->
+  <!-- RIGHT-SIDE DATA FLOWS (DATA STORES TO SUB-PROCESSES)             -->
+  <!-- ================================================================= -->
+
+  <!-- Flow 7: D5 to 8.2 (Revenue & Transaction Metrics) -->
+  <path d="M 978 282 L 810 282 L 810 305 L 762 305" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="880" y="276" text-anchor="middle" font-size="11" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Revenue &amp; Transaction Metrics</text>
+
+  <!-- Flow 8: D6 to 8.2 (Attendance & Peak Hours Data) -->
+  <path d="M 978 358 L 810 358 L 810 335 L 762 335" stroke="#1e293b" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="880" y="352" text-anchor="middle" font-size="11" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">Attendance &amp; Peak Hours Data</text>
+
+  <!-- Flow 9: D9 to 8.3 (System Activity & Audit Trail) Direct Straight Line at y=508 -->
+  <line x1="978" y1="508" x2="762" y2="508" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="870" y="501" text-anchor="middle" font-size="11" font-weight="700" fill="#1e293b" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round;">System Activity &amp; Audit Trail</text>
+
+  <!-- ================================================================= -->
+  <!-- FOOTER LEGEND AND CONVENTIONS NOTE                                -->
+  <!-- ================================================================= -->
+  <rect x="40" y="825" width="1270" height="65" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="60" y="850" font-size="12" font-weight="800" fill="#0f172a">DFD Level 2 (Process 8.0) Architecture &amp; Balance Verification Legend:</text>
+  <text x="60" y="872" font-size="11" font-weight="600" fill="#475569">1. Pure Noun Phrases: All flows describe data objects.  2. External Balance: Inputs/Outputs conform to DFD Level 1 parent flow.</text>
+  <text x="900" y="872" font-size="11" font-weight="600" fill="#475569">3. Data Stores: D5 (Payments), D6 (Attendance), D9 (Activity_Logs).</text>
+</svg>

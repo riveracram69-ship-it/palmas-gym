@@ -9,6 +9,7 @@ try {
         $members = $pdo->query(
             "SELECT m.id, m.membership_id, m.full_name, m.email, m.contact_number, m.status, m.account_status, m.created_at, 
                     m.house_street, m.barangay, m.municipality, m.province, m.zip_code, m.address, m.dob, m.age,
+                    m.annual_membership_expiry,
                     COALESCE(sub.plan_name, '—') AS plan_name,
                     sub.expiry_date
              FROM members m
@@ -55,10 +56,12 @@ $active = array_filter($members, function($m) {
             <input type="text" class="form-control" id="member-search" placeholder="Search name, email, or ID…">
         </div>
         <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
-            <select class="form-control" id="status-filter" style="width:auto;min-width:130px;">
+            <select class="form-control" id="status-filter" style="width:auto;min-width:160px;">
                 <option value="">All Members</option>
-                <option value="Active">Active</option>
-                <option value="Expired">Expired</option>
+                <option value="Active">🟢 Active Pass</option>
+                <option value="Expired">🔴 Expired Pass</option>
+                <option value="official">🏅 Official Members</option>
+                <option value="non-member">⚪ Non-Members</option>
             </select>
             <select class="form-control" id="per-page-select" style="width:auto;min-width:130px;">
                 <option value="10" selected>10 per page</option>
@@ -73,11 +76,11 @@ $active = array_filter($members, function($m) {
         <table id="members-table">
             <thead>
                 <tr>
-                    <th>Member</th>
-                    <th>Membership ID</th>
-                    <th>Plan & Expiry</th>
-                    <th>Account Status</th>
-                    <th>Membership</th>
+                    <th>Member Details</th>
+                    <th>Member ID</th>
+                    <th>Member Type</th>
+                    <th>Current Plan & Expiry</th>
+                    <th>Pass Status</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -92,6 +95,10 @@ $active = array_filter($members, function($m) {
                         ? 'Inactive' 
                         : ($is_sub_expired ? 'Expired' : 'Active');
                     $badge_class = ($effective_status === 'Active') ? 'badge-success' : 'badge-danger';
+                    
+                    $ann_exp = $m['annual_membership_expiry'] ?? null;
+                    $is_official_member = (!empty($ann_exp) && strtotime($ann_exp) >= strtotime(date('Y-m-d')));
+
                     $formatted_addr = format_member_address($m);
                     $display_location = !empty($m['barangay']) 
                         ? $m['barangay'] . ', ' . ($m['municipality'] ?: 'Talavera') 
@@ -103,13 +110,15 @@ $active = array_filter($members, function($m) {
                     data-id="<?php echo htmlspecialchars(strtolower($m['membership_id']), ENT_QUOTES, 'UTF-8'); ?>"
                     data-address="<?php echo htmlspecialchars(strtolower($formatted_addr . ' ' . ($m['barangay'] ?? '') . ' ' . ($m['municipality'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>"
                     data-status="<?php echo htmlspecialchars($m['account_status'] ?? 'Approved', ENT_QUOTES, 'UTF-8'); ?>"
+                    data-member-type="<?php echo $is_official_member ? 'official' : 'non-member'; ?>"
                     data-membership-status="<?php echo htmlspecialchars($effective_status, ENT_QUOTES, 'UTF-8'); ?>">
 
+                    <!-- 1. Member Details -->
                     <td>
                         <div class="member-cell">
                             <div class="member-avatar"><?php echo strtoupper(substr($m['full_name'], 0, 1)); ?></div>
                             <div>
-                                <div style="font-weight:600;color:var(--text-main);"><?php echo htmlspecialchars($m['full_name']); ?></div>
+                                <div style="font-weight:700;color:var(--text-main);font-size:0.92rem;"><?php echo htmlspecialchars($m['full_name']); ?></div>
                                 <div style="font-size:0.75rem;color:var(--text-muted);"><?php echo htmlspecialchars($m['email']); ?></div>
                                 <?php if ($display_location): ?>
                                 <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:4px;" title="<?php echo htmlspecialchars($formatted_addr); ?>">
@@ -120,40 +129,59 @@ $active = array_filter($members, function($m) {
                             </div>
                         </div>
                     </td>
-                    <td><code style="font-size:0.85rem;color:var(--accent);font-weight:700;"><?php echo htmlspecialchars($m['membership_id']); ?></code></td>
+
+                    <!-- 2. Member ID -->
+                    <td>
+                        <code style="font-size:0.85rem;color:var(--accent);font-weight:700;background:var(--accent-dim);padding:2px 8px;border-radius:6px;"><?php echo htmlspecialchars($m['membership_id']); ?></code>
+                    </td>
+
+                    <!-- 3. Member Type (Official Member vs Non-Member) -->
+                    <td>
+                        <?php if ($is_official_member): ?>
+                            <span class="badge" style="background:rgba(16,185,129,0.15); color:#059669; border:1px solid rgba(16,185,129,0.3); font-weight:700; font-size:0.72rem; padding:4px 9px;">
+                                <i class="fas fa-id-card"></i> Official Member
+                            </span>
+                            <div style="font-size:0.7rem; color:var(--text-muted); margin-top:3px;">
+                                <i class="far fa-calendar-check"></i> Exp: <?php echo date('M d, Y', strtotime($ann_exp)); ?>
+                            </div>
+                        <?php else: ?>
+                            <span class="badge" style="background:rgba(100,116,139,0.12); color:#64748b; border:1px solid rgba(100,116,139,0.25); font-weight:600; font-size:0.72rem; padding:4px 9px;">
+                                <i class="fas fa-user"></i> Non-Member
+                            </span>
+                            <div style="font-size:0.7rem; color:var(--text-muted); margin-top:3px;">
+                                Regular rates apply
+                            </div>
+                        <?php endif; ?>
+                    </td>
+
+                    <!-- 4. Current Plan & Expiry -->
                     <td>
                         <?php if ($has_plan): ?>
-                        <div style="font-weight:600;font-size:0.85rem;color:var(--text-main);"><i class="fas fa-tag" style="color:<?php echo $is_sub_expired ? 'var(--text-muted)' : 'var(--accent)'; ?>;font-size:0.75rem;"></i> <?php echo htmlspecialchars($m['plan_name']); ?></div>
-                        <div style="font-size:0.75rem;color:<?php echo $is_sub_expired ? 'var(--danger)' : 'var(--text-muted)'; ?>;font-weight:<?php echo $is_sub_expired ? '600' : 'normal'; ?>;">
+                        <div style="font-weight:700;font-size:0.85rem;color:var(--text-main);">
+                            <i class="fas fa-tag" style="color:<?php echo $is_sub_expired ? 'var(--text-muted)' : 'var(--accent)'; ?>;font-size:0.75rem;"></i> 
+                            <?php echo htmlspecialchars($m['plan_name']); ?>
+                        </div>
+                        <div style="font-size:0.75rem;color:<?php echo $is_sub_expired ? 'var(--danger)' : 'var(--text-muted)'; ?>;font-weight:<?php echo $is_sub_expired ? '600' : 'normal'; ?>;margin-top:2px;">
                             <?php echo $m['expiry_date'] ? ($is_sub_expired ? 'Expired: ' : 'Exp: ') . date('M d, Y', strtotime($m['expiry_date'])) : '—'; ?>
                         </div>
                         <?php else: ?>
                         <span style="color:var(--text-muted);font-size:0.8rem;">No active plan</span>
                         <?php endif; ?>
                     </td>
-                    <td>
-                        <?php 
-                        $acc = $m['account_status'] ?? 'Approved';
-                        if ($acc === 'Approved'): ?>
-                            <span class="badge badge-success"><i class="fas fa-check-circle"></i> Approved</span>
-                        <?php elseif ($acc === 'Pending'): ?>
-                            <a href="pending-registrations.php" style="text-decoration:none;"><span class="badge" style="background:#FEF3C7;color:#D97706;border:1px solid #FDE68A;"><i class="fas fa-clock"></i> Pending Review</span></a>
-                        <?php elseif ($acc === 'Rejected'): ?>
-                            <span class="badge badge-danger"><i class="fas fa-times-circle"></i> Rejected</span>
-                        <?php else: ?>
-                            <span class="badge badge-gray"><?php echo htmlspecialchars($acc); ?></span>
-                        <?php endif; ?>
-                    </td>
+
+                    <!-- 5. Pass Status -->
                     <td>
                         <?php if (($m['account_status'] ?? 'Approved') === 'Approved'): ?>
-                            <span class="badge <?php echo $badge_class; ?>">
+                            <span class="badge <?php echo $badge_class; ?>" style="font-size:0.72rem; padding:4px 9px;">
                                 <i class="fas fa-circle" style="font-size:0.35rem;margin-right:4px;"></i>
-                                <?php echo htmlspecialchars($effective_status); ?>
+                                <?php echo htmlspecialchars($effective_status); ?> Pass
                             </span>
                         <?php else: ?>
-                            <span class="badge badge-gray">—</span>
+                            <span class="badge badge-gray"><?php echo htmlspecialchars($m['account_status'] ?? 'Pending'); ?></span>
                         <?php endif; ?>
                     </td>
+
+                    <!-- 6. Actions -->
                     <td style="white-space:nowrap;">
                         <div style="display:flex;gap:0.5rem;align-items:center;">
                             <a href="view-member.php?id=<?php echo $m['id']; ?>" class="btn btn-outline btn-icon" title="View Profile" aria-label="View Profile">
@@ -289,7 +317,12 @@ function filterTable() {
         const emailMatch  = row.dataset.email.includes(q);
         const idMatch     = row.dataset.id.includes(q);
         const addrMatch   = (row.dataset.address || '').includes(q);
-        const statusMatch = !s || row.dataset.membershipStatus === s;
+        let statusMatch = true;
+        if (s === 'official' || s === 'non-member') {
+            statusMatch = (row.dataset.memberType === s);
+        } else if (s) {
+            statusMatch = (row.dataset.membershipStatus === s);
+        }
         const match = (nameMatch || emailMatch || idMatch || addrMatch) && statusMatch;
 
         if (match) {

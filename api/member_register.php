@@ -88,7 +88,7 @@ $address        = compose_member_address_string($house_street, $barangay, $munic
 $dob            = trim($data['dob'] ?? '');
 $age            = compute_member_age($dob, !empty($data['age']) ? intval($data['age']) : null);
 $gender         = $data['gender'] ?? 'Male';
-$plan_id        = intval($data['plan_id'] ?? 1);
+$plan_id        = intval($data['plan_id'] ?? 8);
 $auth_provider  = $data['auth_provider'] ?? 'password';
 $google_id      = trim($data['google_id'] ?? '');
 $google_picture = trim($data['google_picture'] ?? '');
@@ -232,15 +232,25 @@ try {
     $member_id = (int)$pdo->lastInsertId();
 
     // Fetch plan details if selected
-    $plan_name  = 'Standard';
+    $plan_name  = 'Annual Membership Fee';
     $plan_price = 0.00;
     if ($plan_id > 0) {
-        $p_fetch = $pdo->prepare("SELECT name, price, duration_months, duration_minutes, is_test_promo FROM membership_plans WHERE id = ?");
+        $p_fetch = $pdo->prepare("SELECT name, price, duration_months, duration_minutes, is_test_promo, is_active, plan_category FROM membership_plans WHERE id = ?");
         $p_fetch->execute([$plan_id]);
         $p_row = $p_fetch->fetch(PDO::FETCH_ASSOC);
-        if ($p_row) {
+        if ($p_row && (int)($p_row['is_active'] ?? 0) === 1 && ($p_row['plan_category'] ?? '') !== 'legacy') {
             $plan_name  = $p_row['name'];
             $plan_price = floatval($p_row['price']);
+        } else {
+            // Fallback to active Plan 8 if submitted plan was invalid or legacy
+            $p_fetch = $pdo->prepare("SELECT id, name, price FROM membership_plans WHERE id = 8 AND is_active = 1");
+            $p_fetch->execute();
+            $fallback_row = $p_fetch->fetch(PDO::FETCH_ASSOC);
+            if ($fallback_row) {
+                $plan_id    = 8;
+                $plan_name  = $fallback_row['name'];
+                $plan_price = floatval($fallback_row['price']);
+            }
         }
     }
 

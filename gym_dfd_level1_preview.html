@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gym Management System - DFD Level 1 (Validated)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #0b0f19;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #1e293b;
+      padding: 14px 24px;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    header p {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #0369a1;
+    }
+
+    .main-container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .diagram-panel {
+      flex: 1;
+      overflow: auto;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      background: #07090e;
+    }
+
+    .diagram-wrapper {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
+      padding: 10px;
+      max-width: 1480px;
+      width: 100%;
+    }
+
+    .sidebar {
+      width: 400px;
+      background: #111827;
+      border-left: 1px solid #1f2937;
+      padding: 20px;
+      overflow-y: auto;
+      font-size: 0.875rem;
+    }
+
+    .sidebar h2 {
+      font-size: 1.05rem;
+      color: #38bdf8;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #374151;
+      padding-bottom: 6px;
+    }
+
+    .item-group {
+      margin-bottom: 18px;
+    }
+
+    .item-group h3 {
+      font-size: 0.9rem;
+      color: #e5e7eb;
+      margin-bottom: 8px;
+    }
+
+    .badge-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .badge {
+      background: #1f2937;
+      padding: 7px 10px;
+      border-radius: 5px;
+      border: 1px solid #374151;
+      font-size: 0.82rem;
+    }
+
+    .badge b {
+      color: #38bdf8;
+    }
+
+    .badge.fix {
+      border-left: 3px solid #10b981;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>Gym Management System — DFD Level 1 (Validated)</h1>
+      <p>Uniform Solid Lines | Strict Directional Arrowheads (Read vs Write) | Clean Parallel Routing &amp; Bridge Arcs
+      </p>
+    </div>
+    <div class="controls">
+      <button onclick="window.print()">Print / Export PDF</button>
+    </div>
+  </header>
+  <div class="main-container">
+    <div class="diagram-panel">
+      <div class="diagram-wrapper">
+        <object data="gym_dfd_level1.svg" type="image/svg+xml" width="100%" height="auto"></object>
+      </div>
+    </div>
+    <div class="sidebar">
+      <h2>Revisions &amp; Validations Summary</h2>
+
+      <div class="item-group">
+        <h3>1. Line Style Consistency</h3>
+        <div class="badge-list">
+          <div class="badge fix">✓ <b>Admin ➔ 2.0 (Account Approval &amp; Role Data):</b> Changed from dashed to
+            <b>SOLID LINE</b> to maintain 100% diagram-wide line style consistency.</div>
+        </div>
+      </div>
+
+      <div class="item-group">
+        <h3>2. Read vs Write Arrowhead Directions</h3>
+        <div class="badge-list">
+          <div class="badge fix">✓ <b>D1 ➔ 1.0 (Read):</b> Points TOWARDS 1.0 (Reads Member Account Data).</div>
+          <div class="badge fix">✓ <b>D2 ➔ 1.0 (Read):</b> Points TOWARDS 1.0 (Reads Staff Account Data).</div>
+          <div class="badge fix">✓ <b>1.0 ➔ D9 (Write):</b> Points TOWARDS D9 (Writes Login Audit Entry).</div>
+          <div class="badge fix">✓ <b>2.0 ➔ D1 (Write):</b> Points TOWARDS D1 (Writes New Member Record).</div>
+          <div class="badge fix">✓ <b>3.0 ➔ D3 (Write):</b> Points TOWARDS D3 (Writes Membership Plan Data).</div>
+          <div class="badge fix">✓ <b>3.0 ➔ D4 (Write):</b> Points TOWARDS D4 (Writes Subscription Record).</div>
+          <div class="badge fix">✓ <b>4.0 ➔ D4 (Write):</b> Points TOWARDS D4 (Writes Updated Subscription Status).
+          </div>
+          <div class="badge fix">✓ <b>4.0 ➔ D5 (Write):</b> Points TOWARDS D5 (Writes Payment Transaction Record).</div>
+          <div class="badge fix">✓ <b>D1 ➔ 5.0:</b> Membership Validity Check</div>
+          <div class="badge fix">✓ <b>5.0 ➔ D6:</b> Attendance Timestamp Log</div>
+          <div class="badge fix">✓ <b>6.0 ➔ D4:</b> Subscription Validity Extension (Write after renewal)</div>
+          <div class="badge fix">✓ <b>D4 ➔ 6.0:</b> Subscription Expiration Status (Read)</div>
+          <div class="badge fix">✓ <b>6.0 ➔ D7:</b> Renewal Request Details</div>
+          <div class="badge fix">✓ <b>D4 ➔ 7.0:</b> Subscription Expiry Data (Read milestone check)</div>
+          <div class="badge fix">✓ <b>7.0 ➔ D8:</b> Notification Dispatch Log</div>
+          <div class="badge fix">✓ <b>D5 ➔ 8.0:</b> Revenue &amp; Transaction Metrics (Read)</div>
+          <div class="badge fix">✓ <b>D9 ➔ 8.0:</b> System Activity &amp; Audit Trail (Read)</div>
+        </div>
+      </div>
+
+      <div class="item-group">
+        <h3>3. Clean Line Routing &amp; Bridges</h3>
+        <div class="badge-list">
+          <div class="badge">✓ Distinct parallel tracks on both left and right columns.</div>
+          <div class="badge">✓ Bridge/Hop arcs (∩) at intersections between Member downward flows and Admin upward
+            flows.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

@@ -163,7 +163,8 @@ try {
     $stmt = $pdo->prepare("
         SELECT id, membership_id, first_name, middle_name, last_name, extension, full_name,
                email, contact_number, house_street, barangay, municipality, province, zip_code, address,
-               dob, age, gender, photo, google_picture, auth_provider, status, account_status
+               dob, age, gender, photo, google_picture, auth_provider, status, account_status,
+               annual_membership_expiry
         FROM members WHERE id = ?
     ");
     $stmt->execute([$member_id]);
@@ -172,6 +173,12 @@ try {
     $updated_member['formatted_address'] = format_member_address($updated_member);
     $updated_member['formatted_dob']     = format_member_dob($updated_member['dob'] ?? null, $updated_member['age'] ?? null);
     $updated_member['computed_age']      = compute_member_age($updated_member['dob'] ?? null, $updated_member['age'] ?? null);
+
+    $ann_exp = $updated_member['annual_membership_expiry'] ?? null;
+    $is_official = (!empty($ann_exp) && strtotime($ann_exp . ' 23:59:59') >= time());
+    $updated_member['is_official_member'] = $is_official;
+    $updated_member['membership_tier'] = $is_official ? 'Official Member' : (!empty($ann_exp) ? 'Expired Member' : 'Non-Member');
+    $updated_member['annual_membership_expiry_formatted'] = !empty($ann_exp) ? date('M d, Y', strtotime($ann_exp)) : null;
 
     echo json_encode([
         'success' => true,

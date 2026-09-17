@@ -37,8 +37,8 @@ try {
     $stmt->execute([$plan_id]);
     $plan = $stmt->fetch();
 
-    if (!$plan) {
-        echo json_encode(['success' => false, 'message' => 'Selected plan not found.']);
+    if (!$plan || (int)($plan['is_active'] ?? 0) !== 1) {
+        echo json_encode(['success' => false, 'message' => 'Selected plan is no longer available.']);
         exit;
     }
 

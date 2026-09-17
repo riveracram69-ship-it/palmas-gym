@@ -19,38 +19,61 @@ require_once __DIR__ . '/../config/paymongo.php';
 try {
     $include_test = isset($_GET['include_test']) ? (int)$_GET['include_test'] : 1;
     
+    // By default: only return active plans (is_active = 1). Exclude legacy plans that are deactivated.
     $sql = "
-        SELECT id, name, price, duration_months, duration_minutes, benefits, is_test_promo, promo_code 
-        FROM membership_plans 
+        SELECT id, name, price, duration_months, duration_minutes, benefits,
+               is_test_promo, promo_code, is_active, plan_category, floor_access
+        FROM membership_plans
+        WHERE is_active = 1
     ";
     if ($include_test === 0) {
-        $sql .= " WHERE is_test_promo = 0 ";
+        $sql .= " AND is_test_promo = 0 AND plan_category != 'test_promo' ";
     }
-    $sql .= " ORDER BY is_test_promo DESC, price ASC";
+    // Order: membership_fee first, then member_pass, then non_member_pass, then test promos; within each by price
+    $sql .= " ORDER BY 
+        CASE plan_category 
+            WHEN 'membership_fee' THEN 1 
+            WHEN 'member_pass' THEN 2 
+            WHEN 'non_member_pass' THEN 3 
+            WHEN 'test_promo' THEN 4 
+            ELSE 5 
+        END, 
+        price ASC";
 
     $stmt = $pdo->query($sql);
     $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
     
     $plans = [];
     foreach ($rows as $r) {
-        $is_minute_promo = (!empty($r['duration_minutes']) && (int)$r['duration_minutes'] > 0);
-        $duration_label  = $is_minute_promo 
-            ? ((int)$r['duration_minutes'] . ' Minute' . ((int)$r['duration_minutes'] > 1 ? 's' : ''))
-            : ((int)$r['duration_months'] . ' Month' . ((int)$r['duration_months'] > 1 ? 's' : ''));
+        $dur_min = (int)($r['duration_minutes'] ?? 0);
+        $dur_mo  = (int)$r['duration_months'];
+        $is_daily = ($dur_min === 1440);
+
+        if ($is_daily) {
+            $duration_label = '1 Day';
+        } elseif ($dur_min > 0) {
+            $duration_label = $dur_min . ' Minute' . ($dur_min > 1 ? 's' : '');
+        } else {
+            $duration_label = $dur_mo . ' Month' . ($dur_mo > 1 ? 's' : '');
+        }
 
         $plans[] = [
             'id'               => (int)$r['id'],
             'name'             => $r['name'],
             'price'            => (float)$r['price'],
             'price_formatted'  => '₱' . number_format((float)$r['price'], 2),
-            'duration_months'  => (int)$r['duration_months'],
-            'duration_minutes' => (int)($r['duration_minutes'] ?? 0),
+            'duration_months'  => $dur_mo,
+            'duration_minutes' => $dur_min,
             'duration_label'   => $duration_label,
             'benefits'         => $r['benefits'] ?? '',
             'is_test_promo'    => ((int)($r['is_test_promo'] ?? 0) === 1),
-            'promo_code'       => $r['promo_code'] ?? null
+            'promo_code'       => $r['promo_code'] ?? null,
+            // New fields (additive — backward compatible)
+            'plan_category'    => $r['plan_category'] ?? 'member_pass',
+            'floor_access'     => $r['floor_access'] ?? 'all',
         ];
     }
+
 
     // Fetch payment settings (GCash & Maya details uploaded by Admin)
     $settings_stmt = $pdo->query("

@@ -14,9 +14,23 @@ try {
         sync_attendance_auto_checkout($pdo);
 
         $stmt = $pdo->prepare(
-            "SELECT a.id, a.date, a.time_in, a.time_out, m.full_name, m.membership_id
+            "SELECT a.id, a.date, a.time_in, a.time_out, m.full_name, m.membership_id,
+                    m.annual_membership_expiry,
+                    COALESCE(sub.plan_name, 'No Plan') AS plan_name,
+                    COALESCE(sub.floor_access, 'all') AS floor_access,
+                    sub.plan_category
              FROM attendance a
              JOIN members m ON m.id = a.member_id
+             LEFT JOIN (
+                 SELECT s.member_id, p.name AS plan_name, p.floor_access, p.plan_category
+                 FROM subscriptions s
+                 JOIN (
+                     SELECT member_id, MAX(id) AS latest_sub_id
+                     FROM subscriptions
+                     GROUP BY member_id
+                 ) latest ON s.id = latest.latest_sub_id
+                 LEFT JOIN membership_plans p ON p.id = s.plan_id
+             ) sub ON sub.member_id = m.id
              WHERE a.date = :log_date
              ORDER BY a.time_in DESC"
         );
@@ -87,6 +101,8 @@ try {
                 <thead>
                     <tr>
                         <th>Member</th>
+                        <th>Member Tier & Plan</th>
+                        <th>Floor Access</th>
                         <th>Time In</th>
                         <th>Time Out</th>
                         <th>Status</th>
@@ -95,7 +111,7 @@ try {
                 <tbody id="logs-body">
                     <?php if (empty($today_logs)): ?>
                     <tr id="no-logs">
-                        <td colspan="4">
+                        <td colspan="6">
                             <div class="empty-state" style="padding:4rem 0;">
                                 <i class="fas fa-qrcode" style="font-size:2.5rem; opacity:0.1; margin-bottom:1rem; display:block;"></i>
                                 <p>Waiting for first scan...</p>
@@ -105,18 +121,50 @@ try {
                     <?php else: ?>
                     <?php foreach ($today_logs as $log): 
                         $has_timed_out = (!empty($log['time_out']) && $log['time_out'] !== '00:00:00');
+                        $ann_exp = $log['annual_membership_expiry'] ?? null;
+                        $is_official = (!empty($ann_exp) && strtotime($ann_exp) >= strtotime(date('Y-m-d')));
+                        $fa = $log['floor_access'] ?? 'all';
                     ?>
                     <tr id="att-row-<?php echo $log['id']; ?>">
                         <td>
                             <div class="member-cell">
                                 <div class="member-avatar"><?php echo strtoupper(substr($log['full_name'], 0, 1)); ?></div>
                                 <div>
-                                    <div class="cell-primary"><?php echo htmlspecialchars($log['full_name']); ?></div>
-                                    <div class="cell-secondary"><?php echo htmlspecialchars($log['membership_id']); ?></div>
+                                    <div class="cell-primary" style="font-weight:700;"><?php echo htmlspecialchars($log['full_name']); ?></div>
+                                    <code class="cell-secondary" style="font-weight:600; color:var(--accent); font-size:0.75rem;"><?php echo htmlspecialchars($log['membership_id']); ?></code>
                                 </div>
                             </div>
                         </td>
-                        <td class="cell-primary"><?php echo date('h:i A', strtotime($log['time_in'])); ?></td>
+                        <td>
+                            <div style="display:flex; flex-direction:column; gap:3px;">
+                                <div>
+                                    <?php if ($is_official): ?>
+                                        <span class="badge" style="background:rgba(16,185,129,0.15); color:#059669; border:1px solid rgba(16,185,129,0.3); font-size:0.68rem; font-weight:700;">
+                                            <i class="fas fa-id-card"></i> Official Member
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge" style="background:rgba(100,116,139,0.12); color:#64748b; border:1px solid rgba(100,116,139,0.25); font-size:0.68rem; font-weight:600;">
+                                            <i class="fas fa-user"></i> Non-Member
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                                <span style="font-size:0.75rem; color:var(--text-main); font-weight:600;">
+                                    <?php echo htmlspecialchars($log['plan_name']); ?>
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <?php if ($fa === 'second_floor_only'): ?>
+                                <span class="badge" style="background:rgba(14,165,233,0.15); color:#0284c7; border:1px solid rgba(14,165,233,0.3); font-weight:700; font-size:0.72rem; padding:3px 8px;">
+                                    <i class="fas fa-stairs"></i> 2nd Floor Only
+                                </span>
+                            <?php else: ?>
+                                <span class="badge" style="background:rgba(34,197,94,0.15); color:#16a34a; border:1px solid rgba(34,197,94,0.3); font-weight:700; font-size:0.72rem; padding:3px 8px;">
+                                    <i class="fas fa-building"></i> Ground + 2nd Flr
+                                </span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="cell-primary" style="font-weight:600;"><?php echo date('h:i A', strtotime($log['time_in'])); ?></td>
                         <td class="cell-secondary" id="timeout-<?php echo $log['id']; ?>"><?php echo $has_timed_out ? date('h:i A', strtotime($log['time_out'])) : '—'; ?></td>
                         <td id="status-cell-<?php echo $log['id']; ?>" style="white-space:nowrap;">
                             <?php if ($has_timed_out): ?>
@@ -189,6 +237,16 @@ function processCheckin(membershipId, isManual = false) {
             const safeMemStatus = escapeHtml(data.membership_status || 'Active');
             const safeExpiry = escapeHtml(data.expiry_date || '');
 
+            const safeFloor = escapeHtml(data.floor_label || 'Ground + 2nd Floor');
+            const safeTier = escapeHtml(data.member_tier_label || (data.is_official_member ? 'Official Member' : 'Non-Member'));
+            const is2ndOnly = (data.floor_access === 'second_floor_only');
+            const floorBadgeStyle = is2ndOnly 
+                ? 'background:rgba(14,165,233,0.2); color:#0284c7; border:1px solid rgba(14,165,233,0.4);' 
+                : 'background:rgba(34,197,94,0.2); color:#16a34a; border:1px solid rgba(34,197,94,0.4);';
+            const tierBadgeStyle = data.is_official_member 
+                ? 'background:rgba(16,185,129,0.2); color:#059669; border:1px solid rgba(16,185,129,0.4);' 
+                : 'background:rgba(100,116,139,0.15); color:#475569; border:1px solid rgba(100,116,139,0.3);';
+
             let photoHtml = '';
             if (data.photo) {
                 const safePhoto = escapeHtml(data.photo);
@@ -208,10 +266,15 @@ function processCheckin(membershipId, isManual = false) {
                             <i class="fas ${icon}"></i> ${isCooldown ? 'COOLDOWN ACTIVE' : (data.action === 'check-out' ? 'CHECK-OUT SUCCESSFUL' : 'VALID MEMBER • CHECK-IN SUCCESS')}
                         </div>
                         <div style="font-size:1.05rem;font-weight:700;color:var(--text-main);">${safeName}</div>
-                        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">ID: <code>${safeMid}</code> • Plan: <strong>${safePlan}</strong></div>
-                        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
-                            <span class="badge badge-success" style="font-size:0.7rem;padding:2px 8px;"><i class="fas fa-shield-check"></i> ${safeAcc}</span>
-                            <span class="badge ${safeMemStatus === 'Active' ? 'badge-gold' : 'badge-danger'}" style="font-size:0.7rem;padding:2px 8px;">${safeMemStatus} (Exp: ${safeExpiry})</span>
+                        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;">ID: <code>${safeMid}</code> • Plan: <strong>${safePlan}</strong></div>
+                        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;">
+                            <span class="badge" style="${tierBadgeStyle} font-size:0.72rem; padding:3px 8px; font-weight:700;">
+                                <i class="fas fa-id-card"></i> ${safeTier}
+                            </span>
+                            <span class="badge" style="${floorBadgeStyle} font-size:0.72rem; padding:3px 8px; font-weight:700;">
+                                <i class="fas fa-building"></i> ${safeFloor}
+                            </span>
+                            <span class="badge ${safeMemStatus === 'Active' ? 'badge-gold' : 'badge-danger'}" style="font-size:0.7rem;padding:3px 8px;">${safeMemStatus} (Exp: ${safeExpiry})</span>
                         </div>
                     </div>
                 </div>
@@ -225,17 +288,31 @@ function processCheckin(membershipId, isManual = false) {
             if (data.action === 'check-in' && !isCooldown) {
                 const row = document.getElementById('logs-body').insertRow(0);
                 row.id = 'member-' + encodeURIComponent(safeMid);
+                const floorBadgeHtml = is2ndOnly
+                    ? `<span class="badge" style="background:rgba(14,165,233,0.15); color:#0284c7; border:1px solid rgba(14,165,233,0.3); font-weight:700; font-size:0.72rem; padding:3px 8px;"><i class="fas fa-stairs"></i> 2nd Floor Only</span>`
+                    : `<span class="badge" style="background:rgba(34,197,94,0.15); color:#16a34a; border:1px solid rgba(34,197,94,0.3); font-weight:700; font-size:0.72rem; padding:3px 8px;"><i class="fas fa-building"></i> Ground + 2nd Flr</span>`;
+                const tierBadgeHtml = data.is_official_member
+                    ? `<span class="badge" style="background:rgba(16,185,129,0.15); color:#059669; border:1px solid rgba(16,185,129,0.3); font-size:0.68rem; font-weight:700;"><i class="fas fa-id-card"></i> Official Member</span>`
+                    : `<span class="badge" style="background:rgba(100,116,139,0.12); color:#64748b; border:1px solid rgba(100,116,139,0.25); font-size:0.68rem; font-weight:600;"><i class="fas fa-user"></i> Non-Member</span>`;
+
                 row.innerHTML = `
                     <td>
                         <div class="member-cell">
                             <div class="member-avatar">${safeName.charAt(0).toUpperCase()}</div>
                             <div>
-                                <div class="cell-primary">${safeName}</div>
-                                <div class="cell-secondary">${safeMid}</div>
+                                <div class="cell-primary" style="font-weight:700;">${safeName}</div>
+                                <code class="cell-secondary" style="font-weight:600; color:var(--accent); font-size:0.75rem;">${safeMid}</code>
                             </div>
                         </div>
                     </td>
-                    <td class="cell-primary">${time}</td>
+                    <td>
+                        <div style="display:flex; flex-direction:column; gap:3px;">
+                            <div>${tierBadgeHtml}</div>
+                            <span style="font-size:0.75rem; color:var(--text-main); font-weight:600;">${safePlan}</span>
+                        </div>
+                    </td>
+                    <td>${floorBadgeHtml}</td>
+                    <td class="cell-primary" style="font-weight:600;">${time}</td>
                     <td class="cell-secondary">—</td>
                     <td><span class="badge badge-success"><i class="fas fa-circle" style="font-size:0.35rem; margin-right:4px;"></i> Inside</span></td>`;
                 logCount++;
