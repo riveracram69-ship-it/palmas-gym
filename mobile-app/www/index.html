@@ -2342,7 +2342,7 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════════
-       VIEW 5: REGISTRATION WIZARD (3 Steps)
+       VIEW 5: REGISTRATION WIZARD (6 Steps Mobile-First Flow)
        ══════════════════════════════════════════════════════════ -->
   <div id="view-register" class="screen" style="display:none;">
     <div class="wizard-screen">
@@ -2356,20 +2356,26 @@
             <div style="width:36px;"></div>
           </div>
 
-          <div class="step-progress">
+          <div class="step-progress" style="display:flex; align-items:center; justify-content:center; gap:4px; margin: 10px 0;">
             <div class="step-dot active" id="sdot-1">1</div>
             <div class="step-line" id="sline-1"></div>
             <div class="step-dot" id="sdot-2">2</div>
             <div class="step-line" id="sline-2"></div>
             <div class="step-dot" id="sdot-3">3</div>
+            <div class="step-line" id="sline-3"></div>
+            <div class="step-dot" id="sdot-4">4</div>
+            <div class="step-line" id="sline-4"></div>
+            <div class="step-dot" id="sdot-5">5</div>
+            <div class="step-line" id="sline-5"></div>
+            <div class="step-dot" id="sdot-6">6</div>
           </div>
-          <p id="wizard-step-label" style="color: var(--gym-muted); font-size:0.8rem; margin:0 0 8px; text-align:center;">Step 1 of 3 — Personal Information</p>
+          <p id="wizard-step-label" style="color: var(--gym-muted); font-size:0.8rem; margin:0 0 8px; text-align:center;">Step 1 of 6 — Basic Information</p>
         </div>
       </div>
 
       <div class="wizard-body">
 
-        <!-- STEP 1: Personal Information -->
+        <!-- STEP 1: Basic Information -->
         <div id="reg-step-1">
           <div id="google-prefill-badge" style="display:none; align-items:center; gap:12px; background:rgba(82,183,136,0.1); border:1px solid rgba(82,183,136,0.25); border-radius:14px; padding:12px 14px; margin-bottom:16px;">
             <img id="google-avatar" src="" alt="" style="width:40px; height:40px; border-radius:50%; border:2px solid var(--gym-mid);" />
@@ -2379,25 +2385,16 @@
             </div>
           </div>
 
-          <!-- Registration Photo / Selfie Capture -->
-          <div style="text-align:center; margin-bottom:18px;">
-            <div style="position:relative; width:88px; height:88px; margin:0 auto 8px; border-radius:50%; border:2px dashed var(--gym-mid); background:rgba(82,183,136,0.06); display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer;" onclick="triggerRegPhotoUpload()">
-              <i class="fa-solid fa-camera" id="reg-photo-icon" style="font-size:1.8rem; color:var(--gym-light);"></i>
-              <img id="reg-photo-preview" src="" alt="Selfie" style="display:none; width:100%; height:100%; object-fit:cover;" />
-              <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); padding:2px 0; font-size:0.65rem; color:#fff; font-weight:700;">PHOTO</div>
-            </div>
-            <input type="file" id="reg-photo-input" accept="image/*" style="display:none;" onchange="handleRegPhotoSelected(this)" />
-            <button type="button" class="photo-upload-btn" onclick="triggerRegPhotoUpload()" style="margin:0 auto; padding:6px 14px; font-size:0.75rem;">
-              <i class="fa-solid fa-camera"></i> Take Selfie / Choose Photo
-            </button>
+          <div style="margin-bottom:16px;">
+            <h4 style="color:#fff; font-size:1.1rem; font-weight:800; margin:0 0 4px;">What's your name?</h4>
+            <p style="color:var(--gym-muted); font-size:0.8rem; margin:0;">Please enter your name as it appears on official IDs.</p>
           </div>
 
-          <!-- First Name & Last Name (Stacked full-width for mobile layout stability) -->
           <div class="form-group">
             <label>First Name *</label>
             <div class="input-field-wrap">
               <i class="fa-solid fa-user" style="color: var(--gym-light); font-size:0.9rem;"></i>
-              <input type="text" id="reg-first-name" placeholder="Juan" oninput="syncRegFullName()" />
+              <input type="text" id="reg-first-name" placeholder="e.g. Juan" oninput="syncRegFullName()" autocomplete="given-name" />
             </div>
           </div>
 
@@ -2405,79 +2402,114 @@
             <label>Last Name *</label>
             <div class="input-field-wrap">
               <i class="fa-solid fa-user" style="color: var(--gym-light); font-size:0.9rem;"></i>
-              <input type="text" id="reg-last-name" placeholder="Dela Cruz" oninput="syncRegFullName()" />
+              <input type="text" id="reg-last-name" placeholder="e.g. Dela Cruz" oninput="syncRegFullName()" autocomplete="family-name" />
             </div>
           </div>
 
-          <!-- Middle Name & Extension (Collapsible / Optional) -->
-          <div style="margin-bottom:12px;">
-            <button type="button" onclick="const el = document.getElementById('reg-optional-names'); el.style.display = (el.style.display === 'none' ? 'block' : 'none');" style="background:none; border:none; color:var(--gym-light); font-size:0.75rem; cursor:pointer; padding:4px 0; display:flex; align-items:center; gap:5px;">
-              <i class="fa-solid fa-plus-circle"></i> Add Middle Name or Suffix (Optional)
-            </button>
-            <div id="reg-optional-names" style="display:none; margin-top:8px;">
-              <div class="form-group" style="margin-bottom:10px;">
-                <label style="font-size:0.75rem;">Middle Name</label>
-                <div class="input-field-wrap">
-                  <input type="text" id="reg-middle-name" placeholder="Santos" oninput="syncRegFullName()" />
-                </div>
-              </div>
-              <div class="form-group" style="margin:0;">
-                <label style="font-size:0.75rem;">Suffix</label>
-                <div class="input-field-wrap" style="padding:0 12px;">
-                  <select id="reg-extension" style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;" onchange="syncRegFullName()">
-                    <option value="" style="background:#0b261a; color:#fff;">None</option>
-                    <option value="Jr." style="background:#0b261a; color:#fff;">Jr.</option>
-                    <option value="Sr." style="background:#0b261a; color:#fff;">Sr.</option>
-                    <option value="II" style="background:#0b261a; color:#fff;">II</option>
-                    <option value="III" style="background:#0b261a; color:#fff;">III</option>
-                  </select>
-                </div>
-              </div>
+          <div class="form-group">
+            <label>Middle Name <span style="font-size:0.75rem; color:var(--gym-muted);">(Optional)</span></label>
+            <div class="input-field-wrap">
+              <input type="text" id="reg-middle-name" placeholder="e.g. Santos" oninput="syncRegFullName()" autocomplete="additional-name" />
             </div>
           </div>
-          <!-- Hidden compatibility input -->
+
+          <div class="form-group" style="margin-bottom:20px;">
+            <label>Suffix <span style="font-size:0.75rem; color:var(--gym-muted);">(Optional)</span></label>
+            <div class="input-field-wrap" style="padding:0 12px;">
+              <select id="reg-extension" style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;" onchange="syncRegFullName()">
+                <option value="" style="background:#0b261a; color:#fff;">None</option>
+                <option value="Jr." style="background:#0b261a; color:#fff;">Jr.</option>
+                <option value="Sr." style="background:#0b261a; color:#fff;">Sr.</option>
+                <option value="II" style="background:#0b261a; color:#fff;">II</option>
+                <option value="III" style="background:#0b261a; color:#fff;">III</option>
+                <option value="IV" style="background:#0b261a; color:#fff;">IV</option>
+              </select>
+            </div>
+          </div>
+
           <input type="hidden" id="reg-name" />
+
+          <button class="btn-primary" onclick="wizardNext(1)" style="margin-top:10px; width:100%;">
+            CONTINUE TO ACCOUNT <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+
+        <!-- STEP 2: Account Credentials -->
+        <div id="reg-step-2" style="display:none;">
+          <div style="margin-bottom:16px;">
+            <h4 style="color:#fff; font-size:1.1rem; font-weight:800; margin:0 0 4px;">Account Setup</h4>
+            <p style="color:var(--gym-muted); font-size:0.8rem; margin:0;">Used for mobile app login and member communications.</p>
+          </div>
 
           <div class="form-group">
             <label>Email Address *</label>
             <div class="input-field-wrap">
               <i class="fa-solid fa-envelope" style="color: var(--gym-light); font-size:0.9rem;"></i>
-              <input type="email" id="reg-email" placeholder="member@example.com" />
+              <input type="email" id="reg-email" placeholder="member@example.com" autocomplete="email" />
             </div>
           </div>
 
           <div class="form-group">
-            <label>Contact Number <span style="font-size:0.75rem; color:var(--gym-muted);">(Optional)</span></label>
+            <label>Mobile Number *</label>
             <div class="input-field-wrap">
               <i class="fa-solid fa-phone" style="color: var(--gym-light); font-size:0.9rem;"></i>
-              <input type="tel" id="reg-phone" placeholder="09123456789" maxlength="11" />
+              <input type="tel" id="reg-phone" placeholder="09123456789" maxlength="11" autocomplete="tel" />
             </div>
+            <div style="font-size:0.75rem; color:var(--gym-muted); margin-top:4px;">11 digits starting with 09 (e.g. 09171234567)</div>
           </div>
 
           <div id="reg-password-group" class="form-group">
-            <label>Password (min. 6 characters)</label>
+            <label>Password *</label>
             <div class="input-field-wrap">
               <i class="fa-solid fa-lock" style="color: var(--gym-light); font-size:0.9rem;"></i>
-              <input type="password" id="reg-password" placeholder="Create a secure password" />
+              <input type="password" id="reg-password" placeholder="Create a secure password" autocomplete="new-password" oninput="checkRegPasswordMatch()" />
               <button class="eye-btn" type="button" onclick="togglePasswordVisibility('reg-password', this)">
                 <i class="fa-solid fa-eye"></i>
               </button>
             </div>
+            <div style="font-size:0.75rem; color:var(--gym-muted); margin-top:4px;">Minimum 6 characters</div>
           </div>
 
+          <div id="reg-confirm-password-group" class="form-group" style="margin-bottom:20px;">
+            <label>Confirm Password *</label>
+            <div class="input-field-wrap">
+              <i class="fa-solid fa-lock" style="color: var(--gym-light); font-size:0.9rem;"></i>
+              <input type="password" id="reg-confirm-password" placeholder="Repeat your password" autocomplete="new-password" oninput="checkRegPasswordMatch()" />
+              <button class="eye-btn" type="button" onclick="togglePasswordVisibility('reg-confirm-password', this)">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+            <div id="reg-password-match-hint" style="display:none; font-size:0.75rem; margin-top:4px;"></div>
+          </div>
+
+          <button class="btn-primary" onclick="wizardNext(2)" style="margin-top:10px; width:100%;">
+            CONTINUE TO PERSONAL INFO <i class="fa-solid fa-arrow-right"></i>
+          </button>
+          <button class="btn-outline" onclick="wizardBack(2)" style="margin-top:10px; width:100%;">
+            <i class="fa-solid fa-arrow-left"></i> Back
+          </button>
+        </div>
+
+        <!-- STEP 3: Personal Information -->
+        <div id="reg-step-3" style="display:none;">
+          <div style="margin-bottom:16px;">
+            <h4 style="color:#fff; font-size:1.1rem; font-weight:800; margin:0 0 4px;">Personal Information</h4>
+            <p style="color:var(--gym-muted); font-size:0.8rem; margin:0;">Used for gym safety and age-appropriate access.</p>
+          </div>
 
           <div class="form-group">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-              <label style="margin:0;">Date of Birth</label>
+              <label style="margin:0;">Date of Birth *</label>
               <span id="reg-dob-age-badge" style="display:none; font-size:0.75rem; background:rgba(82,183,136,0.15); color:var(--gym-light); padding:2px 8px; border-radius:6px; font-weight:700;"></span>
             </div>
             <div class="input-field-wrap">
               <i class="fa-solid fa-cake-candles" style="color: var(--gym-light); font-size:0.9rem;"></i>
               <input type="date" id="reg-dob" onchange="updateRegDobAge(this.value)" />
             </div>
+            <div style="font-size:0.75rem; color:var(--gym-muted); margin-top:4px;">Age is calculated automatically from your birth date</div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group" style="margin-bottom:20px;">
             <label>Gender *</label>
             <div class="gender-group">
               <button class="gender-btn" type="button" id="gbtn-male" onclick="selectGender('Male')">Male</button>
@@ -2486,109 +2518,154 @@
             </div>
           </div>
 
-          <!-- Structured Address Details -->
-          <div class="dark-card" style="padding:14px; margin-bottom:14px; background:rgba(10,30,22,0.6); border:1px solid rgba(82,183,136,0.2); border-radius:14px;">
-            <label style="display:block; color:var(--gym-light); font-size:0.78rem; font-weight:800; text-transform:uppercase; margin-bottom:10px;">
-              <i class="fa-solid fa-location-dot" style="margin-right:4px;"></i> Address Details
-            </label>
-            <div class="form-group" style="margin-bottom:10px;">
-              <label style="font-size:0.75rem;">House No. / Building / Street</label>
-              <div class="input-field-wrap">
-                <i class="fa-solid fa-house" style="color: var(--gym-light); font-size:0.85rem;"></i>
-                <input type="text" id="reg-house-street" placeholder="e.g. 123 Rizal St." />
-              </div>
-            </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
-              <div class="form-group" style="margin:0;">
-                <label style="font-size:0.75rem;">Barangay</label>
-                <div class="input-field-wrap">
-                  <input type="text" id="reg-barangay" placeholder="e.g. Poblacion" />
-                </div>
-              </div>
-              <div class="form-group" style="margin:0;">
-                <label style="font-size:0.75rem;">Municipality / City</label>
-                <div class="input-field-wrap">
-                  <input type="text" id="reg-municipality" placeholder="e.g. Talavera" />
-                </div>
-              </div>
-            </div>
-            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:10px; margin:0;">
-              <div class="form-group" style="margin:0;">
-                <label style="font-size:0.75rem;">Province</label>
-                <div class="input-field-wrap">
-                  <input type="text" id="reg-province" placeholder="e.g. Nueva Ecija" />
-                </div>
-              </div>
-              <div class="form-group" style="margin:0;">
-                <label style="font-size:0.75rem;">ZIP Code</label>
-                <div class="input-field-wrap">
-                  <input type="text" id="reg-zip-code" placeholder="3114" maxlength="10" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <button class="btn-primary" onclick="wizardNext(1)" style="margin-top:10px;">
-            CONTINUE TO PLAN <i class="fa-solid fa-arrow-right"></i>
+          <button class="btn-primary" onclick="wizardNext(3)" style="margin-top:10px; width:100%;">
+            CONTINUE TO ADDRESS <i class="fa-solid fa-arrow-right"></i>
           </button>
-
-        </div>
-
-        <!-- STEP 2: Plan Selection -->
-        <div id="reg-step-2" style="display:none;">
-          <p style="color: var(--gym-muted); font-size:0.85rem; margin:0 0 16px;">Choose your membership package:</p>
-          <div id="plans-container-reg"></div>
-          <button class="btn-primary" onclick="wizardNext(2)" style="margin-top:14px;">
-            REVIEW APPLICATION <i class="fa-solid fa-arrow-right"></i>
-          </button>
-          <button class="btn-outline" onclick="wizardBack(2)" style="margin-top:10px;">
+          <button class="btn-outline" onclick="wizardBack(3)" style="margin-top:10px; width:100%;">
             <i class="fa-solid fa-arrow-left"></i> Back
           </button>
         </div>
 
-        <!-- STEP 3: Review & Payment -->
-        <div id="reg-step-3" style="display:none;">
-          <div class="dark-card" style="padding:16px; margin-bottom:14px;">
-            <h4 style="color: var(--gym-light); font-size:0.85rem; font-weight:800; margin:0 0 12px; text-transform:uppercase;">Applicant Summary</h4>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
+        <!-- STEP 4: Residential Address (Clean 1-column mobile sequence) -->
+        <div id="reg-step-4" style="display:none;">
+          <div style="margin-bottom:16px;">
+            <h4 style="color:#fff; font-size:1.1rem; font-weight:800; margin:0 0 4px;">Residential Address</h4>
+            <p style="color:var(--gym-muted); font-size:0.8rem; margin:0;">Enter your home location for membership records.</p>
+          </div>
+
+          <div class="form-group">
+            <label>House No. / Street <span style="font-size:0.75rem; color:var(--gym-muted);">(Optional)</span></label>
+            <div class="input-field-wrap">
+              <i class="fa-solid fa-house" style="color: var(--gym-light); font-size:0.85rem;"></i>
+              <input type="text" id="reg-house-street" placeholder="e.g. 123 Rizal St." autocomplete="address-line1" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Barangay *</label>
+            <div class="input-field-wrap">
+              <i class="fa-solid fa-map-pin" style="color: var(--gym-light); font-size:0.85rem;"></i>
+              <input type="text" id="reg-barangay" placeholder="e.g. Poblacion" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Municipality / City *</label>
+            <div class="input-field-wrap">
+              <i class="fa-solid fa-city" style="color: var(--gym-light); font-size:0.85rem;"></i>
+              <input type="text" id="reg-municipality" placeholder="e.g. Talavera" autocomplete="address-level2" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Province *</label>
+            <div class="input-field-wrap">
+              <i class="fa-solid fa-map" style="color: var(--gym-light); font-size:0.85rem;"></i>
+              <input type="text" id="reg-province" placeholder="e.g. Nueva Ecija" autocomplete="address-level1" />
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:20px;">
+            <label>ZIP Code <span style="font-size:0.75rem; color:var(--gym-muted);">(Optional)</span></label>
+            <div class="input-field-wrap">
+              <i class="fa-solid fa-mail-bulk" style="color: var(--gym-light); font-size:0.85rem;"></i>
+              <input type="tel" id="reg-zip-code" placeholder="3114" maxlength="10" autocomplete="postal-code" />
+            </div>
+          </div>
+
+          <button class="btn-primary" onclick="wizardNext(4)" style="margin-top:10px; width:100%;">
+            CONTINUE TO PHOTO <i class="fa-solid fa-arrow-right"></i>
+          </button>
+          <button class="btn-outline" onclick="wizardBack(4)" style="margin-top:10px; width:100%;">
+            <i class="fa-solid fa-arrow-left"></i> Back
+          </button>
+        </div>
+
+        <!-- STEP 5: Verification Photo -->
+        <div id="reg-step-5" style="display:none;">
+          <div style="margin-bottom:16px; text-align:center;">
+            <h4 style="color:#fff; font-size:1.1rem; font-weight:800; margin:0 0 4px;">Verification Photo</h4>
+            <p style="color:var(--gym-muted); font-size:0.8rem; margin:0 0 16px;">This photo will appear on your dynamic Digital Gym Pass for front-desk entry.</p>
+
+            <div style="position:relative; width:110px; height:110px; margin:0 auto 12px; border-radius:50%; border:3px dashed var(--gym-mid); background:rgba(82,183,136,0.08); display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" onclick="triggerRegPhotoUpload()">
+              <i class="fa-solid fa-camera" id="reg-photo-icon" style="font-size:2.2rem; color:var(--gym-light);"></i>
+              <img id="reg-photo-preview" src="" alt="Selfie" style="display:none; width:100%; height:100%; object-fit:cover;" />
+              <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.65); padding:3px 0; font-size:0.65rem; color:#fff; font-weight:800; letter-spacing:0.5px;">PHOTO</div>
+            </div>
+            <input type="file" id="reg-photo-input" accept="image/*" style="display:none;" onchange="handleRegPhotoSelected(this)" />
+
+            <div style="display:flex; gap:8px; justify-content:center; margin-bottom:14px;">
+              <button type="button" class="photo-upload-btn" onclick="triggerRegPhotoUpload()" style="padding:8px 16px; font-size:0.82rem;">
+                <i class="fa-solid fa-camera"></i> Take Selfie / Choose Photo
+              </button>
+              <button type="button" id="reg-photo-remove-btn" onclick="removeRegPhoto()" style="display:none; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; border-radius:10px; padding:8px 12px; font-size:0.8rem; cursor:pointer;">
+                <i class="fa-solid fa-trash"></i> Remove
+              </button>
+            </div>
+
+            <div style="background:rgba(82,183,136,0.08); border:1px solid rgba(82,183,136,0.2); border-radius:12px; padding:10px 14px; text-align:left; font-size:0.76rem; color:var(--gym-light); line-height:1.4;">
+              <i class="fa-solid fa-shield-halved" style="color:var(--primary); margin-right:4px;"></i>
+              <strong>Entrance Security:</strong> Front desk scanners match your photo during attendance verification to ensure passes cannot be shared.
+            </div>
+          </div>
+
+          <button class="btn-primary" onclick="wizardNext(5)" style="margin-top:10px; width:100%;">
+            CONTINUE TO PLANS <i class="fa-solid fa-arrow-right"></i>
+          </button>
+          <button class="btn-outline" onclick="wizardBack(5)" style="margin-top:10px; width:100%;">
+            <i class="fa-solid fa-arrow-left"></i> Back
+          </button>
+        </div>
+
+        <!-- STEP 6: Membership Plan & Review / Payment -->
+        <div id="reg-step-6" style="display:none;">
+          <div style="margin-bottom:16px;">
+            <h4 style="color:#fff; font-size:1.1rem; font-weight:800; margin:0 0 4px;">Choose Your Plan</h4>
+            <p style="color:var(--gym-muted); font-size:0.8rem; margin:0;">Select your membership package and payment method.</p>
+          </div>
+
+          <div id="plans-container-reg"></div>
+
+          <!-- Applicant Summary Card -->
+          <div class="dark-card" style="padding:14px; margin:14px 0; background:rgba(10,30,22,0.6); border:1px solid rgba(82,183,136,0.2); border-radius:14px;">
+            <h4 style="color: var(--gym-light); font-size:0.82rem; font-weight:800; margin:0 0 10px; text-transform:uppercase;">Applicant Summary</h4>
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.82rem;">
               <span style="color:var(--gym-muted);">Full Name:</span>
               <strong id="rv-name" style="color:#fff;">—</strong>
             </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.82rem;">
               <span style="color:var(--gym-muted);">Email:</span>
               <strong id="rv-email" style="color:#fff;">—</strong>
             </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.82rem;">
               <span style="color:var(--gym-muted);">Contact:</span>
               <strong id="rv-phone" style="color:#fff;">—</strong>
             </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
-              <span style="color:var(--gym-muted);">Date of Birth:</span>
-              <strong id="rv-dob" style="color:#fff;">—</strong>
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.82rem;">
+              <span style="color:var(--gym-muted);">DOB &amp; Gender:</span>
+              <span style="color:#fff; font-weight:700;"><span id="rv-dob">—</span> &bull; <span id="rv-gender">—</span></span>
             </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
-              <span style="color:var(--gym-muted);">Gender:</span>
-              <strong id="rv-gender" style="color:#fff;">—</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+            <div style="display:flex; justify-content:space-between; font-size:0.82rem;">
               <span style="color:var(--gym-muted);">Address:</span>
               <strong id="rv-address" style="color:#fff; text-align:right; max-width:60%;">—</strong>
             </div>
           </div>
 
-          <div class="dark-card" style="padding:16px; margin-bottom:14px; border-color:var(--gym-mid);">
-            <h4 style="color: var(--gym-light); font-size:0.85rem; font-weight:800; margin:0 0 12px; text-transform:uppercase;">Selected Package &amp; Total</h4>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
-              <span style="color:var(--gym-muted);">Plan:</span>
-              <strong id="rv-plan-name" style="color:#fff;">—</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
-              <span style="color:var(--gym-muted);">Total Due:</span>
-              <strong id="rv-plan-price" style="color:var(--gym-mid); font-size:1.25rem; font-weight:900;">₱0.00</strong>
+          <!-- Selected Plan Summary Card -->
+          <div class="dark-card" style="padding:14px; margin-bottom:14px; border-color:var(--gym-mid);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <span style="color:var(--gym-muted); font-size:0.75rem; text-transform:uppercase; font-weight:700; display:block;">Selected Package</span>
+                <strong id="rv-plan-name" style="color:#fff; font-size:0.95rem;">—</strong>
+              </div>
+              <div style="text-align:right;">
+                <span style="color:var(--gym-muted); font-size:0.75rem; text-transform:uppercase; font-weight:700; display:block;">Total Due</span>
+                <strong id="rv-plan-price" style="color:var(--gym-mid); font-size:1.2rem; font-weight:900;">₱0.00</strong>
+              </div>
             </div>
           </div>
 
-          <!-- PAYMENT METHOD SELECTION (Separate GCash, Maya, and Front Desk Cash) -->
+          <!-- PAYMENT METHOD SELECTION -->
           <div class="dark-card" style="padding:16px; margin-bottom:16px;">
             <label style="display:block; color:var(--gym-lighter); font-size:0.8rem; font-weight:700; text-transform:uppercase; margin-bottom:12px;">Choose Payment Option</label>
             
@@ -2670,8 +2747,8 @@
           <button class="btn-primary" id="btn-submit-reg" onclick="submitRegistration()">
             <i class="fa-solid fa-bolt"></i> COMPLETE &amp; SUBMIT REGISTRATION
           </button>
-          <button class="btn-outline" onclick="wizardBack(3)" style="margin-top:10px;">
-            <i class="fa-solid fa-arrow-left"></i> Change Plan / Back
+          <button class="btn-outline" onclick="wizardBack(6)" style="margin-top:10px;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Photo
           </button>
         </div>
 
@@ -4977,6 +5054,37 @@ function openRegistrationWizardWithPrefill(prefill) {
 
 function cancelRegistration() { showScreen('view-login'); }
 
+function checkRegPasswordMatch() {
+  const p1 = document.getElementById('reg-password')?.value || '';
+  const p2 = document.getElementById('reg-confirm-password')?.value || '';
+  const hint = document.getElementById('reg-password-match-hint');
+  if (!hint) return;
+  if (!p1 && !p2) {
+    hint.style.display = 'none';
+    return;
+  }
+  hint.style.display = 'block';
+  if (p1 === p2) {
+    hint.style.color = '#34d399';
+    hint.innerHTML = '<i class="fa-solid fa-circle-check"></i> Passwords match';
+  } else {
+    hint.style.color = '#f87171';
+    hint.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Passwords do not match';
+  }
+}
+
+function removeRegPhoto() {
+  regSelectedPhotoBase64 = '';
+  const prev = document.getElementById('reg-photo-preview');
+  const icon = document.getElementById('reg-photo-icon');
+  const input = document.getElementById('reg-photo-input');
+  const removeBtn = document.getElementById('reg-photo-remove-btn');
+  if (prev) { prev.src = ''; prev.style.display = 'none'; }
+  if (icon) icon.style.display = 'block';
+  if (input) input.value = '';
+  if (removeBtn) removeBtn.style.display = 'none';
+}
+
 function goToWizardStep(step) {
   const regEl = document.getElementById('view-register');
   if (regEl) {
@@ -4984,7 +5092,7 @@ function goToWizardStep(step) {
     regEl.scrollLeft = 0;
   }
   window.scrollTo(0, 0);
-  [1, 2, 3].forEach(s => {
+  [1, 2, 3, 4, 5, 6].forEach(s => {
     const dot  = document.getElementById(`sdot-${s}`);
     const line = document.getElementById(`sline-${s-1}`);
     const stepEl = document.getElementById(`reg-step-${s}`);
@@ -4997,11 +5105,70 @@ function goToWizardStep(step) {
   });
   const label = document.getElementById('wizard-step-label');
   if (label) {
-    const titles = ['', 'Step 1 of 3 — Personal Information', 'Step 2 of 3 — Select Package', 'Step 3 of 3 — Review Application'];
+    const titles = [
+      '',
+      'Step 1 of 6 — Basic Information',
+      'Step 2 of 6 — Account Setup',
+      'Step 3 of 6 — Personal Information',
+      'Step 4 of 6 — Residential Address',
+      'Step 5 of 6 — Verification Photo',
+      'Step 6 of 6 — Membership & Payment'
+    ];
     label.textContent = titles[step] || '';
   }
-  if (step === 2) {
+  if (step === 6) {
     loadPlansForRegistration();
+    populateRegSummary();
+  }
+}
+
+function populateRegSummary() {
+  const full = syncRegFullName();
+  const email = (document.getElementById('reg-email')?.value || '').trim();
+  const phone = (document.getElementById('reg-phone')?.value || '').trim();
+  const dobVal = (document.getElementById('reg-dob')?.value || '').trim();
+  const computedAge = calculateAgeFromDob(dobVal);
+
+  if (document.getElementById('rv-name')) document.getElementById('rv-name').textContent = full || '—';
+  if (document.getElementById('rv-email')) document.getElementById('rv-email').textContent = email || '—';
+  if (document.getElementById('rv-phone')) document.getElementById('rv-phone').textContent = phone || '—';
+
+  if (document.getElementById('rv-dob')) {
+    if (dobVal && computedAge !== null) {
+      const d = new Date(dobVal);
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      document.getElementById('rv-dob').textContent = `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} (${computedAge} yrs)`;
+    } else {
+      document.getElementById('rv-dob').textContent = '—';
+    }
+  }
+
+  if (document.getElementById('rv-gender')) {
+    document.getElementById('rv-gender').textContent = selectedGender || '—';
+  }
+
+  const hs   = (document.getElementById('reg-house-street')?.value || '').trim();
+  const brgy = (document.getElementById('reg-barangay')?.value || '').trim();
+  const muni = (document.getElementById('reg-municipality')?.value || '').trim();
+  const prov = (document.getElementById('reg-province')?.value || '').trim();
+  const zip  = (document.getElementById('reg-zip-code')?.value || '').trim();
+  let addrParts = [];
+  if (hs) addrParts.push(hs);
+  if (brgy) addrParts.push((brgy.toLowerCase().startsWith('brgy') || brgy.toLowerCase().startsWith('barangay')) ? brgy : 'Brgy. ' + brgy);
+  if (muni) addrParts.push(muni);
+  if (prov && zip) addrParts.push(`${prov} ${zip}`);
+  else if (prov) addrParts.push(prov);
+  else if (zip) addrParts.push(zip);
+
+  if (document.getElementById('rv-address')) {
+    document.getElementById('rv-address').textContent = addrParts.join(', ') || '—';
+  }
+
+  if (document.getElementById('rv-plan-name') && selectedPlan) {
+    document.getElementById('rv-plan-name').textContent = selectedPlan.name;
+  }
+  if (document.getElementById('rv-plan-price') && selectedPlan) {
+    document.getElementById('rv-plan-price').textContent = '₱' + parseFloat(selectedPlan.price).toFixed(2);
   }
 }
 
@@ -5052,40 +5219,38 @@ function selectGender(g) {
 
 async function wizardNext(fromStep) {
   if (fromStep === 1) {
-    const fn    = (document.getElementById('reg-first-name')?.value || '').trim();
-    const ln    = (document.getElementById('reg-last-name')?.value || '').trim();
-    const name  = syncRegFullName();
-    const email = document.getElementById('reg-email').value.trim();
-    const phone = (document.getElementById('reg-phone')?.value || '').trim();
-    const dob   = (document.getElementById('reg-dob')?.value || '').trim();
-
+    const fn = (document.getElementById('reg-first-name')?.value || '').trim();
+    const ln = (document.getElementById('reg-last-name')?.value || '').trim();
     if (!fn) return showToast('Please enter your First Name.');
     if (!ln) return showToast('Please enter your Last Name.');
+    syncRegFullName();
+    goToWizardStep(2);
+  } else if (fromStep === 2) {
+    const email = (document.getElementById('reg-email')?.value || '').trim();
+    const phone = (document.getElementById('reg-phone')?.value || '').trim();
+    const pass  = (document.getElementById('reg-password')?.value || '');
+    const cpass = (document.getElementById('reg-confirm-password')?.value || '');
+
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('Please enter a valid email address.');
-    if (phone && !/^09[0-9]{9}$/.test(phone)) return showToast('Contact number must be 11 digits starting with 09.');
-    
-    if (dob) {
-      const computedAge = calculateAgeFromDob(dob);
-      if (computedAge === null || computedAge < 0) return showToast('Please enter a valid Date of Birth.');
-    }
+    if (!phone) return showToast('Contact number is required.');
+    if (!/^09[0-9]{9}$/.test(phone)) return showToast('Contact number must be 11 digits starting with 09 (e.g. 09171234567).');
 
     // Password check for non-Google signups
     if (!regPrefill.google_id) {
-      const pass = (document.getElementById('reg-password')?.value || '').trim();
       if (!pass || pass.length < 6) return showToast('Password must be at least 6 characters long.');
+      if (pass !== cpass) return showToast('Passwords do not match. Please re-enter.');
     }
 
-    if (!selectedGender) return showToast('Please select your gender.');
-
-    // ── Real-time Duplicate Check: Email & Phone Number ───────────────────────
-    const step1NextBtn = document.querySelector('#reg-step-1 button[onclick*="wizardNext"]');
-    const originalBtnHtml = step1NextBtn ? step1NextBtn.innerHTML : '';
-    if (step1NextBtn) {
-      step1NextBtn.disabled = true;
-      step1NextBtn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></div> Checking...';
+    // Real-time Duplicate Check: Email & Phone Number
+    const step2NextBtn = document.querySelector('#reg-step-2 button[onclick*="wizardNext"]');
+    const originalBtnHtml = step2NextBtn ? step2NextBtn.innerHTML : '';
+    if (step2NextBtn) {
+      step2NextBtn.disabled = true;
+      step2NextBtn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></div> Checking...';
     }
 
     try {
+      const name = syncRegFullName();
       const dupRes = await authFetch(`${API_URL}/check_duplicate.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -5101,71 +5266,51 @@ async function wizardNext(fromStep) {
         if (dupData && dupData.valid === false) {
           const errMsg = dupData.message || (dupData.errors && dupData.errors[0]) || 'This email address or contact number is already registered.';
           showToast(`⚠️ ${errMsg}`, 5000);
-          
-          // Focus the duplicate input field
           if (errMsg.toLowerCase().includes('email')) {
             document.getElementById('reg-email')?.focus();
           } else if (errMsg.toLowerCase().includes('contact') || errMsg.toLowerCase().includes('phone') || errMsg.toLowerCase().includes('number')) {
             document.getElementById('reg-phone')?.focus();
           }
-          return; // STOP: Do not advance to Step 2!
+          return;
         }
       }
     } catch (checkErr) {
       console.warn('Duplicate pre-check warning:', checkErr);
     } finally {
-      if (step1NextBtn) {
-        step1NextBtn.disabled = false;
-        step1NextBtn.innerHTML = originalBtnHtml;
+      if (step2NextBtn) {
+        step2NextBtn.disabled = false;
+        step2NextBtn.innerHTML = originalBtnHtml;
       }
     }
 
-    goToWizardStep(2);
-  } else if (fromStep === 2) {
-    if (!selectedPlanId) return showToast('Please select a membership plan.');
-    const full = syncRegFullName();
-    document.getElementById('rv-name').textContent = full || '—';
-    document.getElementById('rv-email').textContent = document.getElementById('reg-email').value.trim();
-    document.getElementById('rv-phone').textContent = document.getElementById('reg-phone').value.trim() || '—';
+    goToWizardStep(3);
+  } else if (fromStep === 3) {
+    const dob = (document.getElementById('reg-dob')?.value || '').trim();
+    if (!dob) return showToast('Please select your Date of Birth.');
+    const computedAge = calculateAgeFromDob(dob);
+    if (computedAge === null || computedAge < 0) return showToast('Please enter a valid Date of Birth.');
+    if (!selectedGender) return showToast('Please select your gender.');
 
-    // Populate DOB in review
-    const dobVal = (document.getElementById('reg-dob')?.value || '').trim();
-    const computedAge = calculateAgeFromDob(dobVal);
-    if (dobVal && computedAge !== null) {
-      const d = new Date(dobVal);
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      document.getElementById('rv-dob').textContent = `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} (Age: ${computedAge})`;
-    } else {
-      document.getElementById('rv-dob').textContent = '—';
-    }
-
-    document.getElementById('rv-gender').textContent = selectedGender || '—';
-
-    // Populate Address in review
-    const hs   = (document.getElementById('reg-house-street')?.value || '').trim();
+    goToWizardStep(4);
+  } else if (fromStep === 4) {
     const brgy = (document.getElementById('reg-barangay')?.value || '').trim();
     const muni = (document.getElementById('reg-municipality')?.value || '').trim();
     const prov = (document.getElementById('reg-province')?.value || '').trim();
-    const zip  = (document.getElementById('reg-zip-code')?.value || '').trim();
-    let addrParts = [];
-    if (hs) addrParts.push(hs);
-    if (brgy) addrParts.push((brgy.toLowerCase().startsWith('brgy') || brgy.toLowerCase().startsWith('barangay')) ? brgy : 'Brgy. ' + brgy);
-    if (muni) addrParts.push(muni);
-    if (prov && zip) addrParts.push(`${prov} ${zip}`);
-    else if (prov) addrParts.push(prov);
-    else if (zip) addrParts.push(zip);
-    document.getElementById('rv-address').textContent = addrParts.join(', ') || '—';
 
-    document.getElementById('rv-plan-name').textContent = selectedPlan?.name || 'Selected Plan';
-    document.getElementById('rv-plan-price').textContent = selectedPlan ? '₱' + parseFloat(selectedPlan.price).toFixed(2) : '—';
-    goToWizardStep(3);
-    selectRegPaymentMethod(selectedRegPaymentMethod || 'GCash');
+    if (!brgy) return showToast('Please enter your Barangay.');
+    if (!muni) return showToast('Please enter your Municipality or City.');
+    if (!prov) return showToast('Please enter your Province.');
+
+    goToWizardStep(5);
+  } else if (fromStep === 5) {
+    goToWizardStep(6);
   }
 }
 
 function wizardBack(fromStep) {
-  if (fromStep === 2) goToWizardStep(1);
-  else if (fromStep === 3) goToWizardStep(2);
+  if (fromStep > 1) {
+    goToWizardStep(fromStep - 1);
+  }
 }
 
 let selectedRegPaymentMethod = 'GCash';

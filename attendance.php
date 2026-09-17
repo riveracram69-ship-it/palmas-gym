@@ -449,9 +449,15 @@ const SCANNER_STATES = {
     },
     SERVER_ERROR: {
         className: 'state-server-error',
-        title: 'Unable to Connect',
-        desc: 'Network timeout or server unavailable',
+        title: 'Server Error',
+        desc: 'Internal service error occurred. Please retry.',
         icon: 'fa-triangle-exclamation'
+    },
+    NETWORK_ERROR: {
+        className: 'state-server-error',
+        title: 'Network Error',
+        desc: 'Network timeout or server unreachable',
+        icon: 'fa-wifi'
     },
     CAMERA_ERROR: {
         className: 'state-camera-error',
@@ -548,9 +554,18 @@ function flashReaderBorder(isSuccess = true) {
     }, 600);
 }
 
+let lastAttemptedScan = null;
+
+function retryLastScan() {
+    if (lastAttemptedScan && lastAttemptedScan.membershipId) {
+        processCheckin(lastAttemptedScan.membershipId, lastAttemptedScan.isManual);
+    }
+}
+
 function processCheckin(membershipId, isManual = false) {
     if (isProcessingCheckin) return;
     isProcessingCheckin = true;
+    lastAttemptedScan = { membershipId: membershipId, isManual: isManual };
 
     setScannerState('SCANNING', 'Processing Member ID: ' + membershipId);
     
@@ -709,6 +724,7 @@ function processCheckin(membershipId, isManual = false) {
 
             const safeErrName = escapeHtml(data.member_name || 'Unverified ID');
             const safeErrMsg = escapeHtml(data.message || 'Invalid scan.');
+            const safeReqId = data.request_id ? escapeHtml(data.request_id) : '';
             const rawType = (data.status_type || '').toLowerCase();
             
             let mappedState = 'INVALID';
@@ -716,7 +732,7 @@ function processCheckin(membershipId, isManual = false) {
                 mappedState = 'EXPIRED';
             } else if (rawType.includes('pending') || rawType.includes('rejected') || rawType.includes('suspended')) {
                 mappedState = 'BLOCKED';
-            } else if (rawType.includes('server')) {
+            } else if (rawType.includes('server') || rawType.includes('error')) {
                 mappedState = 'SERVER_ERROR';
             }
             setScannerState(mappedState, safeErrMsg);
@@ -730,6 +746,13 @@ function processCheckin(membershipId, isManual = false) {
                 renewBtnHtml = `<a href="renew-member.php?id=${encodeURIComponent(data.member_db_id)}" class="btn btn-primary" style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;padding:0.5rem 1.1rem;text-decoration:none;border-radius:8px;"><i class="fas fa-rotate-right"></i> Renew Membership →</a>`;
             }
 
+            let retryBtnHtml = '';
+            if (mappedState === 'SERVER_ERROR') {
+                retryBtnHtml = `<button type="button" onclick="retryLastScan()" class="btn btn-sm" style="margin-top:8px;background:#c5221f;color:#fff;font-weight:700;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;"><i class="fas fa-rotate-right"></i> Retry Scan</button>`;
+            }
+
+            let refHtml = safeReqId ? `<div style="font-size:0.75rem;color:#777;font-family:monospace;margin-top:4px;">Ref: ${safeReqId}</div>` : '';
+
             res.innerHTML = `
                 <div style="text-align:left;">
                     <div style="font-size:0.8rem;font-weight:800;text-transform:uppercase;color:#c5221f;margin-bottom:4px;">
@@ -737,7 +760,9 @@ function processCheckin(membershipId, isManual = false) {
                     </div>
                     <div style="font-weight:700;font-size:1rem;color:var(--text-main);">${safeErrName}</div>
                     <div style="font-size:0.85rem;color:#c5221f;margin-top:2px;">${safeErrMsg}</div>
+                    ${refHtml}
                     ${renewBtnHtml}
+                    ${retryBtnHtml}
                 </div>
             `;
         }
@@ -746,7 +771,7 @@ function processCheckin(membershipId, isManual = false) {
         playScanBeep(false);
         triggerVibration(false);
         flashReaderBorder(false);
-        setScannerState('SERVER_ERROR', err.message || 'Unable to connect to attendance API');
+        setScannerState('NETWORK_ERROR', err.message || 'Unable to connect to attendance API');
 
         res.style.background = '#fce8e6'; 
         res.style.color = '#c5221f'; 
@@ -755,9 +780,14 @@ function processCheckin(membershipId, isManual = false) {
         res.innerHTML = `
             <div style="text-align:left;">
                 <div style="font-size:0.8rem;font-weight:800;text-transform:uppercase;color:#c5221f;margin-bottom:4px;">
-                    <i class="fas fa-triangle-exclamation"></i> UNABLE TO CONNECT
+                    <i class="fas fa-wifi"></i> NETWORK ERROR
                 </div>
                 <div style="font-size:0.85rem;color:#c5221f;">${safeErrorDetail}</div>
+                <div style="margin-top:8px;">
+                    <button type="button" onclick="retryLastScan()" class="btn btn-sm" style="background:#c5221f;color:#fff;font-weight:700;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">
+                        <i class="fas fa-rotate-right"></i> Retry Scan
+                    </button>
+                </div>
             </div>
         `;
     })

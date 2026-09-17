@@ -76,8 +76,9 @@ try {
         ]);
     $pdo->commit();
 
-    // Send confirmation email to member
-    if (!empty($member['email'])) {
+    // Send confirmation email to member (skip dummy test domains)
+    $is_test_email = preg_match('/@(example\.com|test\.local|test\.com)$/i', $member['email'] ?? '');
+    if (!empty($member['email']) && !$is_test_email) {
         require_once __DIR__ . '/../config/email.php';
         $time_tag = date('M d, Y h:i A');
         $email_subject = "Renewal Request Received [{$time_tag}] — Palma's Elite Gym";
