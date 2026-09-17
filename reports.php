@@ -201,8 +201,12 @@ if (isset($_GET['export']) && isset($pdo)) {
         $rows = $stmt->fetchAll(PDO::FETCH_NUM);
 
     } elseif ($type === 'members') {
-        $headers = ['Membership ID', 'Full Name', 'Email', 'Contact Number', 'Status', 'Date Joined', 'Active Plan', 'Expiry Date'];
-        $sql = "SELECT m.membership_id, m.full_name, m.email, m.contact_number, m.status, DATE(m.created_at) as joined,
+        $headers = ['Membership ID', 'Full Name', 'Email', 'Contact Number', 'DOB', 'Age', 'Home Address', 'Status', 'Date Joined', 'Active Plan', 'Expiry Date'];
+        $sql = "SELECT m.membership_id, m.full_name, m.email, m.contact_number,
+                       COALESCE(m.dob, '—') as dob,
+                       COALESCE(m.age, '—') as age,
+                       COALESCE(m.address, '—') as address,
+                       m.status, DATE(m.created_at) as joined,
                        COALESCE(
                            (SELECT p2.name FROM subscriptions s2 JOIN membership_plans p2 ON p2.id = s2.plan_id WHERE s2.member_id = m.id AND s2.expiry_date >= CURDATE() ORDER BY s2.expiry_date DESC LIMIT 1), '—'
                        ) as plan_name,

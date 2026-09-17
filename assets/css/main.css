@@ -719,6 +719,15 @@ td {
     transition: background 0.15s ease;
 }
 
+.table-container table {
+    min-width: 650px;
+}
+
+th:last-child,
+td:last-child {
+    white-space: nowrap;
+}
+
 tbody tr:last-child td {
     border-bottom: none;
 }

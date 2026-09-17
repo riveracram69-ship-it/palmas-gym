@@ -299,10 +299,23 @@ try {
 
                     <td><code style="font-size:0.85rem;color:var(--accent);font-weight:700;"><?php echo htmlspecialchars($pm['membership_id']); ?></code></td>
                     <td>
-                        <div style="font-size:0.85rem;color:var(--text-main);"><?php echo htmlspecialchars($pm['contact_number'] ?: '—'); ?></div>
-                        <div style="font-size:0.75rem;color:var(--text-muted);"><?php echo htmlspecialchars($pm['gender'] ?: 'Male'); ?></div>
-                        <?php if (!empty($pm['address'])): ?>
-                            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;"><i class="fas fa-location-dot" style="color:var(--accent);font-size:0.7rem;"></i> <?php echo htmlspecialchars($pm['address']); ?></div>
+                        <div style="font-size:0.85rem;font-weight:600;color:var(--text-main);"><i class="fas fa-phone" style="font-size:0.7rem;color:var(--accent);margin-right:4px;"></i><?php echo htmlspecialchars($pm['contact_number'] ?: '—'); ?></div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);display:flex;gap:6px;align-items:center;margin-top:2px;">
+                            <span><i class="fas fa-user" style="font-size:0.68rem;opacity:0.6;"></i> <?php echo htmlspecialchars($pm['gender'] ?: 'Male'); ?></span>
+                            <?php 
+                            $dob_text = format_member_dob($pm['dob'] ?? null, $pm['age'] ?? null);
+                            if ($dob_text !== '—'): ?>
+                                <span>&bull;</span>
+                                <span><i class="fas fa-cake-candles" style="font-size:0.68rem;color:var(--accent);"></i> <?php echo htmlspecialchars($dob_text); ?></span>
+                            <?php endif; ?>
+                        </div>
+                        <?php 
+                        $applicant_addr = format_member_address($pm);
+                        if ($applicant_addr !== '—'): ?>
+                            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:3px;display:flex;align-items:flex-start;gap:4px;" title="<?php echo htmlspecialchars($applicant_addr); ?>">
+                                <i class="fas fa-location-dot" style="color:var(--accent);font-size:0.7rem;margin-top:2px;flex-shrink:0;"></i> 
+                                <span><?php echo htmlspecialchars($applicant_addr); ?></span>
+                            </div>
                         <?php endif; ?>
                     </td>
                     <td>

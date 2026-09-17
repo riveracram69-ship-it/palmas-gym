@@ -3,6 +3,7 @@ require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/logger.php';
 require_once __DIR__ . '/../config/settings.php';
+require_once __DIR__ . '/../config/member_helpers.php';
 require_once __DIR__ . '/ui_components.php';
 require_login();
 $user = current_user();

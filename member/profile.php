@@ -227,8 +227,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             font-weight: 600;
             color: var(--text-primary);
             text-align: right;
-            max-width: 60%;
-            word-break: break-all;
+            max-width: 65%;
+            word-break: normal;
+            overflow-wrap: break-word;
         }
 
         .edit-section {

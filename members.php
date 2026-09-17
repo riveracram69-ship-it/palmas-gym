@@ -8,6 +8,7 @@ try {
     if (isset($pdo) && $pdo) {
         $members = $pdo->query(
             "SELECT m.id, m.membership_id, m.full_name, m.email, m.contact_number, m.status, m.account_status, m.created_at, 
+                    m.house_street, m.barangay, m.municipality, m.province, m.zip_code, m.address, m.dob, m.age,
                     COALESCE(sub.plan_name, '—') AS plan_name,
                     sub.expiry_date
              FROM members m
@@ -91,11 +92,16 @@ $active = array_filter($members, function($m) {
                         ? 'Inactive' 
                         : ($is_sub_expired ? 'Expired' : 'Active');
                     $badge_class = ($effective_status === 'Active') ? 'badge-success' : 'badge-danger';
+                    $formatted_addr = format_member_address($m);
+                    $display_location = !empty($m['barangay']) 
+                        ? $m['barangay'] . ', ' . ($m['municipality'] ?: 'Talavera') 
+                        : ($formatted_addr !== '—' ? $formatted_addr : '');
                 ?>
                 <tr class="member-row"
                     data-name="<?php echo htmlspecialchars(strtolower($m['full_name']), ENT_QUOTES, 'UTF-8'); ?>"
                     data-email="<?php echo htmlspecialchars(strtolower($m['email']), ENT_QUOTES, 'UTF-8'); ?>"
                     data-id="<?php echo htmlspecialchars(strtolower($m['membership_id']), ENT_QUOTES, 'UTF-8'); ?>"
+                    data-address="<?php echo htmlspecialchars(strtolower($formatted_addr . ' ' . ($m['barangay'] ?? '') . ' ' . ($m['municipality'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>"
                     data-status="<?php echo htmlspecialchars($m['account_status'] ?? 'Approved', ENT_QUOTES, 'UTF-8'); ?>"
                     data-membership-status="<?php echo htmlspecialchars($effective_status, ENT_QUOTES, 'UTF-8'); ?>">
 
@@ -105,6 +111,12 @@ $active = array_filter($members, function($m) {
                             <div>
                                 <div style="font-weight:600;color:var(--text-main);"><?php echo htmlspecialchars($m['full_name']); ?></div>
                                 <div style="font-size:0.75rem;color:var(--text-muted);"><?php echo htmlspecialchars($m['email']); ?></div>
+                                <?php if ($display_location): ?>
+                                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:4px;" title="<?php echo htmlspecialchars($formatted_addr); ?>">
+                                    <i class="fas fa-location-dot" style="color:var(--accent);font-size:0.68rem;"></i>
+                                    <span><?php echo htmlspecialchars($display_location); ?></span>
+                                </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </td>
@@ -142,8 +154,8 @@ $active = array_filter($members, function($m) {
                             <span class="badge badge-gray">—</span>
                         <?php endif; ?>
                     </td>
-                    <td>
-                        <div style="display:flex;gap:0.5rem;">
+                    <td style="white-space:nowrap;">
+                        <div style="display:flex;gap:0.5rem;align-items:center;">
                             <a href="view-member.php?id=<?php echo $m['id']; ?>" class="btn btn-outline btn-icon" title="View Profile" aria-label="View Profile">
                                 <i class="fas fa-eye"></i>
                             </a>
@@ -276,8 +288,9 @@ function filterTable() {
         const nameMatch   = row.dataset.name.includes(q);
         const emailMatch  = row.dataset.email.includes(q);
         const idMatch     = row.dataset.id.includes(q);
+        const addrMatch   = (row.dataset.address || '').includes(q);
         const statusMatch = !s || row.dataset.membershipStatus === s;
-        const match = (nameMatch || emailMatch || idMatch) && statusMatch;
+        const match = (nameMatch || emailMatch || idMatch || addrMatch) && statusMatch;
 
         if (match) {
             matchingRows.push(row);
