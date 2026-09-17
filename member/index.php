@@ -381,7 +381,7 @@ try {
                     <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:0.35rem;">
                         <?php foreach($sec['items'] as $plan): 
                             $is_daily = (intval($plan['duration_minutes'] ?? 0) === 1440);
-                            $dur_text = $is_daily ? '1 Day' : ($plan['duration_months'] > 0 ? ($plan['duration_months'] . ' month' . ($plan['duration_months'] > 1 ? 's' : '')) : ($plan['duration_minutes'] . ' mins'));
+                            $dur_text = $is_daily ? 'Same-Day Pass (Expires 11:59 PM today)' : ($plan['duration_months'] > 0 ? ($plan['duration_months'] . ' month' . ($plan['duration_months'] > 1 ? 's' : '') . ' Full Access') : ($plan['duration_minutes'] . ' mins'));
                         ?>
                         <label class="plan-option" for="plan-<?php echo $plan['id']; ?>">
                             <input type="radio" name="plan" id="plan-<?php echo $plan['id']; ?>"
@@ -391,13 +391,15 @@ try {
                                    data-months="<?php echo $plan['duration_months']; ?>">
                             <div class="plan-card-inner">
                                 <div style="flex:1;">
-                                    <div class="plan-card-name"><?php echo htmlspecialchars($plan['name']); ?></div>
-                                    <div class="plan-card-duration"><?php echo $dur_text; ?></div>
+                                    <div class="plan-card-name" style="font-weight:700; font-size:0.92rem; color:var(--text-main);"><?php echo htmlspecialchars($plan['name']); ?></div>
+                                    <div class="plan-card-duration" style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;"><?php echo $dur_text; ?></div>
                                     <?php if(!empty($plan['benefits'])): ?>
-                                    <div class="plan-card-benefits"><?php echo htmlspecialchars($plan['benefits']); ?></div>
+                                    <div class="plan-card-benefits" style="font-size:0.72rem; color:#52b788; margin-top:4px; line-height:1.35; padding-top:4px; border-top:1px dashed rgba(82,183,136,0.25);">
+                                        <i class="fas fa-circle-info" style="font-size:0.68rem; margin-right:3px;"></i><?php echo htmlspecialchars($plan['benefits']); ?>
+                                    </div>
                                     <?php endif; ?>
                                 </div>
-                                <div class="plan-card-price">₱<?php echo number_format($plan['price'], 0); ?></div>
+                                <div class="plan-card-price" style="font-weight:800; font-size:1.1rem; color:var(--palmas-primary);">₱<?php echo number_format($plan['price'], 2); ?></div>
                             </div>
                             <span class="plan-check"><i class="fas fa-circle-check"></i></span>
                         </label>

@@ -958,25 +958,32 @@ select.if{
             </div>
             <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
               <?php foreach($sec['items'] as $p): $sel=($selected_plan_id===(int)$p['id']); ?>
-              <label class="plan <?php echo $sel?'on':''; ?>">
+              <label class="plan <?php echo $sel?'on':''; ?>" style="padding:12px 14px; border-radius:12px;">
                 <input type="radio" name="plan_id" value="<?php echo $p['id']; ?>" <?php echo $sel?'checked':''; ?>>
                 <div class="plan-l">
                   <div class="radio-dot" aria-hidden="true"></div>
                   <div>
-                    <div class="plan-name"><?php echo htmlspecialchars($p['name']); ?></div>
-                    <div class="plan-dur"><i class="fa-regular fa-clock" aria-hidden="true"></i> <?php 
-                      if (!empty($p['duration_minutes']) && (int)$p['duration_minutes'] === 1440) {
-                          echo '1 Day';
-                      } elseif (!empty($p['duration_minutes']) && (int)$p['duration_minutes'] > 0) {
-                          echo (int)$p['duration_minutes'] . ' minute' . ((int)$p['duration_minutes'] != 1 ? 's' : '');
-                      } else {
-                          $d_m = max(1, (int)($p['duration_months'] ?? 1));
-                          echo $d_m . ' month' . ($d_m != 1 ? 's' : '');
-                      }
-                    ?></div>
+                    <div class="plan-name" style="font-weight:700; color:var(--c-h); font-size:0.92rem;"><?php echo htmlspecialchars($p['name']); ?></div>
+                    <div class="plan-dur" style="font-size:0.75rem; color:var(--c-muted); margin-top:2px;">
+                      <i class="fa-regular fa-clock" aria-hidden="true"></i> <?php 
+                        if (!empty($p['duration_minutes']) && (int)$p['duration_minutes'] === 1440) {
+                            echo 'Same-Day Pass (Expires 11:59 PM today)';
+                        } elseif (!empty($p['duration_minutes']) && (int)$p['duration_minutes'] > 0) {
+                            echo (int)$p['duration_minutes'] . ' minute' . ((int)$p['duration_minutes'] != 1 ? 's' : '');
+                        } else {
+                            $d_m = max(1, (int)($p['duration_months'] ?? 1));
+                            echo $d_m . ' month' . ($d_m != 1 ? 's' : '') . ' Full Access';
+                        }
+                      ?>
+                    </div>
+                    <?php if (!empty($p['benefits'])): ?>
+                    <div style="font-size:0.72rem; color:#406550; margin-top:4px; line-height:1.35; padding-top:3px; border-top:1px dashed #d5e4db;">
+                      <i class="fa-solid fa-circle-info" style="color:var(--c-p, #3e8241); font-size:0.68rem; margin-right:3px;"></i><?php echo htmlspecialchars($p['benefits']); ?>
+                    </div>
+                    <?php endif; ?>
                   </div>
                 </div>
-                <div class="plan-price">&#8369;<?php echo number_format($p['price'],2); ?></div>
+                <div class="plan-price" style="font-size:1.05rem; font-weight:800;">&#8369;<?php echo number_format($p['price'],2); ?></div>
               </label>
               <?php endforeach; ?>
             </div>
