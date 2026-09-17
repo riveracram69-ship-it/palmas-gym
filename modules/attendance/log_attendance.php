@@ -1,7 +1,7 @@
 <?php
-require_once '../../config/auth.php';
-require_once '../../config/db.php';
-require_once '../../config/logger.php';
+require_once __DIR__ . '/../../config/auth.php';
+require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/logger.php';
 
 header('Content-Type: application/json');
 
@@ -27,6 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $is_manual = isset($_POST['is_manual']) && ($_POST['is_manual'] === '1' || $_POST['is_manual'] === 'true');
     $membership_id = null;
+    $token_sig = null;
+    $token_slot = 0;
 
     // Check if input is a dynamic rotating QR token (Format: GYM-XXXXXX:time_slot:signature)
     if (strpos($raw_input, ':') !== false) {
@@ -69,6 +71,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $membership_id = $token_mem_id;
+
+            // Anti-Replay & Anti-Screenshot Protection: Validate that this dynamic QR token hasn't already been consumed
+            if (!empty($token_sig)) {
+                $replay_stmt = $pdo->prepare("
+                    SELECT id, member_id, action, used_at, TIMESTAMPDIFF(SECOND, used_at, NOW()) as secs_ago 
+                    FROM used_qr_tokens 
+                    WHERE token_sig = ? 
+                    LIMIT 1
+                ");
+                $replay_stmt->execute([$token_sig]);
+                $used_token = $replay_stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($used_token) {
+                    $secs_since_use = intval($used_token['secs_ago'] ?? 0);
+                    if ($secs_since_use < 5) {
+                        echo json_encode([
+                            'success' => true,
+                            'is_cooldown' => true,
+                            'status_type' => 'Already Scanned',
+                            'action' => 'cooldown',
+                            'message' => 'Attendance Already Recorded. Cooldown active.'
+                        ]);
+                        exit;
+                    }
+
+                    echo json_encode([
+                        'success' => false,
+                        'status_type' => 'Replayed QR Blocked',
+                        'message' => 'This dynamic QR code has already been used and cannot be replayed. Please present a fresh QR code from your mobile app.'
+                    ]);
+                    exit;
+                }
+            }
         } else {
             echo json_encode(['success' => false, 'message' => 'Malformed QR code structure. Expected format: GYM-ID:slot:sig']);
             exit;
@@ -281,6 +316,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Otherwise, perform Check-out (UPDATE the existing row's time_out, NO new row)
             $upd = $pdo->prepare("UPDATE attendance SET time_out = NOW() WHERE id = ?");
             $upd->execute([$last_record['id']]);
+
+            // Consume dynamic QR token to prevent replay/screenshot attacks
+            if (!empty($token_sig)) {
+                $rec_tok = $pdo->prepare("INSERT IGNORE INTO used_qr_tokens (token_sig, membership_id, member_id, time_slot, action, used_at) VALUES (?, ?, ?, ?, 'check-out', NOW())");
+                $rec_tok->execute([$token_sig, $member['membership_id'], $member['id'], $token_slot]);
+            }
+
             $pdo->commit();
 
             echo json_encode([
@@ -338,6 +380,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 5. Log New Check-in
         $ins = $pdo->prepare("INSERT INTO attendance (member_id, date, time_in) VALUES (?, CURDATE(), NOW())");
         $ins->execute([$member['id']]);
+
+        // Consume dynamic QR token to prevent replay/screenshot attacks
+        if (!empty($token_sig)) {
+            $rec_tok = $pdo->prepare("INSERT IGNORE INTO used_qr_tokens (token_sig, membership_id, member_id, time_slot, action, used_at) VALUES (?, ?, ?, ?, 'check-in', NOW())");
+            $rec_tok->execute([$token_sig, $member['membership_id'], $member['id'], $token_slot]);
+        }
+
         $pdo->commit();
 
         echo json_encode([

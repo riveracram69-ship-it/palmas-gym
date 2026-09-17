@@ -262,6 +262,26 @@ function run_master_v3_migration(PDO $pdo): array {
         } catch (Exception $e) {}
     }
 
+    // 8. ANTI-REPLAY USED QR TOKENS TABLE
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `used_qr_tokens` (
+                `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+                `token_sig` VARCHAR(64) NOT NULL UNIQUE,
+                `membership_id` VARCHAR(50) NOT NULL,
+                `member_id` INT NOT NULL,
+                `time_slot` INT NOT NULL,
+                `action` VARCHAR(20) NOT NULL DEFAULT 'check-in',
+                `used_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX `idx_used_qr_sig` (`token_sig`),
+                INDEX `idx_used_qr_time` (`used_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+        $results[] = "used_qr_tokens: verified anti-replay table exists";
+    } catch (Exception $e) {
+        $results[] = "used_qr_tokens: warning: " . $e->getMessage();
+    }
+
     return $results;
 }
 
