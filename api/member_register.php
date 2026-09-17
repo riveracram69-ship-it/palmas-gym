@@ -174,6 +174,17 @@ if (!$dup_check['valid']) {
     exit;
 }
 
+// Validate selected plan
+$p_fetch = $pdo->prepare("SELECT id, name, price FROM membership_plans WHERE id = ? AND (is_active = 1 OR is_active IS NULL)");
+$p_fetch->execute([$plan_id]);
+$p_row = $p_fetch->fetch(PDO::FETCH_ASSOC);
+if (!$p_row) {
+    echo json_encode(['success' => false, 'message' => 'Selected membership plan is invalid or no longer active.']);
+    exit;
+}
+$plan_name  = $p_row['name'];
+$plan_price = floatval($p_row['price']);
+
 // ── Create Member ─────────────────────────────────────────────────────────────
 try {
     $pdo->beginTransaction();

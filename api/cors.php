@@ -49,6 +49,17 @@ function get_allowed_origins(): array {
         }
     }
 
+    // Optional additional comma-separated origins from .env / environment
+    $env_allowed = getenv('CORS_ALLOWED_ORIGINS') ?: ($_ENV['CORS_ALLOWED_ORIGINS'] ?? '');
+    if (!empty($env_allowed)) {
+        $custom_origins = array_map('trim', explode(',', $env_allowed));
+        foreach ($custom_origins as $co) {
+            if (!empty($co)) {
+                $origins[] = rtrim($co, '/');
+            }
+        }
+    }
+
     return array_unique($origins);
 }
 

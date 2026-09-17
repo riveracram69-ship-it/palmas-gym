@@ -75,8 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } else {
         // Raw Member ID submitted (without signature, e.g. from printed/downloaded ID card or manual entry)
-        // Allowed if scanned or entered by authenticated front-desk staff/admin
-        if ($is_staff) {
+        // Allowed if entered manually by authenticated front-desk staff/admin
+        if ($is_staff && $is_manual) {
             $cleaned = trim($raw_input);
             $membership_id = strtoupper($cleaned);
         } else {
@@ -97,25 +97,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    (SELECT s.expiry_date 
                     FROM subscriptions s 
                     WHERE s.member_id = m.id 
-                    ORDER BY s.id DESC 
+                    ORDER BY (s.expiry_date >= NOW()) DESC, s.expiry_date DESC, s.id DESC 
                     LIMIT 1) as expiry_date,
                    (SELECT p.name 
                     FROM subscriptions s 
                     LEFT JOIN membership_plans p ON p.id = s.plan_id 
                     WHERE s.member_id = m.id 
-                    ORDER BY s.id DESC 
+                    ORDER BY (s.expiry_date >= NOW()) DESC, s.expiry_date DESC, s.id DESC 
                     LIMIT 1) as plan_name,
                    (SELECT p.floor_access 
                     FROM subscriptions s 
                     LEFT JOIN membership_plans p ON p.id = s.plan_id 
                     WHERE s.member_id = m.id 
-                    ORDER BY s.id DESC 
+                    ORDER BY (s.expiry_date >= NOW()) DESC, s.expiry_date DESC, s.id DESC 
                     LIMIT 1) as floor_access,
                    (SELECT p.plan_category 
                     FROM subscriptions s 
                     LEFT JOIN membership_plans p ON p.id = s.plan_id 
                     WHERE s.member_id = m.id 
-                    ORDER BY s.id DESC 
+                    ORDER BY (s.expiry_date >= NOW()) DESC, s.expiry_date DESC, s.id DESC 
                     LIMIT 1) as plan_category
             FROM members m 
             WHERE m.membership_id = ? OR REPLACE(UPPER(m.membership_id), '-', '') = REPLACE(UPPER(?), '-', '')
@@ -198,7 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // 3. Check Subscription Expiry
-        $sub_stmt = $pdo->prepare("SELECT expiry_date, plan_id FROM subscriptions WHERE member_id = ? ORDER BY id DESC LIMIT 1");
+        $sub_stmt = $pdo->prepare("SELECT expiry_date, plan_id FROM subscriptions WHERE member_id = ? ORDER BY (expiry_date >= NOW()) DESC, expiry_date DESC, id DESC LIMIT 1");
         $sub_stmt->execute([$member['id']]);
         $sub = $sub_stmt->fetch(PDO::FETCH_ASSOC);
 

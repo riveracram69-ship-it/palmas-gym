@@ -82,8 +82,13 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             return ['success' => false, 'message' => 'This plan is no longer available. Please select a current plan.'];
         }
 
-        // Always enforce server-side pricing from database
-        $amount = floatval($plan['price']);
+        // Enforce pricing: use passed paid amount if positive, otherwise default to catalog plan price
+        $catalog_price = floatval($plan['price']);
+        $passed_amount = ($amount !== null && floatval($amount) > 0) ? floatval($amount) : null;
+        if ($passed_amount !== null && abs($passed_amount - $catalog_price) > 0.05) {
+            error_log("process_automated_subscription_activation: Passed amount ({$passed_amount}) differs from catalog plan price ({$catalog_price}) for plan_id {$plan_id}");
+        }
+        $amount = $passed_amount !== null ? $passed_amount : $catalog_price;
         $duration_minutes = intval($plan['duration_minutes'] ?? 0);
         $duration_months  = intval($plan['duration_months'] ?? 0);
 
@@ -160,7 +165,7 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             $db_method = 'Cash';
             $std_method = 'CASH';
         } elseif (strpos($upper_m, 'MAYA') !== false) {
-            $db_method = 'GCash';
+            $db_method = 'Maya';
             $std_method = 'MAYA';
         } elseif (strpos($upper_m, 'QR') !== false) {
             $db_method = 'GCash';

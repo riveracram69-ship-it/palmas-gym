@@ -109,13 +109,15 @@ try {
             if ($is_verified) {
                 try { clear_rate_limit($pdo, $username, 'api_member_login'); } catch (Throwable $e) {}
                 echo json_encode([
-                    'success' => true,
+                    'success' => false,
                     'first_time_setup' => true,
+                    'requires_password_setup' => true,
                     'member_id' => $member['id'],
                     'full_name' => $member['full_name'],
                     'membership_id' => $member['membership_id'],
                     'email' => $member['email'],
-                    'message' => 'First-time login detected. Please create your secure password.'
+                    'token' => null,
+                    'message' => 'First-time setup detected. Please set up your password via the password setup screen before signing in.'
                 ]);
                 exit;
             } else {

@@ -4658,6 +4658,11 @@ async function submitTraditionalLogin() {
       return;
     }
 
+    if (data.first_time_setup) {
+      showLoginAlert(data.message || 'First-time setup detected. Please set up your password before signing in.');
+      return;
+    }
+
     if (data.success && data.token) {
       currentMember = data.member;
       localStorage.setItem('peg_member', JSON.stringify(data.member));
@@ -5557,10 +5562,17 @@ function initMainView(memberId) {
   setTimeout(() => switchToTab('tab-pass'), 100);
   setTimeout(() => switchToTab('tab-pass'), 350);
 
-  // Immediately render cached member pass, avatar, and QR code if available
+  // Immediately render cached member pass, avatar, and QR code placeholder if available
   if (currentMember) {
     if (currentMember.membership_id) {
-      renderQRCode(currentMember.membership_id);
+      if (currentQrToken) {
+        renderQRCode(currentQrToken);
+      } else {
+        const qrBox = document.getElementById('qr-target');
+        if (qrBox) {
+          qrBox.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:220px;color:#888;"><div class="spinner" style="width:28px;height:28px;border-width:3px;margin-bottom:10px;"></div><span style="font-size:0.75rem;letter-spacing:1px;font-weight:600;">LOADING SECURE PASS...</span></div>';
+        }
+      }
       const qid = document.getElementById('card-qr-memid');
       if (qid) qid.textContent = currentMember.membership_id;
       const cid = document.getElementById('card-code');
@@ -5970,6 +5982,7 @@ async function loadDashboard(memberId) {
     // Dynamic Authenticated Member Pass QR Code
     currentQrToken = data.qr_token || m.membership_id;
     renderQRCode(currentQrToken);
+    startQRCountdown();
 
     // Populate Tab 2: Attendance
     renderAttendance(data.attendance || []);
@@ -6143,6 +6156,8 @@ function handleTabChange(e) {
     if (currentMember && currentMember.id) {
       loadDashboard(currentMember.id);
     }
+  } else if (currentActiveTab === 'tab-pass') {
+    startQRCountdown();
   }
 }
 
@@ -6155,7 +6170,31 @@ function switchToTab(tabName) {
 }
 
 function startQRCountdown() {
-  clearInterval(qrCountdownTimer);
+  if (qrCountdownTimer) {
+    clearInterval(qrCountdownTimer);
+    qrCountdownTimer = null;
+  }
+  // Auto-refresh dynamic rotating QR code every 14 seconds to ensure HMAC token remains valid at scanner
+  qrCountdownTimer = setInterval(async () => {
+    if (!currentMember || currentActiveTab !== 'tab-pass') return;
+    const token = localStorage.getItem('peg_token');
+    if (!token) return;
+
+    try {
+      const res = await authFetch(`${API_URL}/member_dashboard.php`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.qr_token) {
+          currentQrToken = data.qr_token;
+          renderQRCode(currentQrToken);
+        }
+      }
+    } catch (e) {
+      console.warn('Dynamic QR auto-refresh notice:', e);
+    }
+  }, 14000);
 }
 
 

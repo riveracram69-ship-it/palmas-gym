@@ -78,6 +78,51 @@ try {
         exit;
     }
 
+    // 2.5 Enforce renewal eligibility: only permitted when expired or expiring soon
+    $cur_sub_stmt = $pdo->prepare("
+        SELECT s.id, s.expiry_date, 
+               p.name as current_plan_name, p.duration_minutes, p.duration_months, p.is_test_promo
+        FROM subscriptions s
+        LEFT JOIN membership_plans p ON s.plan_id = p.id
+        WHERE s.member_id = ?
+        ORDER BY (s.expiry_date >= NOW()) DESC, s.expiry_date DESC, s.id DESC
+        LIMIT 1
+    ");
+    $cur_sub_stmt->execute([$member_id]);
+    $active_sub = $cur_sub_stmt->fetch(PDO::FETCH_ASSOC);
+
+    $is_active_member = (strcasecmp($member['status'] ?? '', 'Active') === 0);
+    $sub_has_future_expiry = ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time());
+
+    if ($is_active_member && $sub_has_future_expiry) {
+        $expiry_ts = strtotime($active_sub['expiry_date']);
+        $diff_sec = $expiry_ts - time();
+        $is_sub_minute_promo = (!empty($active_sub['duration_minutes']) && $active_sub['duration_minutes'] > 0)
+            || preg_match('/(\d+)\s*(?:min|minute)/i', $active_sub['current_plan_name'] ?? '');
+
+        // Threshold: 5 minutes (300s) for promos, 3 days (259,200s) for standard plans
+        $threshold_sec = $is_sub_minute_promo ? 300 : (3 * 86400);
+
+        if ($diff_sec > $threshold_sec) {
+            $rem_text = '';
+            if ($is_sub_minute_promo || $diff_sec < 86400) {
+                $rem_mins = ceil($diff_sec / 60);
+                $rem_text = "{$rem_mins} minute(s)";
+            } else {
+                $rem_days = ceil($diff_sec / 86400);
+                $rem_text = "{$rem_days} day(s)";
+            }
+            $rule_text = $is_sub_minute_promo ? 'within 5 minutes of expiration' : 'within 3 days of expiration';
+
+            echo json_encode([
+                'success' => false,
+                'cannot_renew' => true,
+                'message' => "Hindi pa maaaring mag-renew! Aktibo pa ang iyong kasalukuyang plano ({$rem_text} natitira). Maaari lamang mag-renew kapag expired na o {$rule_text}."
+            ]);
+            exit;
+        }
+    }
+
     $is_minute_promo = (!empty($plan['duration_minutes']) && (int)$plan['duration_minutes'] > 0);
     $duration_label = $is_minute_promo ? ($plan['duration_minutes'] . ' Minute(s)') : ($plan['duration_months'] . ' Month(s)');
     $is_test_promo = ((int)($plan['is_test_promo'] ?? 0) === 1);
