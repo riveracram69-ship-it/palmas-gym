@@ -21,6 +21,9 @@ if (isset($_SESSION['member_id'])) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+               || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+
     $csrf_token = $_POST['csrf_token'] ?? '';
     if (!verify_csrf_token($csrf_token)) {
         $error = "Security session expired. Please refresh the page and try again.";
@@ -28,76 +31,109 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $membership_id = trim($_POST['membership_id'] ?? '');
         $credential    = trim($_POST['credential'] ?? '');
 
-    $rate_check = check_rate_limit($pdo, $membership_id, 'member_portal_login');
-    if (!$rate_check['allowed']) {
-        $error = $rate_check['message'];
-    } elseif (empty($membership_id) || empty($credential)) {
-        $error = "Please enter both your Membership ID / Email and Password.";
-    } else {
-        $clean_id = str_replace(['-', ' '], '', strtoupper($membership_id));
-        try {
-            $stmt = $pdo->prepare("
-                SELECT m.id, m.full_name, m.account_status, m.status, m.rejection_reason, m.password_hash 
-                FROM members m
-                LEFT JOIN renewal_requests r ON r.member_id = m.id
-                WHERE REPLACE(REPLACE(UPPER(m.membership_id), '-', ''), ' ', '') = ?
-                   OR LOWER(m.email) = LOWER(?)
-                   OR m.contact_number = ?
-                   OR UPPER(r.reference_no) = UPPER(?)
-                ORDER BY m.id DESC
-                LIMIT 1
-            ");
-            $stmt->execute([$clean_id, $membership_id, $membership_id, $membership_id]);
-            $member = $stmt->fetch(PDO::FETCH_ASSOC);
+        $rate_check = check_rate_limit($pdo, $membership_id, 'member_portal_login');
+        if (!$rate_check['allowed']) {
+            $error = $rate_check['message'];
+        } elseif (empty($membership_id)) {
+            $error = "Please enter your Member ID or Email.";
+        } elseif (empty($credential)) {
+            $error = "Please enter your password.";
+        } else {
+            $clean_id = str_replace(['-', ' '], '', strtoupper($membership_id));
+            try {
+                $stmt = $pdo->prepare("
+                    SELECT m.id, m.full_name, m.account_status, m.status, m.rejection_reason, m.password_hash 
+                    FROM members m
+                    LEFT JOIN renewal_requests r ON r.member_id = m.id
+                    WHERE REPLACE(REPLACE(UPPER(m.membership_id), '-', ''), ' ', '') = ?
+                       OR LOWER(m.email) = LOWER(?)
+                       OR m.contact_number = ?
+                       OR UPPER(r.reference_no) = UPPER(?)
+                    ORDER BY m.id DESC
+                    LIMIT 1
+                ");
+                $stmt->execute([$clean_id, $membership_id, $membership_id, $membership_id]);
+                $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($member) {
-                $acc_status = $member['account_status'] ?? 'Approved';
+                if ($member) {
+                    $acc_status = $member['account_status'] ?? 'Approved';
 
-                if ($acc_status === 'Pending') {
-                    $error = "Your registration is currently waiting for staff approval. You will receive an email once approved.";
-                } elseif ($acc_status === 'Rejected') {
-                    $reason = !empty($member['rejection_reason']) ? " Reason: " . htmlspecialchars($member['rejection_reason']) : "";
-                    $error = "Your registration was not approved.{$reason} Please contact the gym for more information.";
-                } elseif ($acc_status === 'Suspended') {
-                    $error = "Your account has been temporarily suspended. Please contact gym administration.";
-                } else {
-                    // Account is Approved!
-                    if (empty($member['password_hash'])) {
-                        $stmt_legacy = $pdo->prepare("SELECT id FROM members WHERE id = ? AND (LOWER(email) = ? OR contact_number = ?)");
-                        $stmt_legacy->execute([$member['id'], strtolower($credential), $credential]);
-                        if ($stmt_legacy->fetch()) {
-                            clear_rate_limit($pdo, $membership_id, 'member_portal_login');
-                            $_SESSION['setup_member_id'] = $member['id'];
-                            header('Location: setup_password.php');
-                            exit;
-                        } else {
-                            $failed = record_failed_login($pdo, $membership_id, 'member_portal_login');
-                            $error = $failed['lockout'] ? $failed['message'] : "Invalid verification details for first-time account setup.";
-                        }
+                    if ($acc_status === 'Pending') {
+                        $error = "Your registration is currently waiting for staff approval. You will receive an email once approved.";
+                    } elseif ($acc_status === 'Rejected') {
+                        $reason = !empty($member['rejection_reason']) ? " Reason: " . htmlspecialchars($member['rejection_reason']) : "";
+                        $error = "Your registration was not approved.{$reason} Please contact the gym for more information.";
+                    } elseif ($acc_status === 'Suspended') {
+                        $error = "Your account has been temporarily suspended. Please contact gym administration.";
                     } else {
-                        if (password_verify($credential, $member['password_hash'])) {
-                            clear_rate_limit($pdo, $membership_id, 'member_portal_login');
-                            session_regenerate_id(true);
-                            $_SESSION['member_id']   = $member['id'];
-                            $_SESSION['member_name'] = $member['full_name'];
-                            set_member_remember_cookie($member['id'], $pdo);
-                            header('Location: index.php');
-                            exit;
+                        // Account is Approved!
+                        if (empty($member['password_hash'])) {
+                            $stmt_legacy = $pdo->prepare("SELECT id FROM members WHERE id = ? AND (LOWER(email) = ? OR contact_number = ?)");
+                            $stmt_legacy->execute([$member['id'], strtolower($credential), $credential]);
+                            if ($stmt_legacy->fetch()) {
+                                clear_rate_limit($pdo, $membership_id, 'member_portal_login');
+                                $_SESSION['setup_member_id'] = $member['id'];
+
+                                if ($is_ajax) {
+                                    header('Content-Type: application/json; charset=utf-8');
+                                    echo json_encode([
+                                        'success'  => true,
+                                        'message'  => 'First-time setup detected. Redirecting...',
+                                        'redirect' => 'setup_password.php'
+                                    ]);
+                                    exit;
+                                }
+
+                                header('Location: setup_password.php');
+                                exit;
+                            } else {
+                                $failed = record_failed_login($pdo, $membership_id, 'member_portal_login');
+                                $error = $failed['lockout'] ? $failed['message'] : "Invalid verification details for first-time account setup.";
+                            }
                         } else {
-                            $failed = record_failed_login($pdo, $membership_id, 'member_portal_login');
-                            $error = $failed['lockout'] ? $failed['message'] : "Incorrect Member ID/Email or Password.";
+                            if (password_verify($credential, $member['password_hash'])) {
+                                clear_rate_limit($pdo, $membership_id, 'member_portal_login');
+                                session_regenerate_id(true);
+                                $_SESSION['member_id']   = $member['id'];
+                                $_SESSION['member_name'] = $member['full_name'];
+                                set_member_remember_cookie($member['id'], $pdo);
+
+                                if ($is_ajax) {
+                                    header('Content-Type: application/json; charset=utf-8');
+                                    echo json_encode([
+                                        'success'  => true,
+                                        'message'  => 'Welcome back, ' . ($member['full_name'] ?? 'Member') . '! Redirecting...',
+                                        'redirect' => 'index.php'
+                                    ]);
+                                    exit;
+                                }
+
+                                header('Location: index.php');
+                                exit;
+                            } else {
+                                $failed = record_failed_login($pdo, $membership_id, 'member_portal_login');
+                                $error = $failed['lockout'] ? $failed['message'] : "Incorrect Member ID/Email or Password.";
+                            }
                         }
                     }
+                } else {
+                    $failed = record_failed_login($pdo, $membership_id, 'member_portal_login');
+                    $error = $failed['lockout'] ? $failed['message'] : "Account not found with that Member ID or Email.";
                 }
-            } else {
-                $failed = record_failed_login($pdo, $membership_id, 'member_portal_login');
-                $error = $failed['lockout'] ? $failed['message'] : "Account not found with that Member ID or Email.";
+            } catch (Exception $e) {
+                $error = "A system error occurred. Please try again later.";
             }
-        } catch (Exception $e) {
-            $error = "A system error occurred. Please try again later.";
         }
     }
-}
+
+    if ($is_ajax) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => false,
+            'message' => $error ?: 'Unable to sign in. Please check your credentials.'
+        ]);
+        exit;
+    }
 }
 
 $gym_name = htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym");
@@ -223,6 +259,120 @@ img{max-width:100%;display:block}
 .alert i{margin-top:2px;flex-shrink:0}
 .alert-err{background:var(--c-err-p);border:1px solid var(--c-err-b);color:#7F1D1D}
 .alert-err i{color:var(--c-err)}
+
+/* ── Modern Floating Toast Notifications ── */
+.toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.toast-notification {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(18, 43, 34, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(82, 183, 136, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  color: #fff;
+  min-width: 320px;
+  max-width: 440px;
+  opacity: 0;
+  transform: translateY(-20px) scale(0.95);
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.toast-notification.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.toast-notification.toast-error {
+  background: rgba(45, 12, 12, 0.96);
+  border-color: rgba(239, 68, 68, 0.55);
+  box-shadow: 0 12px 36px rgba(239, 68, 68, 0.25);
+}
+.toast-notification.toast-warning {
+  background: rgba(48, 32, 10, 0.96);
+  border-color: rgba(245, 158, 11, 0.55);
+  box-shadow: 0 12px 36px rgba(245, 158, 11, 0.25);
+}
+.toast-notification.toast-success {
+  background: rgba(10, 45, 25, 0.96);
+  border-color: rgba(16, 185, 129, 0.55);
+  box-shadow: 0 12px 36px rgba(16, 185, 129, 0.25);
+}
+.toast-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.toast-error .toast-icon { color: #ef4444; }
+.toast-warning .toast-icon { color: #f59e0b; }
+.toast-success .toast-icon { color: #10b981; }
+.toast-content { flex: 1; min-width: 0; }
+.toast-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  margin-bottom: 2px;
+  font-family: 'Outfit', sans-serif;
+  color: #ffffff;
+}
+.toast-message {
+  font-size: 0.82rem;
+  color: #e2ece9;
+  line-height: 1.45;
+}
+.toast-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 6px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+.toast-close:hover { color: #fff; }
+
+.iw.has-error input {
+  border-color: #ef4444 !important;
+  background: #fff5f5 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+}
+.iw.has-error .ii {
+  color: #ef4444 !important;
+}
+.iw.has-error {
+  animation: inputShake 0.4s ease;
+}
+@keyframes inputShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+@media (max-width: 600px) {
+  .toast-container {
+    left: 16px;
+    right: 16px;
+    top: 16px;
+  }
+  .toast-notification {
+    min-width: unset;
+    width: 100%;
+  }
+}
 
 /* ── FORM ── */
 .fg{margin-bottom:16px}
@@ -393,12 +543,10 @@ img{max-width:100%;display:block}
   <!-- CARD -->
   <main class="card" id="main-content">
 
-    <?php if ($error): ?>
-    <div class="alert alert-err" role="alert" aria-live="assertive">
+    <div id="member-alert-box" class="alert alert-err" style="<?php echo $error ? '' : 'display:none;'; ?>" role="alert" aria-live="assertive">
       <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
-      <div><?php echo htmlspecialchars($error); ?></div>
+      <div id="member-alert-text"><?php echo htmlspecialchars($error); ?></div>
     </div>
-    <?php endif; ?>
 
     <form action="login.php" method="POST" id="login-form" autocomplete="off" novalidate>
       <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token()); ?>">
@@ -474,6 +622,9 @@ img{max-width:100%;display:block}
 
 </div><!-- /.wrap -->
 
+<!-- Floating Toast Container -->
+<div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
 <script>
 function togglePw(id,btn){
   const inp=document.getElementById(id);
@@ -485,15 +636,145 @@ function togglePw(id,btn){
   btn.setAttribute('aria-pressed',String(hide));
 }
 
-document.getElementById('login-form')&&document.getElementById('login-form').addEventListener('submit',function(){
-  const mid = document.getElementById('membership_id');
-  if (mid && mid.value.trim()) {
-    localStorage.setItem('peg_saved_login_id', mid.value.trim());
+function showMemberToast(message, type = 'error', title = null) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const titles = {
+    error: title || 'Authentication Failed',
+    warning: title || 'Attention Required',
+    success: title || 'Success'
+  };
+  const icons = {
+    error: 'fa-circle-xmark',
+    warning: 'fa-triangle-exclamation',
+    success: 'fa-circle-check'
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `toast-notification toast-${type}`;
+  toast.innerHTML = `
+    <div class="toast-icon"><i class="fas ${icons[type] || icons.error}"></i></div>
+    <div class="toast-content">
+      <div class="toast-title">${titles[type] || 'Notice'}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <button type="button" class="toast-close" onclick="this.parentElement.remove()" aria-label="Close notification">&times;</button>
+  `;
+
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, 5000);
+}
+
+function setMemberInlineAlert(message) {
+  const alertBox = document.getElementById('member-alert-box');
+  const alertText = document.getElementById('member-alert-text');
+  if (alertBox && alertText) {
+    if (message) {
+      alertText.textContent = message;
+      alertBox.style.display = 'flex';
+      alertBox.style.animation = 'none';
+      alertBox.offsetHeight;
+      alertBox.style.animation = 'inputShake 0.4s ease';
+    } else {
+      alertBox.style.display = 'none';
+    }
   }
-  const b=document.getElementById('sub-btn');
-  b.innerHTML='<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Verifying\u2026';
-  b.disabled=true;
+}
+
+function markMemberInputError(elementId) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  const wrap = el.closest('.iw');
+  if (wrap) {
+    wrap.classList.remove('has-error');
+    wrap.offsetHeight;
+    wrap.classList.add('has-error');
+  }
+  el.focus();
+}
+
+['membership_id', 'credential'].forEach(id => {
+  const inp = document.getElementById(id);
+  if (inp) {
+    inp.addEventListener('input', () => {
+      const wrap = inp.closest('.iw');
+      if (wrap) wrap.classList.remove('has-error');
+      setMemberInlineAlert('');
+    });
+  }
 });
+
+const memberLoginForm = document.getElementById('login-form');
+if (memberLoginForm) {
+  memberLoginForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const midInp  = document.getElementById('membership_id');
+    const credInp = document.getElementById('credential');
+    const subBtn  = document.getElementById('sub-btn');
+
+    const mid  = (midInp?.value || '').trim();
+    const cred = credInp?.value || '';
+
+    if (!mid) {
+      showMemberToast('Please enter your Membership ID or Email.', 'warning', 'ID / Email Required');
+      setMemberInlineAlert('Please enter your Membership ID or Email.');
+      markMemberInputError('membership_id');
+      return;
+    }
+
+    if (!cred) {
+      showMemberToast('Please enter your password to access your member pass.', 'warning', 'Password Required');
+      setMemberInlineAlert('Please enter your password.');
+      markMemberInputError('credential');
+      return;
+    }
+
+    localStorage.setItem('peg_saved_login_id', mid);
+
+    const origBtnHtml = subBtn.innerHTML;
+    subBtn.disabled = true;
+    subBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying credentials...';
+
+    try {
+      const formData = new FormData(memberLoginForm);
+      const response = await fetch('login.php', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showMemberToast(data.message || 'Access granted! Opening member pass...', 'success', 'Welcome');
+        subBtn.innerHTML = '<i class="fa-solid fa-check"></i> Redirecting...';
+        setTimeout(() => {
+          window.location.href = data.redirect || 'index.php';
+        }, 400);
+      } else {
+        const msg = data.message || 'Incorrect Member ID/Email or Password.';
+        showMemberToast(msg, 'error', 'Access Denied');
+        setMemberInlineAlert(msg);
+        markMemberInputError('credential');
+        subBtn.disabled = false;
+        subBtn.innerHTML = origBtnHtml;
+      }
+    } catch (err) {
+      console.warn('AJAX member login fallback:', err);
+      memberLoginForm.submit();
+    }
+  });
+}
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));

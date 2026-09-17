@@ -19,6 +19,9 @@ if (isset($_SESSION['user_id'])) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+               || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+
     $csrf_token = $_POST['csrf_token'] ?? '';
     if (!verify_csrf_token($csrf_token)) {
         $error = 'Security session expired. Please refresh the page and try again.';
@@ -26,42 +29,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email    = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
 
-    // Check progressive rate limit
-    $rate_check = check_rate_limit($pdo, $email, 'admin_staff_login');
-    if (!$rate_check['allowed']) {
-        $error = $rate_check['message'];
-    } elseif (empty($email) || empty($password)) {
-        $error = 'Please fill in all fields.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Please enter a valid email address.';
-    } else {
-        try {
-            $stmt = $pdo->prepare("SELECT id, name, password, role FROM users WHERE email = ? LIMIT 1");
-            $stmt->execute([$email]);
-            $user = $stmt->fetch();
+        // Check progressive rate limit
+        $rate_check = check_rate_limit($pdo, $email, 'admin_staff_login');
+        if (!$rate_check['allowed']) {
+            $error = $rate_check['message'];
+        } elseif (empty($email)) {
+            $error = 'Please enter your email address.';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Please enter a valid email address.';
+        } elseif (empty($password)) {
+            $error = 'Please enter your password.';
+        } else {
+            try {
+                $stmt = $pdo->prepare("SELECT id, name, password, role FROM users WHERE email = ? LIMIT 1");
+                $stmt->execute([$email]);
+                $user = $stmt->fetch();
 
-            if ($user && password_verify($password, $user['password'])) {
-                // Clear rate limits on successful authentication
-                clear_rate_limit($pdo, $email, 'admin_staff_login');
+                if ($user && password_verify($password, $user['password'])) {
+                    // Clear rate limits on successful authentication
+                    clear_rate_limit($pdo, $email, 'admin_staff_login');
 
-                $_SESSION['user_id']   = $user['id'];
-                $_SESSION['user_name'] = $user['name'];
-                $_SESSION['user_role'] = $user['role'];
-                session_regenerate_id(true);
-                log_activity($pdo, 'User Login', 'Logged in successfully.', 'Auth', $user['id'], $user['name']);
-                header('Location: index.php');
-                exit;
-            } else {
-                $failed = record_failed_login($pdo, $email, 'admin_staff_login');
-                $error = $failed['lockout'] 
-                    ? $failed['message'] 
-                    : 'Invalid email or password. Please try again.';
+                    $_SESSION['user_id']   = $user['id'];
+                    $_SESSION['user_name'] = $user['name'];
+                    $_SESSION['user_role'] = $user['role'];
+                    session_regenerate_id(true);
+                    log_activity($pdo, 'User Login', 'Logged in successfully.', 'Auth', $user['id'], $user['name']);
+
+                    if ($is_ajax) {
+                        header('Content-Type: application/json; charset=utf-8');
+                        echo json_encode([
+                            'success'  => true,
+                            'message'  => 'Welcome back, ' . ($user['name'] ?? 'User') . '! Redirecting...',
+                            'redirect' => 'index.php'
+                        ]);
+                        exit;
+                    }
+
+                    header('Location: index.php');
+                    exit;
+                } else {
+                    $failed = record_failed_login($pdo, $email, 'admin_staff_login');
+                    $error = $failed['lockout'] 
+                        ? $failed['message'] 
+                        : 'Invalid email or password. Please try again.';
+                }
+            } catch (Exception $e) {
+                $error = 'Database error. Please make sure the server is running.';
             }
-        } catch (Exception $e) {
-            $error = 'Database error. Please make sure the server is running.';
         }
     }
-}
+
+    if ($is_ajax) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => false,
+            'message' => $error ?: 'Unable to sign in. Please check your credentials.'
+        ]);
+        exit;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -336,6 +361,121 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             .login-left { display: none; }
             .login-right { width: 100%; min-height: 100vh; }
         }
+
+        /* ── Modern Floating Toast Notifications ── */
+        .toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast-notification {
+            pointer-events: auto;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 18px;
+            background: rgba(18, 43, 34, 0.96);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1.5px solid rgba(82, 183, 136, 0.35);
+            border-radius: 14px;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+            color: #fff;
+            min-width: 320px;
+            max-width: 440px;
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .toast-notification.toast-error {
+            background: rgba(45, 12, 12, 0.96);
+            border-color: rgba(239, 68, 68, 0.55);
+            box-shadow: 0 12px 36px rgba(239, 68, 68, 0.25);
+        }
+        .toast-notification.toast-warning {
+            background: rgba(48, 32, 10, 0.96);
+            border-color: rgba(245, 158, 11, 0.55);
+            box-shadow: 0 12px 36px rgba(245, 158, 11, 0.25);
+        }
+        .toast-notification.toast-success {
+            background: rgba(10, 45, 25, 0.96);
+            border-color: rgba(16, 185, 129, 0.55);
+            box-shadow: 0 12px 36px rgba(16, 185, 129, 0.25);
+        }
+        .toast-icon {
+            font-size: 1.3rem;
+            line-height: 1;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+        .toast-error .toast-icon { color: #ef4444; }
+        .toast-warning .toast-icon { color: #f59e0b; }
+        .toast-success .toast-icon { color: #10b981; }
+        .toast-content { flex: 1; min-width: 0; }
+        .toast-title {
+            font-size: 0.88rem;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            margin-bottom: 2px;
+            font-family: 'Outfit', sans-serif;
+            color: #ffffff;
+        }
+        .toast-message {
+            font-size: 0.82rem;
+            color: #e2ece9;
+            line-height: 1.45;
+        }
+        .toast-close {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 6px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        .toast-close:hover { color: #fff; }
+
+        /* Input error state & shake animation */
+        .input-wrap.has-error input {
+            border-color: #ef4444 !important;
+            background: #fff5f5 !important;
+            box-shadow: 0 0 0 3.5px rgba(239, 68, 68, 0.18) !important;
+        }
+        .input-wrap.has-error .input-icon {
+            color: #ef4444 !important;
+        }
+        .input-wrap.has-error {
+            animation: inputShake 0.4s ease;
+        }
+        @keyframes inputShake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        @media (max-width: 600px) {
+            .toast-container {
+                left: 16px;
+                right: 16px;
+                top: 16px;
+            }
+            .toast-notification {
+                min-width: unset;
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -376,11 +516,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <h2>Welcome Back</h2>
         <p class="subtitle">Sign in with your staff or administrator account.</p>
 
-        <?php if ($error): ?>
-        <div class="login-alert-error" role="alert">
-            <i class="fas fa-circle-exclamation"></i> <span><?php echo htmlspecialchars($error); ?></span>
+        <div id="login-alert-box" class="login-alert-error" style="<?php echo $error ? '' : 'display:none;'; ?>" role="alert">
+            <i class="fas fa-circle-exclamation"></i> <span id="login-alert-text"><?php echo htmlspecialchars($error); ?></span>
         </div>
-        <?php endif; ?>
 
         <form method="POST" action="" class="login-form needs-validation" novalidate autocomplete="off">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token()); ?>">
@@ -429,6 +567,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
+<!-- Floating Toast Container -->
+<div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
 <script>
     const togglePw = document.getElementById('togglePw');
     const pwInput  = document.getElementById('password');
@@ -449,6 +590,157 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (emailInp) emailInp.value = '';
         }
     });
+
+    // ── Toast Notification System ───────────────────────────────────
+    function showLoginToast(message, type = 'error', title = null) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const titles = {
+            error: title || 'Authentication Failed',
+            warning: title || 'Attention Required',
+            success: title || 'Success'
+        };
+        const icons = {
+            error: 'fa-circle-xmark',
+            warning: 'fa-triangle-exclamation',
+            success: 'fa-circle-check'
+        };
+
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.innerHTML = `
+            <div class="toast-icon"><i class="fas ${icons[type] || icons.error}"></i></div>
+            <div class="toast-content">
+                <div class="toast-title">${titles[type] || 'Notice'}</div>
+                <div class="toast-message">${message}</div>
+            </div>
+            <button type="button" class="toast-close" onclick="this.parentElement.remove()" aria-label="Close notification">&times;</button>
+        `;
+
+        container.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('show'));
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 400);
+        }, 5000);
+    }
+
+    function setInlineAlert(message) {
+        const alertBox = document.getElementById('login-alert-box');
+        const alertText = document.getElementById('login-alert-text');
+        if (alertBox && alertText) {
+            if (message) {
+                alertText.textContent = message;
+                alertBox.style.display = 'flex';
+                alertBox.style.animation = 'none';
+                alertBox.offsetHeight; /* trigger reflow */
+                alertBox.style.animation = 'shake 0.4s ease';
+            } else {
+                alertBox.style.display = 'none';
+            }
+        }
+    }
+
+    function markInputError(elementId) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const wrap = el.closest('.input-wrap');
+        if (wrap) {
+            wrap.classList.remove('has-error');
+            wrap.offsetHeight; /* trigger reflow */
+            wrap.classList.add('has-error');
+        }
+        el.focus();
+    }
+
+    // Clear error highlights as soon as user types
+    ['email', 'password'].forEach(id => {
+        const inp = document.getElementById(id);
+        if (inp) {
+            inp.addEventListener('input', () => {
+                const wrap = inp.closest('.input-wrap');
+                if (wrap) wrap.classList.remove('has-error');
+                setInlineAlert('');
+            });
+        }
+    });
+
+    // ── Form Submit & Interactive Validation ───────────────────────
+    const loginForm = document.querySelector('.login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const emailInp  = document.getElementById('email');
+            const pwInp     = document.getElementById('password');
+            const submitBtn = document.getElementById('submitBtn');
+
+            const email    = (emailInp?.value || '').trim();
+            const password = pwInp?.value || '';
+
+            // 1. Instant Client-Side Checks with Toasts & Highlight
+            if (!email) {
+                showLoginToast('Please enter your email address to sign in.', 'warning', 'Email Required');
+                setInlineAlert('Please enter your email address.');
+                markInputError('email');
+                return;
+            }
+
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showLoginToast('Please enter a valid email format (e.g. admin@palmaselite.com).', 'warning', 'Invalid Email');
+                setInlineAlert('Please enter a valid email address.');
+                markInputError('email');
+                return;
+            }
+
+            if (!password) {
+                showLoginToast('Please enter your password to sign in.', 'warning', 'Password Required');
+                setInlineAlert('Please enter your password.');
+                markInputError('password');
+                return;
+            }
+
+            // 2. Perform Seamless AJAX Authentication
+            const originalBtnHtml = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+
+            try {
+                const formData = new FormData(loginForm);
+                const response = await fetch('login.php', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showLoginToast(data.message || 'Login successful! Redirecting...', 'success', 'Welcome Back');
+                    submitBtn.innerHTML = '<i class="fas fa-check"></i> Redirecting...';
+                    setTimeout(() => {
+                        window.location.href = data.redirect || 'index.php';
+                    }, 400);
+                } else {
+                    const msg = data.message || 'Invalid email or password. Please try again.';
+                    showLoginToast(msg, 'error', 'Sign In Failed');
+                    setInlineAlert(msg);
+                    markInputError('password');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHtml;
+                }
+            } catch (err) {
+                console.warn('AJAX login fallback triggered:', err);
+                // Fallback to standard HTTP form submission if network or parsing issue
+                loginForm.submit();
+            }
+        });
+    }
 </script>
 </body>
 </html>
