@@ -568,13 +568,23 @@ function processCheckin(membershipId, isManual = false) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         },
         body: 'membership_id=' + encodeURIComponent(membershipId) + (isManual ? '&is_manual=1' : '')
     })
-    .then(r => {
-        if (!r.ok && r.status >= 500) throw new Error('Server returned HTTP ' + r.status);
-        return r.json();
+    .then(async r => {
+        const isJson = r.headers.get('content-type')?.includes('application/json');
+        const data = isJson ? await r.json().catch(() => null) : null;
+        if (!r.ok) {
+            if (r.status === 401) {
+                throw new Error('Staff session expired. Please refresh the page to log in.');
+            }
+            if (data && data.message) {
+                return data;
+            }
+            throw new Error(data?.message || 'Server communication error (HTTP ' + r.status + ')');
+        }
+        return data || { success: false, message: 'Invalid response from server.' };
     })
     .then(data => {
         if (data.success) {
@@ -741,12 +751,13 @@ function processCheckin(membershipId, isManual = false) {
         res.style.background = '#fce8e6'; 
         res.style.color = '#c5221f'; 
         res.style.border = '1px solid rgba(217,48,37,0.2)';
+        const safeErrorDetail = escapeHtml(err.message || 'Network error or server unavailable. Please check system connection.');
         res.innerHTML = `
             <div style="text-align:left;">
                 <div style="font-size:0.8rem;font-weight:800;text-transform:uppercase;color:#c5221f;margin-bottom:4px;">
                     <i class="fas fa-triangle-exclamation"></i> UNABLE TO CONNECT
                 </div>
-                <div style="font-size:0.85rem;color:#c5221f;">Network error or server unavailable. Please check system connection.</div>
+                <div style="font-size:0.85rem;color:#c5221f;">${safeErrorDetail}</div>
             </div>
         `;
     })
