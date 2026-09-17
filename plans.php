@@ -4,22 +4,59 @@ include 'includes/header.php';
 include 'includes/sidebar.php';
 require_admin();
 
+// Auto-align database schema and official plans if remote database needs synchronization
+try {
+    if (isset($pdo) && $pdo) {
+        $cols = $pdo->query("SHOW COLUMNS FROM membership_plans")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('plan_category', $cols)) {
+            $pdo->exec("ALTER TABLE membership_plans ADD COLUMN plan_category VARCHAR(50) DEFAULT 'member_pass'");
+        }
+        if (!in_array('floor_access', $cols)) {
+            $pdo->exec("ALTER TABLE membership_plans ADD COLUMN floor_access VARCHAR(50) DEFAULT 'all'");
+        }
+        if (!in_array('duration_minutes', $cols)) {
+            $pdo->exec("ALTER TABLE membership_plans ADD COLUMN duration_minutes INT DEFAULT 0");
+        }
+        if (!in_array('is_test_promo', $cols)) {
+            $pdo->exec("ALTER TABLE membership_plans ADD COLUMN is_test_promo TINYINT(1) DEFAULT 0");
+        }
+
+        // Align legacy & test plans
+        $pdo->exec("UPDATE membership_plans SET is_active = 0, plan_category = 'legacy' WHERE id IN (1, 2, 3, 4)");
+        $pdo->exec("UPDATE membership_plans SET is_active = 0, is_test_promo = 1, plan_category = 'test_promo' WHERE id IN (5, 6, 7)");
+
+        // Ensure 8 official tarpaulin plans exist and are active
+        $official_plans = [
+            8  => ['name' => 'Annual Membership Fee',                   'price' => 1000.00, 'months' => 12, 'minutes' => 0,    'category' => 'membership_fee',  'floor' => 'all'],
+            9  => ['name' => 'Member — Monthly Registration',           'price' => 750.00,  'months' => 1,  'minutes' => 0,    'category' => 'member_pass',     'floor' => 'all'],
+            10 => ['name' => 'Member — Yearly Registration',            'price' => 7500.00, 'months' => 12, 'minutes' => 0,    'category' => 'member_pass',     'floor' => 'all'],
+            11 => ['name' => 'Member — Daily (2nd Floor Only)',         'price' => 40.00,   'months' => 0,  'minutes' => 1440, 'category' => 'member_pass',     'floor' => 'second_floor_only'],
+            12 => ['name' => 'Member — Daily (Ground + 2nd Floor)',     'price' => 50.00,   'months' => 0,  'minutes' => 1440, 'category' => 'member_pass',     'floor' => 'ground_and_second'],
+            13 => ['name' => 'Non-Member — Monthly Registration',       'price' => 850.00,  'months' => 1,  'minutes' => 0,    'category' => 'non_member_pass', 'floor' => 'all'],
+            14 => ['name' => 'Non-Member — Daily (2nd Floor Only)',     'price' => 50.00,   'months' => 0,  'minutes' => 1440, 'category' => 'non_member_pass', 'floor' => 'second_floor_only'],
+            15 => ['name' => 'Non-Member — Daily (Ground + 2nd Floor)', 'price' => 60.00,   'months' => 0,  'minutes' => 1440, 'category' => 'non_member_pass', 'floor' => 'ground_and_second'],
+        ];
+
+        foreach ($official_plans as $id => $p) {
+            $exists = $pdo->prepare("SELECT COUNT(*) FROM membership_plans WHERE id = ?");
+            $exists->execute([$id]);
+            if ($exists->fetchColumn() > 0) {
+                $upd = $pdo->prepare("UPDATE membership_plans SET name = ?, price = ?, duration_months = ?, duration_minutes = ?, plan_category = ?, floor_access = ?, is_active = 1, is_test_promo = 0 WHERE id = ?");
+                $upd->execute([$p['name'], $p['price'], $p['months'], $p['minutes'], $p['category'], $p['floor'], $id]);
+            } else {
+                $ins = $pdo->prepare("INSERT INTO membership_plans (id, name, price, duration_months, duration_minutes, plan_category, floor_access, is_active, is_test_promo) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0)");
+                $ins->execute([$id, $p['name'], $p['price'], $p['months'], $p['minutes'], $p['category'], $p['floor']]);
+            }
+        }
+    }
+} catch (\Throwable $migErr) {
+    error_log("Plans migration notice: " . $migErr->getMessage());
+}
+
 // Fetch all plans grouped by category
 $plans_by_cat = ['membership_fee' => [], 'member_pass' => [], 'non_member_pass' => [], 'test_promo' => [], 'legacy' => []];
 try {
     if (isset($pdo) && $pdo) {
-        // Ensure columns exist on cloud/production database
-        try {
-            $col_check = $pdo->query("SHOW COLUMNS FROM membership_plans LIKE 'plan_category'")->fetch();
-            if (!$col_check) {
-                $pdo->exec("ALTER TABLE membership_plans ADD COLUMN plan_category VARCHAR(50) DEFAULT 'member_pass'");
-            }
-            $floor_check = $pdo->query("SHOW COLUMNS FROM membership_plans LIKE 'floor_access'")->fetch();
-            if (!$floor_check) {
-                $pdo->exec("ALTER TABLE membership_plans ADD COLUMN floor_access VARCHAR(50) DEFAULT 'all'");
-            }
-        } catch (\Throwable $mEx) {}
-
         $rows = $pdo->query(
             "SELECT p.*, COUNT(CASE WHEN s.expiry_date >= CURDATE() THEN 1 END) AS subscriber_count 
              FROM membership_plans p 
