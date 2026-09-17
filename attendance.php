@@ -3,19 +3,22 @@ $page_title = 'QR Attendance';
 include 'includes/header.php';
 include 'includes/sidebar.php';
 
-// Load today's attendance
+// Load selected date's attendance (defaults to today)
+$selected_date = isset($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date']) ? $_GET['date'] : date('Y-m-d');
+$is_today = ($selected_date === date('Y-m-d'));
+
 $today_logs = [];
 try {
     if (isset($pdo) && $pdo) {
-        // Show logs from today OR within the last 15 hours (handles late night/early morning scans)
-        $today_logs = $pdo->query(
+        $stmt = $pdo->prepare(
             "SELECT a.time_in, a.time_out, m.full_name, m.membership_id
              FROM attendance a
              JOIN members m ON m.id = a.member_id
-             WHERE a.date = CURRENT_DATE() 
-                OR (a.date = DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY) AND a.time_in > '18:00:00')
-             ORDER BY a.date DESC, a.time_in DESC"
-        )->fetchAll();
+             WHERE a.date = :log_date
+             ORDER BY a.time_in DESC"
+        );
+        $stmt->execute([':log_date' => $selected_date]);
+        $today_logs = $stmt->fetchAll();
     }
 } catch (Exception $e) {}
 ?>
@@ -59,9 +62,21 @@ try {
 
     <!-- Right: Today's Logs -->
     <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
-            <h3 class="section-title" style="margin:0;"><i class="fas fa-history" style="color:var(--accent);"></i> Today's Check-ins</h3>
-            <span class="badge badge-gold" id="log-count"><?php echo count($today_logs); ?> active entries</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1.5rem;">
+            <div>
+                <h3 class="section-title" style="margin:0;"><i class="fas fa-history" style="color:var(--accent);"></i> <?php echo $is_today ? "Today's Check-ins" : "Check-ins for " . date('M d, Y', strtotime($selected_date)); ?></h3>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+                <form method="GET" action="" style="display:inline-flex; align-items:center; gap:0.4rem; margin:0;">
+                    <input type="date" name="date" value="<?php echo htmlspecialchars($selected_date); ?>" 
+                           class="form-control" style="padding:0.35rem 0.6rem; font-size:0.8rem; height:auto; width:auto;" 
+                           onchange="this.form.submit()" title="Filter by date">
+                    <?php if (!$is_today): ?>
+                        <a href="attendance.php" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:0.35rem 0.65rem;" title="Return to Today">Today</a>
+                    <?php endif; ?>
+                </form>
+                <span class="badge badge-gold" id="log-count"><?php echo count($today_logs); ?> active entr<?php echo count($today_logs) === 1 ? 'y' : 'ies'; ?></span>
+            </div>
         </div>
 
         <div class="table-container" style="max-height: 550px; overflow-y: auto;">
