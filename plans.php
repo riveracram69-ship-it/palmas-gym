@@ -8,6 +8,18 @@ require_admin();
 $plans_by_cat = ['membership_fee' => [], 'member_pass' => [], 'non_member_pass' => [], 'test_promo' => [], 'legacy' => []];
 try {
     if (isset($pdo) && $pdo) {
+        // Ensure columns exist on cloud/production database
+        try {
+            $col_check = $pdo->query("SHOW COLUMNS FROM membership_plans LIKE 'plan_category'")->fetch();
+            if (!$col_check) {
+                $pdo->exec("ALTER TABLE membership_plans ADD COLUMN plan_category VARCHAR(50) DEFAULT 'member_pass'");
+            }
+            $floor_check = $pdo->query("SHOW COLUMNS FROM membership_plans LIKE 'floor_access'")->fetch();
+            if (!$floor_check) {
+                $pdo->exec("ALTER TABLE membership_plans ADD COLUMN floor_access VARCHAR(50) DEFAULT 'all'");
+            }
+        } catch (\Throwable $mEx) {}
+
         $rows = $pdo->query(
             "SELECT p.*, COUNT(CASE WHEN s.expiry_date >= CURDATE() THEN 1 END) AS subscriber_count 
              FROM membership_plans p 
