@@ -3010,73 +3010,93 @@
               <div id="photo-upload-status" style="display:none; margin-top:8px; font-size:0.75rem; text-align:center;"></div>
             </div>
 
-            <!-- Card B: Personal Information -->
-            <div class="card" style="margin-bottom:14px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-                <h4 style="color:var(--text-primary); font-size:0.82rem; text-transform:uppercase; font-weight:800; margin:0; letter-spacing:0.5px;">
-                  <i class="fa-solid fa-address-card" style="color:var(--primary); margin-right:6px;"></i> Personal Info
-                </h4>
-                <button onclick="openEditProfileModal()" style="background:rgba(29,89,68,0.4); border:1px solid var(--border); color:var(--primary-light); font-size:0.75rem; font-weight:700; border-radius:8px; padding:5px 12px; cursor:pointer;">
-                  <i class="fa-solid fa-pen-to-square"></i> Edit
-                </button>
+            <!-- Card B: Personal Information (Collapsible / Minimizable) -->
+            <div class="card" id="card-prof-personal" style="margin-bottom:14px; transition:border-color 0.2s ease;">
+              <div onclick="togglePersonalInfoCard()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; user-select:none; -webkit-tap-highlight-color:transparent;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <h4 style="color:var(--text-primary); font-size:0.85rem; text-transform:uppercase; font-weight:800; margin:0; letter-spacing:0.5px; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-address-card" style="color:var(--primary);"></i> Personal Info
+                  </h4>
+                  <span id="prof-personal-hint" style="font-size:0.72rem; color:var(--text-muted); font-weight:500;">(Tap to minimize)</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <button type="button" onclick="event.stopPropagation(); openEditProfileModal();" style="background:rgba(29,89,68,0.4); border:1px solid var(--border); color:var(--primary-light); font-size:0.75rem; font-weight:700; border-radius:8px; padding:5px 12px; cursor:pointer;">
+                    <i class="fa-solid fa-pen-to-square"></i> Edit
+                  </button>
+                  <div id="prof-personal-arrow-btn" style="width:32px; height:32px; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--primary-light); transition:background 0.2s, transform 0.2s;">
+                    <i id="prof-personal-arrow-icon" class="fa-solid fa-chevron-down" style="font-size:0.85rem; transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform:rotate(180deg);"></i>
+                  </div>
+                </div>
               </div>
-              <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Full Name</span>
-                <strong id="prof-full-name" style="color:var(--text-primary); text-align:right; max-width:60%;">--</strong>
-              </div>
-              <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Membership ID</span>
-                <strong id="prof-memid-display" style="color:var(--primary); font-family:monospace; font-size:0.82rem;">--</strong>
-              </div>
-              <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Email</span>
-                <strong id="prof-email" style="color:var(--text-primary); text-align:right; max-width:60%; word-break:break-all;">--</strong>
-              </div>
-              <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Contact</span>
-                <strong id="prof-phone" style="color:var(--text-primary);">--</strong>
-              </div>
-              <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Date of Birth</span>
-                <strong id="prof-dob" style="color:var(--text-primary);">--</strong>
-              </div>
-              <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Address</span>
-                <strong id="prof-address" style="color:var(--text-primary); text-align:right; max-width:60%;">--</strong>
+              <div id="prof-personal-details" style="overflow:hidden; transition:max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin-top 0.3s ease, padding-top 0.3s ease; max-height:500px; opacity:1; margin-top:14px; border-top:1px solid var(--border); padding-top:12px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
+                  <span style="color:var(--text-muted);">Full Name</span>
+                  <strong id="prof-full-name" style="color:var(--text-primary); text-align:right; max-width:60%;">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
+                  <span style="color:var(--text-muted);">Membership ID</span>
+                  <strong id="prof-memid-display" style="color:var(--primary); font-family:monospace; font-size:0.82rem;">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
+                  <span style="color:var(--text-muted);">Email</span>
+                  <strong id="prof-email" style="color:var(--text-primary); text-align:right; max-width:60%; word-break:break-all;">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
+                  <span style="color:var(--text-muted);">Contact</span>
+                  <strong id="prof-phone" style="color:var(--text-primary);">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.88rem;">
+                  <span style="color:var(--text-muted);">Date of Birth</span>
+                  <strong id="prof-dob" style="color:var(--text-primary);">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+                  <span style="color:var(--text-muted);">Address</span>
+                  <strong id="prof-address" style="color:var(--text-primary); text-align:right; max-width:60%;">--</strong>
+                </div>
               </div>
             </div>
 
-            <!-- Card C: Membership Info -->
-            <div class="card" style="margin-bottom:14px;">
-              <h4 style="color:var(--text-primary); font-size:0.82rem; text-transform:uppercase; font-weight:800; margin:0 0 14px; border-bottom:1px solid var(--border); padding-bottom:10px; letter-spacing:0.5px;">
-                <i class="fa-solid fa-id-card-clip" style="color:var(--primary); margin-right:6px;"></i> Membership &amp; Pass
-              </h4>
-              <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Membership Tier</span>
-                <strong id="prof-tier-name" style="color:var(--primary);">Non-Member</strong>
+            <!-- Card C: Membership Info (Collapsible / Minimizable) -->
+            <div class="card" id="card-prof-membership" style="margin-bottom:14px; transition:border-color 0.2s ease;">
+              <div onclick="toggleMembershipInfoCard()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; user-select:none; -webkit-tap-highlight-color:transparent;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <h4 style="color:var(--text-primary); font-size:0.85rem; text-transform:uppercase; font-weight:800; margin:0; letter-spacing:0.5px; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-id-card-clip" style="color:var(--primary);"></i> Membership &amp; Pass
+                  </h4>
+                  <span id="prof-membership-hint" style="font-size:0.72rem; color:var(--text-muted); font-weight:500;">(Tap to minimize)</span>
+                </div>
+                <div id="prof-membership-arrow-btn" style="width:32px; height:32px; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--primary-light); transition:background 0.2s, transform 0.2s;">
+                  <i id="prof-membership-arrow-icon" class="fa-solid fa-chevron-down" style="font-size:0.85rem; transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform:rotate(180deg);"></i>
+                </div>
               </div>
-              <div style="display:none; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;" id="prof-annual-expiry-row">
-                <span style="color:var(--text-muted);">Annual Fee Valid Until</span>
-                <strong id="prof-annual-expiry" style="color:var(--text-primary);">--</strong>
+              <div id="prof-membership-details" style="overflow:hidden; transition:max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin-top 0.3s ease, padding-top 0.3s ease; max-height:600px; opacity:1; margin-top:14px; border-top:1px solid var(--border); padding-top:12px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
+                  <span style="color:var(--text-muted);">Membership Tier</span>
+                  <strong id="prof-tier-name" style="color:var(--primary);">Non-Member</strong>
+                </div>
+                <div style="display:none; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;" id="prof-annual-expiry-row">
+                  <span style="color:var(--text-muted);">Annual Fee Valid Until</span>
+                  <strong id="prof-annual-expiry" style="color:var(--text-primary);">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
+                  <span style="color:var(--text-muted);">Current Pass</span>
+                  <strong id="prof-plan-name" style="color:var(--primary);">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
+                  <span style="color:var(--text-muted);">Pass Valid Until</span>
+                  <strong id="prof-valid-until" style="color:var(--text-primary);">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.88rem; margin-bottom:8px;">
+                  <span style="color:var(--text-muted);">Time Remaining</span>
+                  <strong id="prof-days-remaining" style="color:var(--primary); font-weight:800;">--</strong>
+                </div>
+                <div class="progress-bar-wrap">
+                  <div id="prof-days-bar-fill" class="progress-bar-fill" style="width:80%;"></div>
+                </div>
+                <button onclick="switchToTab('tab-payments')" class="btn-outline" style="height:44px; margin-top:12px; font-size:0.85rem;">
+                  <i class="fa-solid fa-clock-rotate-left"></i> Payment History
+                </button>
               </div>
-              <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Current Pass</span>
-                <strong id="prof-plan-name" style="color:var(--primary);">--</strong>
-              </div>
-              <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
-                <span style="color:var(--text-muted);">Pass Valid Until</span>
-                <strong id="prof-valid-until" style="color:var(--text-primary);">--</strong>
-              </div>
-              <div style="display:flex; justify-content:space-between; font-size:0.88rem; margin-bottom:8px;">
-                <span style="color:var(--text-muted);">Time Remaining</span>
-                <strong id="prof-days-remaining" style="color:var(--primary); font-weight:800;">--</strong>
-              </div>
-              <div class="progress-bar-wrap">
-                <div id="prof-days-bar-fill" class="progress-bar-fill" style="width:80%;"></div>
-              </div>
-              <button onclick="switchToTab('tab-payments')" class="btn-outline" style="height:44px; margin-top:12px; font-size:0.85rem;">
-                <i class="fa-solid fa-clock-rotate-left"></i> Payment History
-              </button>
             </div>
 
             <!-- Card D: Account Settings -->
@@ -7397,6 +7417,65 @@ function closeReceiptModal() {
   if (m) {
     m.isOpen = false;
     if (typeof m.dismiss === 'function') m.dismiss();
+  }
+}
+
+// ── PROFILE ACCORDION / COLLAPSIBLE CARDS ─────────────────────────
+function togglePersonalInfoCard() {
+  const details = document.getElementById('prof-personal-details');
+  const icon = document.getElementById('prof-personal-arrow-icon');
+  const hint = document.getElementById('prof-personal-hint');
+  if (!details || !icon) return;
+
+  const isCollapsed = details.style.maxHeight === '0px' || details.classList.contains('is-collapsed');
+
+  if (isCollapsed) {
+    details.classList.remove('is-collapsed');
+    details.style.maxHeight = '500px';
+    details.style.opacity = '1';
+    details.style.marginTop = '14px';
+    details.style.paddingTop = '12px';
+    details.style.borderTop = '1px solid var(--border)';
+    icon.style.transform = 'rotate(180deg)';
+    if (hint) hint.textContent = '(Tap to minimize)';
+  } else {
+    details.classList.add('is-collapsed');
+    details.style.maxHeight = '0px';
+    details.style.opacity = '0';
+    details.style.marginTop = '0px';
+    details.style.paddingTop = '0px';
+    details.style.borderTop = 'none';
+    icon.style.transform = 'rotate(0deg)';
+    if (hint) hint.textContent = '(Tap to view)';
+  }
+}
+
+function toggleMembershipInfoCard() {
+  const details = document.getElementById('prof-membership-details');
+  const icon = document.getElementById('prof-membership-arrow-icon');
+  const hint = document.getElementById('prof-membership-hint');
+  if (!details || !icon) return;
+
+  const isCollapsed = details.style.maxHeight === '0px' || details.classList.contains('is-collapsed');
+
+  if (isCollapsed) {
+    details.classList.remove('is-collapsed');
+    details.style.maxHeight = '600px';
+    details.style.opacity = '1';
+    details.style.marginTop = '14px';
+    details.style.paddingTop = '12px';
+    details.style.borderTop = '1px solid var(--border)';
+    icon.style.transform = 'rotate(180deg)';
+    if (hint) hint.textContent = '(Tap to minimize)';
+  } else {
+    details.classList.add('is-collapsed');
+    details.style.maxHeight = '0px';
+    details.style.opacity = '0';
+    details.style.marginTop = '0px';
+    details.style.paddingTop = '0px';
+    details.style.borderTop = 'none';
+    icon.style.transform = 'rotate(0deg)';
+    if (hint) hint.textContent = '(Tap to view)';
   }
 }
 
