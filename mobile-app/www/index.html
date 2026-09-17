@@ -5231,16 +5231,16 @@ function getPlanCategoryBadge(p) {
 function getPlanDurationSubtitle(p) {
   if (!p) return '';
   if (p.plan_category === 'membership_fee') {
-    return '1 Year Official Member Eligibility & Discounted Rates';
+    return 'Valid 1 Year • Grants discounted Official Member rates';
   }
-  const isDaily = (p.duration_minutes === 1440 || p.duration_label === '1 Day');
+  const isDaily = (p.duration_minutes === 1440 || p.duration_label === '1 Day' || (p.name && p.name.toLowerCase().includes('daily')));
   let floorLabel = '';
   if (p.floor_access === 'second_floor_only') floorLabel = ' • 2nd Floor Only';
   else if (p.floor_access === 'ground_and_second') floorLabel = ' • Ground + 2nd Floor';
   else if (isDaily) floorLabel = ' • All Floors';
 
   if (isDaily) {
-    return `1 Day Pass${floorLabel}`;
+    return `Same-Day Pass (Valid today until 11:59 PM)${floorLabel}`;
   } else if (p.duration_minutes > 0) {
     return `${p.duration_label || (p.duration_minutes + ' Min')} Test Pass`;
   } else {
@@ -5369,12 +5369,14 @@ function renderPlanCards(plans, container) {
       };
       const badge = getPlanCategoryBadge(p);
       const subtitle = getPlanDurationSubtitle(p);
+      const benefitText = p.benefits ? `<div style="font-size:0.74rem; color:var(--text-secondary); margin-top:6px; line-height:1.35; padding-top:6px; border-top:1px dashed rgba(82,183,136,0.25);"><i class="fa-solid fa-circle-info" style="color:var(--primary); font-size:0.7rem; margin-right:4px;"></i>${p.benefits}</div>` : '';
       card.innerHTML = `
         <div class="plan-check"><i class="fa-solid fa-check"></i></div>
         ${badge}
         <h3 style="color:#fff; margin:0 0 4px; font-weight:800; font-size:1.02rem;">${p.name}</h3>
         <h2 style="color:var(--gym-light); margin:0; font-size:1.32rem; font-weight:900;">₱${parseFloat(p.price).toFixed(2)}</h2>
         <p style="color:var(--gym-muted); font-size:0.78rem; margin:3px 0 0;">${subtitle}</p>
+        ${benefitText}
       `;
       cardsWrap.appendChild(card);
     });
@@ -6774,12 +6776,14 @@ function renderCheckoutPlanCards(plans) {
       };
       const badge = getPlanCategoryBadge(p);
       const subtitle = getPlanDurationSubtitle(p);
+      const benefitText = p.benefits ? `<div style="font-size:0.74rem; color:var(--text-secondary); margin-top:6px; line-height:1.35; padding-top:6px; border-top:1px dashed rgba(82,183,136,0.25);"><i class="fa-solid fa-circle-info" style="color:var(--primary); font-size:0.7rem; margin-right:4px;"></i>${p.benefits}</div>` : '';
       card.innerHTML = `
         <div class="plan-check"><i class="fa-solid fa-check"></i></div>
         ${badge}
         <h3 style="color:#fff; margin:0 0 4px; font-weight:800; font-size:1.02rem;">${p.name}</h3>
         <h2 style="color:var(--gym-light); margin:0; font-size:1.32rem; font-weight:900;">₱${parseFloat(p.price).toFixed(2)}</h2>
         <p style="color:var(--gym-muted); font-size:0.78rem; margin:3px 0 0;">${subtitle}</p>
+        ${benefitText}
       `;
       cardsWrap.appendChild(card);
     });

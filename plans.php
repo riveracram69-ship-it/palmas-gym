@@ -27,25 +27,65 @@ try {
 
         // Ensure 8 official tarpaulin plans exist and are active
         $official_plans = [
-            8  => ['name' => 'Annual Membership Fee',                   'price' => 1000.00, 'months' => 12, 'minutes' => 0,    'category' => 'membership_fee',  'floor' => 'all'],
-            9  => ['name' => 'Member — Monthly Registration',           'price' => 750.00,  'months' => 1,  'minutes' => 0,    'category' => 'member_pass',     'floor' => 'all'],
-            10 => ['name' => 'Member — Yearly Registration',            'price' => 7500.00, 'months' => 12, 'minutes' => 0,    'category' => 'member_pass',     'floor' => 'all'],
-            11 => ['name' => 'Member — Daily (2nd Floor Only)',         'price' => 40.00,   'months' => 0,  'minutes' => 1440, 'category' => 'member_pass',     'floor' => 'second_floor_only'],
-            12 => ['name' => 'Member — Daily (Ground + 2nd Floor)',     'price' => 50.00,   'months' => 0,  'minutes' => 1440, 'category' => 'member_pass',     'floor' => 'ground_and_second'],
-            13 => ['name' => 'Non-Member — Monthly Registration',       'price' => 850.00,  'months' => 1,  'minutes' => 0,    'category' => 'non_member_pass', 'floor' => 'all'],
-            14 => ['name' => 'Non-Member — Daily (2nd Floor Only)',     'price' => 50.00,   'months' => 0,  'minutes' => 1440, 'category' => 'non_member_pass', 'floor' => 'second_floor_only'],
-            15 => ['name' => 'Non-Member — Daily (Ground + 2nd Floor)', 'price' => 60.00,   'months' => 0,  'minutes' => 1440, 'category' => 'non_member_pass', 'floor' => 'ground_and_second'],
+            8  => [
+                'name'     => 'Annual Membership Fee',                   
+                'price'    => 1000.00, 'months' => 12, 'minutes' => 0,    
+                'category' => 'membership_fee',  'floor' => 'all',
+                'benefits' => 'Official 1-Year Membership qualification. Grants discounted Member Daily and Monthly pass rates.'
+            ],
+            9  => [
+                'name'     => 'Member — Monthly Registration',           
+                'price'    => 750.00,  'months' => 1,  'minutes' => 0,    
+                'category' => 'member_pass',     'floor' => 'all',
+                'benefits' => '1 month unlimited workout access across all gym floors for Official Members.'
+            ],
+            10 => [
+                'name'     => 'Member — Yearly Registration',            
+                'price'    => 7500.00, 'months' => 12, 'minutes' => 0,    
+                'category' => 'member_pass',     'floor' => 'all',
+                'benefits' => '12 months unlimited gym access across all floors. Save ₱1,500 vs monthly rate. For Official Members.'
+            ],
+            11 => [
+                'name'     => 'Member — Daily (2nd Floor Only)',         
+                'price'    => 40.00,   'months' => 0,  'minutes' => 1440, 
+                'category' => 'member_pass',     'floor' => 'second_floor_only',
+                'benefits' => 'Same-day gym access to 2nd Floor weights & cardio. Valid today only (expires at 11:59 PM).'
+            ],
+            12 => [
+                'name'     => 'Member — Daily (Ground + 2nd Floor)',     
+                'price'    => 50.00,   'months' => 0,  'minutes' => 1440, 
+                'category' => 'member_pass',     'floor' => 'ground_and_second',
+                'benefits' => 'Same-day all-access pass to Ground Floor + 2nd Floor. Valid today only (expires at 11:59 PM).'
+            ],
+            13 => [
+                'name'     => 'Non-Member — Monthly Registration',       
+                'price'    => 850.00,  'months' => 1,  'minutes' => 0,    
+                'category' => 'non_member_pass', 'floor' => 'all',
+                'benefits' => '1 month unlimited gym access across all floors for non-members without Annual Fee.'
+            ],
+            14 => [
+                'name'     => 'Non-Member — Daily (2nd Floor Only)',     
+                'price'    => 50.00,   'months' => 0,  'minutes' => 1440, 
+                'category' => 'non_member_pass', 'floor' => 'second_floor_only',
+                'benefits' => 'Same-day gym access to 2nd Floor equipment for walk-ins. Valid today only (expires at 11:59 PM).'
+            ],
+            15 => [
+                'name'     => 'Non-Member — Daily (Ground + 2nd Floor)', 
+                'price'    => 60.00,   'months' => 0,  'minutes' => 1440, 
+                'category' => 'non_member_pass', 'floor' => 'ground_and_second',
+                'benefits' => 'Same-day all-access to Ground Floor + 2nd Floor for walk-ins. Valid today only (expires at 11:59 PM).'
+            ],
         ];
 
         foreach ($official_plans as $id => $p) {
             $exists = $pdo->prepare("SELECT COUNT(*) FROM membership_plans WHERE id = ?");
             $exists->execute([$id]);
             if ($exists->fetchColumn() > 0) {
-                $upd = $pdo->prepare("UPDATE membership_plans SET name = ?, price = ?, duration_months = ?, duration_minutes = ?, plan_category = ?, floor_access = ?, is_active = 1, is_test_promo = 0 WHERE id = ?");
-                $upd->execute([$p['name'], $p['price'], $p['months'], $p['minutes'], $p['category'], $p['floor'], $id]);
+                $upd = $pdo->prepare("UPDATE membership_plans SET name = ?, price = ?, duration_months = ?, duration_minutes = ?, plan_category = ?, floor_access = ?, benefits = ?, is_active = 1, is_test_promo = 0 WHERE id = ?");
+                $upd->execute([$p['name'], $p['price'], $p['months'], $p['minutes'], $p['category'], $p['floor'], $p['benefits'], $id]);
             } else {
-                $ins = $pdo->prepare("INSERT INTO membership_plans (id, name, price, duration_months, duration_minutes, plan_category, floor_access, is_active, is_test_promo) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0)");
-                $ins->execute([$id, $p['name'], $p['price'], $p['months'], $p['minutes'], $p['category'], $p['floor']]);
+                $ins = $pdo->prepare("INSERT INTO membership_plans (id, name, price, duration_months, duration_minutes, plan_category, floor_access, benefits, is_active, is_test_promo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0)");
+                $ins->execute([$id, $p['name'], $p['price'], $p['months'], $p['minutes'], $p['category'], $p['floor'], $p['benefits']]);
             }
         }
     }
