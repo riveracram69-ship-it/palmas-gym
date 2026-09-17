@@ -122,3 +122,47 @@ if (!function_exists('compose_member_address_string')) {
         return trim($fallback);
     }
 }
+
+if (!function_exists('sync_attendance_auto_checkout')) {
+    /**
+     * Auto-close unclosed attendance sessions:
+     * 1. Past Days: Any check-in from previous dates (date < CURRENT_DATE()) without time_out
+     *    is closed at gym closing (22:00:00) or +2.5 hours from time_in.
+     * 2. Today: Any check-in from today exceeding 4 hours workout duration is auto-closed.
+     * 
+     * @param PDO $pdo
+     * @return int Number of sessions auto-closed
+     */
+    function sync_attendance_auto_checkout($pdo): int {
+        if (!isset($pdo) || !$pdo) return 0;
+        $affected = 0;
+        try {
+            // 1. Auto-close previous days
+            $stmt1 = $pdo->prepare("
+                UPDATE attendance
+                SET time_out = CASE 
+                    WHEN ADDTIME(time_in, '02:30:00') > '22:00:00' THEN '22:00:00'
+                    ELSE ADDTIME(time_in, '02:30:00')
+                END
+                WHERE (time_out IS NULL OR TRIM(time_out) = '' OR time_out = '00:00:00')
+                  AND date < CURRENT_DATE()
+            ");
+            $stmt1->execute();
+            $affected += $stmt1->rowCount();
+
+            // 2. Auto-close today's sessions exceeding 4 hours workout duration
+            $stmt2 = $pdo->prepare("
+                UPDATE attendance
+                SET time_out = ADDTIME(time_in, '02:30:00')
+                WHERE (time_out IS NULL OR TRIM(time_out) = '' OR time_out = '00:00:00')
+                  AND date = CURRENT_DATE()
+                  AND TIMESTAMPDIFF(MINUTE, time_in, NOW()) >= 240
+            ");
+            $stmt2->execute();
+            $affected += $stmt2->rowCount();
+        } catch (\Throwable $e) {
+            error_log('Auto checkout sync error: ' . $e->getMessage());
+        }
+        return $affected;
+    }
+}

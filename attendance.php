@@ -10,8 +10,11 @@ $is_today = ($selected_date === date('Y-m-d'));
 $today_logs = [];
 try {
     if (isset($pdo) && $pdo) {
+        // Run smart auto-checkout sweep: closes past unclosed days and timed-out sessions (>4h)
+        sync_attendance_auto_checkout($pdo);
+
         $stmt = $pdo->prepare(
-            "SELECT a.time_in, a.time_out, m.full_name, m.membership_id
+            "SELECT a.id, a.date, a.time_in, a.time_out, m.full_name, m.membership_id
              FROM attendance a
              JOIN members m ON m.id = a.member_id
              WHERE a.date = :log_date
@@ -100,8 +103,10 @@ try {
                         </td>
                     </tr>
                     <?php else: ?>
-                    <?php foreach ($today_logs as $log): ?>
-                    <tr>
+                    <?php foreach ($today_logs as $log): 
+                        $has_timed_out = (!empty($log['time_out']) && $log['time_out'] !== '00:00:00');
+                    ?>
+                    <tr id="att-row-<?php echo $log['id']; ?>">
                         <td>
                             <div class="member-cell">
                                 <div class="member-avatar"><?php echo strtoupper(substr($log['full_name'], 0, 1)); ?></div>
@@ -112,12 +117,20 @@ try {
                             </div>
                         </td>
                         <td class="cell-primary"><?php echo date('h:i A', strtotime($log['time_in'])); ?></td>
-                        <td class="cell-secondary"><?php echo $log['time_out'] ? date('h:i A', strtotime($log['time_out'])) : '—'; ?></td>
-                        <td>
-                            <?php if ($log['time_out']): ?>
+                        <td class="cell-secondary" id="timeout-<?php echo $log['id']; ?>"><?php echo $has_timed_out ? date('h:i A', strtotime($log['time_out'])) : '—'; ?></td>
+                        <td id="status-cell-<?php echo $log['id']; ?>" style="white-space:nowrap;">
+                            <?php if ($has_timed_out): ?>
                                 <span class="badge badge-gray">Left</span>
                             <?php else: ?>
-                                <span class="badge badge-success"><i class="fas fa-circle" style="font-size:0.35rem; margin-right:4px;"></i> Inside</span>
+                                <div style="display:inline-flex; align-items:center; gap:8px;">
+                                    <span class="badge badge-success"><i class="fas fa-circle" style="font-size:0.35rem; margin-right:4px;"></i> Inside</span>
+                                    <button type="button" class="btn btn-outline btn-sm manual-checkout-btn" 
+                                            style="padding:3px 9px; font-size:0.72rem; border-radius:6px; color:var(--text-muted); border-color:var(--border); display:inline-flex; align-items:center; gap:4px; font-weight:600; cursor:pointer;"
+                                            onclick="manualCheckout(<?php echo $log['id']; ?>, '<?php echo htmlspecialchars(addslashes($log['full_name'])); ?>')"
+                                            title="Mark member as Left">
+                                        <i class="fas fa-arrow-right-from-bracket"></i> Check Out
+                                    </button>
+                                </div>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -269,6 +282,70 @@ function manualCheckin() {
     const inp = document.getElementById('manual-id');
     const id = inp.value.trim();
     if (id) { processCheckin(id, true); inp.value = ''; }
+}
+
+function manualCheckout(attendanceId, memberName) {
+    const confirmMsg = 'Check out ' + (memberName || 'this member') + ' now?';
+    const executeCheckout = () => {
+        const btn = document.querySelector(`#att-row-${attendanceId} .manual-checkout-btn`);
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        fetch('modules/attendance/manual_checkout.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRF-Token': csrfToken
+            },
+            body: 'attendance_id=' + encodeURIComponent(attendanceId) + '&csrf_token=' + encodeURIComponent(csrfToken)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const timeoutEl = document.getElementById('timeout-' + attendanceId);
+                const statusEl = document.getElementById('status-cell-' + attendanceId);
+                if (timeoutEl) timeoutEl.textContent = data.time_out_formatted;
+                if (statusEl) {
+                    statusEl.innerHTML = '<span class="badge badge-gray">Left</span>';
+                }
+                const scanRes = document.getElementById('scan-result');
+                if (scanRes) {
+                    scanRes.style.display = 'block';
+                    scanRes.className = 'alert alert-success';
+                    scanRes.style.background = '#e6f4ea';
+                    scanRes.style.color = '#137333';
+                    scanRes.style.border = '1px solid rgba(30,142,62,0.2)';
+                    scanRes.innerHTML = `<i class="fas fa-check-circle"></i> ${escapeHtml(data.message)}`;
+                    setTimeout(() => { scanRes.style.display = 'none'; }, 4000);
+                }
+                if (typeof palmasToast === 'function') {
+                    palmasToast(data.message, 'success');
+                }
+            } else {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-arrow-right-from-bracket"></i> Check Out';
+                }
+                alert(data.message || 'Could not check out member.');
+            }
+        })
+        .catch(err => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-arrow-right-from-bracket"></i> Check Out';
+            }
+            alert('An error occurred. Please try again.');
+        });
+    };
+
+    if (typeof palmasConfirm === 'function') {
+        palmasConfirm(confirmMsg, executeCheckout);
+    } else if (confirm(confirmMsg)) {
+        executeCheckout();
+    }
 }
 
 document.getElementById('manual-id').addEventListener('keydown', e => { if(e.key === 'Enter') manualCheckin(); });

@@ -42,6 +42,9 @@ $top_active_members     = [];
 
 try {
     if (isset($pdo) && $pdo) {
+        // Auto-close stale unclosed attendance sessions so "Currently Inside" is always accurate
+        sync_attendance_auto_checkout($pdo);
+
         // ── 1. Master KPI Calculations ──────────────────────────────────────────
         $total_members    = (int)$pdo->query("SELECT COUNT(*) FROM members")->fetchColumn();
         $pending_registrations_cnt = (int)$pdo->query("SELECT COUNT(*) FROM members WHERE account_status = 'Pending'")->fetchColumn();
