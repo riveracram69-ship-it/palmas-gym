@@ -82,13 +82,17 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             return ['success' => false, 'message' => 'This plan is no longer available. Please select a current plan.'];
         }
 
-        // Enforce pricing: use passed paid amount if positive, otherwise default to catalog plan price
+        // [SECURITY] Always enforce server-side catalog price.
+        // The passed $amount is accepted only when it matches (e.g. verified gateway webhook amount).
+        // Never allow a caller-supplied lower amount to silently replace the catalog price.
         $catalog_price = floatval($plan['price']);
         $passed_amount = ($amount !== null && floatval($amount) > 0) ? floatval($amount) : null;
         if ($passed_amount !== null && abs($passed_amount - $catalog_price) > 0.05) {
-            error_log("process_automated_subscription_activation: Passed amount ({$passed_amount}) differs from catalog plan price ({$catalog_price}) for plan_id {$plan_id}");
+            // Log the divergence for audit but ALWAYS record the catalog (authoritative) price
+            error_log("process_automated_subscription_activation [PRICE_MISMATCH]: passed={$passed_amount}, catalog={$catalog_price}, plan_id={$plan_id}, member_id={$member_id}");
         }
-        $amount = $passed_amount !== null ? $passed_amount : $catalog_price;
+        // Always bill at catalog price — prevents price manipulation attacks
+        $amount = $catalog_price;
         $duration_minutes = intval($plan['duration_minutes'] ?? 0);
         $duration_months  = intval($plan['duration_months'] ?? 0);
 
