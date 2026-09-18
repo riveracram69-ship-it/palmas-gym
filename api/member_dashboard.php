@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 try {
     require_once __DIR__ . '/../config/db.php';
+    require_once __DIR__ . '/../config/member_helpers.php';
     require_once __DIR__ . '/auth_middleware.php';
 
     $member_id = $auth_member_id;
@@ -101,24 +102,35 @@ try {
     $member['is_active'] = $is_active;
     $member['has_gym_access'] = $is_active && $has_active_pass;
 
-    // Determine renewal eligibility (can only renew if expired or expiring soon)
-    $can_renew = true;
-    $cannot_renew_reason = null;
-    if (!empty($member['expiry_date']) && !$is_expired) {
-        $diff_sec = $exp_ts - $now_time;
-        $is_minute_promo = (!empty($member['duration_minutes']) && $member['duration_minutes'] > 0)
-            || preg_match('/(\d+)\s*(?:min|minute)/i', $member['plan_name'] ?? '');
-        $threshold_sec = $is_minute_promo ? 300 : (3 * 86400); // 5 mins for promo, 3 days for regular
+    // ── SECTION A & B INDEPENDENT ELIGIBILITY CHECKS ──
+    $ann_check = can_renew_annual_membership($member);
+    $gym_check = can_renew_gym_access($member['expiry_date'] ?? null, (int)($member['duration_minutes'] ?? 0), $member['plan_name'] ?? null);
 
-        if ($diff_sec > $threshold_sec) {
-            $can_renew = false;
-            $rem_text = ($is_minute_promo || $diff_sec < 86400) ? ceil($diff_sec / 60) . ' min(s)' : ceil($diff_sec / 86400) . ' day(s)';
-            $rule_text = $is_minute_promo ? 'within 5 minutes of expiration' : 'within 3 days of expiration';
-            $cannot_renew_reason = "Your plan is still active ({$rem_text} remaining). Renewal is available when expired or {$rule_text}.";
-        }
-    }
-    $member['can_renew'] = $can_renew;
-    $member['cannot_renew_reason'] = $cannot_renew_reason;
+    $annual_membership_data = [
+        'is_official'         => $is_official_member,
+        'status'              => $annual_status,
+        'expiry_date'         => $annual_exp,
+        'expiry_formatted'    => $member['annual_membership_expiry_formatted'],
+        'days_remaining'      => $ann_check['days_remaining'],
+        'can_renew'           => $ann_check['can_renew'],
+        'cannot_renew_reason' => $ann_check['reason'],
+    ];
+
+    $gym_access_data = [
+        'has_active_pass'     => $has_active_pass,
+        'plan_name'           => $has_active_pass ? $member['plan_name'] : null,
+        'plan_id'             => $has_active_pass ? (int)$member['plan_id'] : null,
+        'expiry_date'         => $member['expiry_date'] ?? null,
+        'expiry_formatted'    => !empty($member['expiry_date']) ? date('M d, Y', strtotime($member['expiry_date'])) : null,
+        'days_remaining'      => $gym_check['days_remaining'],
+        'can_renew'           => $gym_check['can_renew'],
+        'cannot_renew_reason' => $gym_check['reason'],
+    ];
+
+    $member['annual_membership']   = $annual_membership_data;
+    $member['gym_access']          = $gym_access_data;
+    $member['can_renew']           = $gym_check['can_renew'];
+    $member['cannot_renew_reason'] = $gym_check['reason'];
 
     // Idempotently dispatch MEMBERSHIP_EXPIRED notification if subscription has elapsed
     if ($is_expired) {
@@ -285,6 +297,8 @@ try {
     echo json_encode([
         'success'              => true,
         'member'               => $member,
+        'annual_membership'    => $annual_membership_data,
+        'gym_access'           => $gym_access_data,
         'qr_token'             => $qr_token,
         'attendance'           => $attendance,
         'payments'             => $payments,

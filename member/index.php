@@ -191,7 +191,7 @@ try {
             </div>
         <?php endif; ?>
 
-        <!-- Annual Membership Tier Card -->
+        <!-- Section A: Annual Membership Tier Card -->
         <div class="card fade-up" style="background:#ffffff; border:1px solid rgba(62,130,65,0.2); border-radius:18px; padding:1.1rem 1.25rem; margin-bottom:1.25rem; box-shadow:var(--shadow-xs);">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <div style="display:flex; align-items:center; gap:12px;">
@@ -200,7 +200,7 @@ try {
                     </div>
                     <div>
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-weight:800; font-size:0.95rem; color:var(--text-primary);">Annual Membership</span>
+                            <span style="font-weight:800; font-size:0.95rem; color:var(--text-primary);">🏅 ANNUAL MEMBERSHIP</span>
                             <?php if ($is_official): ?>
                                 <span style="font-size:0.68rem; background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:12px; font-weight:700;">ACTIVE</span>
                             <?php else: ?>
@@ -209,24 +209,26 @@ try {
                         </div>
                         <p style="margin:2px 0 0 0; font-size:0.75rem; color:var(--text-secondary);">
                             <?php if ($is_official): ?>
-                                Valid until <strong><?php echo date('M d, Y', strtotime($ann_expiry)); ?></strong> (<?php echo max(0, $ann_days_left); ?> days left) • Member rates active
+                                Official Member • Valid until <strong><?php echo date('M d, Y', strtotime($ann_expiry)); ?></strong> (<?php echo max(0, $ann_days_left); ?> days left)
                             <?php else: ?>
-                                Unlock member rates (₱40/day, ₱750/mo) with the ₱1,000 annual fee
+                                Become an Official Member • Enjoy exclusive discounted Member Rates.
                             <?php endif; ?>
                         </p>
                     </div>
                 </div>
                 <div>
-                    <?php if ($is_official && $ann_can_renew): ?>
-                        <button type="button" class="btn" style="background:#f59e0b; color:#fff; font-size:0.78rem; font-weight:700; padding:6px 14px; border-radius:10px; border:none; cursor:pointer;" onclick="openRenewModal('membership')">
-                            <i class="fas fa-arrows-rotate"></i> Renew (₱1,000)
-                        </button>
-                    <?php elseif (!$is_official): ?>
-                        <button type="button" class="btn" style="background:#2d6a4f; color:#fff; font-size:0.78rem; font-weight:700; padding:7px 15px; border-radius:10px; border:none; cursor:pointer;" onclick="openRenewModal('membership')">
-                            <i class="fas fa-medal"></i> Become a Member
-                        </button>
+                    <?php if ($is_official): ?>
+                        <?php if ($ann_can_renew): ?>
+                            <button type="button" class="btn" style="background:#f59e0b; color:#fff; font-size:0.78rem; font-weight:700; padding:6px 14px; border-radius:10px; border:none; cursor:pointer;" onclick="openAnnualMembershipModal()">
+                                <i class="fas fa-arrows-rotate"></i> Renew Annual Membership
+                            </button>
+                        <?php else: ?>
+                            <span style="font-size:0.78rem; color:#16a34a; font-weight:700;"><i class="fas fa-circle-check"></i> In Good Standing</span>
+                        <?php endif; ?>
                     <?php else: ?>
-                        <span style="font-size:0.78rem; color:#16a34a; font-weight:700;"><i class="fas fa-circle-check"></i> In Good Standing</span>
+                        <button type="button" class="btn" style="background:#2d6a4f; color:#fff; font-size:0.78rem; font-weight:700; padding:7px 15px; border-radius:10px; border:none; cursor:pointer;" onclick="openAnnualMembershipModal()">
+                            <i class="fas fa-medal"></i> Get Annual Membership
+                        </button>
                     <?php endif; ?>
                 </div>
             </div>
@@ -256,12 +258,20 @@ try {
             </div>
         </div>
 
-        <!-- Gym Access Pass Card -->
+        <!-- Section B: Gym Access Pass Card -->
         <div class="subscription-card fade-up fade-up-d2">
             <div class="sub-header">
                 <div>
-                    <p class="section-title"><i class="fas fa-dumbbell"></i> Gym Floor Access Pass</p>
-                    <p class="plan-name"><?php echo htmlspecialchars($member['plan_name'] ?: 'No Active Gym Pass'); ?></p>
+                    <p class="section-title"><i class="fas fa-dumbbell"></i> 🏋️ GYM ACCESS</p>
+                    <p class="plan-name">
+                        <?php 
+                        if (!empty($member['has_active_gym_pass'])) {
+                            echo htmlspecialchars($member['plan_name'] ?: 'Active Gym Pass');
+                        } else {
+                            echo 'No active gym access';
+                        }
+                        ?>
+                    </p>
                 </div>
                 <?php if (!empty($member['has_active_gym_pass'])): ?>
                     <span class="badge badge-active"><i class="fas fa-circle" style="font-size:0.45rem;"></i> Pass Active</span>
@@ -284,18 +294,18 @@ try {
             <div style="background:#fef3c7; border:1px solid #fde68a; border-radius:12px; padding:10px 14px; margin:10px 0 14px; font-size:0.8rem; color:#92400e; line-height:1.45;">
                 <i class="fas fa-circle-info" style="color:#d97706; margin-right:4px;"></i>
                 <?php if ($is_official): ?>
-                    <strong>You are an Official Member!</strong> To access the workout floor, purchase a Daily Pass (₱40) or Monthly Pass (₱750) at your discounted member rate.
+                    <strong>You are an Official Member.</strong> You can purchase gym access at discounted Member Rates.
                 <?php else: ?>
-                    <strong>No Active Gym Pass:</strong> Purchase a Daily Pass (₱50) or pay the Annual Membership Fee to unlock member rates.
+                    <strong>No active gym access.</strong> Purchase a Gym Access Pass to workout on the gym floor.
                 <?php endif; ?>
             </div>
             <?php endif; ?>
 
             <div class="sub-meta">
                 <div class="sub-meta-item">
-                    <p>Pass Expiration</p>
+                    <p>Gym Access Expiration</p>
                     <p><?php 
-                        if (!empty($member['expiry_date'])) {
+                        if (!empty($member['has_active_gym_pass']) && !empty($member['expiry_date'])) {
                             $has_time = (!empty($member['duration_minutes']) && $member['duration_minutes'] > 0) || (date('H:i:s', strtotime($member['expiry_date'])) !== '00:00:00');
                             echo date($has_time ? 'M d, Y h:i A' : 'M d, Y', strtotime($member['expiry_date']));
                         } else {
@@ -311,21 +321,21 @@ try {
 
             <div style="margin-top:14px; padding-top:12px; border-top:1px dashed rgba(82,183,136,0.25);">
                 <?php if (empty($member['has_active_gym_pass'])): ?>
-                    <button type="button" class="renew-btn" onclick="openRenewModal('pass')">
-                        <i class="fas fa-plus-circle"></i> Get Gym Access Pass
+                    <button type="button" class="renew-btn" onclick="openGymAccessModal()">
+                        <i class="fas fa-plus-circle"></i> GET GYM ACCESS PASS
                     </button>
-                <?php elseif ($days_left !== null && $days_left <= 7): ?>
-                    <button type="button" class="renew-btn" onclick="openRenewModal('pass')">
-                        <i class="fas fa-arrows-rotate"></i> Extend Gym Pass
+                <?php elseif ($can_renew_pass): ?>
+                    <button type="button" class="renew-btn" onclick="openGymAccessModal()">
+                        <i class="fas fa-arrows-rotate"></i> Renew Gym Access
                     </button>
                 <?php else: ?>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-size:0.78rem; color:var(--text-muted);">
                             <i class="fas fa-circle-check" style="color:#2d6a4f;"></i> Gym pass in good standing
                         </span>
-                        <button type="button" style="background:transparent; border:none; color:var(--palmas-primary); font-weight:700; font-size:0.8rem; cursor:pointer; padding:4px;" onclick="openRenewModal('pass')">
-                            Extend Pass <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
-                        </button>
+                        <span style="font-size:0.75rem; color:var(--text-secondary);">
+                            (Renewal available within 3 days of expiry)
+                        </span>
                     </div>
                 <?php endif; ?>
             </div>
@@ -447,7 +457,7 @@ try {
 
             <!-- 🌟 NON-MEMBER UPSELL BANNER 🌟 -->
             <?php if (!$is_official): ?>
-            <div class="member-upsell-card" style="background:linear-gradient(135deg, #133e29 0%, #1f5e3e 100%); color:#fff; border-radius:14px; padding:13px 15px; margin-bottom:14px; border:1.5px solid #4ade80; box-shadow:0 4px 14px rgba(19,62,41,0.2);">
+            <div id="non-member-upsell-banner" class="member-upsell-card" style="background:linear-gradient(135deg, #133e29 0%, #1f5e3e 100%); color:#fff; border-radius:14px; padding:13px 15px; margin-bottom:14px; border:1.5px solid #4ade80; box-shadow:0 4px 14px rgba(19,62,41,0.2);">
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
                     <div style="font-weight:800; font-size:0.92rem; color:#fef08a; display:flex; align-items:center; gap:6px;">
                         <i class="fas fa-crown" style="color:#facc15;"></i> Gusto mo bang magpa-member?
@@ -515,7 +525,7 @@ try {
                 ?>
 
                 <?php foreach ($sections as $sec): if (empty($sec['items'])) continue; ?>
-                <div>
+                <div class="plan-sec-wrap" data-sec-id="<?php echo $sec['id']; ?>">
                     <div style="margin-bottom:0.45rem; padding-bottom:3px; border-bottom:1px solid rgba(62,130,65,0.2); display:flex; justify-content:space-between; align-items:center;">
                         <div>
                             <div style="font-size:0.8rem; font-weight:800; color:var(--palmas-primary); text-transform:uppercase; letter-spacing:0.4px;">
@@ -887,30 +897,54 @@ async function fetchNotifications() {
 fetchNotifications();
 setInterval(fetchNotifications, 60000);
 
-// ── Renewal Modal ────────────────────────────────────────────────
-const hasPendingRenewal = <?php echo $pending_request ? 'true' : 'false'; ?>;
-const canRenewPass = <?php echo $can_renew_pass ? 'true' : 'false'; ?>;
+// ── Renewal Modal & Plan Selection ──────────────────────────────
+const hasPendingRenewal     = <?php echo $pending_request ? 'true' : 'false'; ?>;
+const canRenewPass          = <?php echo $can_renew_pass ? 'true' : 'false'; ?>;
 const cannotRenewPassReason = <?php echo json_encode($cannot_renew_pass_reason); ?>;
-const isOfficialMember = <?php echo $is_official ? 'true' : 'false'; ?>;
+const isOfficialMember      = <?php echo $is_official ? 'true' : 'false'; ?>;
+const annCanRenew           = <?php echo $ann_can_renew ? 'true' : 'false'; ?>;
+
+function openAnnualMembershipModal() {
+    openRenewModal('membership');
+}
+
+function openGymAccessModal() {
+    openRenewModal('pass');
+}
 
 function openRenewModal(mode = 'all') {
     closeNotifDrawer();
-    const titleEl = document.getElementById('renew-modal-title');
-    const descEl  = document.getElementById('renew-modal-desc');
+    const titleEl      = document.getElementById('renew-modal-title');
+    const descEl       = document.getElementById('renew-modal-desc');
+    const upsellBanner = document.getElementById('non-member-upsell-banner');
+
+    const feeSections  = document.querySelectorAll('.plan-sec-wrap[data-sec-id="sec-fee"]');
+    const passSections = document.querySelectorAll('.plan-sec-wrap:not([data-sec-id="sec-fee"])');
 
     if (mode === 'membership') {
-        if (titleEl) titleEl.innerHTML = '<i class="fas fa-medal" style="color:var(--palmas-primary);"></i> Annual Membership Fee';
-        if (descEl) descEl.textContent = 'Pay or renew your annual membership to unlock discounted member rates.';
+        if (titleEl) titleEl.innerHTML = '<i class="fas fa-medal" style="color:var(--palmas-primary);"></i> 🏅 Annual Membership (₱1,000)';
+        if (descEl) descEl.textContent = 'Official Member status for 1 full year. Unlocks discounted rates on all gym access passes.';
+        feeSections.forEach(s => s.style.display = 'block');
+        passSections.forEach(s => s.style.display = 'none');
+        if (upsellBanner) upsellBanner.style.display = 'none';
     } else if (mode === 'pass') {
         if (!canRenewPass) {
             alert(cannotRenewPassReason || "Aktibo pa ang iyong kasalukuyang gym pass.");
             return;
         }
-        if (titleEl) titleEl.innerHTML = '<i class="fas fa-dumbbell" style="color:var(--palmas-primary);"></i> Get Gym Access Pass';
-        if (descEl) descEl.textContent = 'Select a daily, monthly, or yearly workout pass for gym floor access.';
+        if (titleEl) titleEl.innerHTML = '<i class="fas fa-dumbbell" style="color:var(--palmas-primary);"></i> 🏋️ Gym Access Pass';
+        if (descEl) descEl.textContent = isOfficialMember 
+            ? 'Select your workout pass at exclusive Official Member rates.' 
+            : 'Select a workout pass for gym floor access.';
+        feeSections.forEach(s => s.style.display = 'none');
+        passSections.forEach(s => s.style.display = 'block');
+        if (upsellBanner) upsellBanner.style.display = 'block';
     } else {
         if (titleEl) titleEl.innerHTML = '<i class="fas fa-rotate-right" style="color:var(--palmas-primary);"></i> Membership & Passes';
         if (descEl) descEl.textContent = 'Select a workout pass or annual membership to activate your access.';
+        feeSections.forEach(s => s.style.display = 'block');
+        passSections.forEach(s => s.style.display = 'block');
+        if (upsellBanner) upsellBanner.style.display = 'block';
     }
 
     if (hasPendingRenewal) {
@@ -960,7 +994,7 @@ function openRenewModal(mode = 'all') {
 }
 
 function openRenewFromNotif() {
-    openRenewModal('pass');
+    openGymAccessModal();
 }
 
 function closeRenewModal() {

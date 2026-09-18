@@ -249,3 +249,109 @@ if (!function_exists('validate_plan_tier_eligibility')) {
     }
 }
 
+if (!function_exists('can_renew_annual_membership')) {
+    /**
+     * Checks if a member can purchase or renew their ₱1,000 Annual Membership.
+     * Allowed if:
+     * - Non-member (purchase to become official member)
+     * - Official Member whose annual membership is expired or within 30 days of expiration
+     *
+     * @param array|object|null $member
+     * @return array ['can_renew' => bool, 'is_official' => bool, 'days_remaining' => int, 'reason' => string]
+     */
+    function can_renew_annual_membership($member): array {
+        $is_official = is_official_member($member);
+        if (!$is_official) {
+            return [
+                'can_renew'      => true,
+                'is_official'    => false,
+                'days_remaining' => 0,
+                'reason'         => ''
+            ];
+        }
+
+        $exp = is_array($member) ? ($member['annual_membership_expiry'] ?? '') : ($member->annual_membership_expiry ?? '');
+        $exp_ts = (strpos($exp, ':') !== false) ? strtotime($exp) : strtotime($exp . ' 23:59:59');
+        $diff_sec = $exp_ts ? ($exp_ts - time()) : 0;
+        $days_left = max(0, (int)ceil($diff_sec / 86400));
+
+        if ($days_left <= 30) {
+            return [
+                'can_renew'      => true,
+                'is_official'    => true,
+                'days_remaining' => $days_left,
+                'reason'         => ''
+            ];
+        }
+
+        return [
+            'can_renew'      => false,
+            'is_official'    => true,
+            'days_remaining' => $days_left,
+            'reason'         => "Your Annual Membership is active ({$days_left} days remaining). Renewal is available within 30 days of expiry."
+        ];
+    }
+}
+
+if (!function_exists('can_renew_gym_access')) {
+    /**
+     * Checks if a member can purchase or renew their workout floor pass (Gym Access).
+     * Allowed if:
+     * - No active gym pass subscription
+     * - Active gym pass is expiring within 3 days (or 5 mins for short minute promos)
+     *
+     * @param string|null $expiry_date Gym access pass expiry date
+     * @param int $duration_minutes Plan duration in minutes (if any)
+     * @param string|null $plan_name Plan name (if any)
+     * @return array ['can_renew' => bool, 'has_active_pass' => bool, 'days_remaining' => int, 'reason' => string]
+     */
+    function can_renew_gym_access(?string $expiry_date, int $duration_minutes = 0, ?string $plan_name = null): array {
+        if (empty($expiry_date)) {
+            return [
+                'can_renew'       => true,
+                'has_active_pass' => false,
+                'days_remaining'  => 0,
+                'reason'          => ''
+            ];
+        }
+
+        $exp_ts = (strpos($expiry_date, ':') !== false) ? strtotime($expiry_date) : strtotime($expiry_date . ' 23:59:59');
+        $now_time = time();
+
+        if ($exp_ts <= $now_time) {
+            return [
+                'can_renew'       => true,
+                'has_active_pass' => false,
+                'days_remaining'  => 0,
+                'reason'          => 'Pass has expired'
+            ];
+        }
+
+        $diff_sec = $exp_ts - $now_time;
+        $days_left = max(0, (int)ceil($diff_sec / 86400));
+
+        $is_minute_promo = ($duration_minutes > 0 && $duration_minutes < 1440) ||
+            ($plan_name && preg_match('/(\d+)\s*(?:min|minute)/i', $plan_name));
+        $threshold_sec = $is_minute_promo ? 300 : (3 * 86400);
+
+        if ($diff_sec <= $threshold_sec) {
+            return [
+                'can_renew'       => true,
+                'has_active_pass' => true,
+                'days_remaining'  => $days_left,
+                'reason'          => 'Pass is expiring soon'
+            ];
+        }
+
+        $rem_text = ($is_minute_promo || $diff_sec < 86400) ? ceil($diff_sec / 60) . ' min(s)' : $days_left . ' day(s)';
+        $rule_text = $is_minute_promo ? 'within 5 minutes of expiration' : 'within 3 days of expiration';
+
+        return [
+            'can_renew'       => false,
+            'has_active_pass' => true,
+            'days_remaining'  => $days_left,
+            'reason'          => "Your gym pass is still active ({$rem_text} remaining). Renewal is available when expired or {$rule_text}."
+        ];
+    }
+}
+

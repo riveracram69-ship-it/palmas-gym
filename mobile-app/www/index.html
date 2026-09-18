@@ -2958,19 +2958,35 @@
             </div>
           </div>
 
-          <!-- Context-Aware Pass Action Card (Renew / Extend) -->
-          <div id="pass-renew-prompt-card" style="display:none; margin:0 16px 14px; background:linear-gradient(135deg, rgba(82,183,136,0.14) 0%, rgba(27,67,50,0.4) 100%); border:1px solid rgba(82,183,136,0.35); border-radius:18px; padding:14px 16px; align-items:center; justify-content:space-between; gap:12px;">
+          <!-- SECTION A: Annual Membership Status & Action Card -->
+          <div id="pass-annual-membership-card" style="margin:0 16px 12px; background:linear-gradient(135deg, rgba(250,204,21,0.12) 0%, rgba(20,83,45,0.3) 100%); border:1px solid rgba(250,204,21,0.35); border-radius:18px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
             <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
-              <div style="width:38px; height:38px; border-radius:10px; background:rgba(82,183,136,0.2); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">
-                <i class="fa-solid fa-arrows-rotate"></i>
+              <div style="width:38px; height:38px; border-radius:10px; background:rgba(250,204,21,0.2); color:#facc15; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">
+                <i class="fa-solid fa-crown"></i>
               </div>
               <div style="min-width:0;">
-                <p id="pass-renew-title" style="margin:0; font-size:0.88rem; font-weight:800; color:#fff;">Membership Due for Renewal</p>
-                <p id="pass-renew-sub" style="margin:2px 0 0; font-size:0.75rem; color:var(--text-secondary);">Instant automated pass activation via GCash/Maya</p>
+                <p id="pass-annual-title" style="margin:0; font-size:0.88rem; font-weight:800; color:#fff;">Annual Membership</p>
+                <p id="pass-annual-sub" style="margin:2px 0 0; font-size:0.75rem; color:var(--text-secondary);">Valid 1 year • Grants discounted member rates</p>
               </div>
             </div>
-            <button type="button" class="btn-primary" onclick="openRenewalModal()" style="padding:9px 16px; font-size:0.8rem; font-weight:800; height:auto; width:auto; border-radius:10px; white-space:nowrap;">
-              Renew Now
+            <button type="button" id="pass-annual-action-btn" class="btn-primary" onclick="openAnnualMembershipCheckout()" style="padding:9px 14px; font-size:0.78rem; font-weight:800; height:auto; width:auto; border-radius:10px; white-space:nowrap; background:#facc15; color:#14532d;">
+              Renew
+            </button>
+          </div>
+
+          <!-- SECTION B: Gym Floor Access Status & Action Card -->
+          <div id="pass-gym-access-card" style="margin:0 16px 14px; background:linear-gradient(135deg, rgba(82,183,136,0.14) 0%, rgba(27,67,50,0.4) 100%); border:1px solid rgba(82,183,136,0.35); border-radius:18px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+              <div style="width:38px; height:38px; border-radius:10px; background:rgba(82,183,136,0.2); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">
+                <i class="fa-solid fa-dumbbell"></i>
+              </div>
+              <div style="min-width:0;">
+                <p id="pass-gym-access-title" style="margin:0; font-size:0.88rem; font-weight:800; color:#fff;">Gym Floor Access</p>
+                <p id="pass-gym-access-sub" style="margin:2px 0 0; font-size:0.75rem; color:var(--text-secondary);">Choose your workout pass for gym admission</p>
+              </div>
+            </div>
+            <button type="button" id="pass-gym-access-action-btn" class="btn-primary" onclick="openGymAccessCheckout()" style="padding:9px 14px; font-size:0.78rem; font-weight:800; height:auto; width:auto; border-radius:10px; white-space:nowrap;">
+              Get Pass
             </button>
           </div>
 
@@ -3113,16 +3129,21 @@
                   <i class="fa-solid fa-bolt" style="font-size:1.1rem;"></i>
                 </div>
                 <div>
-                  <h4 style="color:var(--text-primary); margin:0; font-size:1.1rem; font-weight:800;">Extend Membership</h4>
+                  <h4 style="color:var(--text-primary); margin:0; font-size:1.1rem; font-weight:800;">Plans &amp; Membership</h4>
                   <span style="color:var(--text-muted); font-size:0.78rem;">Instant activation &amp; receipt</span>
                 </div>
               </div>
               <p style="color:var(--text-secondary); font-size:0.86rem; margin-bottom:16px; line-height:1.45;">
-                Renew online with GCash, Maya, QR Ph, or Cash at the front desk.
+                Renew or purchase gym access passes and annual membership online with GCash, Maya, QR Ph, or Cash at the front desk.
               </p>
-              <button class="btn-primary" onclick="openRenewalModal()">
-                <i class="fa-solid fa-arrows-rotate"></i> RENEW MEMBERSHIP
-              </button>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <button class="btn-primary" onclick="openGymAccessCheckout()" style="padding:10px 8px; font-size:0.8rem; display:flex; align-items:center; justify-content:center; gap:6px;">
+                  <i class="fa-solid fa-dumbbell"></i> GYM PASS
+                </button>
+                <button class="btn-primary" onclick="openAnnualMembershipCheckout()" style="padding:10px 8px; font-size:0.8rem; background:#facc15; color:#14532d; display:flex; align-items:center; justify-content:center; gap:6px;">
+                  <i class="fa-solid fa-crown"></i> ANNUAL (₱1,000)
+                </button>
+              </div>
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin:4px 0 12px;">
@@ -6048,11 +6069,39 @@ function closePlanExpiredModal() {
 
 function handlePlanExpiredRenew() {
   closePlanExpiredModal();
-  openRenewalModal();
+  openGymAccessCheckout();
 }
 
-function checkCanRenew(m) {
-  if (!m || !m.expiry_date || !m.has_active_pass) return { canRenew: true };
+function checkCanRenewAnnual(m) {
+  if (!m) return { canRenew: true };
+  if (!m.is_official_member || !m.annual_membership_expiry) {
+    return { canRenew: true, reason: 'Not an official member' };
+  }
+  const d = parseSafeDate(m.annual_membership_expiry);
+  if (!d) return { canRenew: true };
+
+  const now = Date.now();
+  const diffMs = d.getTime() - now;
+  if (diffMs <= 0) {
+    return { canRenew: true, reason: 'Annual membership is expired' };
+  }
+
+  // 30 days threshold
+  const thresholdMs = 30 * 24 * 60 * 60 * 1000;
+  if (diffMs <= thresholdMs) {
+    return { canRenew: true, reason: 'Expiring within 30 days' };
+  }
+
+  const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const msg = `Hindi pa maaaring mag-renew ng Annual Membership dahil aktibo pa ito (${daysLeft} araw natitira). Maaari lamang mag-renew 30 araw bago mag-expire o kapag expired na.`;
+
+  return { canRenew: false, message: msg, daysLeft };
+}
+
+function checkCanRenewGymAccess(m) {
+  if (!m || !m.expiry_date || !m.has_active_pass) {
+    return { canRenew: true, reason: 'No active pass' };
+  }
   const d = parseSafeDate(m.expiry_date);
   if (!d) return { canRenew: true };
 
@@ -6075,6 +6124,10 @@ function checkCanRenew(m) {
   const msg = `Hindi pa maaaring mag-renew dahil aktibo pa ang iyong kasalukuyang plano (${remainingStr} natitira). Maaari lamang mag-renew kapag expired na o ${ruleStr}.`;
 
   return { canRenew: false, message: msg, remainingStr };
+}
+
+function checkCanRenew(m) {
+  return checkCanRenewGymAccess(m);
 }
 
 function showCannotRenewModal(msg, title = 'Renewal Notice') {
@@ -6369,42 +6422,71 @@ async function loadDashboard(memberId) {
       if (profAnnRow) profAnnRow.style.display = 'none';
     }
 
-    // Context-Aware Workout Pass Renewal Prompt Card
-    const renewCard = document.getElementById('pass-renew-prompt-card');
-    const renewTitle = document.getElementById('pass-renew-title');
-    const renewSub = document.getElementById('pass-renew-sub');
-    if (renewCard) {
-      if (!hasActivePass) {
-        // No active pass at all — always show the prompt
-        renewCard.style.display = 'flex';
-        if (passIsExpired) {
-          // Had a pass that expired
-          if (renewTitle) renewTitle.textContent = 'Workout Pass Expired';
-          if (renewSub) renewSub.textContent = isOfficialMember
-            ? 'Get a Member Pass now for discounted access'
-            : 'Renew now for instant gym access';
-        } else {
-          // Official Member who just paid the annual fee — no pass yet
-          if (renewTitle) renewTitle.textContent = isOfficialMember ? 'Get Your Workout Pass' : 'No Active Gym Pass';
-          if (renewSub) renewSub.textContent = isOfficialMember
-            ? 'You are a Member — choose a pass for gym floor access'
-            : 'Select a guest pass to access the gym floor';
-        }
-      } else {
-        // Has an active pass — show renew prompt only when expiring soon
-        let remDays = 999;
-        if (m.expiry_date) {
-          const parsedExp = parseSafeDate(m.expiry_date);
-          if (parsedExp) {
-            remDays = Math.max(0, Math.ceil((parsedExp.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+    // Section A: Annual Membership Status & Action Card
+    const annCard = document.getElementById('pass-annual-membership-card');
+    const annTitle = document.getElementById('pass-annual-title');
+    const annSub = document.getElementById('pass-annual-sub');
+    const annBtn = document.getElementById('pass-annual-action-btn');
+
+    if (annCard) {
+      if (isOfficial) {
+        let annDaysLeft = 999;
+        if (m.annual_membership_expiry) {
+          const parsedAnn = parseSafeDate(m.annual_membership_expiry);
+          if (parsedAnn) {
+            annDaysLeft = Math.ceil((parsedAnn.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
           }
         }
-        if (remDays <= 7) {
-          renewCard.style.display = 'flex';
-          if (renewTitle) renewTitle.textContent = 'Workout Pass Due for Renewal';
-          if (renewSub) renewSub.textContent = `${remDays} day${remDays > 1 ? 's' : ''} remaining • Tap to renew`;
+        if (annTitle) annTitle.textContent = 'Official Member Status';
+        if (annDaysLeft <= 30) {
+          if (annSub) annSub.textContent = `Expires ${m.annual_membership_expiry_formatted || m.annual_membership_expiry} (${annDaysLeft > 0 ? annDaysLeft + ' days left' : 'Expired'})`;
+          if (annBtn) {
+            annBtn.style.display = 'block';
+            annBtn.textContent = 'Renew Annual';
+          }
         } else {
-          renewCard.style.display = 'none';
+          if (annSub) annSub.textContent = `Active until ${m.annual_membership_expiry_formatted || m.annual_membership_expiry} • Member rates unlocked`;
+          if (annBtn) annBtn.style.display = 'none';
+        }
+      } else {
+        if (annTitle) annTitle.textContent = 'Annual Membership (₱1,000)';
+        if (annSub) annSub.textContent = 'Get 1-year Official Member status & discounted pass rates';
+        if (annBtn) {
+          annBtn.style.display = 'block';
+          annBtn.textContent = 'Get Membership';
+        }
+      }
+    }
+
+    // Section B: Gym Floor Access Status & Action Card
+    const gymCard = document.getElementById('pass-gym-access-card');
+    const gymTitle = document.getElementById('pass-gym-access-title');
+    const gymSub = document.getElementById('pass-gym-access-sub');
+    const gymBtn = document.getElementById('pass-gym-access-action-btn');
+
+    if (gymCard) {
+      if (!hasActivePass) {
+        if (gymTitle) gymTitle.textContent = 'No Active Gym Access';
+        if (gymSub) gymSub.textContent = isOfficial
+          ? 'You are an Official Member. Purchase gym access at discounted Member Rates.'
+          : 'Purchase a pass to access the gym floor.';
+        if (gymBtn) {
+          gymBtn.style.display = 'block';
+          gymBtn.textContent = 'GET GYM ACCESS PASS';
+        }
+      } else {
+        const gymCheck = checkCanRenewGymAccess(m);
+        if (gymCheck.canRenew) {
+          if (gymTitle) gymTitle.textContent = 'Gym Pass Due for Renewal';
+          if (gymSub) gymSub.textContent = `${m.plan_name || 'Pass'} • Expiring soon (${formatTimeRemaining(m.expiry_date)} left)`;
+          if (gymBtn) {
+            gymBtn.style.display = 'block';
+            gymBtn.textContent = 'Renew Gym Access';
+          }
+        } else {
+          if (gymTitle) gymTitle.textContent = `Active Pass: ${m.plan_name || 'Active'}`;
+          if (gymSub) gymSub.textContent = `Valid until ${m.expiry_date_formatted || m.expiry_date} (${formatTimeRemaining(m.expiry_date)} left)`;
+          if (gymBtn) gymBtn.style.display = 'none';
         }
       }
     }
@@ -7065,6 +7147,29 @@ function refreshDashboard() {
 
 // ── MULTI-STEP MEMBERSHIP CHECKOUT FLOW ────────────────────────────
 
+let currentCheckoutMode = 'all';
+
+async function openAnnualMembershipCheckout() {
+  const check = checkCanRenewAnnual(currentMember);
+  if (!check.canRenew) {
+    showToast(check.message, 4500);
+    showCannotRenewModal(check.message, 'Annual Membership Notice');
+    return;
+  }
+  const feePlan = (availablePlans || []).find(p => p.plan_category === 'membership_fee' || p.id == 8);
+  await openRenewalModal(feePlan ? feePlan.id : 8, 'annual');
+}
+
+async function openGymAccessCheckout() {
+  const check = checkCanRenewGymAccess(currentMember);
+  if (!check.canRenew) {
+    showToast(check.message, 4500);
+    showCannotRenewModal(check.message, 'Gym Access Renewal Notice');
+    return;
+  }
+  await openRenewalModal(null, 'gym_access');
+}
+
 function showCheckoutStep(step) {
   const steps = ['plans', 'summary', 'method', 'result'];
   steps.forEach(s => {
@@ -7074,19 +7179,51 @@ function showCheckoutStep(step) {
 
   const titleEl = document.getElementById('checkout-modal-title');
   if (titleEl) {
-    if (step === 'plans') titleEl.textContent = 'Select Membership Plan';
+    if (step === 'plans') {
+      if (currentCheckoutMode === 'annual') titleEl.textContent = 'Annual Membership';
+      else if (currentCheckoutMode === 'gym_access') titleEl.textContent = 'Select Gym Access Pass';
+      else titleEl.textContent = 'Select Membership Plan';
+    }
     else if (step === 'summary') titleEl.textContent = 'Checkout Summary';
     else if (step === 'method') titleEl.textContent = 'Payment Method';
     else if (step === 'result') titleEl.textContent = 'Payment Status';
   }
 }
 
-async function openRenewalModal(preselectedPlanId = null) {
-  const check = checkCanRenew(currentMember);
-  if (!check.canRenew) {
-    showToast(check.message, 4500);
-    showCannotRenewModal(check.message);
-    return;
+async function openRenewalModal(preselectedPlanId = null, mode = 'all') {
+  currentCheckoutMode = mode;
+
+  if (mode === 'annual') {
+    const check = checkCanRenewAnnual(currentMember);
+    if (!check.canRenew) {
+      showToast(check.message, 4500);
+      showCannotRenewModal(check.message, 'Annual Membership Notice');
+      return;
+    }
+  } else if (mode === 'gym_access') {
+    const check = checkCanRenewGymAccess(currentMember);
+    if (!check.canRenew) {
+      showToast(check.message, 4500);
+      showCannotRenewModal(check.message, 'Gym Access Renewal Notice');
+      return;
+    }
+  } else if (preselectedPlanId) {
+    const plan = (availablePlans || []).find(p => p.id == preselectedPlanId);
+    if (plan && plan.plan_category === 'membership_fee') {
+      const check = checkCanRenewAnnual(currentMember);
+      if (!check.canRenew) {
+        showToast(check.message, 4500);
+        showCannotRenewModal(check.message, 'Annual Membership Notice');
+        return;
+      }
+    } else {
+      const check = checkCanRenewGymAccess(currentMember);
+      if (!check.canRenew) {
+        showToast(check.message, 4500);
+        showCannotRenewModal(check.message, 'Gym Access Renewal Notice');
+        return;
+      }
+    }
   }
 
   const m = document.getElementById('modal-renewal');
@@ -7104,9 +7241,18 @@ async function openRenewalModal(preselectedPlanId = null) {
   if (preselectedPlanId) {
     selectedRenewPlanId = preselectedPlanId;
     selectedRenewPlan = availablePlans.find(p => p.id == preselectedPlanId) || availablePlans[0];
+  } else if (mode === 'annual') {
+    const feePlan = availablePlans.find(p => p.plan_category === 'membership_fee' || p.id == 8);
+    if (feePlan) {
+      selectedRenewPlanId = feePlan.id;
+      selectedRenewPlan = feePlan;
+    }
+  } else {
+    selectedRenewPlanId = null;
+    selectedRenewPlan = null;
   }
 
-  renderCheckoutPlanCards(availablePlans);
+  renderCheckoutPlanCards(availablePlans, mode);
 
   // Background fetch live server plans
   try {
@@ -7115,7 +7261,7 @@ async function openRenewalModal(preselectedPlanId = null) {
       const data = await res.json();
       if (data && data.success && Array.isArray(data.plans) && data.plans.length > 0) {
         availablePlans = data.plans;
-        renderCheckoutPlanCards(availablePlans);
+        renderCheckoutPlanCards(availablePlans, currentCheckoutMode);
       }
       const tb = document.getElementById('checkout-test-mode-banner');
       if (tb) {
@@ -7136,7 +7282,7 @@ function closeRenewalModal() {
   }
 }
 
-function renderCheckoutPlanCards(plans) {
+function renderCheckoutPlanCards(plans, mode = currentCheckoutMode || 'all') {
   const container = document.getElementById('renew-plans-container');
   if (!container) return;
   container.innerHTML = '';
@@ -7153,22 +7299,30 @@ function renderCheckoutPlanCards(plans) {
     }
   }
 
-  // Filter plans strictly by tier:
-  // Official Members ONLY see member_pass and test_promos. They NEVER see non_member_pass rates!
-  // Non-Members see non_member_pass, test_promos, and the Annual Membership Fee to upgrade.
   let eligiblePlans = [];
-  if (isOfficial) {
-    eligiblePlans = plans.filter(p => {
-      if (p.plan_category === 'non_member_pass') return false;
-      if (p.plan_category === 'membership_fee' && !isAnnualExpiring) return false;
-      return true;
-    });
+  if (mode === 'annual') {
+    eligiblePlans = plans.filter(p => p.plan_category === 'membership_fee');
+  } else if (mode === 'gym_access') {
+    if (isOfficial) {
+      eligiblePlans = plans.filter(p => p.plan_category === 'member_pass');
+    } else {
+      eligiblePlans = plans.filter(p => p.plan_category === 'non_member_pass');
+    }
   } else {
-    eligiblePlans = plans.filter(p => p.plan_category !== 'member_pass');
+    // all
+    if (isOfficial) {
+      eligiblePlans = plans.filter(p => {
+        if (p.plan_category === 'non_member_pass') return false;
+        if (p.plan_category === 'membership_fee' && !isAnnualExpiring) return false;
+        return true;
+      });
+    } else {
+      eligiblePlans = plans.filter(p => p.plan_category !== 'member_pass');
+    }
   }
 
-  // Auto-select first eligible pass
-  if (!selectedRenewPlanId && eligiblePlans.length > 0) {
+  // Auto-select first eligible pass if none selected or selected is not eligible
+  if ((!selectedRenewPlanId || !eligiblePlans.some(p => p.id == selectedRenewPlanId)) && eligiblePlans.length > 0) {
     const defPlan = isOfficial
       ? (eligiblePlans.find(p => p.plan_category === 'member_pass' && p.duration_months === 1) || eligiblePlans[0])
       : (eligiblePlans.find(p => p.plan_category === 'non_member_pass' && p.duration_months === 1) || eligiblePlans[0]);
@@ -7176,8 +7330,30 @@ function renderCheckoutPlanCards(plans) {
     selectedRenewPlan = defPlan;
   }
 
-  // Header Banner per tier
-  if (isOfficial) {
+  // Header Banner per tier/mode
+  if (mode === 'annual') {
+    const annBanner = document.createElement('div');
+    annBanner.style.cssText = `
+      background: linear-gradient(135deg, rgba(250,204,21,0.2) 0%, rgba(20,83,45,0.3) 100%);
+      border: 1.5px solid #facc15;
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    `;
+    annBanner.innerHTML = `
+      <div style="width:36px; height:36px; border-radius:10px; background:rgba(250,204,21,0.2); color:#facc15; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">
+        <i class="fa-solid fa-crown"></i>
+      </div>
+      <div>
+        <div style="font-weight:800; font-size:0.88rem; color:#fff;">Annual Membership • 1 Full Year</div>
+        <div style="font-size:0.75rem; color:#d1d5db; margin-top:2px;">Grants Official Member status and unlocks discounted rates on all gym floor access passes.</div>
+      </div>
+    `;
+    container.appendChild(annBanner);
+  } else if (isOfficial) {
     const memBanner = document.createElement('div');
     memBanner.style.cssText = `
       background: linear-gradient(135deg, rgba(82,183,136,0.2) 0%, rgba(27,67,50,0.3) 100%);
@@ -7200,7 +7376,7 @@ function renderCheckoutPlanCards(plans) {
       </div>
     `;
     container.appendChild(memBanner);
-  } else {
+  } else if (mode !== 'annual') {
     // Non-member upsell banner
     const upsellBanner = document.createElement('div');
     upsellBanner.style.cssText = `
@@ -7237,57 +7413,78 @@ function renderCheckoutPlanCards(plans) {
           <span style="color:#86efac; font-weight:700;">Ground & 2nd:</span> <strong>₱50</strong> <span style="text-decoration:line-through; opacity:0.6; font-size:0.67rem;">₱60</span>
         </div>
       </div>
-      <button type="button" onclick="selectAppAnnualFee()" style="width:100%; background:#facc15; color:#14532d; font-weight:800; font-size:0.8rem; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+      <button type="button" onclick="openAnnualMembershipCheckout()" style="width:100%; background:#facc15; color:#14532d; font-weight:800; font-size:0.8rem; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
         <i class="fa-solid fa-sparkles"></i> Piliin ang Annual Membership (₱1,000)
       </button>
     `;
     container.appendChild(upsellBanner);
   }
 
-  // Define sections strictly separated by tier
-  const sections = isOfficial ? [
-    {
-      id: 'sec-monthly',
-      title: '👑 Member Monthly & Yearly Passes',
-      badge: 'MEMBER RATES',
-      desc: 'Exclusive discounted rates para sa Official Members (Buong gym access)',
-      accentColor: '#52b788',
-      headerBg: 'linear-gradient(135deg, rgba(82, 183, 136, 0.2) 0%, rgba(27, 67, 50, 0.12) 100%)',
-      borderColor: 'rgba(82, 183, 136, 0.4)',
-      filter: p => parseInt(p.duration_months, 10) > 0 && p.plan_category === 'member_pass'
-    },
-    {
-      id: 'sec-daily',
-      title: '⚡ Member Daily Passes',
-      badge: '1-DAY PASSES',
-      desc: 'Same-day member gym admission',
-      accentColor: '#38bdf8',
-      headerBg: 'linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(3, 105, 161, 0.08) 100%)',
-      borderColor: 'rgba(14, 165, 233, 0.4)',
-      filter: p => (parseInt(p.duration_minutes, 10) === 1440 || (parseInt(p.duration_months, 10) === 0 && (parseInt(p.duration_minutes, 10) > 0 || p.name.toLowerCase().includes('daily')))) && p.plan_category === 'member_pass'
-    },
-    {
-      id: 'sec-fee',
-      title: '🏅 Annual Membership Fee Renewal',
-      badge: '1 YEAR EXTENSION',
-      desc: 'I-renew ang iyong ₱1,000 Annual Membership para mapanatili ang Official Member status',
-      accentColor: '#a5b4fc',
-      headerBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(67, 56, 202, 0.08) 100%)',
-      borderColor: 'rgba(99, 102, 241, 0.4)',
-      filter: p => p.plan_category === 'membership_fee'
+  // Define sections strictly separated by tier and mode
+  let sections = [];
+  if (mode === 'annual') {
+    sections = [
+      {
+        id: 'sec-fee',
+        title: '🏅 Annual Membership Fee (₱1,000 / taon)',
+        badge: '1 YEAR EXTENSION',
+        desc: 'Official Member status for 1 full year. Grants discounted rates on all gym access passes.',
+        accentColor: '#facc15',
+        headerBg: 'linear-gradient(135deg, rgba(250, 204, 21, 0.18) 0%, rgba(202, 138, 4, 0.08) 100%)',
+        borderColor: 'rgba(250, 204, 21, 0.45)',
+        filter: p => p.plan_category === 'membership_fee'
+      }
+    ];
+  } else if (isOfficial) {
+    sections = [
+      {
+        id: 'sec-monthly',
+        title: '👑 Member Monthly & Yearly Passes',
+        badge: 'MEMBER RATES',
+        desc: 'Exclusive discounted rates para sa Official Members (Buong gym access)',
+        accentColor: '#52b788',
+        headerBg: 'linear-gradient(135deg, rgba(82, 183, 136, 0.2) 0%, rgba(27, 67, 50, 0.12) 100%)',
+        borderColor: 'rgba(82, 183, 136, 0.4)',
+        filter: p => parseInt(p.duration_months, 10) > 0 && p.plan_category === 'member_pass'
+      },
+      {
+        id: 'sec-daily',
+        title: '⚡ Member Daily Passes',
+        badge: '1-DAY PASSES',
+        desc: 'Same-day member gym admission',
+        accentColor: '#38bdf8',
+        headerBg: 'linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(3, 105, 161, 0.08) 100%)',
+        borderColor: 'rgba(14, 165, 233, 0.4)',
+        filter: p => (parseInt(p.duration_minutes, 10) === 1440 || (parseInt(p.duration_months, 10) === 0 && (parseInt(p.duration_minutes, 10) > 0 || p.name.toLowerCase().includes('daily')))) && p.plan_category === 'member_pass'
+      }
+    ];
+    if (mode === 'all') {
+      sections.push({
+        id: 'sec-fee',
+        title: '🏅 Annual Membership Fee Renewal',
+        badge: '1 YEAR EXTENSION',
+        desc: 'I-renew ang iyong ₱1,000 Annual Membership para mapanatili ang Official Member status',
+        accentColor: '#a5b4fc',
+        headerBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(67, 56, 202, 0.08) 100%)',
+        borderColor: 'rgba(99, 102, 241, 0.4)',
+        filter: p => p.plan_category === 'membership_fee'
+      });
     }
-  ] : [
-    {
-      id: 'sec-fee',
-      title: '👑 Magpa-Official Member (₱1,000 / taon)',
-      badge: 'SAVE ₱100/MO',
-      desc: 'Maging Official Member para makuha ang pinakamababang rates sa lahat ng passes (valid 1 year)',
-      accentColor: '#facc15',
-      headerBg: 'linear-gradient(135deg, rgba(250, 204, 21, 0.18) 0%, rgba(202, 138, 4, 0.08) 100%)',
-      borderColor: 'rgba(250, 204, 21, 0.45)',
-      filter: p => p.plan_category === 'membership_fee'
-    },
-    {
+  } else {
+    sections = [];
+    if (mode === 'all') {
+      sections.push({
+        id: 'sec-fee',
+        title: '👑 Magpa-Official Member (₱1,000 / taon)',
+        badge: 'SAVE ₱100/MO',
+        desc: 'Maging Official Member para makuha ang pinakamababang rates sa lahat ng passes (valid 1 year)',
+        accentColor: '#facc15',
+        headerBg: 'linear-gradient(135deg, rgba(250, 204, 21, 0.18) 0%, rgba(202, 138, 4, 0.08) 100%)',
+        borderColor: 'rgba(250, 204, 21, 0.45)',
+        filter: p => p.plan_category === 'membership_fee'
+      });
+    }
+    sections.push({
       id: 'sec-monthly',
       title: '👤 Non-Member Monthly Pass',
       badge: 'STANDARD GUEST',
@@ -7296,8 +7493,8 @@ function renderCheckoutPlanCards(plans) {
       headerBg: 'linear-gradient(135deg, rgba(82, 183, 136, 0.2) 0%, rgba(27, 67, 50, 0.12) 100%)',
       borderColor: 'rgba(82, 183, 136, 0.4)',
       filter: p => parseInt(p.duration_months, 10) > 0 && p.plan_category === 'non_member_pass'
-    },
-    {
+    });
+    sections.push({
       id: 'sec-daily',
       title: '⚡ Non-Member Daily Passes',
       badge: 'WALK-IN PASSES',
@@ -7306,8 +7503,8 @@ function renderCheckoutPlanCards(plans) {
       headerBg: 'linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(3, 105, 161, 0.08) 100%)',
       borderColor: 'rgba(14, 165, 233, 0.4)',
       filter: p => (parseInt(p.duration_minutes, 10) === 1440 || (parseInt(p.duration_months, 10) === 0 && (parseInt(p.duration_minutes, 10) > 0 || p.name.toLowerCase().includes('daily')))) && p.plan_category === 'non_member_pass'
-    }
-  ];
+    });
+  }
 
   sections.forEach(sec => {
     const secPlans = eligiblePlans.filter(sec.filter);
