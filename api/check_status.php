@@ -146,7 +146,7 @@ try {
         $stmt = $pdo->prepare("
             SELECT 
                 t.id, t.member_id, t.plan_id, t.subscription_id, t.reference_code,
-                t.gateway_transaction_id, t.gateway, t.payment_method, t.amount,
+                t.gateway_transaction_id, t.paymongo_checkout_id, t.gateway, t.payment_method, t.amount,
                 t.currency, t.status, t.created_at, t.paid_at, t.expires_at,
                 p.name AS plan_name, p.duration_months, p.duration_minutes, p.is_test_promo,
                 s.expiry_date AS subscription_expiry, m.full_name, m.membership_id
@@ -162,7 +162,7 @@ try {
         $stmt = $pdo->prepare("
             SELECT 
                 t.id, t.member_id, t.plan_id, t.subscription_id, t.reference_code,
-                t.gateway_transaction_id, t.gateway, t.payment_method, t.amount,
+                t.gateway_transaction_id, t.paymongo_checkout_id, t.gateway, t.payment_method, t.amount,
                 t.currency, t.status, t.created_at, t.paid_at, t.expires_at,
                 p.name AS plan_name, p.duration_months, p.duration_minutes, p.is_test_promo,
                 s.expiry_date AS subscription_expiry, m.full_name, m.membership_id
@@ -201,11 +201,12 @@ try {
     }
 
     // 3. Live On-Demand Gateway Verification (for PENDING transactions)
-    if ($tx['status'] === 'PENDING' && !empty($tx['gateway_transaction_id'])) {
+    $checkout_session_id = !empty($tx['paymongo_checkout_id']) ? $tx['paymongo_checkout_id'] : ($tx['gateway_transaction_id'] ?? null);
+    if ($tx['status'] === 'PENDING' && !empty($checkout_session_id)) {
         $paymentMode = get_payment_mode();
         
-        if ($paymentMode === 'live' || PayMongoGateway::isConfigured()) {
-            $session = PayMongoGateway::getCheckoutSession($tx['gateway_transaction_id']);
+        if ($paymentMode === 'live' || $paymentMode === 'test' || PayMongoGateway::isConfigured()) {
+            $session = PayMongoGateway::getCheckoutSession($checkout_session_id);
             
             if ($session && isset($session['attributes']['status'])) {
                 $sessionStatus = $session['attributes']['status'];
@@ -277,6 +278,9 @@ try {
     // If browser redirect from PayMongo or status URL requested, render branded HTML receipt
     $isHtmlRequest = isset($_GET['status']) || str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'text/html');
     if ($isHtmlRequest) {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         header('Content-Type: text/html; charset=utf-8');
         $isPaid = ($tx['status'] === 'PAID');
         $isCancelled = ($tx['status'] === 'CANCELLED');
@@ -284,6 +288,20 @@ try {
         $statusTitle = $isPaid ? 'Payment Successful!' : ($isCancelled ? 'Payment Cancelled' : 'Payment Processing');
         $statusIcon = $isPaid ? 'fa-check' : ($isCancelled ? 'fa-xmark' : 'fa-hourglass-half');
         $appUrl = defined('APP_URL') ? rtrim(APP_URL, '/') : '..';
+
+        $is_currently_authenticated = (!empty($_SESSION['member_id']) && (int)$_SESSION['member_id'] === (int)$tx['member_id']);
+        if ($is_currently_authenticated) {
+            $destActionUrl = htmlspecialchars($appUrl) . '/member/index.php';
+            $destActionLabel = 'VIEW DIGITAL PASS';
+            $destActionIcon = 'fa-id-card';
+            $receiptSubtitle = $isPaid ? 'Your membership pass has been activated and is ready to use.' : ($isCancelled ? 'The checkout session was cancelled.' : 'Please wait while we confirm your payment.');
+        } else {
+            $destActionUrl = htmlspecialchars($appUrl) . '/member/login.php?payment_success=1&mid=' . urlencode($tx['membership_id'] ?? '');
+            $destActionLabel = 'SIGN IN TO DASHBOARD';
+            $destActionIcon = 'fa-right-to-bracket';
+            $receiptSubtitle = $isPaid ? 'Payment received & account approved! Please sign in to view your pass.' : ($isCancelled ? 'The checkout session was cancelled.' : 'Please wait while we confirm your payment.');
+        }
+        $webFallback = $destActionUrl;
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -396,7 +414,7 @@ try {
                 <?php endif; ?>
                 <h1><?= htmlspecialchars($statusTitle) ?></h1>
                 <p class="sub-text">
-                    <?= $isPaid ? 'Your membership has been activated and is ready to use.' : ($isCancelled ? 'The checkout session was cancelled.' : 'Please wait while we confirm your payment.') ?>
+                    <?= htmlspecialchars($receiptSubtitle) ?>
                 </p>
 
                 <div class="info-box">
@@ -441,8 +459,8 @@ try {
                     <?php endif; ?>
                 </div>
 
-                <a href="<?= htmlspecialchars($appUrl) ?>/member/index.php" class="btn-action">
-                    <i class="fa-solid fa-id-card"></i> VIEW DIGITAL PASS
+                <a href="<?= $destActionUrl ?>" class="btn-action">
+                    <i class="fa-solid <?= $destActionIcon ?>"></i> <?= $destActionLabel ?>
                 </a>
                 <button type="button" id="btn-return-app" onclick="returnToMobileApp()" class="btn-secondary" style="cursor:pointer; width:100%;">
                     <i class="fa-solid fa-mobile-screen"></i> Return to Mobile App
@@ -456,7 +474,7 @@ try {
                 var status = <?= json_encode($tx['status']) ?>;
                 var deepScheme = "palmasgym://checkout/result?ref=" + encodeURIComponent(ref) + "&status=" + encodeURIComponent(status);
                 var androidIntent = "intent://checkout/result?ref=" + encodeURIComponent(ref) + "&status=" + encodeURIComponent(status) + "#Intent;scheme=palmasgym;package=com.palmaselite.gymmember;end;";
-                var webFallback = <?= json_encode(htmlspecialchars($appUrl) . '/member/index.php') ?>;
+                var webFallback = <?= json_encode($webFallback) ?>;
 
                 var btn = document.getElementById('btn-return-app');
                 if (btn) {

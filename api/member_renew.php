@@ -8,6 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../config/member_helpers.php';
 require_once __DIR__ . '/auth_middleware.php';
 
 $raw = file_get_contents('php://input');
@@ -44,7 +45,7 @@ if (in_array($payment_method, ['GCash', 'Maya']) && empty($reference_no)) {
 
 try {
     // 1. Verify Member exists
-    $stmt = $pdo->prepare("SELECT id, full_name, email, membership_id, status FROM members WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, full_name, email, membership_id, status, annual_membership_expiry FROM members WHERE id = ?");
     $stmt->execute([$member_id]);
     $member = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$member) {
@@ -61,52 +62,70 @@ try {
         exit;
     }
 
-    // 2.5 Enforce business rule: gym pass renewal is ONLY permitted when expired or expiring soon
-    // Note: Annual Membership Fee (plan_category = 'membership_fee') is an eligibility fee and is always purchasable
+    // 2.2 Validate Plan Tier Eligibility (Official Member vs Non-Member, and Annual Membership Fee rules)
+    $eligibility = validate_plan_tier_eligibility($plan, $member);
+    if (!$eligibility['allowed']) {
+        echo json_encode(['success' => false, 'message' => $eligibility['reason']]);
+        exit;
+    }
+
+    // 2.5 Enforce business rule: renewal is ONLY permitted when expired or expiring soon
     $is_membership_fee = (($plan['plan_category'] ?? '') === 'membership_fee');
 
-    // Fetch member's latest subscription
-    $cur_sub_stmt = $pdo->prepare("
-        SELECT s.id, s.expiry_date, 
-               p.name as current_plan_name, p.duration_minutes, p.duration_months, p.is_test_promo
-        FROM subscriptions s
-        LEFT JOIN membership_plans p ON s.plan_id = p.id
-        WHERE s.member_id = ?
-        ORDER BY s.id DESC
-        LIMIT 1
-    ");
-    $cur_sub_stmt->execute([$member_id]);
-    $active_sub = $cur_sub_stmt->fetch(PDO::FETCH_ASSOC);
-
-    // If member is marked expired or inactive, or latest subscription is expired, allow renewal!
-    $is_active_member = (strcasecmp($member['status'] ?? '', 'Active') === 0);
-    $sub_has_future_expiry = ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time());
-
-    if (!$is_membership_fee && $is_active_member && $sub_has_future_expiry) {
-        $expiry_ts = strtotime($active_sub['expiry_date']);
-        $diff_sec = $expiry_ts - time();
-        $is_minute_promo = (!empty($active_sub['duration_minutes']) && $active_sub['duration_minutes'] > 0)
-            || preg_match('/(\d+)\s*(?:min|minute)/i', $active_sub['current_plan_name'] ?? '');
-
-        // Threshold: 5 minutes (300s) for promos, 3 days (259,200s) for standard plans
-        $threshold_sec = $is_minute_promo ? 300 : (3 * 86400);
-
-        if ($diff_sec > $threshold_sec) {
-            $rem_text = '';
-            if ($is_minute_promo || $diff_sec < 86400) {
-                $rem_mins = ceil($diff_sec / 60);
-                $rem_text = "{$rem_mins} minuto(s)";
-            } else {
-                $rem_days = ceil($diff_sec / 86400);
-                $rem_text = "{$rem_days} araw";
+    if ($is_membership_fee) {
+        if (!empty($member['annual_membership_expiry']) && strtotime($member['annual_membership_expiry']) > time()) {
+            $diff_sec = strtotime($member['annual_membership_expiry']) - time();
+            $diff_days = ceil($diff_sec / 86400);
+            if ($diff_days > 30) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Ang iyong Annual Membership ay aktibo pa ({$diff_days} araw natitira). Maaari lamang itong i-renew kapag 30 araw o mas kaunti na lamang ang natitira bago mag-expire."
+                ]);
+                exit;
             }
-            $rule_text = $is_minute_promo ? '5 minuto bago mag-expire' : '3 araw bago mag-expire';
+        }
+    } else {
+        // Fetch member's latest GYM ACCESS subscription (exclude membership_fee)
+        $cur_sub_stmt = $pdo->prepare("
+            SELECT s.id, s.expiry_date, 
+                   p.name as current_plan_name, p.duration_minutes, p.duration_months, p.is_test_promo
+            FROM subscriptions s
+            LEFT JOIN membership_plans p ON s.plan_id = p.id
+            WHERE s.member_id = ? AND (p.plan_category IS NULL OR p.plan_category != 'membership_fee')
+            ORDER BY (s.expiry_date >= NOW()) DESC, s.expiry_date DESC, s.id DESC
+            LIMIT 1
+        ");
+        $cur_sub_stmt->execute([$member_id]);
+        $active_sub = $cur_sub_stmt->fetch(PDO::FETCH_ASSOC);
 
-            echo json_encode([
-                'success' => false,
-                'message' => "Hindi pa maaaring mag-renew! Aktibo pa ang iyong kasalukuyang plano ({$rem_text} natitira). Maaari lamang mag-renew kapag expired na o {$rule_text}."
-            ]);
-            exit;
+        $sub_has_future_expiry = ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time());
+
+        if ($sub_has_future_expiry) {
+            $expiry_ts = strtotime($active_sub['expiry_date']);
+            $diff_sec = $expiry_ts - time();
+            $is_minute_promo = (!empty($active_sub['duration_minutes']) && $active_sub['duration_minutes'] > 0)
+                || preg_match('/(\d+)\s*(?:min|minute)/i', $active_sub['current_plan_name'] ?? '');
+
+            // Threshold: 5 minutes (300s) for promos, 3 days (259,200s) for standard plans
+            $threshold_sec = $is_minute_promo ? 300 : (3 * 86400);
+
+            if ($diff_sec > $threshold_sec) {
+                $rem_text = '';
+                if ($is_minute_promo || $diff_sec < 86400) {
+                    $rem_mins = ceil($diff_sec / 60);
+                    $rem_text = "{$rem_mins} minuto(s)";
+                } else {
+                    $rem_days = ceil($diff_sec / 86400);
+                    $rem_text = "{$rem_days} araw";
+                }
+                $rule_text = $is_minute_promo ? '5 minuto bago mag-expire' : '3 araw bago mag-expire';
+
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Hindi pa maaaring mag-renew! Aktibo pa ang iyong kasalukuyang gym pass ({$rem_text} natitira). Maaari lamang mag-renew kapag expired na o {$rule_text}."
+                ]);
+                exit;
+            }
         }
     }
 

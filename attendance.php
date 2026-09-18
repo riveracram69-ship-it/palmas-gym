@@ -590,16 +590,35 @@ function processCheckin(membershipId, isManual = false) {
     .then(async r => {
         const isJson = r.headers.get('content-type')?.includes('application/json');
         const data = isJson ? await r.json().catch(() => null) : null;
+
         if (!r.ok) {
             if (r.status === 401) {
-                throw new Error('Staff session expired. Please refresh the page to log in.');
+                return {
+                    success: false,
+                    status_type: 'Session Expired',
+                    error_code: 'SESSION_EXPIRED',
+                    message: 'Staff session expired. Please refresh the page to log in again.'
+                };
             }
-            if (data && data.message) {
+            if (data && typeof data === 'object') {
                 return data;
             }
-            throw new Error(data?.message || 'Server communication error (HTTP ' + r.status + ')');
+            if (r.status >= 500) {
+                return {
+                    success: false,
+                    status_type: 'Server Error',
+                    error_code: 'ATTENDANCE_SERVER_ERROR',
+                    message: 'Attendance service is temporarily unavailable (HTTP ' + r.status + '). Please try again.'
+                };
+            }
+            return {
+                success: false,
+                status_type: 'Invalid',
+                error_code: 'HTTP_' + r.status,
+                message: 'Unable to process scan request (HTTP ' + r.status + ').'
+            };
         }
-        return data || { success: false, message: 'Invalid response from server.' };
+        return data || { success: false, status_type: 'Server Error', message: 'Invalid response received from attendance server.' };
     })
     .then(data => {
         if (data.success) {
@@ -722,17 +741,18 @@ function processCheckin(membershipId, isManual = false) {
             triggerVibration(false);
             flashReaderBorder(false);
 
-            const safeErrName = escapeHtml(data.member_name || 'Unverified ID');
-            const safeErrMsg = escapeHtml(data.message || 'Invalid scan.');
+            const safeErrName = escapeHtml(data.member_name || 'Unverified Scan');
+            const safeErrMsg = escapeHtml(data.message || 'Scan could not be processed.');
             const safeReqId = data.request_id ? escapeHtml(data.request_id) : '';
             const rawType = (data.status_type || '').toLowerCase();
+            const errCode = (data.error_code || '').toUpperCase();
             
             let mappedState = 'INVALID';
-            if (rawType.includes('expired')) {
+            if (rawType.includes('expired') || errCode.includes('EXPIRED')) {
                 mappedState = 'EXPIRED';
-            } else if (rawType.includes('pending') || rawType.includes('rejected') || rawType.includes('suspended')) {
+            } else if (rawType.includes('pending') || rawType.includes('rejected') || rawType.includes('suspended') || rawType.includes('blocked')) {
                 mappedState = 'BLOCKED';
-            } else if (rawType.includes('server') || rawType.includes('error')) {
+            } else if (rawType.includes('server') || rawType.includes('error') || errCode.includes('SERVER')) {
                 mappedState = 'SERVER_ERROR';
             }
             setScannerState(mappedState, safeErrMsg);
@@ -748,10 +768,10 @@ function processCheckin(membershipId, isManual = false) {
 
             let retryBtnHtml = '';
             if (mappedState === 'SERVER_ERROR') {
-                retryBtnHtml = `<button type="button" onclick="retryLastScan()" class="btn btn-sm" style="margin-top:8px;background:#c5221f;color:#fff;font-weight:700;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;"><i class="fas fa-rotate-right"></i> Retry Scan</button>`;
+                retryBtnHtml = `<button type="button" onclick="retryLastScan()" class="btn btn-sm" style="margin-top:8px;background:#c5221f;color:#fff;font-weight:700;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;"><i class="fas fa-rotate-right"></i> Try Again</button>`;
             }
 
-            let refHtml = safeReqId ? `<div style="font-size:0.75rem;color:#777;font-family:monospace;margin-top:4px;">Ref: ${safeReqId}</div>` : '';
+            let refHtml = safeReqId ? `<div style="font-size:0.75rem;color:#777;font-family:monospace;margin-top:4px;">Reference: ${safeReqId}</div>` : '';
 
             res.innerHTML = `
                 <div style="text-align:left;">
@@ -771,21 +791,21 @@ function processCheckin(membershipId, isManual = false) {
         playScanBeep(false);
         triggerVibration(false);
         flashReaderBorder(false);
-        setScannerState('NETWORK_ERROR', err.message || 'Unable to connect to attendance API');
+        setScannerState('NETWORK_ERROR', 'Network connection unavailable. Please check your internet or Wi-Fi.');
 
         res.style.background = '#fce8e6'; 
         res.style.color = '#c5221f'; 
         res.style.border = '1px solid rgba(217,48,37,0.2)';
-        const safeErrorDetail = escapeHtml(err.message || 'Network error or server unavailable. Please check system connection.');
+        const safeErrorDetail = escapeHtml(err.message || 'Unable to communicate with the server. Please verify network connectivity.');
         res.innerHTML = `
             <div style="text-align:left;">
                 <div style="font-size:0.8rem;font-weight:800;text-transform:uppercase;color:#c5221f;margin-bottom:4px;">
-                    <i class="fas fa-wifi"></i> NETWORK ERROR
+                    <i class="fas fa-wifi"></i> NETWORK CONNECTION ERROR
                 </div>
                 <div style="font-size:0.85rem;color:#c5221f;">${safeErrorDetail}</div>
                 <div style="margin-top:8px;">
                     <button type="button" onclick="retryLastScan()" class="btn btn-sm" style="background:#c5221f;color:#fff;font-weight:700;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">
-                        <i class="fas fa-rotate-right"></i> Retry Scan
+                        <i class="fas fa-rotate-right"></i> Try Again
                     </button>
                 </div>
             </div>

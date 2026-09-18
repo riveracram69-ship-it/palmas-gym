@@ -30,7 +30,7 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         }
 
         // 1. Fetch Member with Row Lock
-        $stmt = $pdo->prepare("SELECT id, full_name, email, membership_id, account_status, status FROM members WHERE id = ? FOR UPDATE");
+        $stmt = $pdo->prepare("SELECT id, full_name, email, membership_id, account_status, status, annual_membership_expiry FROM members WHERE id = ? FOR UPDATE");
         $stmt->execute([$member_id]);
         $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -80,6 +80,14 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         if ($plan_is_active === 0 || $plan_category === 'legacy') {
             if ($should_manage_tx) $pdo->rollBack();
             return ['success' => false, 'message' => 'This plan is no longer available. Please select a current plan.'];
+        }
+
+        // Enforce plan tier eligibility (Official Member vs Non-Member)
+        require_once __DIR__ . '/member_helpers.php';
+        $tier_check = validate_plan_tier_eligibility($plan, $member);
+        if (!$tier_check['allowed']) {
+            if ($should_manage_tx) $pdo->rollBack();
+            return ['success' => false, 'message' => $tier_check['reason']];
         }
 
         // [SECURITY] Always enforce server-side catalog price.
@@ -268,8 +276,9 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
 
         create_notification($pdo, $member_id, $notif_type, $notif_title, $notif_msg, 'Sent', (int)$subscription_id);
 
-        // 10. Automated Email Receipt
-        if (!empty($member['email'])) {
+        // 10. Automated Email Receipt (skip test/dummy email domains to avoid slow SMTP timeouts)
+        $is_dummy_email = preg_match('/@(example\.com|test\.local|test\.com)$/i', $member['email'] ?? '');
+        if (!empty($member['email']) && !$is_dummy_email) {
             $time_tag = date('M d, Y h:i A');
             $email_subject = $is_first_activation 
                 ? "Membership Successfully Activated! [{$time_tag}] — Palma's Elite Gym"

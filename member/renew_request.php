@@ -42,6 +42,58 @@ try {
         exit;
     }
 
+    // Validate plan tier eligibility (Official Member vs Non-Member, Annual Membership Fee)
+    require_once __DIR__ . '/../config/member_helpers.php';
+    $eligibility = validate_plan_tier_eligibility($plan, $member);
+    if (!$eligibility['allowed']) {
+        echo json_encode(['success' => false, 'message' => $eligibility['reason']]);
+        exit;
+    }
+
+    // Renewal window check: Gym Access Passes can only be renewed when expired or within 3 days (or 5 mins for promo)
+    $is_membership_fee = (($plan['plan_category'] ?? '') === 'membership_fee');
+    if ($is_membership_fee) {
+        if (!empty($member['annual_membership_expiry']) && strtotime($member['annual_membership_expiry']) > time()) {
+            $diff_sec = strtotime($member['annual_membership_expiry']) - time();
+            $diff_days = ceil($diff_sec / 86400);
+            if ($diff_days > 30) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Ang iyong Annual Membership ay aktibo pa ({$diff_days} araw natitira). Maaari lamang itong i-renew kapag 30 araw o mas kaunti na lamang ang natitira bago mag-expire."
+                ]);
+                exit;
+            }
+        }
+    } else {
+        $cur_sub_stmt = $pdo->prepare("
+            SELECT s.id, s.expiry_date, p.name as current_plan_name, p.duration_minutes, p.duration_months
+            FROM subscriptions s
+            LEFT JOIN membership_plans p ON s.plan_id = p.id
+            WHERE s.member_id = ? AND (p.plan_category IS NULL OR p.plan_category != 'membership_fee')
+            ORDER BY (s.expiry_date >= NOW()) DESC, s.expiry_date DESC, s.id DESC
+            LIMIT 1
+        ");
+        $cur_sub_stmt->execute([$member['id']]);
+        $active_sub = $cur_sub_stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time()) {
+            $expiry_ts = strtotime($active_sub['expiry_date']);
+            $diff_sec = $expiry_ts - time();
+            $is_minute = (!empty($active_sub['duration_minutes']) && $active_sub['duration_minutes'] > 0);
+            $threshold = $is_minute ? 300 : (3 * 86400);
+
+            if ($diff_sec > $threshold) {
+                $rem = ($is_minute || $diff_sec < 86400) ? ceil($diff_sec / 60) . ' minute(s)' : ceil($diff_sec / 86400) . ' day(s)';
+                $rule = $is_minute ? 'within 5 minutes of expiration' : 'within 3 days of expiration';
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Hindi pa maaaring mag-renew! Aktibo pa ang kasalukuyang gym pass ({$rem} natitira). Maaari lamang mag-renew kapag expired na o {$rule}."
+                ]);
+                exit;
+            }
+        }
+    }
+
     // Instant Auto-Activation for GCash and Maya: No staff approval needed!
     if (in_array($payment_method, ['GCash', 'Maya'])) {
         if (empty($reference_no)) {
@@ -53,6 +105,12 @@ try {
                 'success'   => true,
                 'is_active' => true,
                 'message'   => 'Renewal complete! Your ' . htmlspecialchars($plan['name']) . ' pass has been instantly activated via ' . $payment_method . '.'
+            ]);
+            exit;
+        } else {
+            echo json_encode([
+                'success' => false,
+                'message' => $actRes['message'] ?? 'Failed to activate subscription.'
             ]);
             exit;
         }

@@ -13,22 +13,51 @@ $is_staff = isset($_SESSION['user_id']);
 
 if (!$is_kiosk && !$is_staff) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized access.']);
+    echo json_encode(['success' => false, 'error_code' => 'UNAUTHORIZED', 'message' => 'Unauthorized access. Staff session required.']);
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $request_id = 'REQ-' . strtoupper(bin2hex(random_bytes(4)));
     try {
-        $raw_input = trim($_POST['membership_id'] ?? '');
+        // Defensive self-healing check: Ensure used_qr_tokens exists on all environments
+        try {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS `used_qr_tokens` (
+                  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+                  `token_sig` varchar(64) NOT NULL,
+                  `membership_id` varchar(50) NOT NULL,
+                  `member_id` int(11) NOT NULL,
+                  `time_slot` int(11) NOT NULL,
+                  `action` varchar(20) NOT NULL DEFAULT 'check-in',
+                  `used_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  PRIMARY KEY (`id`),
+                  UNIQUE KEY `idx_token_sig` (`token_sig`),
+                  KEY `idx_member_used` (`member_id`,`used_at`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+        } catch (\Throwable $tblErr) {
+            error_log("used_qr_tokens schema check warning: " . $tblErr->getMessage());
+        }
+
+        // Support both application/x-www-form-urlencoded and application/json bodies
+        $raw_body = @file_get_contents('php://input');
+        $json_input = !empty($raw_body) ? @json_decode($raw_body, true) : null;
+        if (!is_array($json_input)) $json_input = [];
+
+        $raw_input = trim($_POST['membership_id'] ?? $json_input['membership_id'] ?? '');
 
         if (empty($raw_input)) {
-            echo json_encode(['success' => false, 'request_id' => $request_id, 'message' => 'Please scan or provide a Member ID.']);
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error_code' => 'MISSING_MEMBER_ID', 'request_id' => $request_id, 'message' => 'Please scan or provide a Member ID.']);
             exit;
         }
 
-        $is_manual = isset($_POST['is_manual']) && ($_POST['is_manual'] === '1' || $_POST['is_manual'] === 'true');
-        $requested_mode = strtolower(trim($_POST['action_mode'] ?? $_POST['action'] ?? 'auto'));
+        $is_manual = isset($_POST['is_manual']) 
+            ? ($_POST['is_manual'] === '1' || $_POST['is_manual'] === 'true')
+            : (!empty($json_input['is_manual']) && ($json_input['is_manual'] === true || $json_input['is_manual'] === 1 || $json_input['is_manual'] === '1'));
+            
+        $requested_mode = strtolower(trim($_POST['action_mode'] ?? $_POST['action'] ?? $json_input['action_mode'] ?? $json_input['action'] ?? 'auto'));
         $membership_id = null;
         $token_sig = null;
         $token_slot = 0;
@@ -42,7 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $token_sig    = trim($parts[2]);
 
                 if (!preg_match('/^[A-Za-z0-9_-]{4,20}$/i', $token_mem_id)) {
-                    echo json_encode(['success' => false, 'request_id' => $request_id, 'message' => 'Malformed QR code: Invalid Member ID format.']);
+                    http_response_code(422);
+                    echo json_encode(['success' => false, 'error_code' => 'INVALID_QR_FORMAT', 'status_type' => 'Invalid QR', 'request_id' => $request_id, 'message' => 'Malformed QR code: Invalid Member ID format.']);
                     exit;
                 }
 
@@ -51,8 +81,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Time window: 15-second slots, max +-4 slots (~60 seconds drift allowance)
                 if ($slot_diff > 4) {
+                    http_response_code(422);
                     echo json_encode([
                         'success' => false, 
+                        'error_code' => 'EXPIRED_QR_TOKEN',
                         'status_type' => 'Expired QR',
                         'request_id' => $request_id,
                         'message' => 'QR Code has expired. Please present a freshly refreshed dynamic QR.'
@@ -60,14 +92,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit;
                 }
 
-                // Recalculate HMAC signature using server QR_SECRET_KEY
-                $secret_key = defined('QR_SECRET_KEY') ? QR_SECRET_KEY : '';
+                // Recalculate HMAC signature using server QR_SECRET_KEY with consistent fallback
+                $secret_key = (!empty(defined('QR_SECRET_KEY') ? QR_SECRET_KEY : '')) ? QR_SECRET_KEY : 'palmas_secret_key_987';
                 $full_sig   = hash_hmac('sha256', $token_mem_id . '|' . $token_slot, $secret_key);
                 $expected_sig = (strlen($token_sig) <= 16) ? substr($full_sig, 0, strlen($token_sig)) : $full_sig;
 
                 if (empty($token_sig) || !hash_equals($expected_sig, $token_sig)) {
+                    http_response_code(422);
                     echo json_encode([
                         'success' => false, 
+                        'error_code' => 'TAMPERED_QR_TOKEN',
                         'status_type' => 'Tampered QR',
                         'request_id' => $request_id,
                         'message' => 'Invalid or tampered QR signature. Access denied.'
@@ -90,7 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     if ($used_token) {
                         $secs_since_use = intval($used_token['secs_ago'] ?? 0);
-                        if ($secs_since_use < 5) {
+                        if ($secs_since_use < 3) {
+                            http_response_code(200);
                             echo json_encode([
                                 'success' => true,
                                 'is_cooldown' => true,
@@ -102,8 +137,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             exit;
                         }
 
+                        http_response_code(422);
                         echo json_encode([
                             'success' => false, 
+                            'error_code' => 'REPLAYED_QR_BLOCKED',
                             'status_type' => 'Replayed QR Blocked',
                             'request_id' => $request_id,
                             'message' => 'This dynamic QR code has already been used and cannot be replayed. Please present a fresh QR code from your mobile app.'
@@ -112,7 +149,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             } else {
-                echo json_encode(['success' => false, 'request_id' => $request_id, 'message' => 'Malformed QR code structure. Expected format: GYM-ID:slot:sig']);
+                http_response_code(422);
+                echo json_encode(['success' => false, 'error_code' => 'MALFORMED_QR_STRUCTURE', 'status_type' => 'Invalid QR', 'request_id' => $request_id, 'message' => 'Malformed QR code structure. Expected format: GYM-ID:slot:sig']);
                 exit;
             }
         } else {
@@ -123,8 +161,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $membership_id = strtoupper($cleaned);
             } else {
                 // Unattended kiosk or unauthenticated scanner requires dynamic rotating QR code
+                http_response_code(422);
                 echo json_encode([
                     'success' => false, 
+                    'error_code' => 'STATIC_QR_PROHIBITED',
                     'status_type' => 'Static QR Blocked',
                     'request_id' => $request_id,
                     'message' => 'Static QR code or screenshot is prohibited for security. Please present the rotating dynamic QR code from the Palma\'s Gym mobile app.'
@@ -133,30 +173,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // 1. Fetch Member & Active Subscription
+        // 1. Fetch Member & Active Gym Access Subscription (Decoupled from membership_fee)
         $stmt = $pdo->prepare("
             SELECT m.*, 
                    (SELECT s.expiry_date 
                     FROM subscriptions s 
-                    WHERE s.member_id = m.id 
+                    LEFT JOIN membership_plans p ON p.id = s.plan_id
+                    WHERE s.member_id = m.id AND (p.plan_category IS NULL OR p.plan_category != 'membership_fee')
                     ORDER BY (s.expiry_date >= NOW()) DESC, s.expiry_date DESC, s.id DESC 
                     LIMIT 1) as expiry_date,
                    (SELECT p.name 
                     FROM subscriptions s 
                     LEFT JOIN membership_plans p ON p.id = s.plan_id 
-                    WHERE s.member_id = m.id 
+                    WHERE s.member_id = m.id AND (p.plan_category IS NULL OR p.plan_category != 'membership_fee')
                     ORDER BY (s.expiry_date >= NOW()) DESC, s.expiry_date DESC, s.id DESC 
                     LIMIT 1) as plan_name,
                    (SELECT p.floor_access 
                     FROM subscriptions s 
                     LEFT JOIN membership_plans p ON p.id = s.plan_id 
-                    WHERE s.member_id = m.id 
+                    WHERE s.member_id = m.id AND (p.plan_category IS NULL OR p.plan_category != 'membership_fee')
                     ORDER BY (s.expiry_date >= NOW()) DESC, s.expiry_date DESC, s.id DESC 
                     LIMIT 1) as floor_access,
                    (SELECT p.plan_category 
                     FROM subscriptions s 
                     LEFT JOIN membership_plans p ON p.id = s.plan_id 
-                    WHERE s.member_id = m.id 
+                    WHERE s.member_id = m.id AND (p.plan_category IS NULL OR p.plan_category != 'membership_fee')
                     ORDER BY (s.expiry_date >= NOW()) DESC, s.expiry_date DESC, s.id DESC 
                     LIMIT 1) as plan_category
             FROM members m 
@@ -167,8 +208,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$member) {
+            http_response_code(404);
             echo json_encode([
                 'success' => false,
+                'error_code' => 'MEMBER_NOT_FOUND',
                 'status_type' => 'Invalid',
                 'request_id' => $request_id,
                 'message' => 'Member ID not found. Please verify registration.'
@@ -197,8 +240,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // 2. Validate Account Status
         if ($member['account_status'] === 'Pending') {
+            http_response_code(403);
             echo json_encode([
                 'success' => false,
+                'error_code' => 'ACCOUNT_PENDING_REVIEW',
                 'status_type' => 'Pending Review',
                 'member_name' => $full_name,
                 'membership_id' => $member['membership_id'],
@@ -213,8 +258,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($member['account_status'] === 'Rejected') {
+            http_response_code(403);
             echo json_encode([
                 'success' => false,
+                'error_code' => 'ACCOUNT_REJECTED',
                 'status_type' => 'Rejected',
                 'member_name' => $full_name,
                 'membership_id' => $member['membership_id'],
@@ -229,8 +276,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($member['account_status'] === 'Suspended' || $member['status'] === 'Suspended') {
+            http_response_code(403);
             echo json_encode([
                 'success' => false,
+                'error_code' => 'ACCOUNT_SUSPENDED',
                 'status_type' => 'Suspended',
                 'member_name' => $full_name,
                 'membership_id' => $member['membership_id'],
@@ -245,8 +294,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($member['account_status'] !== 'Approved') {
+            http_response_code(403);
             echo json_encode([
                 'success' => false,
+                'error_code' => 'ACCOUNT_INACTIVE',
                 'status_type' => 'Blocked',
                 'member_name' => $full_name,
                 'membership_id' => $member['membership_id'],
@@ -260,7 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // 3. Subscription & Plan Expiry Check
+        // 3. Subscription & Gym Pass Expiry Check (Decoupled from Annual Membership Fee)
         $now_time = time();
         $sub_exp_ts = (!empty($member['expiry_date'])) 
             ? ((strpos($member['expiry_date'], ':') !== false) ? strtotime($member['expiry_date']) : strtotime($member['expiry_date'] . ' 23:59:59'))
@@ -268,11 +319,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $is_expired = (empty($member['expiry_date']) || $sub_exp_ts < $now_time);
 
         if ($is_expired) {
-            $upd_mem = $pdo->prepare("UPDATE members SET status = 'Expired' WHERE id = ?");
-            $upd_mem->execute([$member['id']]);
+            if (!$is_official_member) {
+                $upd_mem = $pdo->prepare("UPDATE members SET status = 'Expired' WHERE id = ?");
+                $upd_mem->execute([$member['id']]);
+            }
 
+            $expiry_msg = $is_official_member
+                ? 'Official Member (No Active Gym Pass). Please purchase a daily or monthly gym pass to access the workout floor.'
+                : 'Gym Pass Expired (' . ($member['expiry_date'] ?? 'None') . '). Please purchase or renew your pass at the desk or online.';
+
+            http_response_code(403);
             echo json_encode([
                 'success' => false,
+                'error_code' => 'SUBSCRIPTION_EXPIRED',
                 'status_type' => 'Expired',
                 'member_name' => $full_name,
                 'membership_id' => $member['membership_id'],
@@ -284,7 +343,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'floor_label' => $floor_label,
                 'expiry_date' => $member['expiry_date'] ?? 'No Subscription',
                 'request_id' => $request_id,
-                'message' => 'Membership Expired (' . ($member['expiry_date'] ?? 'None') . '). Please renew at the desk.'
+                'message' => $expiry_msg
             ]);
             exit;
         }
@@ -298,8 +357,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $last_checkin_stmt = $pdo->prepare("
             SELECT id, time_in, time_out, 
-                   TIMESTAMPDIFF(SECOND, time_in, NOW()) as seconds_since_in,
-                   TIMESTAMPDIFF(SECOND, time_out, NOW()) as seconds_since_out
+                   TIMESTAMPDIFF(SECOND, CONCAT(date, ' ', time_in), NOW()) as seconds_since_in,
+                   TIMESTAMPDIFF(SECOND, CONCAT(date, ' ', IFNULL(time_out, time_in)), NOW()) as seconds_since_out
             FROM attendance 
             WHERE member_id = ? AND date = CURDATE()
             ORDER BY id DESC 
@@ -315,7 +374,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($requested_mode === 'check-in' && $is_inside) {
             $secs_in = intval($last_record['seconds_since_in'] ?? 0);
             $pdo->commit();
-            if ($secs_in < 5) {
+            if ($secs_in < 3) {
+                http_response_code(200);
                 echo json_encode([
                     'success' => true,
                     'is_cooldown' => true,
@@ -326,8 +386,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
                 exit;
             }
+            http_response_code(409);
             echo json_encode([
                 'success' => false,
+                'error_code' => 'ALREADY_CHECKED_IN',
                 'status_type' => 'Already Checked In',
                 'request_id' => $request_id,
                 'message' => 'Member is currently checked in. Please check out first before checking in again.'
@@ -337,8 +399,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($requested_mode === 'check-out' && !$is_inside) {
             $pdo->commit();
+            http_response_code(409);
             echo json_encode([
                 'success' => false,
+                'error_code' => 'NOT_CHECKED_IN',
                 'status_type' => 'Not Checked In',
                 'request_id' => $request_id,
                 'message' => 'Member has no active check-in today to check out from.'
@@ -350,8 +414,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($is_inside) {
             $secs_in = intval($last_record['seconds_since_in'] ?? 0);
             
-            // If scanned within 5 seconds of check-in, ignore rapid double-scan from camera
-            if ($secs_in < 5) {
+            // If auto-mode scanned within 3 seconds of check-in, treat as rapid camera double-scan
+            if ($secs_in < 3 && $requested_mode !== 'check-out') {
                 $pdo->commit();
                 $formatted_expiry = (!empty($member['expiry_date']) && strtotime($member['expiry_date']) !== false)
                     ? date('M d, Y', strtotime($member['expiry_date']))
@@ -360,6 +424,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ? date('h:i A', strtotime($last_record['time_in']))
                     : date('h:i A');
 
+                http_response_code(200);
                 echo json_encode([
                     'success' => true,
                     'is_cooldown' => true,
@@ -385,7 +450,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Otherwise, perform Check-out (UPDATE the existing row's time_out, NO new row)
-            $upd = $pdo->prepare("UPDATE attendance SET time_out = NOW() WHERE id = ?");
+            $upd = $pdo->prepare("UPDATE attendance SET time_out = CURTIME() WHERE id = ?");
             $upd->execute([$last_record['id']]);
 
             // Consume dynamic QR token to prevent replay/screenshot attacks
@@ -400,6 +465,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ? date('M d, Y', strtotime($member['expiry_date']))
                 : 'No Active Subscription';
 
+            http_response_code(200);
             echo json_encode([
                 'success' => true,
                 'action' => 'check-out',
@@ -436,6 +502,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ? date('h:i A', strtotime($last_record['time_out']))
                     : date('h:i A');
 
+                http_response_code(200);
                 echo json_encode([
                     'success' => true,
                     'is_cooldown' => true,
@@ -462,7 +529,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // 5. Log New Check-in
-        $ins = $pdo->prepare("INSERT INTO attendance (member_id, date, time_in) VALUES (?, CURDATE(), NOW())");
+        $ins = $pdo->prepare("INSERT INTO attendance (member_id, date, time_in) VALUES (?, CURDATE(), CURTIME())");
         $ins->execute([$member['id']]);
 
         // Consume dynamic QR token to prevent replay/screenshot attacks
@@ -477,6 +544,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ? date('M d, Y', strtotime($member['expiry_date']))
             : 'No Active Subscription';
 
+        http_response_code(200);
         echo json_encode([
             'success' => true,
             'action' => 'check-in',

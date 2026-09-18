@@ -14,6 +14,13 @@ if (ini_get("session.use_cookies")) {
         $params["secure"], $params["httponly"]
     );
 }
+if (file_exists(__DIR__ . '/member/auth.php')) {
+    require_once __DIR__ . '/member/auth.php';
+    if (function_exists('clear_member_remember_cookie')) {
+        clear_member_remember_cookie();
+    }
+}
+setcookie('peg_member_remember', '', time() - 3600, '/');
 session_destroy();
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);

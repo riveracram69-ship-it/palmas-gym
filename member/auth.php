@@ -25,12 +25,16 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-function get_csrf_token() {
-    return $_SESSION['csrf_token'] ?? '';
+if (!function_exists('get_csrf_token')) {
+    function get_csrf_token() {
+        return $_SESSION['csrf_token'] ?? '';
+    }
 }
 
-function verify_csrf_token($token) {
-    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+if (!function_exists('verify_csrf_token')) {
+    function verify_csrf_token($token) {
+        return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+    }
 }
 
 // Auto-validate all POST requests (excluding login.php)
@@ -156,6 +160,13 @@ function get_member_photo_url($photo) {
     return '../' . $clean;
 }
 
+// Prevent browser and proxy caching of authenticated member sessions
+if (!headers_sent()) {
+    header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+    header("Cache-Control: post-check=0, pre-check=0", false);
+    header("Pragma: no-cache");
+}
+
 function require_member_login() {
     global $pdo;
     if (empty($_SESSION['member_id']) && isset($pdo)) {
@@ -182,11 +193,14 @@ function current_member($pdo) {
                                       p.name as plan_name,
                                       p.duration_months,
                                       p.duration_minutes,
-                                      p.is_test_promo
+                                      p.is_test_promo,
+                                      p.plan_category,
+                                      p.floor_access
                                FROM members m 
                                 LEFT JOIN subscriptions s ON s.id = (
                                     SELECT s2.id FROM subscriptions s2 
-                                    WHERE s2.member_id = m.id 
+                                    LEFT JOIN membership_plans p2 ON p2.id = s2.plan_id
+                                    WHERE s2.member_id = m.id AND (p2.plan_category IS NULL OR p2.plan_category != 'membership_fee')
                                     ORDER BY (s2.expiry_date >= NOW()) DESC, s2.expiry_date DESC, s2.id DESC LIMIT 1
                                 )
                                LEFT JOIN membership_plans p ON p.id = s.plan_id
@@ -195,12 +209,27 @@ function current_member($pdo) {
         $member = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($member) {
             $member['photo'] = $member['photo'] ?: ($member['google_picture'] ?? null);
+            
+            // Gym Access Expiry
             $exp_ts = (!empty($member['expiry_date'])) 
                 ? ((strpos($member['expiry_date'], ':') !== false) ? strtotime($member['expiry_date']) : strtotime($member['expiry_date'] . ' 23:59:59'))
                 : 0;
-            $is_expired = (!$exp_ts || $exp_ts < time());
-            $member['is_expired'] = $is_expired;
-            $member['is_active']  = ($member['status'] === 'Active' && !$is_expired && ($member['account_status'] ?? 'Approved') === 'Approved');
+            $has_gym_access = ($exp_ts > 0 && $exp_ts >= time());
+            $is_expired     = (!$has_gym_access);
+            
+            $member['is_expired']           = $is_expired;
+            $member['has_active_gym_pass']  = $has_gym_access;
+
+            // Official Member Tier (Annual Membership)
+            $ann_exp = $member['annual_membership_expiry'] ?? null;
+            $is_official = is_official_member($ann_exp);
+            $member['is_official_member']                  = $is_official;
+            $member['membership_tier']                     = $is_official ? 'Official Member' : 'Non-Member';
+            $member['annual_membership_expiry_formatted'] = (!empty($ann_exp) && $ann_exp !== '0000-00-00') ? date('M d, Y', strtotime($ann_exp)) : null;
+
+            // Account is active if approved and either has valid gym access or official membership
+            $is_approved = (($member['account_status'] ?? 'Approved') === 'Approved' && ($member['status'] ?? '') !== 'Suspended');
+            $member['is_active'] = ($is_approved && ($has_gym_access || $is_official));
         }
         return $member;
     } catch (Exception $e) {

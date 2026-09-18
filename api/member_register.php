@@ -175,11 +175,18 @@ if (!$dup_check['valid']) {
 }
 
 // Validate selected plan
-$p_fetch = $pdo->prepare("SELECT id, name, price FROM membership_plans WHERE id = ? AND (is_active = 1 OR is_active IS NULL)");
+$p_fetch = $pdo->prepare("SELECT id, name, price, plan_category, is_active FROM membership_plans WHERE id = ? AND is_active = 1");
 $p_fetch->execute([$plan_id]);
 $p_row = $p_fetch->fetch(PDO::FETCH_ASSOC);
 if (!$p_row) {
     echo json_encode(['success' => false, 'message' => 'Selected membership plan is invalid or no longer active.']);
+    exit;
+}
+if (($p_row['plan_category'] ?? '') === 'member_pass') {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Ang discounted member rates ay para lamang sa mga Official Members. Paki-pili ang Annual Membership Fee (₱1,000) o pumili ng Non-Member pass.'
+    ]);
     exit;
 }
 $plan_name  = $p_row['name'];

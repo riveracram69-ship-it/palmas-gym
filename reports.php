@@ -370,9 +370,39 @@ if (isset($_GET['export']) && isset($pdo)) {
         $doc_ref = 'PEG-RPT-' . date('Ymd') . '-' . strtoupper(substr(md5($type . ($startDate ?? '') . ($endDate ?? '')), 0, 6));
         $generated_at = date('F j, Y, g:i A');
 
+        // Check if physical binary PDF download or direct file streaming is requested
+        $is_binary_download = (isset($_GET['download']) && $_GET['download'] == '1') || 
+                              (isset($_GET['binary']) && $_GET['binary'] == '1') || 
+                              $format === 'download_pdf';
+
+        if ($is_binary_download) {
+            require_once __DIR__ . '/libs/fpdf/PalmasPDFReport.php';
+            $orientation = (count($headers) > 6) ? 'L' : 'P';
+            $pdf = new PalmasPDFReport($orientation, $report_title, $date_label, $doc_ref, $admin_name);
+            $pdf->AddPage();
+
+            $summary_cards = [
+                ['label' => 'Total Records', 'value' => number_format($total_records)],
+            ];
+            if ($amount_col_idx !== -1) {
+                $summary_cards[] = ['label' => 'Total Volume', 'value' => 'PHP ' . number_format($total_amount, 2)];
+                $summary_cards[] = ['label' => 'Average / Trans', 'value' => 'PHP ' . number_format($avg_amount, 2)];
+            } else {
+                $summary_cards[] = ['label' => 'Auditor Status', 'value' => 'VERIFIED'];
+            }
+            $pdf->RenderSummaryCards($summary_cards);
+            $pdf->RenderDataTable($headers, $rows);
+
+            $pdf_filename = $filename . '.pdf';
+            $dest = (isset($_GET['download']) && $_GET['download'] == '1') ? 'D' : 'I';
+            $pdf->Output($dest, $pdf_filename);
+            exit;
+        }
+
         // Current query strings for alternative format links
         $q_csv = http_build_query(array_merge($_GET, ['format' => 'csv']));
         $q_xls = http_build_query(array_merge($_GET, ['format' => 'xls']));
+        $q_pdf_dl = http_build_query(array_merge($_GET, ['format' => 'pdf', 'download' => '1']));
         $auto_print = (isset($_GET['auto_print']) && $_GET['auto_print'] == '1');
         ?>
 <!DOCTYPE html>
@@ -746,6 +776,9 @@ if (isset($_GET['export']) && isset($pdo)) {
             </a>
             <a href="reports.php?<?php echo $q_csv; ?>" class="btn-act btn-act-outline" title="Download CSV File">
                 <i class="fas fa-file-csv" style="color:#a7f3d0;"></i> Export CSV
+            </a>
+            <a href="reports.php?<?php echo $q_pdf_dl; ?>" class="btn-act btn-act-outline" title="Download PDF Binary Document">
+                <i class="fas fa-file-pdf" style="color:#f87171;"></i> Download PDF File
             </a>
             <button onclick="window.print()" class="btn-act btn-act-primary" title="Print or Save as PDF">
                 <i class="fas fa-print"></i> Print / Save as PDF

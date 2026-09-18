@@ -99,44 +99,141 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $upd->execute([$admin_id, $member_id]);
                 }
 
-                // 2. Create Active Subscription if plan exists
+                // 2. Manage Subscription & Payment (Strict Idempotency & Payment Method Immutability)
                 if ($plan_id > 0) {
-                    $sub_stmt = $pdo->prepare("
-                        INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_by)
-                        VALUES (?, ?, ?, ?, ?)
+                    // 2a. Check if active subscription already exists for this member on this plan
+                    $existing_sub_stmt = $pdo->prepare("
+                        SELECT id, plan_id, start_date, expiry_date 
+                        FROM subscriptions 
+                        WHERE member_id = ? AND plan_id = ? 
+                        ORDER BY id DESC LIMIT 1
                     ");
-                    $sub_stmt->execute([$member_id, $plan_id, $start_date, $expiry_date, $admin_id]);
-                    $subscription_id = $pdo->lastInsertId();
+                    $existing_sub_stmt->execute([$member_id, $plan_id]);
+                    $existing_sub = $existing_sub_stmt->fetch(PDO::FETCH_ASSOC);
 
-                    // 2b. Record Payment in payments table so it appears in Payment History
-                    $plan_price = floatval($plan_info['price'] ?? 0);
-                    if ($plan_price <= 0) {
-                        $p_fetch = $pdo->prepare("SELECT price FROM membership_plans WHERE id = ?");
-                        $p_fetch->execute([$plan_id]);
-                        $plan_price = floatval($p_fetch->fetchColumn() ?: 0);
+                    if ($existing_sub) {
+                        $subscription_id = (int)$existing_sub['id'];
+                        $pdo->prepare("UPDATE subscriptions SET created_by = COALESCE(created_by, ?) WHERE id = ?")
+                            ->execute([$admin_id, $subscription_id]);
+                    } else {
+                        $sub_stmt = $pdo->prepare("
+                            INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_by)
+                            VALUES (?, ?, ?, ?, ?)
+                        ");
+                        $sub_stmt->execute([$member_id, $plan_id, $start_date, $expiry_date, $admin_id]);
+                        $subscription_id = (int)$pdo->lastInsertId();
                     }
 
-                    $rr = $pdo->prepare("SELECT payment_method, reference_no FROM renewal_requests WHERE member_id = ? ORDER BY id DESC LIMIT 1");
-                    $rr->execute([$member_id]);
-                    $rr_row = $rr->fetch(PDO::FETCH_ASSOC);
-                    $pay_method = $rr_row['payment_method'] ?? 'Cash';
-                    $pay_ref = !empty($rr_row['reference_no']) ? $rr_row['reference_no'] : ('REG-' . $pending_member['membership_id']);
-                    $pay_notes = $is_membership_fee ? 'Annual Membership Fee Approved by Staff' : 'Registration Fee Approved by Staff';
-
-                    $pay_stmt = $pdo->prepare("
-                        INSERT INTO payments (member_id, subscription_id, amount, payment_method, reference_number, payment_date, verified_by, notes, is_test, created_at)
-                        VALUES (?, ?, ?, ?, ?, CURDATE(), ?, ?, ?, NOW())
+                    // 2b. Check if payment record ALREADY exists in payments table (e.g. paid online via GCash/Maya)
+                    $existing_pay_stmt = $pdo->prepare("
+                        SELECT id, subscription_id, amount, payment_method, reference_number 
+                        FROM payments 
+                        WHERE member_id = ? 
+                        ORDER BY id DESC LIMIT 1
                     ");
-                    $pay_stmt->execute([
-                        $member_id,
-                        $subscription_id,
-                        $plan_price,
-                        $pay_method,
-                        $pay_ref,
-                        $admin_id,
-                        $pay_notes,
-                        $is_test_payment
-                    ]);
+                    $existing_pay_stmt->execute([$member_id]);
+                    $existing_pay = $existing_pay_stmt->fetch(PDO::FETCH_ASSOC);
+
+                    if ($existing_pay) {
+                        // IMMUTABILITY: An authentic payment record already exists.
+                        // DO NOT create a duplicate financial record. Keep payment_method, amount, and reference immutable.
+                        $pdo->prepare("
+                            UPDATE payments 
+                            SET verified_by = COALESCE(verified_by, ?), 
+                                subscription_id = COALESCE(subscription_id, ?) 
+                            WHERE id = ?
+                        ")->execute([$admin_id, $subscription_id, $existing_pay['id']]);
+
+                        // Ensure payment_transactions is synced to PAID and linked to subscription
+                        $pdo->prepare("
+                            UPDATE payment_transactions 
+                            SET status = 'PAID', subscription_id = COALESCE(subscription_id, ?), paid_at = COALESCE(paid_at, NOW()) 
+                            WHERE member_id = ? AND (status = 'PENDING' OR subscription_id IS NULL)
+                        ")->execute([$subscription_id, $member_id]);
+
+                    } else {
+                        // No prior payment record in payments table. Determine TRUE intended payment method and reference code.
+                        $tx_stmt = $pdo->prepare("
+                            SELECT id, reference_code, payment_method, amount, status, is_test 
+                            FROM payment_transactions 
+                            WHERE member_id = ? 
+                            ORDER BY id DESC LIMIT 1
+                        ");
+                        $tx_stmt->execute([$member_id]);
+                        $tx_row = $tx_stmt->fetch(PDO::FETCH_ASSOC);
+
+                        $rr = $pdo->prepare("
+                            SELECT payment_method, reference_no 
+                            FROM renewal_requests 
+                            WHERE member_id = ? 
+                            ORDER BY id DESC LIMIT 1
+                        ");
+                        $rr->execute([$member_id]);
+                        $rr_row = $rr->fetch(PDO::FETCH_ASSOC);
+
+                        $pay_method = 'Cash';
+                        $pay_ref    = 'REG-' . $pending_member['membership_id'];
+                        $is_test_tx = $is_test_payment;
+
+                        if ($tx_row) {
+                            // Online transaction exists (GCash, Maya, etc.)
+                            $tx_m = strtoupper(trim($tx_row['payment_method'] ?? ''));
+                            if (strpos($tx_m, 'GCASH') !== false) {
+                                $pay_method = 'GCash';
+                            } elseif (strpos($tx_m, 'MAYA') !== false) {
+                                $pay_method = 'Maya';
+                            } elseif (strpos($tx_m, 'CASH') !== false) {
+                                $pay_method = 'Cash';
+                            } elseif (strpos($tx_m, 'BANK') !== false) {
+                                $pay_method = 'Bank Transfer';
+                            } elseif (strpos($tx_m, 'CARD') !== false || strpos($tx_m, 'CREDIT') !== false) {
+                                $pay_method = 'Credit Card';
+                            } else {
+                                $pay_method = 'GCash';
+                            }
+                            $pay_ref    = !empty($tx_row['reference_code']) ? $tx_row['reference_code'] : $pay_ref;
+                            $is_test_tx = !empty($tx_row['is_test']) ? 1 : $is_test_payment;
+
+                            // Mark payment_transactions as PAID and link subscription
+                            $pdo->prepare("
+                                UPDATE payment_transactions 
+                                SET status = 'PAID', paid_at = COALESCE(paid_at, NOW()), subscription_id = ? 
+                                WHERE id = ?
+                            ")->execute([$subscription_id, $tx_row['id']]);
+
+                        } elseif ($rr_row && !empty($rr_row['payment_method'])) {
+                            $rr_m = trim($rr_row['payment_method']);
+                            $pay_method = (strcasecmp($rr_m, 'gcash') === 0) ? 'GCash' : ((strcasecmp($rr_m, 'maya') === 0) ? 'Maya' : $rr_m);
+                            $pay_ref    = !empty($rr_row['reference_no']) ? $rr_row['reference_no'] : $pay_ref;
+                        }
+
+                        // Always enforce authoritative catalog price from membership_plans
+                        $plan_price = floatval($plan_info['price'] ?? 0);
+                        if ($plan_price <= 0) {
+                            $p_fetch = $pdo->prepare("SELECT price FROM membership_plans WHERE id = ?");
+                            $p_fetch->execute([$plan_id]);
+                            $plan_price = floatval($p_fetch->fetchColumn() ?: 0);
+                        }
+
+                        $pay_notes = $is_membership_fee 
+                            ? ("Annual Membership Fee Approved by Staff (" . ($pay_method === 'Cash' ? 'Front Desk Cash' : $pay_method) . ")")
+                            : ("Registration Fee Approved by Staff (" . ($pay_method === 'Cash' ? 'Front Desk Cash' : $pay_method) . ")");
+
+                        $pay_stmt = $pdo->prepare("
+                            INSERT INTO payments (member_id, subscription_id, amount, payment_method, reference_number, payment_date, verified_by, notes, is_test, created_at)
+                            VALUES (?, ?, ?, ?, ?, CURDATE(), ?, ?, ?, NOW())
+                        ");
+                        $pay_stmt->execute([
+                            $member_id,
+                            $subscription_id,
+                            $plan_price,
+                            $pay_method,
+                            $pay_ref,
+                            $admin_id,
+                            $pay_notes,
+                            $is_test_tx
+                        ]);
+                    }
 
                     // Close any open renewal/registration request
                     $pdo->prepare("UPDATE renewal_requests SET status = 'Approved', processed_by = ?, notes = 'Approved along with registration', updated_at = NOW() WHERE member_id = ? AND status = 'Pending'")
@@ -222,7 +319,32 @@ $history_list = [];
 try {
     if (isset($pdo) && $pdo) {
         $stmt = $pdo->query("
-            SELECT m.*, p.name as plan_name, p.price as plan_price, p.duration_months
+            SELECT m.*, p.name as plan_name, p.price as plan_price, p.duration_months,
+                   COALESCE(
+                       (SELECT py.payment_method FROM payments py WHERE py.member_id = m.id ORDER BY py.id DESC LIMIT 1),
+                       (SELECT CASE 
+                           WHEN UPPER(pt.payment_method) LIKE '%GCASH%' THEN 'GCash'
+                           WHEN UPPER(pt.payment_method) LIKE '%MAYA%' THEN 'Maya'
+                           WHEN UPPER(pt.payment_method) LIKE '%CASH%' THEN 'Cash'
+                           WHEN UPPER(pt.payment_method) LIKE '%BANK%' THEN 'Bank Transfer'
+                           WHEN UPPER(pt.payment_method) LIKE '%CARD%' THEN 'Credit Card'
+                           ELSE pt.payment_method END 
+                        FROM payment_transactions pt WHERE pt.member_id = m.id ORDER BY pt.id DESC LIMIT 1),
+                       (SELECT rr.payment_method FROM renewal_requests rr WHERE rr.member_id = m.id ORDER BY rr.id DESC LIMIT 1),
+                       'Cash'
+                   ) as display_payment_method,
+                   COALESCE(
+                       (SELECT py.reference_number FROM payments py WHERE py.member_id = m.id ORDER BY py.id DESC LIMIT 1),
+                       (SELECT pt.reference_code FROM payment_transactions pt WHERE pt.member_id = m.id ORDER BY pt.id DESC LIMIT 1),
+                       (SELECT rr.reference_no FROM renewal_requests rr WHERE rr.member_id = m.id ORDER BY rr.id DESC LIMIT 1),
+                       CONCAT('REG-', m.membership_id)
+                   ) as display_ref_no,
+                   COALESCE(
+                       (SELECT 'PAID' FROM payments py WHERE py.member_id = m.id ORDER BY py.id DESC LIMIT 1),
+                       (SELECT pt.status FROM payment_transactions pt WHERE pt.member_id = m.id ORDER BY pt.id DESC LIMIT 1),
+                       (SELECT rr.status FROM renewal_requests rr WHERE rr.member_id = m.id ORDER BY rr.id DESC LIMIT 1),
+                       'PENDING'
+                   ) as display_payment_status
             FROM members m
             LEFT JOIN membership_plans p ON p.id = m.selected_plan_id
             WHERE m.account_status = 'Pending'
@@ -283,6 +405,7 @@ try {
                     <th>Reference ID</th>
                     <th>Contact & Gender</th>
                     <th>Requested Plan</th>
+                    <th>Payment Details</th>
                     <th>Registered At</th>
                     <th style="text-align:right;">Actions</th>
                 </tr>
@@ -290,7 +413,7 @@ try {
             <tbody>
                 <?php if (empty($pending_list)): ?>
                 <tr>
-                    <td colspan="6">
+                    <td colspan="7">
                         <div class="empty-state" style="padding:3.5rem 0; text-align:center;">
                             <i class="fas fa-clipboard-check" style="font-size:2.5rem; opacity:0.15; margin-bottom:1rem; display:block; color:var(--success);"></i>
                             <p style="font-weight:600; color:var(--text-main); font-size:1.1rem; margin:0 0 4px 0;">All caught up!</p>
@@ -354,6 +477,36 @@ try {
                         <?php else: ?>
                             <span style="color:var(--text-muted);font-size:0.8rem;">Standard (Default)</span>
                         <?php endif; ?>
+                    </td>
+                    <td>
+                        <?php 
+                            $d_method = $pm['display_payment_method'] ?? 'Cash';
+                            $d_status = strtoupper($pm['display_payment_status'] ?? 'PENDING');
+                            $d_ref    = $pm['display_ref_no'] ?? '';
+                        ?>
+                        <?php if ($d_method === 'GCash'): ?>
+                            <span class="badge" style="background:rgba(59,130,246,0.12);color:#2563eb;border:1px solid rgba(59,130,246,0.25);">
+                                <i class="fas fa-mobile-screen"></i> GCash
+                            </span>
+                        <?php elseif ($d_method === 'Maya'): ?>
+                            <span class="badge" style="background:rgba(16,185,129,0.12);color:#059669;border:1px solid rgba(16,185,129,0.25);">
+                                <i class="fas fa-wallet"></i> Maya
+                            </span>
+                        <?php else: ?>
+                            <span class="badge" style="background:rgba(82,183,136,0.12);color:var(--brand-primary);border:1px solid rgba(82,183,136,0.25);">
+                                <i class="fas fa-hand-holding-dollar"></i> Cash
+                            </span>
+                        <?php endif; ?>
+                        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:3px;">
+                            <?php if ($d_status === 'PAID'): ?>
+                                <span style="color:#10B981;font-weight:700;"><i class="fas fa-check-circle"></i> Paid Online</span>
+                            <?php else: ?>
+                                <span style="color:#d97706;font-weight:600;"><i class="fas fa-clock"></i> Pending Payment</span>
+                            <?php endif; ?>
+                            <?php if (!empty($d_ref)): ?>
+                                <div style="font-size:0.68rem;opacity:0.8;margin-top:1px;"><code style="color:inherit;background:none;padding:0;"><?php echo htmlspecialchars($d_ref); ?></code></div>
+                            <?php endif; ?>
+                        </div>
                     </td>
                     <td>
                         <div style="font-size:0.85rem;color:var(--text-main);"><?php echo date('M d, Y', strtotime($pm['created_at'])); ?></div>

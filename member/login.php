@@ -19,6 +19,15 @@ if (isset($_SESSION['member_id'])) {
 }
 
 $error = '';
+$success_msg = '';
+$prefill_mid = '';
+
+if (isset($_GET['payment_success'])) {
+    $success_msg = "Payment received and account activated! Please sign in with your credentials to access your Digital Pass.";
+}
+if (!empty($_GET['mid'])) {
+    $prefill_mid = trim($_GET['mid']);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
@@ -259,6 +268,8 @@ img{max-width:100%;display:block}
 .alert i{margin-top:2px;flex-shrink:0}
 .alert-err{background:var(--c-err-p);border:1px solid var(--c-err-b);color:#7F1D1D}
 .alert-err i{color:var(--c-err)}
+.alert-success{background:#DCFCE7;border:1px solid #86EFAC;color:#14532D}
+.alert-success i{color:#16A34A}
 
 /* ── Modern Floating Toast Notifications ── */
 .toast-container {
@@ -543,6 +554,13 @@ img{max-width:100%;display:block}
   <!-- CARD -->
   <main class="card" id="main-content">
 
+    <?php if ($success_msg): ?>
+    <div id="payment-success-box" class="alert alert-success" role="alert" aria-live="polite">
+      <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+      <div><strong>Payment Received!</strong> <?php echo htmlspecialchars($success_msg); ?></div>
+    </div>
+    <?php endif; ?>
+
     <div id="member-alert-box" class="alert alert-err" style="<?php echo $error ? '' : 'display:none;'; ?>" role="alert" aria-live="assertive">
       <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
       <div id="member-alert-text"><?php echo htmlspecialchars($error); ?></div>
@@ -558,7 +576,7 @@ img{max-width:100%;display:block}
           <i class="fa-solid fa-id-badge ii" aria-hidden="true"></i>
           <input type="text" name="membership_id" id="membership_id" class="if"
             placeholder="e.g. GYM-9537F6 or your email"
-            value="<?php echo !isset($_GET['logged_out']) ? htmlspecialchars($_POST['membership_id'] ?? '') : ''; ?>"
+            value="<?php echo !isset($_GET['logged_out']) ? htmlspecialchars($_POST['membership_id'] ?? $prefill_mid) : ''; ?>"
             required autocomplete="off" autofocus aria-required="true">
         </div>
       </div>

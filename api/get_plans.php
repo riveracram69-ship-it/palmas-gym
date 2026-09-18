@@ -43,6 +43,18 @@ try {
     $stmt = $pdo->query($sql);
     $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
     
+    // Index non-member plans for pairing
+    $nm_monthly_id = null;
+    $nm_2nd_id     = null;
+    $nm_both_id    = null;
+    foreach ($rows as $r) {
+        if (($r['plan_category'] ?? '') === 'non_member_pass') {
+            if ((int)$r['duration_months'] === 1) $nm_monthly_id = (int)$r['id'];
+            elseif (stripos($r['name'], '2nd Floor Only') !== false) $nm_2nd_id = (int)$r['id'];
+            elseif (stripos($r['name'], 'Ground') !== false) $nm_both_id = (int)$r['id'];
+        }
+    }
+
     $plans = [];
     foreach ($rows as $r) {
         $dur_min = (int)($r['duration_minutes'] ?? 0);
@@ -57,20 +69,55 @@ try {
             $duration_label = $dur_mo . ' Month' . ($dur_mo > 1 ? 's' : '');
         }
 
+        $is_member_discount = (($r['plan_category'] ?? '') === 'member_pass');
+        $regular_price = (float)$r['price'];
+        $savings_amount = 0.0;
+        $savings_label = '';
+        $paired_non_member_id = null;
+
+        if ($is_member_discount) {
+            if (stripos($r['name'], 'Monthly') !== false) {
+                $regular_price = 850.00;
+                $savings_amount = 100.00;
+                $savings_label = 'Save ₱100/mo';
+                $paired_non_member_id = $nm_monthly_id;
+            } elseif (stripos($r['name'], 'Yearly') !== false) {
+                $regular_price = 9000.00;
+                $savings_amount = 1500.00;
+                $savings_label = 'Save ₱1,500/yr';
+            } elseif (stripos($r['name'], '2nd Floor Only') !== false) {
+                $regular_price = 50.00;
+                $savings_amount = 10.00;
+                $savings_label = 'Save ₱10';
+                $paired_non_member_id = $nm_2nd_id;
+            } elseif (stripos($r['name'], 'Ground') !== false) {
+                $regular_price = 60.00;
+                $savings_amount = 10.00;
+                $savings_label = 'Save ₱10';
+                $paired_non_member_id = $nm_both_id;
+            }
+        }
+
         $plans[] = [
-            'id'               => (int)$r['id'],
-            'name'             => $r['name'],
-            'price'            => (float)$r['price'],
-            'price_formatted'  => '₱' . number_format((float)$r['price'], 2),
-            'duration_months'  => $dur_mo,
-            'duration_minutes' => $dur_min,
-            'duration_label'   => $duration_label,
-            'benefits'         => $r['benefits'] ?? '',
-            'is_test_promo'    => ((int)($r['is_test_promo'] ?? 0) === 1),
-            'promo_code'       => $r['promo_code'] ?? null,
+            'id'                   => (int)$r['id'],
+            'name'                 => $r['name'],
+            'price'                => (float)$r['price'],
+            'price_formatted'      => '₱' . number_format((float)$r['price'], 2),
+            'duration_months'      => $dur_mo,
+            'duration_minutes'     => $dur_min,
+            'duration_label'       => $duration_label,
+            'benefits'             => $r['benefits'] ?? '',
+            'is_test_promo'        => ((int)($r['is_test_promo'] ?? 0) === 1),
+            'promo_code'           => $r['promo_code'] ?? null,
             // New fields (additive — backward compatible)
-            'plan_category'    => $r['plan_category'] ?? 'member_pass',
-            'floor_access'     => $r['floor_access'] ?? 'all',
+            'plan_category'        => $r['plan_category'] ?? 'member_pass',
+            'floor_access'         => $r['floor_access'] ?? 'all',
+            'is_member_discount'   => $is_member_discount,
+            'regular_price'        => $regular_price,
+            'savings_amount'       => $savings_amount,
+            'savings_label'        => $savings_label,
+            'requires_annual_fee'  => $is_member_discount,
+            'paired_non_member_id' => $paired_non_member_id,
         ];
     }
 
