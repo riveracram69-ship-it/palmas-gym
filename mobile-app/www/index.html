@@ -713,7 +713,7 @@
       width: 0%;
       background: linear-gradient(90deg, #3E8241, #52B788, #8FCFBC);
       border-radius: 6px;
-      animation: palmasProgress 1.1s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
+      animation: palmasProgress 2.2s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
     }
 
     @keyframes palmasEmblemEnter {
@@ -8760,7 +8760,7 @@ function initializeApp() {
   if (window._appInitialized) return;
   window._appInitialized = true;
 
-  const SPLASH_MIN_TIME = 1300; // 1.3s polished brand splash
+  const SPLASH_MIN_TIME = 2600; // 2.6s polished brand opening animation
   const initStartTime = Date.now();
 
   function dismissSplash(targetScreen, onComplete) {
@@ -8770,14 +8770,14 @@ function initializeApp() {
     setTimeout(() => {
       const splash = document.getElementById('view-splash');
       if (splash) {
-        splash.style.transition = 'opacity 0.35s ease-out, transform 0.35s ease-out';
+        splash.style.transition = 'opacity 0.4s ease-out, transform 0.4s ease-out';
         splash.style.opacity = '0';
         splash.style.transform = 'scale(1.02)';
         setTimeout(() => {
           splash.style.display = 'none';
           showScreen(targetScreen);
           if (typeof onComplete === 'function') onComplete();
-        }, 350);
+        }, 400);
       } else {
         showScreen(targetScreen);
         if (typeof onComplete === 'function') onComplete();
@@ -8813,7 +8813,7 @@ function initializeApp() {
       splash.style.display = 'none';
       showScreen('view-login');
     }
-  }, 2200);
+  }, 4000);
 
   // Initialize Google Sign-In SDK
   if (GOOGLE_CLIENT_ID && typeof google !== 'undefined') {
