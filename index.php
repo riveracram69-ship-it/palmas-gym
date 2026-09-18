@@ -64,14 +64,27 @@ try {
             $expiring_this_week_cnt = (int)$pdo->query("SELECT COUNT(DISTINCT member_id) FROM subscriptions WHERE expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)")->fetchColumn();
         }
 
-        // ── 2. Today's Attendance Logs (Latest 8) ──────────────────────────────
+        // ── 2. Today's Attendance Logs ─────────────────────────────────────────
         $stmt_att = $pdo->query("
-            SELECT a.id, a.time_in, a.time_out, m.id as member_id, m.full_name, m.membership_id, m.photo
+            SELECT a.id, a.date, a.time_in, a.time_out, m.id AS member_id, m.full_name, m.membership_id, m.photo,
+                   m.annual_membership_expiry,
+                   COALESCE(sub.plan_name, 'No Plan') AS plan_name,
+                   COALESCE(sub.floor_access, 'all') AS floor_access,
+                   sub.plan_category
             FROM attendance a
             JOIN members m ON m.id = a.member_id
+            LEFT JOIN (
+                SELECT s.member_id, p.name AS plan_name, p.floor_access, p.plan_category
+                FROM subscriptions s
+                JOIN (
+                    SELECT member_id, MAX(id) AS latest_sub_id
+                    FROM subscriptions
+                    GROUP BY member_id
+                ) latest ON s.id = latest.latest_sub_id
+                LEFT JOIN membership_plans p ON p.id = s.plan_id
+            ) sub ON sub.member_id = m.id
             WHERE a.date = CURDATE()
-            ORDER BY a.id DESC
-            LIMIT 8
+            ORDER BY a.time_in DESC
         ");
         $today_attendance_list = $stmt_att ? $stmt_att->fetchAll(PDO::FETCH_ASSOC) : [];
 
@@ -220,14 +233,14 @@ try {
             </div>
             <div class="kpi-number-wrap">
                 <h2 class="kpi-number" style="color:<?php echo $live_occ_color; ?>;">
-                    <?php echo $currently_inside; ?> <small style="font-size:0.9rem; color:var(--text-muted); font-weight:500;">/ <?php echo $max_capacity; ?> max</small>
+                    <span id="kpi-live-occupancy-num"><?php echo $currently_inside; ?></span> <small style="font-size:0.9rem; color:var(--text-muted); font-weight:500;">/ <?php echo $max_capacity; ?> max</small>
                 </h2>
-                <span class="kpi-trend-pill" style="background:rgba(0,0,0,0.05); color:<?php echo $live_occ_color; ?>; font-weight:700;">
+                <span class="kpi-trend-pill" id="kpi-live-occupancy-pill" style="background:rgba(0,0,0,0.05); color:<?php echo $live_occ_color; ?>; font-weight:700;">
                     <?php echo $live_occupancy_pct; ?>% capacity
                 </span>
             </div>
             <div class="kpi-progress-bg">
-                <div class="kpi-progress-bar" style="width: <?php echo $live_occupancy_pct; ?>%; background: <?php echo $live_occ_color; ?>;"></div>
+                <div class="kpi-progress-bar" id="kpi-live-occupancy-bar" style="width: <?php echo $live_occupancy_pct; ?>%; background: <?php echo $live_occ_color; ?>;"></div>
             </div>
         </div>
 
@@ -273,65 +286,108 @@ try {
             
             <!-- Card 1: Today's Live Attendance Table -->
             <div class="card">
-                <div class="card-header-flex">
+                <div class="card-header-flex" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1.25rem;">
                     <div>
-                        <h3 class="section-title"><i class="fas fa-qrcode" style="color:var(--accent);"></i> Today's Live Attendance</h3>
-                        <p class="section-subtitle">Real-time gym visitors recorded today (<?php echo date('M d, Y'); ?>)</p>
+                        <h3 class="section-title" style="margin:0;"><i class="fas fa-qrcode" style="color:var(--accent);"></i> Today's Live Attendance</h3>
+                        <p class="section-subtitle" style="margin:0.2rem 0 0 0;">Real-time gym visitors recorded today (<?php echo date('M d, Y'); ?>)</p>
                     </div>
-                    <a href="attendance.php" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:0.3rem 0.75rem;">
-                        Open Scanner <i class="fas fa-arrow-up-right-from-square" style="font-size:0.7rem; margin-left:2px;"></i>
-                    </a>
+                    <div style="display:flex; align-items:center; gap:0.6rem;">
+                        <span class="badge badge-gold" id="dash-log-count"><?php echo count($today_attendance_list); ?> active entr<?php echo count($today_attendance_list) === 1 ? 'y' : 'ies'; ?></span>
+                        <a href="attendance.php" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:0.3rem 0.75rem;">
+                            Open Scanner <i class="fas fa-arrow-up-right-from-square" style="font-size:0.7rem; margin-left:2px;"></i>
+                        </a>
+                    </div>
                 </div>
 
-                <div class="table-container" style="max-height: 320px; overflow-y: auto;">
-                    <table>
+                <div class="table-container" style="max-height: 440px; overflow-y: auto; overflow-x: auto;">
+                    <table style="min-width: 650px;">
                         <thead>
                             <tr>
                                 <th>Member</th>
+                                <th>Member Tier &amp; Plan</th>
+                                <th>Floor Access</th>
                                 <th>Time In</th>
                                 <th>Time Out</th>
-                                <th style="text-align:right;">Status</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="dash-logs-body">
                             <?php if (empty($today_attendance_list)): ?>
-                            <tr>
-                                <td colspan="4" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
+                            <tr id="no-logs">
+                                <td colspan="6" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
                                     <i class="fas fa-qrcode" style="font-size:2rem; opacity:0.2; display:block; margin-bottom:0.5rem;"></i>
                                     No attendance check-ins recorded yet today.
                                 </td>
                             </tr>
                             <?php else: ?>
-                            <?php foreach ($today_attendance_list as $att): ?>
-                            <tr>
+                            <?php foreach ($today_attendance_list as $att): 
+                                $has_timed_out = (!empty($att['time_out']) && $att['time_out'] !== '00:00:00');
+                                $ann_exp = $att['annual_membership_expiry'] ?? null;
+                                $is_official = (!empty($ann_exp) && strtotime($ann_exp) >= strtotime(date('Y-m-d')));
+                                $fa = $att['floor_access'] ?? 'all';
+                            ?>
+                            <tr id="att-row-<?php echo $att['id']; ?>">
                                 <td>
                                     <div class="member-cell">
-                                        <div class="member-avatar" style="width:32px; height:32px; font-size:0.75rem;">
+                                        <div class="member-avatar" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                                             <?php if (!empty($att['photo'])): ?>
-                                                <img src="<?php echo htmlspecialchars($att['photo']); ?>" alt="Photo" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                                                <img src="<?php echo htmlspecialchars($att['photo']); ?>" alt="Photo" style="width:100%; height:100%; object-fit:cover;">
                                             <?php else: ?>
                                                 <?php echo strtoupper(substr($att['full_name'], 0, 1)); ?>
                                             <?php endif; ?>
                                         </div>
                                         <div>
-                                            <a href="view-member.php?id=<?php echo $att['member_id']; ?>" style="font-weight:600; color:var(--text-main); text-decoration:none;">
+                                            <a href="view-member.php?id=<?php echo $att['member_id']; ?>" class="cell-primary" style="font-weight:700; color:var(--text-main); text-decoration:none;">
                                                 <?php echo htmlspecialchars($att['full_name']); ?>
                                             </a>
-                                            <div style="font-size:0.72rem; color:var(--text-muted); font-family:monospace;"><?php echo htmlspecialchars($att['membership_id']); ?></div>
+                                            <div style="font-size:0.75rem; color:var(--text-muted); font-family:monospace;"><?php echo htmlspecialchars($att['membership_id']); ?></div>
                                         </div>
                                     </div>
                                 </td>
-                                <td style="font-weight:600; color:var(--text-main); font-size:0.84rem;">
-                                    <?php echo date('h:i A', strtotime($att['time_in'])); ?>
+                                <td>
+                                    <div style="display:flex; flex-direction:column; gap:3px;">
+                                        <div>
+                                            <?php if ($is_official): ?>
+                                                <span class="badge" style="background:rgba(16,185,129,0.15); color:#059669; border:1px solid rgba(16,185,129,0.3); font-size:0.68rem; font-weight:700;">
+                                                    <i class="fas fa-id-card"></i> Official Member
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="badge" style="background:rgba(100,116,139,0.12); color:#64748b; border:1px solid rgba(100,116,139,0.25); font-size:0.68rem; font-weight:600;">
+                                                    <i class="fas fa-user"></i> Non-Member
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <span style="font-size:0.75rem; color:var(--text-main); font-weight:600;">
+                                            <?php echo htmlspecialchars($att['plan_name']); ?>
+                                        </span>
+                                    </div>
                                 </td>
-                                <td style="font-size:0.84rem; color:var(--text-muted);">
-                                    <?php echo !empty($att['time_out']) ? date('h:i A', strtotime($att['time_out'])) : '&mdash;'; ?>
-                                </td>
-                                <td style="text-align:right;">
-                                    <?php if (empty($att['time_out'])): ?>
-                                        <span class="badge badge-success"><i class="fas fa-circle" style="font-size:0.35rem; margin-right:3px;"></i> Inside</span>
+                                <td>
+                                    <?php if ($fa === 'second_floor_only'): ?>
+                                        <span class="badge" style="background:rgba(14,165,233,0.15); color:#0284c7; border:1px solid rgba(14,165,233,0.3); font-weight:700; font-size:0.72rem; padding:3px 8px;">
+                                            <i class="fas fa-stairs"></i> 2nd Floor Only
+                                        </span>
                                     <?php else: ?>
+                                        <span class="badge" style="background:rgba(34,197,94,0.15); color:#16a34a; border:1px solid rgba(34,197,94,0.3); font-weight:700; font-size:0.72rem; padding:3px 8px;">
+                                            <i class="fas fa-building"></i> Ground + 2nd Flr
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="cell-primary" style="font-weight:600;"><?php echo date('h:i A', strtotime($att['time_in'])); ?></td>
+                                <td class="cell-secondary" id="timeout-<?php echo $att['id']; ?>"><?php echo $has_timed_out ? date('h:i A', strtotime($att['time_out'])) : '&mdash;'; ?></td>
+                                <td id="status-cell-<?php echo $att['id']; ?>" style="white-space:nowrap;">
+                                    <?php if ($has_timed_out): ?>
                                         <span class="badge badge-gray">Left</span>
+                                    <?php else: ?>
+                                        <div style="display:inline-flex; align-items:center; gap:8px;">
+                                            <span class="badge badge-success"><i class="fas fa-circle" style="font-size:0.35rem; margin-right:4px;"></i> Inside</span>
+                                            <button type="button" class="btn btn-outline btn-sm manual-checkout-btn" 
+                                                    style="padding:3px 9px; font-size:0.72rem; border-radius:6px; color:var(--text-muted); border-color:var(--border); display:inline-flex; align-items:center; gap:4px; font-weight:600; cursor:pointer;"
+                                                    onclick="manualCheckout(<?php echo $att['id']; ?>, '<?php echo htmlspecialchars(addslashes($att['full_name'])); ?>')"
+                                                    title="Mark member as Left">
+                                                <i class="fas fa-arrow-right-from-bracket"></i> Check Out
+                                            </button>
+                                        </div>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -631,7 +687,7 @@ try {
 /* 2-Column Grid */
 .dashboard-grid-2col {
     display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
+    grid-template-columns: 1.3fr 0.85fr;
     gap: 1.5rem;
 }
 
@@ -762,6 +818,94 @@ function filterFeed(cat) {
         }
     });
     renderLiveFeed();
+}
+
+function manualCheckout(attendanceId, memberName) {
+    const confirmMsg = 'Check out ' + (memberName || 'this member') + ' now?';
+    const executeCheckout = () => {
+        const btn = document.querySelector(`#att-row-${attendanceId} .manual-checkout-btn`);
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        fetch('modules/attendance/manual_checkout.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRF-Token': csrfToken
+            },
+            body: 'attendance_id=' + encodeURIComponent(attendanceId) + '&csrf_token=' + encodeURIComponent(csrfToken)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const timeoutEl = document.getElementById('timeout-' + attendanceId);
+                const statusEl = document.getElementById('status-cell-' + attendanceId);
+                if (timeoutEl) timeoutEl.textContent = data.time_out_formatted || 'Just now';
+                if (statusEl) {
+                    statusEl.innerHTML = '<span class="badge badge-gray">Left</span>';
+                }
+
+                // Dynamically update live occupancy KPI count if present
+                const numEl = document.getElementById('kpi-live-occupancy-num');
+                const pillEl = document.getElementById('kpi-live-occupancy-pill');
+                const barEl = document.getElementById('kpi-live-occupancy-bar');
+                if (numEl) {
+                    const maxCap = <?php echo (int)($max_capacity ?? 50); ?> || 50;
+                    const curVal = Math.max(0, parseInt(numEl.textContent.trim() || '0', 10) - 1);
+                    numEl.textContent = curVal;
+                    const pct = Math.min(100, Math.round((curVal / maxCap) * 100));
+                    const color = pct > 80 ? '#ef4444' : (pct > 50 ? '#eab308' : '#52b788');
+                    if (pillEl) {
+                        pillEl.textContent = pct + '% capacity';
+                        pillEl.style.color = color;
+                    }
+                    if (barEl) {
+                        barEl.style.width = pct + '%';
+                        barEl.style.background = color;
+                    }
+                }
+
+                if (typeof palmasToast === 'function') {
+                    palmasToast(data.message, 'success');
+                }
+                if (typeof fetchLiveFeed === 'function') {
+                    fetchLiveFeed();
+                }
+            } else {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-arrow-right-from-bracket"></i> Check Out';
+                }
+                if (typeof palmasToast === 'function') {
+                    palmasToast(data.message || 'Could not check out member.', 'error');
+                } else {
+                    alert(data.message || 'Could not check out member.');
+                }
+            }
+        })
+        .catch(err => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-arrow-right-from-bracket"></i> Check Out';
+            }
+            if (typeof palmasToast === 'function') {
+                palmasToast('An error occurred. Please try again.', 'error');
+            } else {
+                alert('An error occurred. Please try again.');
+            }
+        });
+    };
+
+    if (typeof palmasConfirm === 'function') {
+        palmasConfirm('Check-out Confirmation', confirmMsg, 'Check Out', '#059669', executeCheckout);
+    } else {
+        if (confirm(confirmMsg)) {
+            executeCheckout();
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
