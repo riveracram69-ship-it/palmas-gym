@@ -164,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$plan_info || (int)($plan_info['is_active'] ?? 0) !== 1) {
                 $validation_errors[] = "The selected membership plan is no longer available.";
             } elseif (($plan_info['plan_category'] ?? '') === 'member_pass') {
-                $validation_errors[] = "Ang discounted member rates ay para lamang sa mga Official Members. Paki-pili ang Annual Membership Fee (₱1,000) para ma-avail ang discounts o pumili ng Non-Member pass.";
+                $validation_errors[] = "Discounted member rates are exclusively for Official Members. Please choose the Annual Membership Fee (₱1,000) to avail of member discounts or select a Non-Member pass.";
             }
         }
     }
@@ -1268,14 +1268,14 @@ select.if{
           <div class="member-upsell-banner" style="background:linear-gradient(135deg, #133e29 0%, #1f5e3e 100%); color:#fff; border-radius:14px; padding:14px 16px; margin-bottom:14px; border:1.5px solid #4ade80; box-shadow:0 4px 14px rgba(19,62,41,0.2);">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
               <div style="display:flex; align-items:center; gap:7px; font-weight:800; font-size:0.95rem; color:#fef08a;">
-                <i class="fa-solid fa-crown" style="color:#facc15;"></i> Gusto mo bang magpa-member?
+                <i class="fa-solid fa-crown" style="color:#facc15;"></i> Become an Official Member
               </div>
               <span style="background:rgba(250,204,21,0.2); color:#fef08a; border:1px solid #facc15; font-size:0.65rem; font-weight:800; padding:2px 8px; border-radius:12px; letter-spacing:0.5px;">
                 DISCOUNTS UNLOCKED
               </span>
             </div>
             <p style="font-size:0.79rem; color:#e2e8f0; margin:6px 0 10px; line-height:1.45;">
-              Sa halagang <strong>₱1,000 Annual Membership Fee</strong> (valid for 1 year), ma-eenjoy mo agad ang mga <strong>discounted rates</strong> sa lahat ng passes:
+              For just <strong>₱1,000 Annual Membership Fee</strong> (valid for 1 full year), unlock exclusive <strong>discounted rates</strong> on all passes:
             </p>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.74rem; margin-bottom:12px;">
               <div style="background:rgba(255,255,255,0.08); border-radius:8px; padding:6px 8px; border:1px solid rgba(255,255,255,0.12);">
@@ -1292,7 +1292,7 @@ select.if{
               </div>
             </div>
             <button type="button" onclick="selectAnnualMembershipPlan()" style="width:100%; background:#facc15; color:#14532d; font-weight:800; font-size:0.82rem; border:none; padding:9px 12px; border-radius:9px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 6px rgba(0,0,0,0.2);">
-              <i class="fa-solid fa-sparkles"></i> Piliin ang Official Member Package (₱1,000)
+              <i class="fa-solid fa-sparkles"></i> Select Official Member Package (₱1,000)
             </button>
           </div>
 
@@ -1322,15 +1322,15 @@ select.if{
                 ],
                 [
                     'id' => 'sec-non-member', 
-                    'title' => '⚡ Non-Member Passes (Regular Rates)', 
-                    'desc' => 'Tunay na presyo para sa walk-in at regular na walang annual membership', 
+                    'title' => '⚡ Non-Member Passes (Standard Rates)', 
+                    'desc' => 'Standard rates for walk-ins and guests without an annual membership', 
                     'items' => $sec_non_member,
                     'is_member_rate' => false
                 ],
                 [
                     'id' => 'sec-member', 
-                    'title' => '🔒 Member Discounted Passes (Para sa Official Members)', 
-                    'desc' => 'Eksklusibong presyo para sa may ₱1,000 Annual Membership Fee', 
+                    'title' => '🔒 Member Discounted Passes (Official Members Only)', 
+                    'desc' => 'Exclusive discounted prices for active ₱1,000 Annual Membership holders', 
                     'items' => $sec_member,
                     'is_member_rate' => true
                 ],
@@ -1368,15 +1368,15 @@ select.if{
                   if ($is_member_pass) {
                       if (stripos($p['name'], 'Monthly') !== false) {
                           $equiv_id = $non_mem_monthly;
-                          $savings_tag = 'Tipid ₱100 kumpara sa ₱850';
+                          $savings_tag = 'Save ₱100 vs standard ₱850';
                       } elseif (stripos($p['name'], 'Yearly') !== false) {
-                          $savings_tag = 'Tipid ₱1,500 kumpara sa 12x ₱750';
+                          $savings_tag = 'Save ₱1,500 vs 12x ₱750';
                       } elseif (stripos($p['name'], '2nd Floor Only') !== false) {
                           $equiv_id = $non_mem_2nd;
-                          $savings_tag = 'Tipid ₱10 kumpara sa ₱50';
+                          $savings_tag = 'Save ₱10 vs standard ₱50';
                       } elseif (stripos($p['name'], 'Ground') !== false) {
                           $equiv_id = $non_mem_both;
-                          $savings_tag = 'Tipid ₱10 kumpara sa ₱60';
+                          $savings_tag = 'Save ₱10 vs standard ₱60';
                       }
                   }
                 ?>
@@ -2041,7 +2041,7 @@ function handleMemberPassClick(e, planId, planName, planPrice, equivId) {
   const btnNonMember = document.getElementById('btn-switch-nonmember');
   
   if (desc) {
-    desc.innerHTML = `Ang <strong>${escapeHtml(planName)}</strong> (₱${parseFloat(planPrice).toFixed(2)}) ay discounted rate para lamang sa mga <strong>Official Members</strong>.<br><br>Gusto mo bang magpa-member ngayon sa halagang <strong>₱1,000 Annual Membership Fee</strong> (valid 1 year) para makuha ang presyong ito?`;
+    desc.innerHTML = `<strong>${escapeHtml(planName)}</strong> (₱${parseFloat(planPrice).toFixed(2)}) is a discounted rate exclusively for <strong>Official Members</strong>.<br><br>Would you like to become an Official Member today for <strong>₱1,000 Annual Membership Fee</strong> (valid 1 year) to unlock these rates?`;
   }
   
   if (btnNonMember) {
@@ -2093,19 +2093,19 @@ function escapeHtml(str) {
     <div style="width:60px; height:60px; border-radius:50%; background:#fef9c3; color:#ca8a04; display:flex; align-items:center; justify-content:center; font-size:1.7rem; margin:0 auto 14px; border:2px solid #facc15;">
       <i class="fa-solid fa-crown"></i>
     </div>
-    <h3 style="font-size:1.2rem; font-weight:800; color:#1e293b; margin:0 0 8px;">Gusto mo bang magpa-member?</h3>
+    <h3 style="font-size:1.2rem; font-weight:800; color:#1e293b; margin:0 0 8px;">Become an Official Member</h3>
     <p id="member-prompt-desc" style="font-size:0.86rem; color:#475569; line-height:1.5; margin:0 0 18px;">
-      Ang planong napili mo ay <strong>Exclusive Member Discount</strong>. Kailangan ng <strong>₱1,000 Annual Membership Fee</strong> (valid for 1 year) para makuha ang presyong ito!
+      The plan you selected has an <strong>Exclusive Member Discount</strong>. An active <strong>₱1,000 Annual Membership Fee</strong> (valid for 1 year) is required to unlock this rate!
     </p>
     <div style="display:flex; flex-direction:column; gap:9px;">
       <button type="button" onclick="confirmAvailAnnualFee()" style="background:linear-gradient(135deg, #15803d, #166534); color:#fff; border:none; padding:12px 18px; border-radius:12px; font-weight:800; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 12px rgba(22,101,52,0.25);">
-        <i class="fa-solid fa-sparkles" style="color:#fde047;"></i> Oo, I-avail ang Annual Fee (₱1,000)
+        <i class="fa-solid fa-sparkles" style="color:#fde047;"></i> Avail Annual Membership (₱1,000)
       </button>
       <button type="button" id="btn-switch-nonmember" onclick="switchToNonMemberEquivalent()" style="background:#f8fafc; color:#334155; border:1.5px solid #cbd5e1; padding:11px 18px; border-radius:12px; font-weight:700; font-size:0.86rem; cursor:pointer; display:none; align-items:center; justify-content:center; gap:6px;">
-        <i class="fa-solid fa-arrow-right-arrow-left"></i> Piliin ang Regular Non-Member Rate
+        <i class="fa-solid fa-arrow-right-arrow-left"></i> Select Standard Non-Member Rate
       </button>
       <button type="button" onclick="closeMemberPromptModal()" style="background:transparent; color:#64748b; border:none; padding:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">
-        Bumalik sa Pagpili
+        Return to Selection
       </button>
     </div>
   </div>

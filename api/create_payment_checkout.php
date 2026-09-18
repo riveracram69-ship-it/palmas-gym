@@ -98,7 +98,7 @@ try {
                 echo json_encode([
                     'success' => false,
                     'cannot_renew' => true,
-                    'message' => "Ang iyong Annual Membership ay aktibo pa ({$diff_days} araw natitira). Maaari lamang itong i-renew kapag 30 araw o mas kaunti na lamang ang natitira bago mag-expire."
+                    'message' => "Your Annual Membership is still active ({$diff_days} day(s) remaining). Renewal is available within 30 days of expiry or once expired."
                 ]);
                 exit;
             }
@@ -142,7 +142,7 @@ try {
                 echo json_encode([
                     'success' => false,
                     'cannot_renew' => true,
-                    'message' => "Hindi pa maaaring mag-renew! Aktibo pa ang iyong kasalukuyang gym pass ({$rem_text} natitira). Maaari lamang mag-renew kapag expired na o {$rule_text}."
+                    'message' => "Cannot renew yet! Your current gym pass is still active ({$rem_text} remaining). Renewal is permitted once expired or {$rule_text}."
                 ]);
                 exit;
             }

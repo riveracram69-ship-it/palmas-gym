@@ -150,7 +150,7 @@ try {
                 echo json_encode([
                     'success' => false,
                     'cannot_renew' => true,
-                    'message' => "Ang iyong Annual Membership ay aktibo pa ({$diff_days} araw natitira). Maaari lamang itong i-renew kapag 30 araw o mas kaunti na lamang ang natitira bago mag-expire."
+                    'message' => "Your Annual Membership is still active ({$diff_days} day(s) remaining). Renewal is available within 30 days of expiry or once expired."
                 ]);
                 exit;
             }
@@ -194,7 +194,7 @@ try {
                 echo json_encode([
                     'success' => false,
                     'cannot_renew' => true,
-                    'message' => "Hindi pa maaaring mag-renew! Aktibo pa ang iyong kasalukuyang gym pass ({$rem_text} natitira). Maaari lamang mag-renew kapag expired na o {$rule_text}."
+                    'message' => "Cannot renew yet! Your current gym pass is still active ({$rem_text} remaining). Renewal is permitted once expired or {$rule_text}."
                 ]);
                 exit;
             }
@@ -234,8 +234,19 @@ try {
     $rand_part = strtoupper(bin2hex(random_bytes(3)));
     $ref_code  = "PEG-{$date_part}-{$rand_part}";
 
-    // Base Application URL
-    $app_url = defined('APP_URL') ? rtrim(APP_URL, '/') : 'http://localhost/gggym/gym';
+    // Base Application URL with dynamic remote host detection
+    $detected_proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https' ? 'https' : 'http';
+    $detected_host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $detected_base = "{$detected_proto}://{$detected_host}";
+    if (defined('APP_URL') && !empty(APP_URL)) {
+        $app_url = rtrim(APP_URL, '/');
+    } else {
+        $script_dir = str_replace('\\', '/', dirname(dirname(__DIR__)));
+        $doc_root   = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? '');
+        $sub_path   = trim(str_replace($doc_root, '', $script_dir), '/');
+        $app_url    = $sub_path ? "{$detected_base}/{$sub_path}" : $detected_base;
+    }
+
     $success_url = "{$app_url}/api/check_status.php?ref={$ref_code}&status=success";
     $cancel_url  = "{$app_url}/api/check_status.php?ref={$ref_code}&status=cancelled";
 

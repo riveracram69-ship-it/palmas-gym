@@ -70,11 +70,21 @@ try {
     if ($tx['status'] === 'PENDING' && !empty($tx['gateway_transaction_id']) && PayMongoGateway::isConfigured()) {
         $checkoutSession = PayMongoGateway::getCheckoutSession($tx['gateway_transaction_id']);
         
-        if ($checkoutSession && isset($checkoutSession['attributes']['payments'][0])) {
-            $pmPayment = $checkoutSession['attributes']['payments'][0];
-            $pmStatus  = $pmPayment['attributes']['status'] ?? '';
+        if ($checkoutSession && isset($checkoutSession['attributes'])) {
+            $sessionStatus = strtolower($checkoutSession['attributes']['status'] ?? '');
+            $piStatus      = strtolower($checkoutSession['attributes']['payment_intent']['attributes']['status'] ?? '');
+            
+            $hasPaidPayment = false;
+            $paymongoPaymentId = null;
+            foreach ($checkoutSession['attributes']['payments'] ?? [] as $payItem) {
+                if (strtolower($payItem['attributes']['status'] ?? '') === 'paid') {
+                    $hasPaidPayment = true;
+                    $paymongoPaymentId = $payItem['id'] ?? null;
+                    break;
+                }
+            }
 
-            if ($pmStatus === 'paid') {
+            if ($hasPaidPayment || $sessionStatus === 'paid' || $piStatus === 'succeeded') {
                 $pdo->beginTransaction();
 
                 // Row lock check
@@ -94,12 +104,11 @@ try {
                     );
 
                     if ($activation['success']) {
-                        $paymongoPaymentId = $pmPayment['id'] ?? null;
                         $pdo->prepare("
                             UPDATE payment_transactions 
                             SET status = 'PAID', paid_at = NOW(), paymongo_payment_id = ?, subscription_id = ? 
                             WHERE id = ?
-                        ")->execute([$paymongoPaymentId, $activation['subscription_id'], $tx['id']]);
+                        ")->execute([$paymongoPaymentId, $activation['subscription_id'] ?? null, $tx['id']]);
 
                         $pdo->commit();
 

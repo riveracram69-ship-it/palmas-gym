@@ -59,7 +59,7 @@ try {
             if ($diff_days > 30) {
                 echo json_encode([
                     'success' => false,
-                    'message' => "Ang iyong Annual Membership ay aktibo pa ({$diff_days} araw natitira). Maaari lamang itong i-renew kapag 30 araw o mas kaunti na lamang ang natitira bago mag-expire."
+                    'message' => "Your Annual Membership is still active ({$diff_days} day(s) remaining). Renewal is available within 30 days of expiry or once expired."
                 ]);
                 exit;
             }
@@ -87,7 +87,7 @@ try {
                 $rule = $is_minute ? 'within 5 minutes of expiration' : 'within 3 days of expiration';
                 echo json_encode([
                     'success' => false,
-                    'message' => "Hindi pa maaaring mag-renew! Aktibo pa ang kasalukuyang gym pass ({$rem} natitira). Maaari lamang mag-renew kapag expired na o {$rule}."
+                    'message' => "Cannot renew yet! Your current gym pass is still active ({$rem} remaining). Renewal is permitted once expired or {$rule}."
                 ]);
                 exit;
             }

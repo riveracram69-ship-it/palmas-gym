@@ -148,8 +148,8 @@ try {
                 t.id, t.member_id, t.plan_id, t.subscription_id, t.reference_code,
                 t.gateway_transaction_id, t.paymongo_checkout_id, t.gateway, t.payment_method, t.amount,
                 t.currency, t.status, t.created_at, t.paid_at, t.expires_at,
-                p.name AS plan_name, p.duration_months, p.duration_minutes, p.is_test_promo,
-                s.expiry_date AS subscription_expiry, m.full_name, m.membership_id
+                p.name AS plan_name, p.duration_months, p.duration_minutes, p.is_test_promo, p.plan_category,
+                s.expiry_date AS subscription_expiry, m.full_name, m.membership_id, m.annual_membership_expiry
             FROM payment_transactions t
             JOIN membership_plans p ON p.id = t.plan_id
             JOIN members m ON m.id = t.member_id
@@ -164,8 +164,8 @@ try {
                 t.id, t.member_id, t.plan_id, t.subscription_id, t.reference_code,
                 t.gateway_transaction_id, t.paymongo_checkout_id, t.gateway, t.payment_method, t.amount,
                 t.currency, t.status, t.created_at, t.paid_at, t.expires_at,
-                p.name AS plan_name, p.duration_months, p.duration_minutes, p.is_test_promo,
-                s.expiry_date AS subscription_expiry, m.full_name, m.membership_id
+                p.name AS plan_name, p.duration_months, p.duration_minutes, p.is_test_promo, p.plan_category,
+                s.expiry_date AS subscription_expiry, m.full_name, m.membership_id, m.annual_membership_expiry
             FROM payment_transactions t
             JOIN membership_plans p ON p.id = t.plan_id
             JOIN members m ON m.id = t.member_id
@@ -268,17 +268,28 @@ try {
         }
     }
 
-    // 4. Fetch latest subscription expiry if active
-    $validUntil = $tx['subscription_expiry'];
-    if (empty($validUntil)) {
-        $subStmt = $pdo->prepare("SELECT expiry_date FROM subscriptions WHERE member_id = ? AND expiry_date >= NOW() ORDER BY expiry_date DESC LIMIT 1");
-        $subStmt->execute([$tx['member_id']]);
-        $validUntil = $subStmt->fetchColumn() ?: null;
-    }
+    // 4. Fetch latest validity based on plan type
+    $is_membership_fee = (($tx['plan_category'] ?? '') === 'membership_fee' || (int)$tx['plan_id'] === 8);
 
-    $is_minute_promo = (!empty($tx['duration_minutes']) && (int)$tx['duration_minutes'] > 0);
-    $duration_label = $is_minute_promo ? ($tx['duration_minutes'] . ' Minute(s)') : ($tx['duration_months'] . ' Month(s)');
-    $formatted_valid_until = $validUntil ? ($is_minute_promo ? date('F j, Y, g:i A', strtotime($validUntil)) : date('F j, Y', strtotime($validUntil))) : null;
+    if ($is_membership_fee) {
+        $duration_label = '1-Year Official Membership';
+        $memAnnStmt = $pdo->prepare("SELECT annual_membership_expiry FROM members WHERE id = ?");
+        $memAnnStmt->execute([$tx['member_id']]);
+        $annExpiry = $memAnnStmt->fetchColumn();
+        $validUntil = $annExpiry ?: $tx['annual_membership_expiry'];
+        $formatted_valid_until = $validUntil ? date('F j, Y', strtotime($validUntil)) : date('F j, Y', strtotime('+1 year'));
+    } else {
+        $validUntil = $tx['subscription_expiry'];
+        if (empty($validUntil)) {
+            $subStmt = $pdo->prepare("SELECT expiry_date FROM subscriptions WHERE member_id = ? AND expiry_date >= NOW() ORDER BY expiry_date DESC LIMIT 1");
+            $subStmt->execute([$tx['member_id']]);
+            $validUntil = $subStmt->fetchColumn() ?: null;
+        }
+
+        $is_minute_promo = (!empty($tx['duration_minutes']) && (int)$tx['duration_minutes'] > 0);
+        $duration_label = $is_minute_promo ? ($tx['duration_minutes'] . ' Minute(s)') : ($tx['duration_months'] . ' Month(s)');
+        $formatted_valid_until = $validUntil ? ($is_minute_promo ? date('F j, Y, g:i A', strtotime($validUntil)) : date('F j, Y', strtotime($validUntil))) : null;
+    }
 
     // If browser redirect from PayMongo or status URL requested, render branded HTML receipt
     $isHtmlRequest = isset($_GET['status']) || str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'text/html');
@@ -290,21 +301,27 @@ try {
         $isPaid = ($tx['status'] === 'PAID');
         $isCancelled = ($tx['status'] === 'CANCELLED');
         $statusColor = $isPaid ? '#3E8241' : ($isCancelled ? '#F06A6A' : '#F4C95D');
-        $statusTitle = $isPaid ? 'Payment Successful!' : ($isCancelled ? 'Payment Cancelled' : 'Payment Processing');
+        $statusTitle = $isPaid 
+            ? ($is_membership_fee ? 'Official Member Status Activated!' : 'Payment Successful!') 
+            : ($isCancelled ? 'Payment Cancelled' : 'Payment Processing');
         $statusIcon = $isPaid ? 'fa-check' : ($isCancelled ? 'fa-xmark' : 'fa-hourglass-half');
         $appUrl = defined('APP_URL') ? rtrim(APP_URL, '/') : '..';
 
         $is_currently_authenticated = (!empty($_SESSION['member_id']) && (int)$_SESSION['member_id'] === (int)$tx['member_id']);
         if ($is_currently_authenticated) {
             $destActionUrl = htmlspecialchars($appUrl) . '/member/index.php';
-            $destActionLabel = 'VIEW DIGITAL PASS';
-            $destActionIcon = 'fa-id-card';
-            $receiptSubtitle = $isPaid ? 'Your membership pass has been activated and is ready to use.' : ($isCancelled ? 'The checkout session was cancelled.' : 'Please wait while we confirm your payment.');
+            $destActionLabel = $is_membership_fee ? 'VIEW DASHBOARD & PASSES' : 'VIEW DIGITAL PASS';
+            $destActionIcon = $is_membership_fee ? 'fa-crown' : 'fa-id-card';
+            $receiptSubtitle = $isPaid 
+                ? ($is_membership_fee ? 'Your Official Member status has been activated for 1 full year! You now qualify for discounted member rates on gym passes.' : 'Your membership pass has been activated and is ready to use.') 
+                : ($isCancelled ? 'The checkout session was cancelled.' : 'Please wait while we confirm your payment.');
         } else {
             $destActionUrl = htmlspecialchars($appUrl) . '/member/login.php?payment_success=1&mid=' . urlencode($tx['membership_id'] ?? '');
             $destActionLabel = 'SIGN IN TO DASHBOARD';
             $destActionIcon = 'fa-right-to-bracket';
-            $receiptSubtitle = $isPaid ? 'Payment received & account approved! Please sign in to view your pass.' : ($isCancelled ? 'The checkout session was cancelled.' : 'Please wait while we confirm your payment.');
+            $receiptSubtitle = $isPaid 
+                ? ($is_membership_fee ? 'Payment received! Your Official Member status is active. Please sign in to choose your discounted gym pass.' : 'Payment received & account approved! Please sign in to view your pass.') 
+                : ($isCancelled ? 'The checkout session was cancelled.' : 'Please wait while we confirm your payment.');
         }
         $webFallback = $destActionUrl;
         ?>
@@ -531,20 +548,23 @@ try {
     // 5. Standard JSON API Response
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode([
-        'success'          => true,
-        'status'           => $tx['status'],
-        'reference_code'   => $tx['reference_code'],
-        'plan_name'        => $tx['plan_name'],
-        'duration'         => $duration_label,
-        'is_test_promo'    => ((int)($tx['is_test_promo'] ?? 0) === 1),
-        'amount'           => (float)$tx['amount'],
-        'amount_formatted' => '₱' . number_format((float)$tx['amount'], 2),
-        'payment_method'   => $tx['payment_method'],
-        'gateway'          => $tx['gateway'],
-        'valid_until'      => $formatted_valid_until,
-        'created_at'       => date('F j, Y, g:i A', strtotime($tx['created_at'])),
-        'paid_at'          => $tx['paid_at'] ? date('F j, Y, g:i A', strtotime($tx['paid_at'])) : null,
-        'is_paid'          => ($tx['status'] === 'PAID')
+        'success'                  => true,
+        'status'                   => $tx['status'],
+        'reference_code'           => $tx['reference_code'],
+        'plan_name'                => $tx['plan_name'],
+        'plan_category'            => $tx['plan_category'] ?? ($is_membership_fee ? 'membership_fee' : 'member_pass'),
+        'is_membership_fee'        => $is_membership_fee,
+        'duration'                 => $duration_label,
+        'is_test_promo'            => ((int)($tx['is_test_promo'] ?? 0) === 1),
+        'amount'                   => (float)$tx['amount'],
+        'amount_formatted'         => '₱' . number_format((float)$tx['amount'], 2),
+        'payment_method'           => $tx['payment_method'],
+        'gateway'                  => $tx['gateway'],
+        'valid_until'              => $formatted_valid_until,
+        'annual_membership_expiry' => $is_membership_fee ? $validUntil : ($tx['annual_membership_expiry'] ?? null),
+        'created_at'               => date('F j, Y, g:i A', strtotime($tx['created_at'])),
+        'paid_at'                  => $tx['paid_at'] ? date('F j, Y, g:i A', strtotime($tx['paid_at'])) : null,
+        'is_paid'                  => ($tx['status'] === 'PAID')
     ]);
 
 } catch (Throwable $e) {

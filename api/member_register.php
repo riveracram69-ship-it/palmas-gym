@@ -185,7 +185,7 @@ if (!$p_row) {
 if (($p_row['plan_category'] ?? '') === 'member_pass') {
     echo json_encode([
         'success' => false,
-        'message' => 'Ang discounted member rates ay para lamang sa mga Official Members. Paki-pili ang Annual Membership Fee (₱1,000) o pumili ng Non-Member pass.'
+        'message' => 'Discounted member rates are reserved for Official Members. Please select the Annual Membership Fee (₱1,000) or choose a Non-Member pass.'
     ]);
     exit;
 }
