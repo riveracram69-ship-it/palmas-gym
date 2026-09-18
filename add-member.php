@@ -175,9 +175,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             $member_id = $pdo->lastInsertId();
 
-            $stmt = $pdo->prepare("INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_by) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$member_id, $plan_id, $start_date, $expiry_date, $created_by]);
-            $subscription_id = $pdo->lastInsertId();
+            $subscription_id = null;
+            if (!$is_membership_fee) {
+                $stmt = $pdo->prepare("INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_by) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$member_id, $plan_id, $start_date, $expiry_date, $created_by]);
+                $subscription_id = $pdo->lastInsertId();
+            }
 
             // Authoritative server-side price from database
             $amount_paid    = floatval($plan['price']);

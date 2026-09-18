@@ -42,7 +42,8 @@ try {
         LEFT JOIN subscriptions s 
             ON s.id = (
                 SELECT s2.id FROM subscriptions s2 
-                WHERE s2.member_id = m.id 
+                LEFT JOIN membership_plans p2 ON p2.id = s2.plan_id
+                WHERE s2.member_id = m.id AND (p2.plan_category IS NULL OR p2.plan_category != 'membership_fee')
                 ORDER BY (s2.expiry_date >= NOW()) DESC, s2.expiry_date DESC, s2.id DESC LIMIT 1
             )
         LEFT JOIN membership_plans p ON p.id = s.plan_id
@@ -86,11 +87,19 @@ try {
     $member['annual_membership_expiry_formatted'] = !empty($annual_exp) ? date('M d, Y', strtotime($annual_exp)) : null;
     $member['is_official_member'] = $is_official_member;
     $member['membership_tier'] = $annual_status;
-    $member['plan_category'] = $member['plan_category'] ?? 'member_pass';
+    $member['plan_category'] = $member['plan_category'] ?? ($is_official_member ? 'member_pass' : 'non_member_pass');
     $member['floor_access'] = $member['floor_access'] ?? 'all';
 
-    $is_active = ($member['status'] === 'Active' && !$is_expired && ($member['account_status'] ?? 'Approved') === 'Approved');
+    // Workout Pass Status
+    $has_active_pass = (!empty($member['subscription_id']) && !$is_expired);
+    $member['has_active_pass'] = $has_active_pass;
+    $member['workout_pass_name'] = $has_active_pass 
+        ? $member['plan_name'] 
+        : ($is_official_member ? 'No Active Workout Pass' : 'No Active Guest Pass');
+
+    $is_active = ($member['status'] === 'Active' && ($member['account_status'] ?? 'Approved') === 'Approved');
     $member['is_active'] = $is_active;
+    $member['has_gym_access'] = $is_active && $has_active_pass;
 
     // Determine renewal eligibility (can only renew if expired or expiring soon)
     $can_renew = true;

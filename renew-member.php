@@ -114,13 +114,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $expiry_date = date('Y-m-d 23:59:59', strtotime("{$base_datetime} + {$duration_months} months"));
                 }
 
-                // Insert new subscription
-                $stmt = $pdo->prepare("INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_by) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$member_id, $plan_id, $start_date, $expiry_date, $_SESSION['user_id'] ?? null]);
-                $subscription_id = $pdo->lastInsertId();
+                if ($is_membership_fee) {
+                    $subscription_id = null;
+                    $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved' WHERE id = ?")->execute([$member_id]);
+                } else {
+                    // Insert new workout access subscription
+                    $stmt = $pdo->prepare("INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_by) VALUES (?, ?, ?, ?, ?)");
+                    $stmt->execute([$member_id, $plan_id, $start_date, $expiry_date, $_SESSION['user_id'] ?? null]);
+                    $subscription_id = $pdo->lastInsertId();
 
-                // Reactivate member status
-                $pdo->prepare("UPDATE members SET status = 'Active' WHERE id = ?")->execute([$member_id]);
+                    // Reactivate member status
+                    $pdo->prepare("UPDATE members SET status = 'Active' WHERE id = ?")->execute([$member_id]);
+                }
 
                 // Authoritative server-side price
                 $amount_paid = floatval($plan['price']);

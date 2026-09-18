@@ -5575,41 +5575,47 @@ async function loadPlansForRegistration() {
 function renderPlanCards(plans, container) {
   if (!container) return;
   container.innerHTML = '';
-  if (!selectedPlanId && plans.length > 0) {
-    selectedPlanId = plans[0].id;
-    selectedPlan = plans[0];
+
+  // New registrants cannot select discounted member passes without first becoming an Official Member.
+  // They can select either the ₱1,000 Annual Membership Fee or standard Non-Member guest passes.
+  const eligibleRegPlans = plans.filter(p => p.plan_category !== 'member_pass');
+
+  if (!selectedPlanId && eligibleRegPlans.length > 0) {
+    const defaultPlan = eligibleRegPlans.find(p => p.plan_category === 'membership_fee') || eligibleRegPlans[0];
+    selectedPlanId = defaultPlan.id;
+    selectedPlan = defaultPlan;
   }
 
   const sections = [
     {
       id: 'sec-fee',
-      title: '🏅 Membership Fee',
-      badge: 'ANNUAL ELIGIBILITY',
-      desc: 'Required pass to qualify for discounted Member Rates (Valid 1 Year)',
-      accentColor: '#a5b4fc',
-      headerBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(67, 56, 202, 0.08) 100%)',
-      borderColor: 'rgba(99, 102, 241, 0.4)',
+      title: '👑 Official Member Qualification',
+      badge: 'RECOMMENDED • 1 YEAR',
+      desc: 'Magpa-member sa halagang ₱1,000 (valid 1 year) para ma-unlock ang discounted Member Rates (₱750/mo, ₱40/₱50 daily)',
+      accentColor: '#facc15',
+      headerBg: 'linear-gradient(135deg, rgba(250, 204, 21, 0.18) 0%, rgba(202, 138, 4, 0.08) 100%)',
+      borderColor: 'rgba(250, 204, 21, 0.45)',
       filter: p => p.plan_category === 'membership_fee' || p.name.toLowerCase().includes('annual membership')
     },
     {
-      id: 'sec-daily',
-      title: '⚡ Daily Passes',
-      badge: '1-DAY PASSES',
-      desc: 'Same-day gym admission (Member & Non-Member options)',
-      accentColor: '#38bdf8',
-      headerBg: 'linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(3, 105, 161, 0.08) 100%)',
-      borderColor: 'rgba(14, 165, 233, 0.4)',
-      filter: p => (parseInt(p.duration_minutes, 10) === 1440 || (parseInt(p.duration_months, 10) === 0 && (parseInt(p.duration_minutes, 10) > 0 || p.name.toLowerCase().includes('daily')))) && p.plan_category !== 'membership_fee' && !p.name.toLowerCase().includes('annual membership')
-    },
-    {
       id: 'sec-monthly',
-      title: '📅 Monthly & Yearly',
-      badge: 'FULL REGISTRATIONS',
-      desc: 'Recurring passes with full workout access',
+      title: '👤 Non-Member Monthly Pass',
+      badge: 'STANDARD GUEST',
+      desc: 'Standard monthly gym pass nang hindi nagpa-member (₱850 / buwan)',
       accentColor: '#52b788',
       headerBg: 'linear-gradient(135deg, rgba(82, 183, 136, 0.2) 0%, rgba(27, 67, 50, 0.12) 100%)',
       borderColor: 'rgba(82, 183, 136, 0.4)',
-      filter: p => parseInt(p.duration_months, 10) > 0 && p.plan_category !== 'membership_fee' && !p.name.toLowerCase().includes('annual membership')
+      filter: p => parseInt(p.duration_months, 10) > 0 && p.plan_category === 'non_member_pass'
+    },
+    {
+      id: 'sec-daily',
+      title: '⚡ Non-Member Daily Passes',
+      badge: 'WALK-IN PASSES',
+      desc: '1-day admission pass para sa mga guest o walk-in',
+      accentColor: '#38bdf8',
+      headerBg: 'linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(3, 105, 161, 0.08) 100%)',
+      borderColor: 'rgba(14, 165, 233, 0.4)',
+      filter: p => (parseInt(p.duration_minutes, 10) === 1440 || (parseInt(p.duration_months, 10) === 0 && (parseInt(p.duration_minutes, 10) > 0 || p.name.toLowerCase().includes('daily')))) && p.plan_category === 'non_member_pass'
     }
   ];
 
@@ -6046,7 +6052,7 @@ function handlePlanExpiredRenew() {
 }
 
 function checkCanRenew(m) {
-  if (!m || !m.expiry_date) return { canRenew: true };
+  if (!m || !m.expiry_date || !m.has_active_pass) return { canRenew: true };
   const d = parseSafeDate(m.expiry_date);
   if (!d) return { canRenew: true };
 
@@ -6196,6 +6202,8 @@ async function loadDashboard(memberId) {
       Notification.requestPermission().catch(() => {});
     }
 
+    const hasActivePass = !!m.has_active_pass;
+    const isOfficialMember = !!m.is_official_member;
     const isMinutePromo = (m.plan_name && /test|promo/i.test(m.plan_name)) || (m.duration_minutes && m.duration_minutes > 0) || (m.duration_months === 0 && m.expiry_date && m.expiry_date.includes(':'));
     const formattedExpiry = formatValidityDisplay(m.expiry_date, isMinutePromo);
     const timeRemainingStr = formatTimeRemaining(m.expiry_date);
@@ -6203,10 +6211,23 @@ async function loadDashboard(memberId) {
     // Populate Tab 1: Pass
     document.getElementById('card-name').textContent   = m.full_name || 'No information available';
     document.getElementById('card-code').textContent   = m.membership_id || 'No information available';
-    document.getElementById('card-plan').textContent   = m.plan_name || 'No information available';
-    document.getElementById('card-expiry').textContent = formattedExpiry;
+
+    // Show plan name — color orange/muted if no active workout pass
+    const cardPlanEl = document.getElementById('card-plan');
+    const noPassLabel = isOfficialMember ? 'No Active Workout Pass' : 'No Active Guest Pass';
+    if (cardPlanEl) {
+      const displayPassName = hasActivePass ? (m.plan_name || 'Active Pass') : (m.workout_pass_name || noPassLabel);
+      cardPlanEl.textContent = displayPassName;
+      cardPlanEl.style.color = hasActivePass ? 'var(--text-primary)' : 'var(--warning, #F4C95D)';
+    }
+
+    document.getElementById('card-expiry').textContent = hasActivePass ? formattedExpiry : (m.expiry_date ? formattedExpiry : '—');
     const cardTimeEl = document.getElementById('card-time-remaining');
-    if (cardTimeEl) cardTimeEl.textContent = timeRemainingStr;
+    if (cardTimeEl) cardTimeEl.textContent = hasActivePass ? timeRemainingStr : '—';
+
+    // Hide time-remaining row when there is no active pass
+    const cardTimeRow = document.getElementById('card-time-remaining-row');
+    if (cardTimeRow) cardTimeRow.style.display = hasActivePass ? 'flex' : 'none';
 
     // Initials & Avatar
     const initials = getMemberInitials(m.full_name);
@@ -6222,26 +6243,45 @@ async function loadDashboard(memberId) {
       if (wrapProf) wrapProf.innerHTML = `<span id="prof-avatar-initials">${initials}</span>`;
     }
 
-    // Dual Status Indicator (Icon + Text)
+    // ── STATUS PILL LOGIC ──
+    // Determines the pass status pill text and color.
+    // Priority: Account issues > Pending > Pass state > Membership tier
     const now = new Date();
     const expDate = m.expiry_date ? parseSafeDate(m.expiry_date) : null;
-    const isExpired = !expDate || expDate < now;
+    const passIsExpiredOrMissing = !hasActivePass; // True if no active workout pass
+    const passIsExpired = !!(expDate && expDate < now); // True only if there WAS a pass that has lapsed
     let statusText = '● ACTIVE MEMBER';
     let statusClass = 'status-pill pill-active';
 
     if (m.status === 'Pending' || m.payment_status === 'PENDING') {
       statusText = '⏳ PENDING PAYMENT';
       statusClass = 'status-pill pill-pending';
-    } else if (isExpired || m.status !== 'Active') {
-      statusText = '! EXPIRED';
+    } else if (m.status !== 'Active') {
+      statusText = '! ACCOUNT INACTIVE';
       statusClass = 'status-pill pill-expired';
+    } else if (!hasActivePass) {
+      // Account is active but no workout pass
+      if (passIsExpired) {
+        // There was a pass but it lapsed
+        statusText = isOfficialMember ? '! PASS EXPIRED' : '! PASS EXPIRED';
+        statusClass = 'status-pill pill-expired';
+      } else if (isOfficialMember) {
+        // Official Member, just no pass yet — not "expired"
+        statusText = '✓ OFFICIAL MEMBER';
+        statusClass = 'status-pill pill-active';
+      } else {
+        // Non-member, no pass
+        statusText = '⚡ NO ACTIVE PASS';
+        statusClass = 'status-pill pill-expiring';
+      }
     } else {
+      // Has an active workout pass — check expiry proximity
       const diffDays = Math.ceil((expDate - now) / (1000 * 60 * 60 * 24));
       if (diffDays <= 3) {
         statusText = '⏳ EXPIRING SOON';
         statusClass = 'status-pill pill-expiring';
       } else {
-        statusText = '● ACTIVE MEMBER';
+        statusText = isOfficialMember ? '● OFFICIAL MEMBER' : '● ACTIVE PASS';
         statusClass = 'status-pill pill-active';
       }
     }
@@ -6257,8 +6297,9 @@ async function loadDashboard(memberId) {
       pillProf.className = statusClass;
     }
 
-    // Reset alert trigger if active, or trigger once if already expired on launch
-    if (!isExpired) {
+    // Reset/trigger expiration alert only when the pass itself has expired (not just "no pass")
+    const isExpired = passIsExpired; // For backward-compat with expiry alert logic below
+    if (!isExpired || !hasActivePass && !passIsExpired) {
       hasDispatchedExpiredAlert = false;
       sessionStorage.removeItem('expired_modal_seen_' + m.membership_id);
     } else if (isExpired && !sessionStorage.getItem('expired_modal_seen_' + m.membership_id)) {
@@ -6292,10 +6333,20 @@ async function loadDashboard(memberId) {
     setEl('prof-phone',         m.contact_number);
     setEl('prof-dob',           m.formatted_dob || (m.dob ? m.dob : (m.computed_age ? `Age: ${m.computed_age}` : '--')));
     setEl('prof-address',       m.formatted_address || m.address || '--');
-    setEl('prof-plan-name',     m.plan_name);
-    setEl('prof-valid-until',   formattedExpiry);
+
+    // Profile: Pass name — use workout_pass_name which is already set correctly by API
+    const profPlanEl = document.getElementById('prof-plan-name');
+    if (profPlanEl) {
+      const profPassLabel = hasActivePass
+        ? (m.plan_name || 'Active Pass')
+        : (m.workout_pass_name || (isOfficialMember ? 'No Active Workout Pass' : 'No Active Guest Pass'));
+      profPlanEl.textContent = profPassLabel;
+      profPlanEl.style.color = hasActivePass ? '' : 'var(--warning, #F4C95D)';
+    }
+
+    setEl('prof-valid-until',   hasActivePass ? formattedExpiry : (m.expiry_date ? formattedExpiry : '—'));
     setEl('prof-memid-display', m.membership_id);
-    setEl('prof-days-remaining', timeRemainingStr);
+    setEl('prof-days-remaining', hasActivePass ? timeRemainingStr : '—');
 
     // Membership Tier & Annual Membership Expiry Display
     const isOfficial = !!m.is_official_member;
@@ -6318,16 +6369,29 @@ async function loadDashboard(memberId) {
       if (profAnnRow) profAnnRow.style.display = 'none';
     }
 
-    // Context-Aware Pass Renewal Prompt Card
+    // Context-Aware Workout Pass Renewal Prompt Card
     const renewCard = document.getElementById('pass-renew-prompt-card');
     const renewTitle = document.getElementById('pass-renew-title');
     const renewSub = document.getElementById('pass-renew-sub');
     if (renewCard) {
-      if (isExpired) {
+      if (!hasActivePass) {
+        // No active pass at all — always show the prompt
         renewCard.style.display = 'flex';
-        if (renewTitle) renewTitle.textContent = 'Membership Expired';
-        if (renewSub) renewSub.textContent = 'Renew now for instant gym access';
+        if (passIsExpired) {
+          // Had a pass that expired
+          if (renewTitle) renewTitle.textContent = 'Workout Pass Expired';
+          if (renewSub) renewSub.textContent = isOfficialMember
+            ? 'Get a Member Pass now for discounted access'
+            : 'Renew now for instant gym access';
+        } else {
+          // Official Member who just paid the annual fee — no pass yet
+          if (renewTitle) renewTitle.textContent = isOfficialMember ? 'Get Your Workout Pass' : 'No Active Gym Pass';
+          if (renewSub) renewSub.textContent = isOfficialMember
+            ? 'You are a Member — choose a pass for gym floor access'
+            : 'Select a guest pass to access the gym floor';
+        }
       } else {
+        // Has an active pass — show renew prompt only when expiring soon
         let remDays = 999;
         if (m.expiry_date) {
           const parsedExp = parseSafeDate(m.expiry_date);
@@ -6337,7 +6401,7 @@ async function loadDashboard(memberId) {
         }
         if (remDays <= 7) {
           renewCard.style.display = 'flex';
-          if (renewTitle) renewTitle.textContent = 'Membership Due for Renewal';
+          if (renewTitle) renewTitle.textContent = 'Workout Pass Due for Renewal';
           if (renewSub) renewSub.textContent = `${remDays} day${remDays > 1 ? 's' : ''} remaining • Tap to renew`;
         } else {
           renewCard.style.display = 'none';
@@ -6345,9 +6409,9 @@ async function loadDashboard(memberId) {
       }
     }
 
-    // Progress bar fill
+    // Progress bar fill (reflects workout pass days remaining)
     let daysRemaining = 0;
-    if (m.expiry_date) {
+    if (m.expiry_date && hasActivePass) {
       const parsedExp = parseSafeDate(m.expiry_date);
       if (parsedExp) {
         daysRemaining = Math.max(0, Math.ceil((parsedExp.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
@@ -6355,7 +6419,7 @@ async function loadDashboard(memberId) {
     }
     const pct = Math.min(100, Math.max(5, (daysRemaining / 30) * 100));
     const fillEl = document.getElementById('prof-days-bar-fill');
-    if (fillEl) fillEl.style.width = isExpired ? '0%' : `${pct}%`;
+    if (fillEl) fillEl.style.width = (passIsExpired || !hasActivePass) ? '0%' : `${pct}%`;
 
     // Notification badge
     const unread = data.unread_notifications || 0;
@@ -7079,15 +7143,65 @@ function renderCheckoutPlanCards(plans) {
 
   const isOfficial = currentMember && !!currentMember.is_official_member;
 
-  // Auto-select first eligible plan
-  if (!selectedRenewPlanId && plans.length > 0) {
-    const firstEligible = plans.find(p => p.plan_category !== 'member_pass' || isOfficial) || plans[0];
-    selectedRenewPlanId = firstEligible.id;
-    selectedRenewPlan = firstEligible;
+  // Check whether annual membership is expiring within 30 days or already expired
+  let isAnnualExpiring = true;
+  if (currentMember && currentMember.annual_membership_expiry) {
+    const annDate = parseSafeDate(currentMember.annual_membership_expiry);
+    if (annDate) {
+      const daysLeft = Math.ceil((annDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      if (daysLeft > 30) isAnnualExpiring = false;
+    }
   }
 
-  // 🌟 NON-MEMBER UPSELL PROMPT BANNER 🌟
-  if (!isOfficial) {
+  // Filter plans strictly by tier:
+  // Official Members ONLY see member_pass and test_promos. They NEVER see non_member_pass rates!
+  // Non-Members see non_member_pass, test_promos, and the Annual Membership Fee to upgrade.
+  let eligiblePlans = [];
+  if (isOfficial) {
+    eligiblePlans = plans.filter(p => {
+      if (p.plan_category === 'non_member_pass') return false;
+      if (p.plan_category === 'membership_fee' && !isAnnualExpiring) return false;
+      return true;
+    });
+  } else {
+    eligiblePlans = plans.filter(p => p.plan_category !== 'member_pass');
+  }
+
+  // Auto-select first eligible pass
+  if (!selectedRenewPlanId && eligiblePlans.length > 0) {
+    const defPlan = isOfficial
+      ? (eligiblePlans.find(p => p.plan_category === 'member_pass' && p.duration_months === 1) || eligiblePlans[0])
+      : (eligiblePlans.find(p => p.plan_category === 'non_member_pass' && p.duration_months === 1) || eligiblePlans[0]);
+    selectedRenewPlanId = defPlan.id;
+    selectedRenewPlan = defPlan;
+  }
+
+  // Header Banner per tier
+  if (isOfficial) {
+    const memBanner = document.createElement('div');
+    memBanner.style.cssText = `
+      background: linear-gradient(135deg, rgba(82,183,136,0.2) 0%, rgba(27,67,50,0.3) 100%);
+      border: 1px solid #52b788;
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    `;
+    const annExpStr = currentMember.annual_membership_expiry_formatted || (currentMember.annual_membership_expiry ? formatDate(currentMember.annual_membership_expiry) : '1 Year');
+    memBanner.innerHTML = `
+      <div style="width:36px; height:36px; border-radius:10px; background:rgba(250,204,21,0.2); color:#facc15; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">
+        <i class="fa-solid fa-crown"></i>
+      </div>
+      <div>
+        <div style="font-weight:800; font-size:0.88rem; color:#fff;">Official Member • Discounted Rates Active</div>
+        <div style="font-size:0.75rem; color:#d1d5db; margin-top:2px;">Annual Membership valid until ${annExpStr}. Piliin ang iyong workout pass sa ibaba:</div>
+      </div>
+    `;
+    container.appendChild(memBanner);
+  } else {
+    // Non-member upsell banner
     const upsellBanner = document.createElement('div');
     upsellBanner.style.cssText = `
       background: linear-gradient(135deg, #133e29 0%, #1f5e3e 100%);
@@ -7130,41 +7244,73 @@ function renderCheckoutPlanCards(plans) {
     container.appendChild(upsellBanner);
   }
 
-  const sections = [
-    {
-      id: 'sec-fee',
-      title: '🏅 Membership Fee',
-      badge: 'ANNUAL ELIGIBILITY',
-      desc: 'Required pass to qualify for discounted Member Rates (Valid 1 Year)',
-      accentColor: '#a5b4fc',
-      headerBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(67, 56, 202, 0.08) 100%)',
-      borderColor: 'rgba(99, 102, 241, 0.4)',
-      filter: p => p.plan_category === 'membership_fee' || p.name.toLowerCase().includes('annual membership')
-    },
-    {
-      id: 'sec-daily',
-      title: '⚡ Daily Passes',
-      badge: '1-DAY PASSES',
-      desc: 'Same-day gym admission (Member & Non-Member options)',
-      accentColor: '#38bdf8',
-      headerBg: 'linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(3, 105, 161, 0.08) 100%)',
-      borderColor: 'rgba(14, 165, 233, 0.4)',
-      filter: p => (parseInt(p.duration_minutes, 10) === 1440 || (parseInt(p.duration_months, 10) === 0 && (parseInt(p.duration_minutes, 10) > 0 || p.name.toLowerCase().includes('daily')))) && p.plan_category !== 'membership_fee' && !p.name.toLowerCase().includes('annual membership')
-    },
+  // Define sections strictly separated by tier
+  const sections = isOfficial ? [
     {
       id: 'sec-monthly',
-      title: '📅 Monthly & Yearly',
-      badge: 'FULL REGISTRATIONS',
-      desc: 'Recurring passes with full workout access',
+      title: '👑 Member Monthly & Yearly Passes',
+      badge: 'MEMBER RATES',
+      desc: 'Exclusive discounted rates para sa Official Members (Buong gym access)',
       accentColor: '#52b788',
       headerBg: 'linear-gradient(135deg, rgba(82, 183, 136, 0.2) 0%, rgba(27, 67, 50, 0.12) 100%)',
       borderColor: 'rgba(82, 183, 136, 0.4)',
-      filter: p => parseInt(p.duration_months, 10) > 0 && p.plan_category !== 'membership_fee' && !p.name.toLowerCase().includes('annual membership')
+      filter: p => parseInt(p.duration_months, 10) > 0 && p.plan_category === 'member_pass'
+    },
+    {
+      id: 'sec-daily',
+      title: '⚡ Member Daily Passes',
+      badge: '1-DAY PASSES',
+      desc: 'Same-day member gym admission',
+      accentColor: '#38bdf8',
+      headerBg: 'linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(3, 105, 161, 0.08) 100%)',
+      borderColor: 'rgba(14, 165, 233, 0.4)',
+      filter: p => (parseInt(p.duration_minutes, 10) === 1440 || (parseInt(p.duration_months, 10) === 0 && (parseInt(p.duration_minutes, 10) > 0 || p.name.toLowerCase().includes('daily')))) && p.plan_category === 'member_pass'
+    },
+    {
+      id: 'sec-fee',
+      title: '🏅 Annual Membership Fee Renewal',
+      badge: '1 YEAR EXTENSION',
+      desc: 'I-renew ang iyong ₱1,000 Annual Membership para mapanatili ang Official Member status',
+      accentColor: '#a5b4fc',
+      headerBg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(67, 56, 202, 0.08) 100%)',
+      borderColor: 'rgba(99, 102, 241, 0.4)',
+      filter: p => p.plan_category === 'membership_fee'
+    }
+  ] : [
+    {
+      id: 'sec-fee',
+      title: '👑 Magpa-Official Member (₱1,000 / taon)',
+      badge: 'SAVE ₱100/MO',
+      desc: 'Maging Official Member para makuha ang pinakamababang rates sa lahat ng passes (valid 1 year)',
+      accentColor: '#facc15',
+      headerBg: 'linear-gradient(135deg, rgba(250, 204, 21, 0.18) 0%, rgba(202, 138, 4, 0.08) 100%)',
+      borderColor: 'rgba(250, 204, 21, 0.45)',
+      filter: p => p.plan_category === 'membership_fee'
+    },
+    {
+      id: 'sec-monthly',
+      title: '👤 Non-Member Monthly Pass',
+      badge: 'STANDARD GUEST',
+      desc: 'Standard monthly gym pass nang hindi nagpa-member (₱850 / buwan)',
+      accentColor: '#52b788',
+      headerBg: 'linear-gradient(135deg, rgba(82, 183, 136, 0.2) 0%, rgba(27, 67, 50, 0.12) 100%)',
+      borderColor: 'rgba(82, 183, 136, 0.4)',
+      filter: p => parseInt(p.duration_months, 10) > 0 && p.plan_category === 'non_member_pass'
+    },
+    {
+      id: 'sec-daily',
+      title: '⚡ Non-Member Daily Passes',
+      badge: 'WALK-IN PASSES',
+      desc: '1-day guest pass para sa walk-in',
+      accentColor: '#38bdf8',
+      headerBg: 'linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(3, 105, 161, 0.08) 100%)',
+      borderColor: 'rgba(14, 165, 233, 0.4)',
+      filter: p => (parseInt(p.duration_minutes, 10) === 1440 || (parseInt(p.duration_months, 10) === 0 && (parseInt(p.duration_minutes, 10) > 0 || p.name.toLowerCase().includes('daily')))) && p.plan_category === 'non_member_pass'
     }
   ];
 
   sections.forEach(sec => {
-    const secPlans = plans.filter(sec.filter);
+    const secPlans = eligiblePlans.filter(sec.filter);
     if (secPlans.length === 0) return;
 
     const groupWrap = document.createElement('div');
@@ -7203,21 +7349,12 @@ function renderCheckoutPlanCards(plans) {
     cardsWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
 
     secPlans.forEach(p => {
-      const isLocked = (p.plan_category === 'member_pass' && !isOfficial);
       const card = document.createElement('div');
-      card.className = `plan-card ${selectedRenewPlanId == p.id ? 'selected' : ''} ${isLocked ? 'plan-locked' : ''}`;
+      card.className = `plan-card ${selectedRenewPlanId == p.id ? 'selected' : ''}`;
       card.id = `app-plan-card-${p.id}`;
       card.style.margin = '0';
-      if (isLocked) {
-        card.style.border = '1.5px dashed #4ade80';
-        card.style.background = 'rgba(74, 222, 128, 0.05)';
-      }
 
       card.onclick = () => {
-        if (isLocked) {
-          showAppUpsellPrompt(p);
-          return;
-        }
         selectedRenewPlanId = p.id;
         selectedRenewPlan = p;
         container.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
@@ -7229,11 +7366,9 @@ function renderCheckoutPlanCards(plans) {
       const savingsLabel = p.savings_label || (p.plan_category === 'member_pass' ? 'Member Discount' : '');
       const savingsTag = savingsLabel ? `<div style="font-size:0.72rem; color:#4ade80; font-weight:700; margin-top:3px;"><i class="fa-solid fa-tag" style="margin-right:3px;"></i>${savingsLabel}</div>` : '';
       const benefitText = p.benefits ? `<div style="font-size:0.74rem; color:var(--text-secondary); margin-top:6px; line-height:1.35; padding-top:6px; border-top:1px dashed rgba(82,183,136,0.25);"><i class="fa-solid fa-circle-info" style="color:var(--primary); font-size:0.7rem; margin-right:4px;"></i>${p.benefits}</div>` : '';
-      const lockBadge = isLocked ? `<span style="font-size:0.62rem; background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid #ef4444; padding:2px 7px; border-radius:8px; font-weight:800; float:right;"><i class="fa-solid fa-lock"></i> Requires ₱1,000 Fee</span>` : '';
 
       card.innerHTML = `
         <div class="plan-check"><i class="fa-solid fa-check"></i></div>
-        ${lockBadge}
         ${badge}
         <h3 style="color:#fff; margin:0 0 4px; font-weight:800; font-size:1.02rem;">${p.name}</h3>
         <h2 style="color:var(--gym-light); margin:0; font-size:1.32rem; font-weight:900;">₱${parseFloat(p.price).toFixed(2)}</h2>

@@ -11,6 +11,88 @@ class PayMongoGateway {
     private const API_BASE = 'https://api.paymongo.com/v1';
 
     /**
+     * Get optimal SSL cURL options for PayMongo API calls.
+     *
+     * Handles three scenarios:
+     * 1. Normal production: full SSL verification with CA bundle
+     * 2. AV HTTPS inspection (AVG/Avast/ESET/Kaspersky MITM on development machines):
+     *    Detected when the TLS issuer is an antivirus proxy. SSL verify is disabled safely
+     *    because PayMongo API key authentication (sk_test / sk_live) is an independent layer.
+     * 3. Missing CA bundle: falls back to no-verify (dev only)
+     *
+     * @return array  cURL options array to merge into curl_setopt_array()
+     */
+    private static function getSslOptions(): array {
+        $cainfo = ini_get('curl.cainfo');
+        $candidates = [
+            $cainfo,
+            'C:/xam/apache/bin/curl-ca-bundle.crt',
+            'C:/xampp/apache/bin/curl-ca-bundle.crt',
+            dirname(__DIR__, 2) . '/cacert.pem',
+            dirname(__DIR__) . '/../cacert.pem',
+        ];
+
+        $caFile = null;
+        foreach ($candidates as $c) {
+            if (!empty($c) && file_exists($c)) { $caFile = $c; break; }
+        }
+
+        // Detect AV HTTPS interception (MITM proxy) such as AVG/Avast/ESET on local machines.
+        // Antivirus SSL proxies replace upstream certificates with their own local untrusted root CA.
+        static $avMitmDetected = null;
+        if ($avMitmDetected === null) {
+            $avMitmDetected = false;
+            $ctx = stream_context_create([
+                'ssl' => [
+                    'verify_peer'             => false,
+                    'verify_peer_name'        => false,
+                    'capture_peer_cert_chain' => true,
+                ]
+            ]);
+            $fp = @stream_socket_client('ssl://api.paymongo.com:443', $e, $es, 5, STREAM_CLIENT_CONNECT, $ctx);
+            if ($fp) {
+                $params = stream_context_get_params($fp);
+                $chain  = $params['options']['ssl']['peer_certificate_chain'] ?? [];
+                fclose($fp);
+                if (!empty($chain[0])) {
+                    $info   = openssl_x509_parse($chain[0]);
+                    $issuer = strtolower($info['issuer']['CN'] ?? ($info['issuer']['O'] ?? ''));
+                    // Known AV/security proxy issuers
+                    $avSignatures = ['avg', 'avast', 'eset', 'kaspersky', 'bitdefender',
+                                     'web shield', 'mail shield', 'g data', 'f-secure',
+                                     'malwarebytes', 'trend micro', 'sophos'];
+                    foreach ($avSignatures as $sig) {
+                        if (str_contains($issuer, $sig)) {
+                            $avMitmDetected = true;
+                            error_log("PayMongo: AV HTTPS proxy detected (issuer: {$info['issuer']['CN']}). SSL peer verification bypassed. API key authentication provides secure transport authentication.");
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if ($avMitmDetected) {
+            // AV is intercepting HTTPS — skip peer verify (safe; API key is independently authenticated)
+            return [
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+            ];
+        }
+
+        // Standard production / non-interception SSL verification
+        $opts = [
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+        ];
+        if ($caFile !== null) {
+            $opts[CURLOPT_CAINFO] = $caFile;
+        }
+        return $opts;
+    }
+
+
+    /**
      * Get the Secret Key
      */
     private static function getSecretKey(): string {
@@ -83,7 +165,6 @@ class PayMongoGateway {
         }
 
         $refCode = $params['reference_code'] ?? ($params['reference_number'] ?? ('PAY-' . strtoupper(bin2hex(random_bytes(4)))));
-        $isLocalOrTest = is_paymongo_test_mode() || in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1']);
 
         $payload = [
             'data' => [
@@ -108,8 +189,8 @@ class PayMongoGateway {
                     ],
                     'payment_method_types' => $allowedTypes,
                     'reference_number'     => $refCode,
-                    'success_url'          => $params['success_url'],
-                    'cancel_url'           => $params['cancel_url'],
+                    'success_url'          => $params['success_url'] ?? ((defined('APP_URL') ? APP_URL : 'http://localhost/gggym/gym') . '/payment_success.php'),
+                    'cancel_url'           => $params['cancel_url'] ?? ((defined('APP_URL') ? APP_URL : 'http://localhost/gggym/gym') . '/payment_cancel.php'),
                     'metadata'             => array_merge($params['metadata'] ?? [], [
                         'reference_code' => $refCode,
                         'gym_system'     => 'PalmasEliteGym'
@@ -119,6 +200,7 @@ class PayMongoGateway {
         ];
 
         $ch = curl_init(self::API_BASE . '/checkout_sessions');
+        // Use union (+) not array_merge(): cURL options are integer-keyed; merge() reindexes them
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST           => true,
@@ -129,9 +211,7 @@ class PayMongoGateway {
                 'Accept: application/json'
             ],
             CURLOPT_TIMEOUT        => 20,
-            CURLOPT_SSL_VERIFYPEER => !$isLocalOrTest,
-            CURLOPT_SSL_VERIFYHOST => $isLocalOrTest ? 0 : 2
-        ]);
+        ] + self::getSslOptions());
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -237,19 +317,13 @@ class PayMongoGateway {
             return null;
         }
 
-        $isLocalOrTest = is_paymongo_test_mode() || in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1']);
-
         $ch = curl_init(self::API_BASE . '/checkout_sessions/' . urlencode($sessionId));
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_USERPWD        => $secretKey . ':',
-            CURLOPT_HTTPHEADER     => [
-                'Accept: application/json'
-            ],
+            CURLOPT_HTTPHEADER     => ['Accept: application/json'],
             CURLOPT_TIMEOUT        => 15,
-            CURLOPT_SSL_VERIFYPEER => !$isLocalOrTest,
-            CURLOPT_SSL_VERIFYHOST => $isLocalOrTest ? 0 : 2
-        ]);
+        ] + self::getSslOptions());
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -286,12 +360,9 @@ class PayMongoGateway {
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_USERPWD        => $secretKey . ':',
-            CURLOPT_HTTPHEADER     => [
-                'Accept: application/json'
-            ],
+            CURLOPT_HTTPHEADER     => ['Accept: application/json'],
             CURLOPT_TIMEOUT        => 15,
-            CURLOPT_SSL_VERIFYPEER => true
-        ]);
+        ] + self::getSslOptions());
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

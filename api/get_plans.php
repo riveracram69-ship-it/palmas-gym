@@ -122,44 +122,94 @@ try {
     }
 
 
-    // Fetch payment settings (GCash & Maya details uploaded by Admin)
-    $settings_stmt = $pdo->query("
-        SELECT setting_key, setting_value 
-        FROM system_settings 
-        WHERE setting_key IN ('gcash_name', 'gcash_number', 'gcash_qr_image', 'maya_name', 'maya_number', 'maya_qr_image')
-    ");
-    $settings = $settings_stmt ? $settings_stmt->fetchAll(PDO::FETCH_KEY_PAIR) : [];
+    // Check authenticated member if Bearer token present
+    $headers = function_exists('apache_request_headers') ? apache_request_headers() : (function_exists('getallheaders') ? getallheaders() : []);
+    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null;
+    $auth_member_id = null;
+    $is_official_member = false;
+    $member_tier = 'non_member';
 
-    // Determine accurate base public URL
-    $app_url = '';
-    if (defined('APP_URL') && !empty(APP_URL) && stripos(APP_URL, 'localhost') === false) {
-        $app_url = rtrim(APP_URL, '/');
-    } else {
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'palmas-gym.onrender.com';
-        $app_url = "{$scheme}://{$host}";
+    if (!empty($authHeader) && preg_match('/Bearer\s+(\S+)/i', trim($authHeader), $matches)) {
+        try {
+            $tokenStmt = $pdo->prepare("
+                SELECT m.id, m.annual_membership_expiry 
+                FROM auth_tokens t
+                JOIN members m ON m.id = t.member_id
+                WHERE t.token = ? AND t.expires_at > NOW()
+                LIMIT 1
+            ");
+            $tokenStmt->execute([$matches[1]]);
+            $mRow = $tokenStmt->fetch(PDO::FETCH_ASSOC);
+            if ($mRow) {
+                $auth_member_id = (int)$mRow['id'];
+                $ann_exp = $mRow['annual_membership_expiry'] ?? null;
+                if (!empty($ann_exp) && strtotime($ann_exp . ' 23:59:59') >= time()) {
+                    $is_official_member = true;
+                    $member_tier = 'member';
+                }
+            }
+        } catch (Throwable $e) {}
     }
 
-    $format_qr_url = function(?string $path) use ($app_url): ?string {
-        if (empty($path)) return null;
-        if (str_starts_with($path, 'data:')) return $path;
-
-        // Strip localhost or relative prefixes if stored in settings
-        $clean = preg_replace('#^https?://(localhost|127\.0\.0\.1|10\.0\.2\.2)(:[0-9]+)?(/gym)?/#i', '', $path);
-        $clean = ltrim($clean, '/');
-
-        if (str_starts_with($clean, 'http://') || str_starts_with($clean, 'https://')) {
-            return $clean;
+    // Override tier via GET param if explicitly requested
+    if (isset($_GET['tier'])) {
+        $paramTier = strtolower(trim($_GET['tier']));
+        if ($paramTier === 'member') {
+            $is_official_member = true;
+            $member_tier = 'member';
+        } elseif ($paramTier === 'non_member') {
+            $is_official_member = false;
+            $member_tier = 'non_member';
         }
-        return $app_url ? "{$app_url}/{$clean}" : $clean;
-    };
+    }
+
+    // Group plans cleanly
+    $member_plans = [];
+    $non_member_plans = [];
+    $membership_fee_plan = null;
+    $test_promos = [];
+
+    foreach ($plans as $p) {
+        if ($p['plan_category'] === 'membership_fee') {
+            $membership_fee_plan = $p;
+        } elseif ($p['plan_category'] === 'member_pass') {
+            $member_plans[] = $p;
+        } elseif ($p['plan_category'] === 'non_member_pass') {
+            $non_member_plans[] = $p;
+        } elseif ($p['plan_category'] === 'test_promo' || $p['is_test_promo']) {
+            $test_promos[] = $p;
+        }
+    }
+
+    // Eligible plans depending on tier
+    $eligible_plans = [];
+    if ($is_official_member) {
+        // Official Members ONLY see member rates (₱750, ₱7,500, ₱40, ₱50) + test promos
+        $eligible_plans = array_merge($member_plans, $test_promos);
+        // Include membership fee only for renewal
+        if ($membership_fee_plan) {
+            $eligible_plans[] = array_merge($membership_fee_plan, ['is_annual_renewal' => true]);
+        }
+    } else {
+        // Non-Members see non-member rates (₱850, ₱50, ₱60), test promos, and the ₱1,000 fee to become a member
+        $eligible_plans = array_merge($non_member_plans, $test_promos);
+        if ($membership_fee_plan) {
+            $eligible_plans[] = array_merge($membership_fee_plan, ['is_upgrade_to_member' => true]);
+        }
+    }
 
     echo json_encode([
-        'success'      => true,
-        'payment_mode' => function_exists('get_payment_mode') ? get_payment_mode() : 'test',
-        'is_test_mode' => function_exists('is_paymongo_test_mode') ? is_paymongo_test_mode() : true,
-        'plans'        => $plans,
-        'payment_info' => [
+        'success'             => true,
+        'payment_mode'        => function_exists('get_payment_mode') ? get_payment_mode() : 'test',
+        'is_test_mode'        => function_exists('is_paymongo_test_mode') ? is_paymongo_test_mode() : true,
+        'is_official_member'  => $is_official_member,
+        'member_tier'         => $member_tier,
+        'plans'               => $plans,               // All active plans for backward compatibility
+        'eligible_plans'      => $eligible_plans,      // Contextual plans based on member status
+        'member_plans'        => $member_plans,        // Member discounted passes (₱750, ₱7500, ₱40, ₱50)
+        'non_member_plans'    => $non_member_plans,    // Non-member passes (₱850, ₱50, ₱60)
+        'membership_fee_plan' => $membership_fee_plan, // Annual Membership Fee (₱1,000)
+        'payment_info'        => [
             'gateway'           => 'PayMongo',
             'supported_methods' => ['GCash', 'Maya', 'Card', 'QR Ph', 'Cash'],
             'online_enabled'    => true

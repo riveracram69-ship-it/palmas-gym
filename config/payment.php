@@ -75,11 +75,12 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         }
 
         // Block inactive / legacy plans from being purchased
-        $plan_is_active = intval($plan['is_active'] ?? 0);
-        $plan_category  = $plan['plan_category'] ?? 'legacy';
+        $plan_is_active = intval($plan['is_active'] ?? 1);  // Default to active (NULL-safe)
+        $plan_category  = $plan['plan_category'];            // Do NOT default to 'legacy' — NULL means uncategorized/active
         if ($plan_is_active === 0 || $plan_category === 'legacy') {
             if ($should_manage_tx) $pdo->rollBack();
-            return ['success' => false, 'message' => 'This plan is no longer available. Please select a current plan.'];
+            $reason = ($plan_category === 'legacy') ? 'This plan has been retired and replaced. Please select a current plan.' : 'This plan is currently inactive. Please select an active plan.';
+            return ['success' => false, 'message' => $reason];
         }
 
         // Enforce plan tier eligibility (Official Member vs Non-Member)
@@ -134,7 +135,31 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         $active_sub = $sub_stmt->fetch(PDO::FETCH_ASSOC);
         $now_str = date('Y-m-d H:i:s');
 
-        if ($is_minute_promo) {
+        $is_membership_fee = ($plan_category === 'membership_fee');
+        $subscription_id = null;
+        $new_expiry = null;
+
+        if ($is_membership_fee) {
+            // Annual Membership Fee (₱1,000) qualifies the member for Official Member tier status for 1 year.
+            // It does NOT grant an unearned 12-month free workout access pass.
+            // Fetch current annual_membership_expiry to extend or start fresh
+            $ann_stmt = $pdo->prepare("SELECT annual_membership_expiry FROM members WHERE id = ? FOR UPDATE");
+            $ann_stmt->execute([$member_id]);
+            $ann_row = $ann_stmt->fetch(PDO::FETCH_ASSOC);
+            $current_ann_expiry = $ann_row['annual_membership_expiry'] ?? null;
+
+            if ($current_ann_expiry && strtotime($current_ann_expiry) >= strtotime(date('Y-m-d'))) {
+                $annual_expiry_updated = date('Y-m-d', strtotime($current_ann_expiry . ' +1 year'));
+            } else {
+                $annual_expiry_updated = date('Y-m-d', strtotime('+1 year'));
+            }
+
+            $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved', annual_membership_expiry = ? WHERE id = ?")
+                ->execute([$annual_expiry_updated, $member_id]);
+
+            $duration_label = '1-Year Official Membership';
+            $formatted_expiry = date('F j, Y', strtotime($annual_expiry_updated));
+        } elseif ($is_minute_promo) {
             // Short-duration test promos (30 min, 60 min) — extend from active expiry if any
             $base_datetime = ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time())
                 ? $active_sub['expiry_date']
@@ -142,13 +167,29 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             $start_date = $base_datetime;
             $new_expiry = date('Y-m-d H:i:s', strtotime("{$base_datetime} + {$duration_minutes} minutes"));
             $duration_label = "{$duration_minutes} Minute" . ($duration_minutes > 1 ? 's' : '');
+            $formatted_expiry = date('F j, Y, g:i A', strtotime($new_expiry));
+
+            $sub_insert = $pdo->prepare("
+                INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date) 
+                VALUES (?, ?, ?, ?)
+            ");
+            $sub_insert->execute([$member_id, $plan_id, $start_date, $new_expiry]);
+            $subscription_id = $pdo->lastInsertId();
         } elseif ($is_daily_pass) {
             // Daily access pass (1440 min = 1 day) — access is valid until end of today only
             $start_date    = $now_str;
             $new_expiry    = date('Y-m-d 23:59:59'); // expires at midnight tonight
             $duration_label = '1 Day';
+            $formatted_expiry = date('F j, Y', strtotime($new_expiry)) . ' 11:59 PM';
+
+            $sub_insert = $pdo->prepare("
+                INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date) 
+                VALUES (?, ?, ?, ?)
+            ");
+            $sub_insert->execute([$member_id, $plan_id, $start_date, $new_expiry]);
+            $subscription_id = $pdo->lastInsertId();
         } else {
-            // Month-based plan (Monthly, Yearly, Annual Membership Fee)
+            // Month-based workout pass (Monthly ₱750/₱850, Yearly ₱7,500)
             if ($active_sub && !empty($active_sub['expiry_date']) && strtotime($active_sub['expiry_date']) > time()) {
                 $base_datetime = $active_sub['expiry_date'];
             } else {
@@ -158,15 +199,15 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             if ($duration_months <= 0) $duration_months = 1;
             $new_expiry = date('Y-m-d 23:59:59', strtotime("{$base_datetime} + {$duration_months} months"));
             $duration_label = "{$duration_months} Month" . ($duration_months > 1 ? 's' : '');
-        }
+            $formatted_expiry = date('F j, Y', strtotime($new_expiry));
 
-        // Insert Subscription with full DATETIME precision
-        $sub_insert = $pdo->prepare("
-            INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date) 
-            VALUES (?, ?, ?, ?)
-        ");
-        $sub_insert->execute([$member_id, $plan_id, $start_date, $new_expiry]);
-        $subscription_id = $pdo->lastInsertId();
+            $sub_insert = $pdo->prepare("
+                INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date) 
+                VALUES (?, ?, ?, ?)
+            ");
+            $sub_insert->execute([$member_id, $plan_id, $start_date, $new_expiry]);
+            $subscription_id = $pdo->lastInsertId();
+        }
 
         // 5. Normalize payment method for ENUM ('Cash','GCash','Bank Transfer','Credit Card')
         $db_method = 'GCash';
@@ -214,27 +255,8 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             error_log("payment_transactions optional insert warning: " . $txEx->getMessage());
         }
 
-        // 7. Update Member Status to Active
-        // For membership_fee plans: update annual_membership_expiry (extends if still valid; otherwise +1 year from today)
-        // For all other plans: set member status Active as usual
-        $annual_expiry_updated = null;
-        if ($plan_category === 'membership_fee') {
-            // Fetch current annual_membership_expiry
-            $ann_stmt = $pdo->prepare("SELECT annual_membership_expiry FROM members WHERE id = ? FOR UPDATE");
-            $ann_stmt->execute([$member_id]);
-            $ann_row = $ann_stmt->fetch(PDO::FETCH_ASSOC);
-            $current_ann_expiry = $ann_row['annual_membership_expiry'] ?? null;
-
-            if ($current_ann_expiry && strtotime($current_ann_expiry) >= strtotime(date('Y-m-d'))) {
-                // Extend from current valid expiry
-                $annual_expiry_updated = date('Y-m-d', strtotime($current_ann_expiry . ' +1 year'));
-            } else {
-                // Fresh start from today
-                $annual_expiry_updated = date('Y-m-d', strtotime('+1 year'));
-            }
-            $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved', annual_membership_expiry = ? WHERE id = ?")
-                ->execute([$annual_expiry_updated, $member_id]);
-        } else {
+        // 7. Update Member Status to Active (for non-membership_fee plans)
+        if (!$is_membership_fee) {
             $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved' WHERE id = ?")
                 ->execute([$member_id]);
         }
@@ -252,14 +274,25 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         }
 
         // 9. Standardized Activity Log & Notifications
-        $formatted_expiry = ($duration_minutes > 0)
-            ? date('F j, Y, g:i A', strtotime($new_expiry))
-            : date('F j, Y', strtotime($new_expiry));
+        if ($is_membership_fee) {
+            $formatted_expiry = !empty($annual_expiry_updated) 
+                ? date('F j, Y', strtotime($annual_expiry_updated)) 
+                : date('F j, Y', strtotime('+1 year'));
+        } else {
+            $formatted_expiry = ($duration_minutes > 0)
+                ? date('F j, Y, g:i A', strtotime($new_expiry))
+                : date('F j, Y', strtotime($new_expiry));
+        }
 
-        $action_label = $is_first_activation ? 'Membership Activated' : 'Membership Renewed';
-        $log_desc = $is_first_activation
-            ? "Membership activated for {$member['full_name']} ({$member['membership_id']}) on plan '{$plan['name']}' via {$payment_method} (₱" . number_format($amount, 2) . "). Valid until {$formatted_expiry}"
-            : "Membership renewed for {$member['full_name']} ({$member['membership_id']}) on plan '{$plan['name']}' via {$payment_method} (₱" . number_format($amount, 2) . "). Extended to {$formatted_expiry}";
+        $action_label = $is_membership_fee 
+            ? 'Annual Membership Fee Paid' 
+            : ($is_first_activation ? 'Membership Activated' : 'Membership Renewed');
+
+        $log_desc = $is_membership_fee
+            ? "Annual Membership Fee paid for {$member['full_name']} ({$member['membership_id']}) via {$payment_method} (₱" . number_format($amount, 2) . "). Official Member status valid until {$formatted_expiry}."
+            : ($is_first_activation
+                ? "Membership workout pass activated for {$member['full_name']} ({$member['membership_id']}) on plan '{$plan['name']}' via {$payment_method} (₱" . number_format($amount, 2) . "). Valid until {$formatted_expiry}"
+                : "Membership workout pass renewed for {$member['full_name']} ({$member['membership_id']}) on plan '{$plan['name']}' via {$payment_method} (₱" . number_format($amount, 2) . "). Extended to {$formatted_expiry}");
 
         log_activity(
             $pdo,
@@ -270,25 +303,38 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
             $member['full_name']
         );
 
-        $notif_type = $is_first_activation ? 'MEMBERSHIP_ACTIVATED' : 'MEMBERSHIP_RENEWED';
-        $notif_title = $is_first_activation ? 'Membership Activated! 🎉' : 'Membership Renewed! 🔄';
-        $notif_msg = "Your '{$plan['name']}' pass has been processed via {$payment_method}. Valid until {$formatted_expiry}.";
+        $notif_type = $is_membership_fee ? 'ANNUAL_MEMBERSHIP_ACTIVE' : ($is_first_activation ? 'MEMBERSHIP_ACTIVATED' : 'MEMBERSHIP_RENEWED');
+        $notif_title = $is_membership_fee ? 'Official Member Status Active! 🏅' : ($is_first_activation ? 'Workout Pass Activated! 🎉' : 'Workout Pass Renewed! 🔄');
+        $notif_msg = $is_membership_fee 
+            ? "Your ₱1,000 Annual Membership Fee has been processed via {$payment_method}. Official Member status active until {$formatted_expiry}. You qualify for discounted member rates!"
+            : "Your '{$plan['name']}' pass has been processed via {$payment_method}. Valid until {$formatted_expiry}.";
 
-        create_notification($pdo, $member_id, $notif_type, $notif_title, $notif_msg, 'Sent', (int)$subscription_id);
+        create_notification($pdo, $member_id, $notif_type, $notif_title, $notif_msg, 'Sent', $subscription_id ? (int)$subscription_id : null);
 
         // 10. Automated Email Receipt (skip test/dummy email domains to avoid slow SMTP timeouts)
         $is_dummy_email = preg_match('/@(example\.com|test\.local|test\.com)$/i', $member['email'] ?? '');
         if (!empty($member['email']) && !$is_dummy_email) {
             $time_tag = date('M d, Y h:i A');
-            $email_subject = $is_first_activation 
-                ? "Membership Successfully Activated! [{$time_tag}] — Palma's Elite Gym"
-                : "Membership Successfully Renewed! [{$time_tag}] — Palma's Elite Gym";
-            $email_title = $is_first_activation
-                ? "Your Membership is Now Active! 🎉"
-                : "Your Membership Has Been Successfully Renewed! 🔄";
+            if ($is_membership_fee) {
+                $email_subject = "Official Member Status Activated! [{$time_tag}] — Palma's Elite Gym";
+                $email_title   = "Official Member Status Activated! 🏅";
+                $intro_text    = "Congratulations! Your <strong>Official Member Status</strong> with <strong>Palma's Elite Gym</strong> is now officially active. You qualify for exclusive discounted member rates on all workout passes.";
+                $expiry_label  = "Membership Status Valid Until:";
+                $pass_note     = "To access the workout floor, please choose an active Member Workout Pass (Monthly ₱750, Yearly ₱7,500, or Daily ₱40/₱50) from your mobile app.";
+            } else {
+                $email_subject = $is_first_activation 
+                    ? "Membership Successfully Activated! [{$time_tag}] — Palma's Elite Gym"
+                    : "Membership Successfully Renewed! [{$time_tag}] — Palma's Elite Gym";
+                $email_title = $is_first_activation
+                    ? "Your Membership is Now Active! 🎉"
+                    : "Your Membership Has Been Successfully Renewed! 🔄";
+                $intro_text = "Great news! Your gym membership with <strong>Palma's Elite Gym</strong> has been <strong>" . ($is_first_activation ? "successfully activated" : "successfully renewed") . "</strong>.";
+                $expiry_label  = "New Expiry Date:";
+                $pass_note     = "Your <strong>Digital QR Pass</strong> is live and updated! You can present your pass at the gym entrance kiosk for immediate access.";
+            }
             $email_body = "
                 <p>Dear <strong>{$member['full_name']}</strong>,</p>
-                <p>Great news! Your gym membership with <strong>Palma's Elite Gym</strong> has been <strong>" . ($is_first_activation ? "successfully activated" : "successfully renewed") . "</strong>.</p>
+                <p>{$intro_text}</p>
                 
                 <div style=\"background-color:#F4F9F6; border:1px solid #D8E6DC; border-radius:10px; padding:18px; margin:20px 0;\">
                     <p style=\"margin:0 0 10px; font-weight:bold; color:#1B4332; font-size:14px; text-transform:uppercase; letter-spacing:0.5px;\">Membership &amp; Payment Summary</p>
@@ -299,11 +345,11 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
                         <tr><td style=\"padding:4px 0;\"><strong>Amount Paid:</strong></td><td style=\"text-align:right; font-weight:bold; color:#2D6A4F;\">₱" . number_format($amount, 2) . "</td></tr>
                         <tr><td style=\"padding:4px 0;\"><strong>Payment Method:</strong></td><td style=\"text-align:right;\">{$payment_method}</td></tr>
                         <tr><td style=\"padding:4px 0;\"><strong>Reference No:</strong></td><td style=\"text-align:right; font-family:monospace;\">{$ref_code}</td></tr>
-                        <tr style=\"border-top:1px dashed #CBD5E1;\"><td style=\"padding:8px 0 0;\"><strong>New Expiry Date:</strong></td><td style=\"padding:8px 0 0; text-align:right; font-weight:bold; color:#1B4332;\">{$formatted_expiry}</td></tr>
+                        <tr style=\"border-top:1px dashed #CBD5E1;\"><td style=\"padding:8px 0 0;\"><strong>{$expiry_label}</strong></td><td style=\"padding:8px 0 0; text-align:right; font-weight:bold; color:#1B4332;\">{$formatted_expiry}</td></tr>
                     </table>
                 </div>
 
-                <p>Your <strong>Digital QR Pass</strong> is live and updated! You can present your pass at the gym entrance kiosk for immediate access.</p>
+                <p>{$pass_note}</p>
                 <p style=\"margin-top:16px;\">Thank you for staying committed to your fitness journey with Palma's Elite Gym! 💪</p>
             ";
             try {
@@ -317,21 +363,24 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         }
 
         $response = [
-            'success'          => true,
-            'message'          => "Payment successful! Your '{$plan['name']}' membership is now active until {$formatted_expiry}.",
-            'plan_name'        => $plan['name'],
-            'plan_category'    => $plan_category,
-            'floor_access'     => $plan['floor_access'] ?? 'all',
-            'amount'           => $amount,
-            'reference_no'     => $ref_code,
-            'expiry_date'      => $new_expiry,
-            'duration'         => $duration_label,
-            'member_status'    => 'Active',
-            'subscription_id'  => (int)$subscription_id
+            'success'              => true,
+            'message'              => $is_membership_fee 
+                ? "Annual Membership Fee processed! You are now an Official Member until {$annual_expiry_updated}. You may now select Member rates for gym access."
+                : "Payment successful! Your '{$plan['name']}' pass is now active until {$formatted_expiry}.",
+            'plan_name'            => $plan['name'],
+            'plan_category'        => $plan_category,
+            'floor_access'         => $plan['floor_access'] ?? 'all',
+            'amount'               => $amount,
+            'reference_no'         => $ref_code,
+            'expiry_date'          => $new_expiry,
+            'duration'             => $duration_label,
+            'member_status'        => 'Active',
+            'subscription_id'      => $subscription_id ? (int)$subscription_id : null,
+            'is_membership_fee'    => $is_membership_fee,
+            'is_official_member'   => $is_membership_fee ? true : is_official_member($member)
         ];
         if ($plan_category === 'membership_fee' && $annual_expiry_updated) {
             $response['annual_membership_expiry'] = $annual_expiry_updated;
-            $response['message'] = "Annual Membership Fee processed! You are now an Official Member until {$annual_expiry_updated}. You may now select Member rates for gym access.";
         }
         return $response;
 

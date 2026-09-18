@@ -289,21 +289,29 @@ function send_email_notification($to, $subject, $title, $body_text) {
 
     // 3. Fallback to PHPMailer SMTP (Gmail / Localhost)
     if (!$mail_sent && defined('SMTP_PASS') && !empty(SMTP_PASS) && !str_contains(SMTP_PASS, 'REPLACE')) {
+        // Build port/encryption configs — prioritize the .env-configured port first, then fallback
+        $configured_port   = (int)(defined('SMTP_PORT') ? SMTP_PORT : 587);
+        $configured_secure = ($configured_port === 465)
+            ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS
+            : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+        $fallback_port     = ($configured_port === 465) ? 587 : 465;
+        $fallback_secure   = ($fallback_port === 465)
+            ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS
+            : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $configsToTry = [
-            ['port' => 465, 'secure' => \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS],
-            ['port' => 587, 'secure' => \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS],
-            ['port' => (int)(defined('SMTP_PORT') ? SMTP_PORT : 465), 'secure' => (defined('SMTP_PORT') && (int)SMTP_PORT === 587) ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS]
+            ['port' => $configured_port, 'secure' => $configured_secure],
+            ['port' => $fallback_port,   'secure' => $fallback_secure],
         ];
 
-        // Resolve active SMTP user and password
-        $active_user = defined('SMTP_USER') ? SMTP_USER : 'official.palmas.gym@gmail.com';
-        $active_pass = defined('SMTP_PASS') ? trim(str_replace(' ', '', (string)SMTP_PASS)) : '';
-        $active_from = defined('SMTP_FROM') ? SMTP_FROM : $active_user;
+        // Resolve active SMTP credentials
+        // Gmail App Passwords work both with and without spaces — preserve original form
+        $active_user = defined('SMTP_USER') ? trim((string)SMTP_USER) : 'official.palmas.gym@gmail.com';
+        $active_pass = defined('SMTP_PASS') ? trim((string)SMTP_PASS) : '';
+        $active_from = defined('SMTP_FROM') ? trim((string)SMTP_FROM) : $active_user;
 
-        // If active_pass matches official app password, ensure user is official.palmas.gym@gmail.com
-        if ($active_pass === 'jdkkstbihpvqodhs' || str_contains($active_pass, 'jdkk')) {
-            $active_user = 'official.palmas.gym@gmail.com';
-            $active_from = 'official.palmas.gym@gmail.com';
+        // Ensure From address matches authenticated user (Gmail rejects mismatched From)
+        if (empty($active_from) || $active_from !== $active_user) {
+            $active_from = $active_user;
         }
 
         $tried = [];
