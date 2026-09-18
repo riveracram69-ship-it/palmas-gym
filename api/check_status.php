@@ -104,17 +104,6 @@ if (!empty($identifier)) {
 // ── PAYMENT TRANSACTION STATUS CHECK ──────────────────────────────
 $ref = trim($_GET['ref'] ?? $_GET['reference'] ?? $input_data['ref'] ?? $input_data['reference'] ?? '');
 
-if (empty($ref)) {
-    if (str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'text/html') || isset($_GET['status'])) {
-        header('Content-Type: text/html; charset=utf-8');
-        echo "<h1>Invalid Request</h1><p>Missing transaction reference code.</p>";
-        exit;
-    }
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success' => false, 'message' => 'Missing transaction reference code.']);
-    exit;
-}
-
 // Optional Bearer Authentication check
 $headers = function_exists('apache_request_headers')
     ? apache_request_headers()
@@ -125,6 +114,34 @@ $authHeader = $headers['Authorization']
     ?? $_SERVER['HTTP_AUTHORIZATION']
     ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
     ?? null;
+
+$acceptHeader = $_SERVER['HTTP_ACCEPT'] ?? ($headers['Accept'] ?? ($headers['accept'] ?? ''));
+
+// Format detection:
+// Mobile app and API consumers MUST always receive JSON.
+// Branded HTML receipt is ONLY for gateway checkout redirects (?status=success/cancelled) or explicit ?format=html / ?view=receipt.
+$wantsJson = (isset($_GET['format']) && strtolower($_GET['format']) === 'json')
+    || str_contains(strtolower($acceptHeader), 'application/json')
+    || !empty($authHeader)
+    || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+
+$isHtmlRequest = !$wantsJson && (
+    isset($_GET['status']) 
+    || isset($_GET['html']) 
+    || (isset($_GET['view']) && $_GET['view'] === 'receipt')
+    || (isset($_GET['format']) && strtolower($_GET['format']) === 'html')
+);
+
+if (empty($ref)) {
+    if ($isHtmlRequest) {
+        header('Content-Type: text/html; charset=utf-8');
+        echo "<h1>Invalid Request</h1><p>Missing transaction reference code.</p>";
+        exit;
+    }
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success' => false, 'message' => 'Missing transaction reference code.']);
+    exit;
+}
 
 $auth_member_id = null;
 if (!empty($authHeader) && preg_match('/Bearer\s+(\S+)/i', trim($authHeader), $matches)) {
@@ -179,7 +196,7 @@ try {
 
     if (!$tx) {
         http_response_code(404);
-        if (str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'text/html') || isset($_GET['status'])) {
+        if ($isHtmlRequest) {
             header('Content-Type: text/html; charset=utf-8');
             echo "<h1>Transaction Not Found</h1><p>We could not locate transaction reference: " . htmlspecialchars($ref) . "</p>";
             exit;
@@ -292,7 +309,6 @@ try {
     }
 
     // If browser redirect from PayMongo or status URL requested, render branded HTML receipt
-    $isHtmlRequest = isset($_GET['status']) || str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'text/html');
     if ($isHtmlRequest) {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
