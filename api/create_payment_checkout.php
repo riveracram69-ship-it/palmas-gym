@@ -209,7 +209,14 @@ try {
     $ref_code  = "PEG-{$date_part}-{$rand_part}";
 
     // Base Application URL
-    $app_url = defined('APP_URL') ? rtrim(APP_URL, '/') : 'http://localhost/gggym/gym';
+    $app_url = defined('APP_URL') ? rtrim(APP_URL, '/') : '';
+    if (empty($app_url) || (str_contains($app_url, 'localhost') && isset($_SERVER['HTTP_HOST']) && !str_contains($_SERVER['HTTP_HOST'], 'localhost'))) {
+        $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https') ? 'https://' : 'http://';
+        $app_url = rtrim($proto . $_SERVER['HTTP_HOST'] . (str_contains($_SERVER['REQUEST_URI'] ?? '', '/gggym/gym') ? '/gggym/gym' : ''), '/');
+    }
+    if (empty($app_url)) {
+        $app_url = 'http://localhost/gggym/gym';
+    }
 
     // Return & Webhook URLs
     $success_url = "{$app_url}/api/check_status.php?ref={$ref_code}&status=success";

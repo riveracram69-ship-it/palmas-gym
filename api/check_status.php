@@ -193,74 +193,78 @@ try {
         exit;
     }
 
-    // 2. Check if expired
-    if ($tx['status'] === 'PENDING' && !empty($tx['expires_at'])) {
-        if (strtotime($tx['expires_at']) < time()) {
-            $tx['status'] = 'EXPIRED';
-            $pdo->prepare("UPDATE payment_transactions SET status = 'EXPIRED' WHERE id = ?")->execute([$tx['id']]);
-        }
-    }
-
-    // 3. Live On-Demand Gateway Verification (for PENDING transactions)
+    // 2. Live On-Demand Gateway Verification (prioritized for any non-PAID transaction with a session ID)
     $checkout_session_id = !empty($tx['paymongo_checkout_id']) ? $tx['paymongo_checkout_id'] : ($tx['gateway_transaction_id'] ?? null);
-    if ($tx['status'] === 'PENDING' && !empty($checkout_session_id)) {
+    if ($tx['status'] !== 'PAID' && !empty($checkout_session_id)) {
         $paymentMode = get_payment_mode();
         
         if ($paymentMode === 'live' || $paymentMode === 'test' || PayMongoGateway::isConfigured()) {
             $session = PayMongoGateway::getCheckoutSession($checkout_session_id);
             
-            if ($session && isset($session['attributes']['status'])) {
-                $sessionStatus = $session['attributes']['status'];
+            if ($session && isset($session['attributes'])) {
+                $sessionStatus = strtolower($session['attributes']['status'] ?? '');
+                $piStatus      = strtolower($session['attributes']['payment_intent']['attributes']['status'] ?? '');
                 
-                // If PayMongo confirms payment is completed
-                if ($sessionStatus === 'paid' || !empty($session['attributes']['payments'])) {
-                    $hasPaidPayment = false;
-                    foreach ($session['attributes']['payments'] ?? [] as $payItem) {
-                        if (($payItem['attributes']['status'] ?? '') === 'paid') {
-                            $hasPaidPayment = true;
-                            break;
-                        }
+                $hasPaidPayment = false;
+                foreach ($session['attributes']['payments'] ?? [] as $payItem) {
+                    if (strtolower($payItem['attributes']['status'] ?? '') === 'paid') {
+                        $hasPaidPayment = true;
+                        break;
                     }
+                }
 
-                    if ($hasPaidPayment || $sessionStatus === 'paid') {
-                        // Trigger idempotent activation within single transaction
-                        $pdo->beginTransaction();
-                        $lockStmt = $pdo->prepare("SELECT status FROM payment_transactions WHERE id = ? FOR UPDATE");
-                        $lockStmt->execute([$tx['id']]);
-                        $currentStatus = $lockStmt->fetchColumn();
+                // If PayMongo confirms payment is completed via session status, payment intent, or payments array
+                if ($hasPaidPayment || $sessionStatus === 'paid' || $piStatus === 'succeeded') {
+                    // Trigger idempotent activation within single transaction
+                    $pdo->beginTransaction();
+                    $lockStmt = $pdo->prepare("SELECT status FROM payment_transactions WHERE id = ? FOR UPDATE");
+                    $lockStmt->execute([$tx['id']]);
+                    $currentStatus = $lockStmt->fetchColumn();
 
-                        if ($currentStatus !== 'PAID') {
-                            $act = process_automated_subscription_activation(
-                                $pdo,
-                                (int)$tx['member_id'],
-                                (int)$tx['plan_id'],
-                                (float)$tx['amount'],
-                                $tx['payment_method'],
-                                $tx['reference_code'],
-                                true // Single transaction boundary
-                            );
+                    if ($currentStatus !== 'PAID') {
+                        $act = process_automated_subscription_activation(
+                            $pdo,
+                            (int)$tx['member_id'],
+                            (int)$tx['plan_id'],
+                            (float)$tx['amount'],
+                            $tx['payment_method'],
+                            $tx['reference_code'],
+                            true // Single transaction boundary
+                        );
 
-                            if ($act['success']) {
-                                $pdo->prepare("UPDATE payment_transactions SET status = 'PAID', paid_at = NOW(), subscription_id = ? WHERE id = ?")
-                                    ->execute([$act['subscription_id'] ?? null, $tx['id']]);
-                                $pdo->commit();
-                                $tx['status']  = 'PAID';
-                                $tx['paid_at'] = date('Y-m-d H:i:s');
-                                $tx['subscription_expiry'] = $act['expiry_date'] ?? null;
-                            } else {
-                                $pdo->rollBack();
-                            }
-                        } else {
+                        if ($act['success']) {
+                            $pdo->prepare("UPDATE payment_transactions SET status = 'PAID', paid_at = NOW(), subscription_id = ? WHERE id = ?")
+                                ->execute([$act['subscription_id'] ?? null, $tx['id']]);
                             $pdo->commit();
-                            $tx['status'] = 'PAID';
+                            $tx['status']  = 'PAID';
+                            $tx['paid_at'] = date('Y-m-d H:i:s');
+                            $tx['subscription_expiry'] = $act['expiry_date'] ?? null;
+                        } else {
+                            $pdo->rollBack();
                         }
+                    } else {
+                        $pdo->commit();
+                        $tx['status'] = 'PAID';
                     }
-                } elseif ($sessionStatus === 'cancelled' || $sessionStatus === 'expired') {
-                    $newStatus = strtoupper($sessionStatus);
-                    $pdo->prepare("UPDATE payment_transactions SET status = ? WHERE id = ?")->execute([$newStatus, $tx['id']]);
-                    $tx['status'] = $newStatus;
+                } elseif ($sessionStatus === 'cancelled' || $piStatus === 'cancelled') {
+                    $pdo->prepare("UPDATE payment_transactions SET status = 'CANCELLED' WHERE id = ?")->execute([$tx['id']]);
+                    $tx['status'] = 'CANCELLED';
+                } elseif ($sessionStatus === 'expired') {
+                    $pdo->prepare("UPDATE payment_transactions SET status = 'EXPIRED' WHERE id = ?")->execute([$tx['id']]);
+                    $tx['status'] = 'EXPIRED';
                 }
             }
+        }
+    }
+
+    // 3. Safe check if transaction is truly expired (only if still PENDING and >= 30 mins old in DB)
+    if ($tx['status'] === 'PENDING') {
+        $ageStmt = $pdo->prepare("SELECT TIMESTAMPDIFF(MINUTE, created_at, NOW()) as age_min FROM payment_transactions WHERE id = ?");
+        $ageStmt->execute([$tx['id']]);
+        $ageMin = (int)$ageStmt->fetchColumn();
+        if ($ageMin >= 30) {
+            $tx['status'] = 'EXPIRED';
+            $pdo->prepare("UPDATE payment_transactions SET status = 'EXPIRED' WHERE id = ?")->execute([$tx['id']]);
         }
     }
 
@@ -508,24 +512,14 @@ try {
                 }
             }
 
-            // Auto-trigger return countdown on mobile devices
+            // Auto-trigger instant return on mobile devices
             (function() {
                 var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
                 var statusEl = document.getElementById('auto-return-status');
-                if (!isMobile || !statusEl) return;
-
-                var seconds = 3;
-                statusEl.textContent = 'Auto-returning to mobile app in ' + seconds + 's...';
-                var countdownInterval = setInterval(function() {
-                    seconds--;
-                    if (seconds > 0) {
-                        statusEl.textContent = 'Auto-returning to mobile app in ' + seconds + 's...';
-                    } else {
-                        clearInterval(countdownInterval);
-                        statusEl.textContent = 'Returning to app...';
-                        returnToMobileApp();
-                    }
-                }, 1000);
+                if (statusEl) statusEl.textContent = 'Returning to Palma\'s Elite Gym app...';
+                if (isMobile) {
+                    returnToMobileApp();
+                }
             })();
             </script>
         </body>

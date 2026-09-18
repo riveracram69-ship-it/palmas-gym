@@ -6685,10 +6685,19 @@ if (typeof document !== 'undefined') {
         qrCountdownTimer = null;
       }
     } else {
+      if (currentPendingRef) {
+        pollPaymentStatus(currentPendingRef, 1);
+      }
       if (currentMember && currentActiveTab === 'tab-pass') {
         fetchFreshQRToken();
         startQRCountdown();
       }
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    if (currentPendingRef) {
+      pollPaymentStatus(currentPendingRef, 1);
     }
   });
 }
@@ -7868,34 +7877,50 @@ async function executeGatewayCheckout() {
 }
 
 function startPaymentStatusPolling(refCode) {
-  clearInterval(paymentPollingTimer);
+  if (paymentPollingTimer) {
+    clearTimeout(paymentPollingTimer);
+    clearInterval(paymentPollingTimer);
+    paymentPollingTimer = null;
+  }
+  if (!refCode) return;
+
+  currentPendingRef = refCode;
   let attempts = 0;
-  let notFoundStreak = 0; // Track consecutive NOT_FOUND to detect orphaned tx
-  paymentPollingTimer = setInterval(async () => {
+  let notFoundStreak = 0;
+
+  // Immediately poll status on start
+  pollPaymentStatus(refCode, 1);
+
+  const pollStep = async () => {
+    if (!currentPendingRef || currentPendingRef !== refCode) return;
     attempts++;
     const result = await pollPaymentStatus(refCode, attempts);
     if (result === true) {
-      clearInterval(paymentPollingTimer); // Resolved (paid/failed/cancelled/expired)
+      // Resolved and redirected straight to dashboard
+      return;
     } else if (result === 'not_found') {
       notFoundStreak++;
-      // After 3 consecutive NOT_FOUND responses (9s), treat as failed/orphaned
-      if (notFoundStreak >= 3) {
-        clearInterval(paymentPollingTimer);
+      if (notFoundStreak >= 4) {
         renderResultState('failed', { message: 'Payment session not found. It may have expired or was not completed.' });
+        return;
       }
     } else {
-      notFoundStreak = 0; // Reset streak on any other response
+      notFoundStreak = 0;
     }
-    // Hard stop after 25 attempts (75s) — show failed if still pending
-    if (attempts >= 25) {
-      clearInterval(paymentPollingTimer);
-      // Only auto-fail if still showing pending screen
+
+    if (attempts >= 35) {
       const pendingEl = document.getElementById('result-state-pending');
       if (pendingEl && pendingEl.style.display !== 'none') {
-        renderResultState('failed', { message: 'Payment confirmation timed out. If you completed payment, please tap "Refresh Pass Status" or contact the gym.' });
+        renderResultState('failed', { message: 'Payment confirmation timed out. If you completed payment, please tap "Refresh Pass Status".' });
       }
+      return;
     }
-  }, 3000);
+
+    const nextDelay = (attempts <= 6) ? 1400 : ((attempts <= 16) ? 2000 : 3000);
+    paymentPollingTimer = setTimeout(pollStep, nextDelay);
+  };
+
+  paymentPollingTimer = setTimeout(pollStep, 1400);
 }
 
 async function pollPaymentStatus(refCode, attempt = 1) {
@@ -7906,7 +7931,7 @@ async function pollPaymentStatus(refCode, attempt = 1) {
   const btnCheck = document.getElementById('btn-check-pending-status');
   if (btnCheck && attempt === 1) {
     btnCheck.disabled = true;
-    btnCheck.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> Refreshing...';
+    btnCheck.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></div> Refreshing...';
   }
 
   try {
@@ -7927,24 +7952,48 @@ async function pollPaymentStatus(refCode, attempt = 1) {
 
     if (!data.success) return false;
 
-    if (data.status === 'PAID') {
-      clearInterval(paymentPollingTimer);
-      renderResultState('success', data);
+    if (data.status === 'PAID' || data.is_paid === true) {
+      if (paymentPollingTimer) {
+        clearTimeout(paymentPollingTimer);
+        clearInterval(paymentPollingTimer);
+        paymentPollingTimer = null;
+      }
+      currentPendingRef = null;
+      currentResultRef = null;
+
+      // REKTA DASHBOARD: Close modal, refresh dashboard data, jump straight to Pass tab
+      showToast('🎉 Bayad na! Na-activate na ang iyong gym pass.', 4000);
+      closeRenewalModal();
       refreshDashboard();
       loadPaymentHistory();
+      switchToTab('tab-pass');
       return true;
     } else if (data.status === 'FAILED') {
-      clearInterval(paymentPollingTimer);
+      if (paymentPollingTimer) {
+        clearTimeout(paymentPollingTimer);
+        clearInterval(paymentPollingTimer);
+        paymentPollingTimer = null;
+      }
       renderResultState('failed', data);
       return true;
     } else if (data.status === 'CANCELLED') {
-      clearInterval(paymentPollingTimer);
+      if (paymentPollingTimer) {
+        clearTimeout(paymentPollingTimer);
+        clearInterval(paymentPollingTimer);
+        paymentPollingTimer = null;
+      }
       renderResultState('cancelled', data);
       return true;
     } else if (data.status === 'EXPIRED') {
-      clearInterval(paymentPollingTimer);
-      renderResultState('expired', data);
-      return true;
+      if (attempt > 3) {
+        if (paymentPollingTimer) {
+          clearTimeout(paymentPollingTimer);
+          clearInterval(paymentPollingTimer);
+          paymentPollingTimer = null;
+        }
+        renderResultState('expired', data);
+        return true;
+      }
     }
 
     return false; // Still PENDING
@@ -7952,7 +8001,7 @@ async function pollPaymentStatus(refCode, attempt = 1) {
   } catch (err) {
     if (btnCheck) {
       btnCheck.disabled = false;
-      btnCheck.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Check Payment Status';
+      btnCheck.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Refresh Pass Status';
     }
     return false;
   }
@@ -8788,6 +8837,13 @@ function initializeApp() {
           console.log('[PalmasGym] Deep link received via appUrlOpen:', data);
           if (data && data.url && (data.url.includes('palmasgym://') || data.url.includes('checkout/result'))) {
             handlePaymentReturn(data.url);
+          }
+        });
+
+        App.addListener('appStateChange', (state) => {
+          console.log('[PalmasGym] appStateChange:', state);
+          if (state && state.isActive && currentPendingRef) {
+            pollPaymentStatus(currentPendingRef, 1);
           }
         });
       }
