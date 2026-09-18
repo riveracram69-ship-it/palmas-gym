@@ -3730,8 +3730,8 @@
           <div id="result-state-success" style="display:none;">
             <div class="result-screen-card result-success">
               <div class="result-icon-circle"><i class="fa-solid fa-check"></i></div>
-              <h2 style="color:var(--text-primary); font-size:1.35rem; font-weight:800; margin:0 0 4px;">Payment Successful</h2>
-              <p style="color:var(--text-secondary); font-size:0.86rem; margin:0 0 14px;">Your payment has been confirmed! Your gym pass is now active.</p>
+              <h2 style="color:var(--text-primary); font-size:1.35rem; font-weight:800; margin:0 0 4px;" id="res-success-title">Payment Successful</h2>
+              <p style="color:var(--text-secondary); font-size:0.86rem; margin:0 0 14px;" id="res-success-subtitle">Your payment has been confirmed! Your gym pass is now active.</p>
               
               <div style="font-size:2rem; font-weight:900; color:var(--primary); font-family:'Outfit';" id="res-success-amount">₱0.00</div>
               
@@ -3739,12 +3739,12 @@
                 <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Payment Method</span><strong class="val" id="res-success-method">GCash</strong></div>
                 <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Reference Number</span><code class="val" id="res-success-ref" style="font-size:0.8rem; color:var(--primary);">PEG-XXXX</code></div>
                 <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Membership</span><strong class="val" id="res-success-plan">Gym Pass</strong></div>
-                <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Status</span><span class="badge-paid">● ACTIVE PASS</span></div>
-                <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Valid Until</span><strong class="val" id="res-success-valid">--</strong></div>
+                <div class="checkout-row" style="padding:6px 0;"><span class="lbl">Status</span><span class="badge-paid" id="res-success-badge">● ACTIVE PASS</span></div>
+                <div class="checkout-row" style="padding:6px 0;"><span class="lbl" id="res-success-valid-label">Valid Until</span><strong class="val" id="res-success-valid">--</strong></div>
               </div>
 
               <div style="display:flex; flex-direction:column; gap:10px;">
-                <button class="btn-primary" onclick="closeRenewalModal(); refreshDashboard();"><i class="fa-solid fa-id-card"></i> View Membership Pass</button>
+                <button class="btn-primary" onclick="closeRenewalModal(); refreshDashboard(); switchToTab('tab-pass');"><i class="fa-solid fa-id-card"></i> View Membership Pass</button>
                 <button class="btn-outline" onclick="closeRenewalModal(); openPaymentDetailModal(currentResultRef);"><i class="fa-solid fa-receipt"></i> View Official Receipt</button>
                 <button class="btn-outline" onclick="closeRenewalModal(); refreshDashboard(); loadPaymentHistory();" style="border-color:transparent; color:var(--text-muted);">Done</button>
               </div>
@@ -3793,7 +3793,7 @@
               <button class="btn-primary" id="btn-reopen-checkout" onclick="openCheckoutUrl(currentCheckoutUrl)" style="margin-bottom:10px; background:linear-gradient(135deg, #007dfe, #00d664);">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Payment Window
               </button>
-              <button class="btn-outline" id="btn-check-pending-status" onclick="pollPaymentStatus(currentResultRef)" style="margin-bottom:10px;">
+              <button class="btn-outline" id="btn-check-pending-status" onclick="pollPaymentStatus(currentPendingRef || currentResultRef || (document.getElementById('res-pending-ref') ? document.getElementById('res-pending-ref').textContent.trim() : ''))" style="margin-bottom:10px;">
                 <i class="fa-solid fa-arrows-rotate"></i> Refresh Pass Status
               </button>
               <button class="btn-outline" onclick="closeRenewalModal(); refreshDashboard();" style="margin-bottom:6px;">
@@ -6685,8 +6685,9 @@ if (typeof document !== 'undefined') {
         qrCountdownTimer = null;
       }
     } else {
-      if (currentPendingRef) {
-        pollPaymentStatus(currentPendingRef, 1);
+      const activeRef = currentPendingRef || currentResultRef || (document.getElementById('res-pending-ref') ? document.getElementById('res-pending-ref').textContent.trim() : null);
+      if (activeRef && activeRef !== '--') {
+        pollPaymentStatus(activeRef, 1);
       }
       if (currentMember && currentActiveTab === 'tab-pass') {
         fetchFreshQRToken();
@@ -6696,8 +6697,9 @@ if (typeof document !== 'undefined') {
   });
 
   window.addEventListener('focus', () => {
-    if (currentPendingRef) {
-      pollPaymentStatus(currentPendingRef, 1);
+    const activeRef = currentPendingRef || currentResultRef || (document.getElementById('res-pending-ref') ? document.getElementById('res-pending-ref').textContent.trim() : null);
+    if (activeRef && activeRef !== '--') {
+      pollPaymentStatus(activeRef, 1);
     }
   });
 }
@@ -7283,12 +7285,32 @@ async function openRenewalModal(preselectedPlanId = null, mode = 'all') {
 }
 
 function closeRenewalModal() {
-  clearInterval(paymentPollingTimer);
+  if (paymentPollingTimer) {
+    clearTimeout(paymentPollingTimer);
+    clearInterval(paymentPollingTimer);
+    paymentPollingTimer = null;
+  }
+  currentPendingRef = null;
   const m = document.getElementById('modal-renewal');
   if (m) {
-    m.isOpen = false;
-    if (typeof m.dismiss === 'function') m.dismiss();
+    try {
+      if (typeof m.dismiss === 'function') {
+        m.dismiss().catch(() => {});
+      }
+    } catch (e) {}
+    try {
+      m.isOpen = false;
+      m.removeAttribute('is-open');
+      m.classList.remove('show-modal');
+      m.style.display = 'none';
+      setTimeout(() => {
+        m.style.display = '';
+      }, 400);
+    } catch (e) {}
   }
+  try {
+    document.querySelectorAll('ion-backdrop').forEach(b => b.remove());
+  } catch (e) {}
 }
 
 function renderCheckoutPlanCards(plans, mode = currentCheckoutMode || 'all') {
@@ -7774,7 +7796,15 @@ async function handlePaymentReturn(urlStr) {
     }
   }
 
-  if (!ref) ref = currentPendingRef || currentResultRef;
+  if (!ref) {
+    ref = currentPendingRef || currentResultRef;
+    if (!ref || ref === '--') {
+      const domRef = document.getElementById('res-pending-ref');
+      if (domRef && domRef.textContent && domRef.textContent.trim() !== '--') {
+        ref = domRef.textContent.trim();
+      }
+    }
+  }
 
   // Dismiss in-app browser tab if still open
   try {
@@ -7879,27 +7909,29 @@ function startPaymentStatusPolling(refCode) {
     clearInterval(paymentPollingTimer);
     paymentPollingTimer = null;
   }
-  if (!refCode) return;
+  const activeRef = refCode || currentPendingRef || currentResultRef || (document.getElementById('res-pending-ref') ? document.getElementById('res-pending-ref').textContent.trim() : null);
+  if (!activeRef || activeRef === '--') return;
 
-  currentPendingRef = refCode;
+  currentPendingRef = activeRef;
+  currentResultRef = activeRef;
   let attempts = 0;
   let notFoundStreak = 0;
   let isPollingBusy = false;
 
   const pollStep = async () => {
-    if (!currentPendingRef || currentPendingRef !== refCode) return;
+    if (!currentPendingRef || currentPendingRef !== activeRef) return;
     if (isPollingBusy) return;
     isPollingBusy = true;
     attempts++;
 
     try {
-      const result = await pollPaymentStatus(refCode, attempts);
+      const result = await pollPaymentStatus(activeRef, attempts);
       if (result === true) {
-        // Successfully confirmed and navigated straight to dashboard
+        // Successfully confirmed, shown success state, and scheduled navigation
         return;
       } else if (result === 'not_found') {
         notFoundStreak++;
-        if (notFoundStreak >= 4) {
+        if (notFoundStreak >= 6) {
           renderResultState('failed', { message: 'Payment session not found. It may have expired or was not completed.' });
           return;
         }
@@ -7907,7 +7939,7 @@ function startPaymentStatusPolling(refCode) {
         notFoundStreak = 0;
       }
 
-      if (attempts >= 45) {
+      if (attempts >= 100) {
         const pendingEl = document.getElementById('result-state-pending');
         if (pendingEl && pendingEl.style.display !== 'none') {
           renderResultState('failed', { message: 'Payment confirmation timed out. If you completed payment, please tap "Refresh Pass Status".' });
@@ -7918,19 +7950,20 @@ function startPaymentStatusPolling(refCode) {
       isPollingBusy = false;
     }
 
-    if (!currentPendingRef || currentPendingRef !== refCode) return;
+    if (!currentPendingRef || currentPendingRef !== activeRef) return;
 
-    // Fast, responsive polling intervals
-    const nextDelay = (attempts <= 10) ? 900 : ((attempts <= 22) ? 1400 : 2500);
+    // Responsive polling intervals: 1.2s -> 2.0s -> 3.0s
+    const nextDelay = (attempts <= 15) ? 1200 : ((attempts <= 40) ? 2000 : 3000);
     paymentPollingTimer = setTimeout(pollStep, nextDelay);
   };
 
-  // Launch immediate poll without initial artificial delay
+  // Launch immediate poll without artificial delay
   pollStep();
 }
 
 async function pollPaymentStatus(refCode, attempt = 1) {
-  if (!refCode) return false;
+  const activeRef = refCode || currentPendingRef || currentResultRef || (document.getElementById('res-pending-ref') ? document.getElementById('res-pending-ref').textContent.trim() : null);
+  if (!activeRef || activeRef === '--') return false;
   const token = localStorage.getItem('peg_token');
   if (!token) return false;
 
@@ -7941,7 +7974,7 @@ async function pollPaymentStatus(refCode, attempt = 1) {
   }
 
   try {
-    const res = await authFetch(`${API_URL}/check_status.php?ref=${encodeURIComponent(refCode)}`, {
+    const res = await authFetch(`${API_URL}/check_status.php?ref=${encodeURIComponent(activeRef)}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -7965,18 +7998,37 @@ async function pollPaymentStatus(refCode, attempt = 1) {
         paymentPollingTimer = null;
       }
       currentPendingRef = null;
-      currentResultRef = null;
+      currentResultRef = activeRef;
 
-      // REKTA DASHBOARD: Close modal, refresh dashboard data, jump straight to Pass tab
+      // 1. Immediately switch modal to success state (green checkmark, active badge)
+      renderResultState('success', data);
+
       const isFee = data.is_membership_fee || (data.plan_category === 'membership_fee');
       const successMsg = isFee 
         ? '🎉 Payment confirmed! Your 1-Year Official Membership is now active.' 
         : '🎉 Payment confirmed! Your gym pass has been activated.';
       showToast(successMsg, 4500);
-      closeRenewalModal();
+
+      // Trigger subtle haptic feedback on supported mobile devices
+      try {
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) {
+          window.Capacitor.Plugins.Haptics.notification({ type: 'SUCCESS' });
+        }
+      } catch (e) {}
+
+      // Refresh dashboard data in background
       refreshDashboard();
       loadPaymentHistory();
-      switchToTab('tab-pass');
+
+      // 2. Smoothly dismiss modal and switch to pass tab after a brief visual confirmation
+      setTimeout(() => {
+        closeRenewalModal();
+        switchToTab('tab-pass');
+        if (typeof fetchFreshQRToken === 'function') {
+          fetchFreshQRToken();
+        }
+      }, 1800);
+
       return true;
     } else if (data.status === 'FAILED') {
       if (paymentPollingTimer) {
@@ -8045,17 +8097,35 @@ function renderResultState(state, data = {}) {
     if (plnEl) plnEl.textContent = data.plan_name || (selectedRenewPlan ? selectedRenewPlan.name : '--');
     if (amtEl) amtEl.textContent = data.amount_formatted || '--';
   } else if (state === 'success') {
-    const amtEl = document.getElementById('res-success-amount');
-    const mthEl = document.getElementById('res-success-method');
-    const refEl = document.getElementById('res-success-ref');
-    const plnEl = document.getElementById('res-success-plan');
-    const valEl = document.getElementById('res-success-valid');
+    const titleEl = document.getElementById('res-success-title');
+    const subEl   = document.getElementById('res-success-subtitle');
+    const amtEl   = document.getElementById('res-success-amount');
+    const mthEl   = document.getElementById('res-success-method');
+    const refEl   = document.getElementById('res-success-ref');
+    const plnEl   = document.getElementById('res-success-plan');
+    const badgeEl = document.getElementById('res-success-badge');
+    const valEl   = document.getElementById('res-success-valid');
+    const valLbl  = document.getElementById('res-success-valid-label');
 
-    if (amtEl) amtEl.textContent = data.amount_formatted || '₱' + parseFloat(data.amount || 0).toFixed(2);
+    const isFee = data.is_membership_fee || (data.plan_category === 'membership_fee');
+    if (isFee) {
+      if (titleEl) titleEl.textContent = 'Official Member Activated!';
+      if (subEl)   subEl.textContent = 'Your 1-Year Official Gym Membership is now fully active.';
+      if (badgeEl) badgeEl.textContent = '● OFFICIAL MEMBER';
+      if (valLbl)  valLbl.textContent = 'Membership Expiry';
+      if (valEl)   valEl.textContent = data.annual_membership_expiry || data.valid_until || '1 Year Active';
+    } else {
+      if (titleEl) titleEl.textContent = 'Payment Successful';
+      if (subEl)   subEl.textContent = 'Your payment has been confirmed! Your gym pass is now active.';
+      if (badgeEl) badgeEl.textContent = '● ACTIVE PASS';
+      if (valLbl)  valLbl.textContent = 'Valid Until';
+      if (valEl)   valEl.textContent = data.valid_until || 'Active Pass';
+    }
+
+    if (amtEl) amtEl.textContent = data.amount_formatted || ('₱' + parseFloat(data.amount || 0).toFixed(2));
     if (mthEl) mthEl.textContent = data.payment_method || 'GCash';
     if (refEl) refEl.textContent = currentResultRef || '--';
-    if (plnEl) plnEl.textContent = data.plan_name || 'Active Membership';
-    if (valEl) valEl.textContent = data.valid_until || 'Active Member';
+    if (plnEl) plnEl.textContent = data.plan_name || (isFee ? '1-Year Official Membership' : 'Active Membership');
   } else if (state === 'pending') {
     const refEl = document.getElementById('res-pending-ref');
     if (refEl) refEl.textContent = currentResultRef || '--';
@@ -8852,8 +8922,11 @@ function initializeApp() {
 
         App.addListener('appStateChange', (state) => {
           console.log('[PalmasGym] appStateChange:', state);
-          if (state && state.isActive && currentPendingRef) {
-            pollPaymentStatus(currentPendingRef, 1);
+          if (state && state.isActive) {
+            const activeRef = currentPendingRef || currentResultRef || (document.getElementById('res-pending-ref') ? document.getElementById('res-pending-ref').textContent.trim() : null);
+            if (activeRef && activeRef !== '--') {
+              pollPaymentStatus(activeRef, 1);
+            }
           }
         });
       }
@@ -8861,7 +8934,8 @@ function initializeApp() {
       if (Browser && typeof Browser.addListener === 'function') {
         Browser.addListener('browserFinished', () => {
           console.log('[PalmasGym] Browser dismissed or closed');
-          if (currentPendingRef) {
+          const activeRef = currentPendingRef || currentResultRef || (document.getElementById('res-pending-ref') ? document.getElementById('res-pending-ref').textContent.trim() : null);
+          if (activeRef && activeRef !== '--') {
             handlePaymentReturn(null);
           }
         });
