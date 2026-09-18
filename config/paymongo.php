@@ -40,35 +40,42 @@ class PayMongoGateway {
         // Detect AV HTTPS interception (MITM proxy) such as AVG/Avast/ESET on local machines.
         // Antivirus SSL proxies replace upstream certificates with their own local untrusted root CA.
         static $avMitmDetected = null;
+        $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'peg_paymongo_ssl_mitm.flag';
+
         if ($avMitmDetected === null) {
-            $avMitmDetected = false;
-            $ctx = stream_context_create([
-                'ssl' => [
-                    'verify_peer'             => false,
-                    'verify_peer_name'        => false,
-                    'capture_peer_cert_chain' => true,
-                ]
-            ]);
-            $fp = @stream_socket_client('ssl://api.paymongo.com:443', $e, $es, 5, STREAM_CLIENT_CONNECT, $ctx);
-            if ($fp) {
-                $params = stream_context_get_params($fp);
-                $chain  = $params['options']['ssl']['peer_certificate_chain'] ?? [];
-                fclose($fp);
-                if (!empty($chain[0])) {
-                    $info   = openssl_x509_parse($chain[0]);
-                    $issuer = strtolower($info['issuer']['CN'] ?? ($info['issuer']['O'] ?? ''));
-                    // Known AV/security proxy issuers
-                    $avSignatures = ['avg', 'avast', 'eset', 'kaspersky', 'bitdefender',
-                                     'web shield', 'mail shield', 'g data', 'f-secure',
-                                     'malwarebytes', 'trend micro', 'sophos'];
-                    foreach ($avSignatures as $sig) {
-                        if (str_contains($issuer, $sig)) {
-                            $avMitmDetected = true;
-                            error_log("PayMongo: AV HTTPS proxy detected (issuer: {$info['issuer']['CN']}). SSL peer verification bypassed. API key authentication provides secure transport authentication.");
-                            break;
+            if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 86400)) {
+                $avMitmDetected = (trim((string)@file_get_contents($cacheFile)) === '1');
+            } else {
+                $avMitmDetected = false;
+                $ctx = stream_context_create([
+                    'ssl' => [
+                        'verify_peer'             => false,
+                        'verify_peer_name'        => false,
+                        'capture_peer_cert_chain' => true,
+                    ]
+                ]);
+                $fp = @stream_socket_client('ssl://api.paymongo.com:443', $e, $es, 2, STREAM_CLIENT_CONNECT, $ctx);
+                if ($fp) {
+                    $params = stream_context_get_params($fp);
+                    $chain  = $params['options']['ssl']['peer_certificate_chain'] ?? [];
+                    fclose($fp);
+                    if (!empty($chain[0])) {
+                        $info   = openssl_x509_parse($chain[0]);
+                        $issuer = strtolower($info['issuer']['CN'] ?? ($info['issuer']['O'] ?? ''));
+                        // Known AV/security proxy issuers
+                        $avSignatures = ['avg', 'avast', 'eset', 'kaspersky', 'bitdefender',
+                                         'web shield', 'mail shield', 'g data', 'f-secure',
+                                         'malwarebytes', 'trend micro', 'sophos'];
+                        foreach ($avSignatures as $sig) {
+                            if (str_contains($issuer, $sig)) {
+                                $avMitmDetected = true;
+                                error_log("PayMongo: AV HTTPS proxy detected (issuer: {$info['issuer']['CN']}). SSL peer verification bypassed. API key authentication provides secure transport authentication.");
+                                break;
+                            }
                         }
                     }
                 }
+                @file_put_contents($cacheFile, $avMitmDetected ? '1' : '0');
             }
         }
 
@@ -322,7 +329,8 @@ class PayMongoGateway {
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_USERPWD        => $secretKey . ':',
             CURLOPT_HTTPHEADER     => ['Accept: application/json'],
-            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_TIMEOUT        => 8,
+            CURLOPT_CONNECTTIMEOUT => 3,
         ] + self::getSslOptions());
 
         $response = curl_exec($ch);

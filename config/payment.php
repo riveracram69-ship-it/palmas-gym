@@ -352,14 +352,22 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
                 <p>{$pass_note}</p>
                 <p style=\"margin-top:16px;\">Thank you for staying committed to your fitness journey with Palma's Elite Gym! 💪</p>
             ";
-            try {
-                $email_res = send_email_notification($member['email'], $email_subject, $email_title, $email_body);
-                if (is_array($email_res) && empty($email_res['sent'])) {
-                    error_log("Payment activation email failed for member {$member['email']}: " . ($email_res['error'] ?? 'Unknown error'));
+            // Asynchronously dispatch email receipt after HTTP response is flushed
+            // This prevents slow SMTP handshakes from delaying real-time payment confirmation
+            $recipEmail = $member['email'];
+            register_shutdown_function(function() use ($recipEmail, $email_subject, $email_title, $email_body) {
+                if (function_exists('fastcgi_finish_request')) {
+                    fastcgi_finish_request();
                 }
-            } catch (\Throwable $emEx) {
-                error_log("Payment activation email exception for member {$member['email']}: " . $emEx->getMessage());
-            }
+                try {
+                    $email_res = send_email_notification($recipEmail, $email_subject, $email_title, $email_body);
+                    if (is_array($email_res) && empty($email_res['sent'])) {
+                        error_log("Payment activation email failed for member {$recipEmail}: " . ($email_res['error'] ?? 'Unknown error'));
+                    }
+                } catch (\Throwable $emEx) {
+                    error_log("Payment activation email exception for member {$recipEmail}: " . $emEx->getMessage());
+                }
+            });
         }
 
         $response = [

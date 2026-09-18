@@ -7800,11 +7800,8 @@ async function handlePaymentReturn(urlStr) {
   showToast('Verifying payment confirmation...');
   const isDone = await pollPaymentStatus(ref, 1);
   if (isDone) {
-    showToast('🎉 Payment confirmed! Your membership has been activated.', 5000);
-    setTimeout(() => {
-      closeRenewalModal();
-      switchToTab('tab-pass');
-    }, 2000);
+    // pollPaymentStatus already notified, closed modal, refreshed dashboard, and switched to pass tab
+    return;
   } else if (status === 'cancelled') {
     renderResultState('cancelled', { reference_code: ref });
     showToast('Payment checkout was cancelled.');
@@ -7887,40 +7884,49 @@ function startPaymentStatusPolling(refCode) {
   currentPendingRef = refCode;
   let attempts = 0;
   let notFoundStreak = 0;
-
-  // Immediately poll status on start
-  pollPaymentStatus(refCode, 1);
+  let isPollingBusy = false;
 
   const pollStep = async () => {
     if (!currentPendingRef || currentPendingRef !== refCode) return;
+    if (isPollingBusy) return;
+    isPollingBusy = true;
     attempts++;
-    const result = await pollPaymentStatus(refCode, attempts);
-    if (result === true) {
-      // Resolved and redirected straight to dashboard
-      return;
-    } else if (result === 'not_found') {
-      notFoundStreak++;
-      if (notFoundStreak >= 4) {
-        renderResultState('failed', { message: 'Payment session not found. It may have expired or was not completed.' });
+
+    try {
+      const result = await pollPaymentStatus(refCode, attempts);
+      if (result === true) {
+        // Successfully confirmed and navigated straight to dashboard
+        return;
+      } else if (result === 'not_found') {
+        notFoundStreak++;
+        if (notFoundStreak >= 4) {
+          renderResultState('failed', { message: 'Payment session not found. It may have expired or was not completed.' });
+          return;
+        }
+      } else {
+        notFoundStreak = 0;
+      }
+
+      if (attempts >= 45) {
+        const pendingEl = document.getElementById('result-state-pending');
+        if (pendingEl && pendingEl.style.display !== 'none') {
+          renderResultState('failed', { message: 'Payment confirmation timed out. If you completed payment, please tap "Refresh Pass Status".' });
+        }
         return;
       }
-    } else {
-      notFoundStreak = 0;
+    } finally {
+      isPollingBusy = false;
     }
 
-    if (attempts >= 35) {
-      const pendingEl = document.getElementById('result-state-pending');
-      if (pendingEl && pendingEl.style.display !== 'none') {
-        renderResultState('failed', { message: 'Payment confirmation timed out. If you completed payment, please tap "Refresh Pass Status".' });
-      }
-      return;
-    }
+    if (!currentPendingRef || currentPendingRef !== refCode) return;
 
-    const nextDelay = (attempts <= 6) ? 1400 : ((attempts <= 16) ? 2000 : 3000);
+    // Fast, responsive polling intervals
+    const nextDelay = (attempts <= 10) ? 900 : ((attempts <= 22) ? 1400 : 2500);
     paymentPollingTimer = setTimeout(pollStep, nextDelay);
   };
 
-  paymentPollingTimer = setTimeout(pollStep, 1400);
+  // Launch immediate poll without initial artificial delay
+  pollStep();
 }
 
 async function pollPaymentStatus(refCode, attempt = 1) {
