@@ -186,8 +186,9 @@ try {
         }
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([
-            'success' => false,
-            'message' => 'Transaction not found or unauthorized access.'
+            'success'   => false,
+            'not_found' => true,
+            'message'   => 'Transaction not found or unauthorized access.'
         ]);
         exit;
     }

@@ -3775,8 +3775,12 @@
               <button class="btn-outline" id="btn-check-pending-status" onclick="pollPaymentStatus(currentResultRef)" style="margin-bottom:10px;">
                 <i class="fa-solid fa-arrows-rotate"></i> Refresh Pass Status
               </button>
-              <button class="btn-outline" onclick="closeRenewalModal(); refreshDashboard();">
+              <button class="btn-outline" onclick="closeRenewalModal(); refreshDashboard();" style="margin-bottom:6px;">
                 Return to Membership
+              </button>
+              <!-- Escape hatch: cancel orphaned/stale payment and restart -->
+              <button class="btn-outline" id="btn-cancel-payment" onclick="cancelPendingPayment()" style="border-color:rgba(240,106,106,0.4); color:#f87171; font-size:0.78rem; padding:8px 12px; margin-top:4px;">
+                <i class="fa-solid fa-xmark"></i> Cancel & Start Over
               </button>
             </div>
           </div>
@@ -7534,11 +7538,30 @@ async function executeGatewayCheckout() {
 function startPaymentStatusPolling(refCode) {
   clearInterval(paymentPollingTimer);
   let attempts = 0;
+  let notFoundStreak = 0; // Track consecutive NOT_FOUND to detect orphaned tx
   paymentPollingTimer = setInterval(async () => {
     attempts++;
-    const isDone = await pollPaymentStatus(refCode, attempts);
-    if (isDone || attempts >= 25) {
+    const result = await pollPaymentStatus(refCode, attempts);
+    if (result === true) {
+      clearInterval(paymentPollingTimer); // Resolved (paid/failed/cancelled/expired)
+    } else if (result === 'not_found') {
+      notFoundStreak++;
+      // After 3 consecutive NOT_FOUND responses (9s), treat as failed/orphaned
+      if (notFoundStreak >= 3) {
+        clearInterval(paymentPollingTimer);
+        renderResultState('failed', { message: 'Payment session not found. It may have expired or was not completed.' });
+      }
+    } else {
+      notFoundStreak = 0; // Reset streak on any other response
+    }
+    // Hard stop after 25 attempts (75s) — show failed if still pending
+    if (attempts >= 25) {
       clearInterval(paymentPollingTimer);
+      // Only auto-fail if still showing pending screen
+      const pendingEl = document.getElementById('result-state-pending');
+      if (pendingEl && pendingEl.style.display !== 'none') {
+        renderResultState('failed', { message: 'Payment confirmation timed out. If you completed payment, please tap "Refresh Pass Status" or contact the gym.' });
+      }
     }
   }, 3000);
 }
@@ -7565,6 +7588,11 @@ async function pollPaymentStatus(refCode, attempt = 1) {
       btnCheck.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Refresh Pass Status';
     }
 
+    // Transaction not found in DB — orphaned reference
+    if (!data.success && (res.status === 404 || data.not_found)) {
+      return 'not_found';
+    }
+
     if (!data.success) return false;
 
     if (data.status === 'PAID') {
@@ -7587,7 +7615,7 @@ async function pollPaymentStatus(refCode, attempt = 1) {
       return true;
     }
 
-    return false; // Still pending
+    return false; // Still PENDING
 
   } catch (err) {
     if (btnCheck) {
@@ -7596,6 +7624,16 @@ async function pollPaymentStatus(refCode, attempt = 1) {
     }
     return false;
   }
+}
+
+// Allows user to manually escape a stuck/orphaned payment screen
+function cancelPendingPayment() {
+  clearInterval(paymentPollingTimer);
+  currentResultRef = null;
+  currentCheckoutUrl = null;
+  closeRenewalModal();
+  refreshDashboard();
+  showToast('Payment cancelled. You can start a new payment anytime.', 3500);
 }
 
 function renderResultState(state, data = {}) {
