@@ -562,6 +562,33 @@ try {
     }
 
     // 5. Standard JSON API Response
+    // If transaction is PAID, generate/return a fresh session token and member data for seamless auto-login
+    $issued_token = null;
+    $member_data = null;
+    if ($tx['status'] === 'PAID' && !empty($tx['member_id'])) {
+        try {
+            $issued_token = bin2hex(random_bytes(32));
+            $pdo->prepare("INSERT INTO auth_tokens (member_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))")
+                ->execute([(int)$tx['member_id'], $issued_token]);
+
+            $mStmt = $pdo->prepare("
+                SELECT id, membership_id, full_name, email, contact_number, photo, status, account_status, 
+                       annual_membership_expiry, created_at 
+                FROM members WHERE id = ? LIMIT 1
+            ");
+            $mStmt->execute([(int)$tx['member_id']]);
+            $member_data = $mStmt->fetch(PDO::FETCH_ASSOC);
+            if ($member_data) {
+                $ann_exp = $member_data['annual_membership_expiry'] ?? null;
+                $is_official = (!empty($ann_exp) && strtotime($ann_exp . ' 23:59:59') >= time());
+                $member_data['is_official_member'] = $is_official;
+                $member_data['membership_tier'] = $is_official ? 'Official Member' : (!empty($ann_exp) ? 'Expired Member' : 'Non-Member');
+            }
+        } catch (Throwable $tokEx) {
+            error_log('check_status token generation notice: ' . $tokEx->getMessage());
+        }
+    }
+
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode([
         'success'                  => true,
@@ -580,7 +607,9 @@ try {
         'annual_membership_expiry' => $is_membership_fee ? $validUntil : ($tx['annual_membership_expiry'] ?? null),
         'created_at'               => date('F j, Y, g:i A', strtotime($tx['created_at'])),
         'paid_at'                  => $tx['paid_at'] ? date('F j, Y, g:i A', strtotime($tx['paid_at'])) : null,
-        'is_paid'                  => ($tx['status'] === 'PAID')
+        'is_paid'                  => ($tx['status'] === 'PAID'),
+        'token'                    => $issued_token,
+        'member'                   => $member_data
     ]);
 
 } catch (Throwable $e) {

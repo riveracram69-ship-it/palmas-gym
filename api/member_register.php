@@ -272,9 +272,28 @@ try {
         }
     }
 
-    // Do NOT issue an auth token yet — account is Pending until staff approval.
-    // A token will be issued only after the member logs in with an approved account.
-    $auth_token = null;
+    // Issue an initial authentication session token for the new member
+    $auth_token = bin2hex(random_bytes(32));
+    try {
+        $pdo->prepare("INSERT INTO auth_tokens (member_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))")
+            ->execute([$member_id, $auth_token]);
+    } catch (Throwable $tokEx) {
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS auth_tokens (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                member_id INT NOT NULL,
+                token VARCHAR(64) NOT NULL UNIQUE,
+                expires_at DATETIME NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_token (token),
+                INDEX idx_member (member_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $pdo->prepare("INSERT INTO auth_tokens (member_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))")
+                ->execute([$member_id, $auth_token]);
+        } catch (Throwable $tokEx2) {
+            $auth_token = null;
+        }
+    }
 
     $checkout_url = null;
     $ref_code     = null;

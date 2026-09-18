@@ -5811,6 +5811,12 @@ async function submitRegistration() {
       showScreen('view-main');
       switchToTab('tab-renew');
 
+      const m = document.getElementById('modal-renewal');
+      if (m) {
+        m.isOpen = true;
+        if (typeof m.present === 'function') m.present();
+      }
+
       renderResultState('pending', {
         ref_code: refCode,
         amount_formatted: checkoutObj.amount_formatted || ('₱' + parseFloat(selectedPlan ? selectedPlan.price : 500).toFixed(2)),
@@ -7966,8 +7972,7 @@ function startPaymentStatusPolling(refCode) {
 async function pollPaymentStatus(refCode, attempt = 1) {
   const activeRef = refCode || currentPendingRef || currentResultRef || (document.getElementById('res-pending-ref') ? document.getElementById('res-pending-ref').textContent.trim() : null);
   if (!activeRef || activeRef === '--') return false;
-  const token = localStorage.getItem('peg_token');
-  if (!token) return false;
+  const token = localStorage.getItem('peg_token') || '';
 
   const btnCheck = document.getElementById('btn-check-pending-status');
   if (btnCheck && attempt === 1) {
@@ -7975,12 +7980,14 @@ async function pollPaymentStatus(refCode, attempt = 1) {
     btnCheck.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></div> Refreshing...';
   }
 
+  const reqHeaders = { 'Accept': 'application/json' };
+  if (token) {
+    reqHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
   try {
     const res = await authFetch(`${API_URL}/check_status.php?ref=${encodeURIComponent(activeRef)}&format=json`, {
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json'
-      }
+      headers: reqHeaders
     });
     let data;
     try {
@@ -8010,6 +8017,18 @@ async function pollPaymentStatus(refCode, attempt = 1) {
       }
       currentPendingRef = null;
       currentResultRef = activeRef;
+
+      // Auto-save session token and member data if provided (crucial for new account registrations)
+      if (data.token && !localStorage.getItem('peg_token')) {
+        localStorage.setItem('peg_token', data.token);
+      }
+      if (data.member) {
+        currentMember = data.member;
+        localStorage.setItem('peg_member', JSON.stringify(data.member));
+        if (typeof initMainView === 'function') {
+          initMainView(data.member.id);
+        }
+      }
 
       // 1. Immediately switch modal to success state (green checkmark, active badge)
       renderResultState('success', data);
