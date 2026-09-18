@@ -187,7 +187,12 @@ function run_master_v3_migration(PDO $pdo): array {
         $pdo->prepare("INSERT INTO `membership_plans` (`name`, `price`, `duration_months`, `duration_minutes`, `is_test_promo`, `promo_code`, `promo_enabled`, `plan_category`, `floor_access`, `is_active`) VALUES ('PAYMENT TEST — ₱1 — 60 MINUTES', 1.00, 0, 60, 1, 'TEST_60M', 1, 'test_promo', 'all', 1)")->execute();
     }
 
-    // 3. PAYMENT ENUM ALIGNMENT (Maya, GCash, Cash, Bank Transfer, Credit Card)
+    // 3. PAYMENT ENUM ALIGNMENT & SUBSCRIPTION_ID NULLABILITY
+    try {
+        $pdo->exec("ALTER TABLE `payments` MODIFY COLUMN `subscription_id` INT NULL DEFAULT NULL");
+        $results[] = "payments: ensured subscription_id is nullable for membership fee payments";
+    } catch (Exception $e) {}
+
     try {
         $pdo->exec("ALTER TABLE `payments` MODIFY COLUMN `payment_method` ENUM('Cash','GCash','Maya','Bank Transfer','Credit Card') NOT NULL");
         $results[] = "payments: updated payment_method enum";
@@ -280,6 +285,18 @@ function run_master_v3_migration(PDO $pdo): array {
         $results[] = "used_qr_tokens: verified anti-replay table exists";
     } catch (Exception $e) {
         $results[] = "used_qr_tokens: warning: " . $e->getMessage();
+    }
+
+    // 9. AUTH TOKENS INDEX
+    try {
+        $auth_indexes = $pdo->query("SHOW INDEX FROM auth_tokens")->fetchAll(PDO::FETCH_ASSOC);
+        $auth_idx_names = array_column($auth_indexes, 'Key_name');
+        if (!in_array('idx_auth_tokens_expires', $auth_idx_names)) {
+            $pdo->exec("CREATE INDEX idx_auth_tokens_expires ON auth_tokens (expires_at)");
+            $results[] = "auth_tokens: added index idx_auth_tokens_expires";
+        }
+    } catch (Exception $e) {
+        $results[] = "auth_tokens: warning: " . $e->getMessage();
     }
 
     return $results;

@@ -535,7 +535,39 @@ if (!$plan30) {
     cleanup_test_member($pdo, $m15['membership_id']);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// TEST 16: Annual Membership Fee Activation (1-Year Qualification, subscription_id = NULL)
+// ─────────────────────────────────────────────────────────────
+echo "\n" . str_repeat('─', 60) . "\n";
+echo " TEST 16: Annual Membership Fee Activation (1-Year Tier Status)\n";
+echo str_repeat('─', 60) . "\n";
+
+$m16 = create_test_member($pdo, 'P16');
+$plan_ann = $pdo->query("SELECT id, name, price FROM membership_plans WHERE plan_category = 'membership_fee' OR id = 8 LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+
+if ($plan_ann) {
+    $ref16 = 'TEST-ANN-' . bin2hex(random_bytes(4));
+    insert_pending_transaction($pdo, $m16['id'], (int)$plan_ann['id'], (float)$plan_ann['price'], $ref16);
+    
+    $act16 = process_automated_subscription_activation($pdo, $m16['id'], (int)$plan_ann['id'], (float)$plan_ann['price'], 'GCash', $ref16, false);
+    assert_true("Annual Membership activation succeeded", ($act16['success'] ?? false) === true);
+    assert_true("Annual Membership flag is set", ($act16['is_membership_fee'] ?? false) === true);
+    
+    // Check member annual_membership_expiry in DB
+    $ann_check = $pdo->query("SELECT annual_membership_expiry FROM members WHERE id = {$m16['id']}")->fetchColumn();
+    assert_true("Member annual_membership_expiry populated in DB", !empty($ann_check));
+    
+    // Verify payment record has NULL subscription_id
+    $pay_check = $pdo->query("SELECT subscription_id, amount FROM payments WHERE reference_number = '{$ref16}' LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+    assert_true("Payment row exists for annual membership", !empty($pay_check));
+    assert_true("Payment row has null subscription_id", $pay_check['subscription_id'] === null);
+    
+    cleanup_test_member($pdo, $m16['membership_id']);
+} else {
+    $skip++;
+}
+
+// ─────────────────────────────────────────────────────────────
 echo "\n" . str_repeat('═', 60) . "\n";
 echo " FINAL RESULTS\n";
 echo str_repeat('═', 60) . "\n";

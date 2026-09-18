@@ -27,7 +27,7 @@ function assert_sec($description, $condition) {
 }
 
 function run_php_script($script_relative_path, $post_data = [], $session_data = [], $headers = []) {
-    $php_bin = 'C:\\xam\\php\\php.exe';
+    $php_bin = defined('PHP_BINARY') && file_exists(PHP_BINARY) ? PHP_BINARY : (file_exists('C:\\xamp\\php\\php.exe') ? 'C:\\xamp\\php\\php.exe' : 'C:\\xam\\php\\php.exe');
     $full_path = realpath(__DIR__ . '/../' . $script_relative_path);
     $script_dir = dirname($full_path);
     $script_name = basename($full_path);
