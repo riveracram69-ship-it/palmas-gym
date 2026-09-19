@@ -1212,30 +1212,55 @@
 
     .pass-qr-frame {
       background: #ffffff;
-      padding: 22px;
-      border-radius: 14px;
-      display: inline-block;
+      padding: 18px;
+      border-radius: 20px;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55);
       margin: 14px auto;
       border: 4px solid #ffffff;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
     #qr-target {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       background: #ffffff;
-      min-width: 220px;
-      min-height: 220px;
+      width: 210px;
+      height: 210px;
+      max-width: 100%;
       margin: 0 auto;
+      overflow: hidden;
+      position: relative;
     }
 
     #qr-target canvas,
-    #qr-target img {
-      display: block !important;
+    #qr-target img,
+    #enlarged-qr-target canvas,
+    #enlarged-qr-target img {
+      max-width: 100% !important;
+      height: auto !important;
       margin: 0 auto !important;
       image-rendering: -webkit-optimize-contrast;
       image-rendering: pixelated;
+    }
+
+    /* Prevent QRCode.js dual-render canvas+img side-by-side overflow */
+    #qr-target canvas[style*="none"],
+    #qr-target img[style*="none"],
+    #qr-target [style*="display: none"],
+    #qr-target [style*="display:none"],
+    #enlarged-qr-target canvas[style*="none"],
+    #enlarged-qr-target img[style*="none"],
+    #enlarged-qr-target [style*="display: none"],
+    #enlarged-qr-target [style*="display:none"] {
+      display: none !important;
     }
 
     /* Test Promo Banner */
@@ -3209,7 +3234,7 @@
 
               <!-- Fixed Member QR Pass Info -->
               <div style="max-width:260px; margin:0 auto 12px; text-align:center;">
-                <div id="card-qr-memid" style="font-family:monospace; font-size:1.1rem; font-weight:800; letter-spacing:1.5px; color:var(--text-primary); margin-bottom:2px;">--</div>
+                <div id="card-qr-memid" style="font-family:monospace; font-size:1.1rem; font-weight:800; letter-spacing:1.5px; color:var(--text-primary); margin-bottom:2px; word-break:break-all; overflow-wrap:anywhere;">--</div>
                 <p style="font-size:0.75rem; color:var(--primary-light); margin:2px 0 0; letter-spacing:0.3px; font-weight:600;">
                   <i class="fa-solid fa-sun" style="color:var(--warning); margin-right:4px;"></i>Turn up brightness for instant scan
                 </p>
@@ -4438,11 +4463,11 @@
       <h3 style="font-family:'Outfit',sans-serif; font-size:1.15rem; font-weight:800; color:#121A14; margin:0 0 4px;">Hold to Scanner Camera</h3>
       <p style="font-size:0.78rem; color:#617567; margin:0 0 16px;">Set screen brightness to 100% for instant check-in</p>
 
-      <div style="background:#ffffff; padding:12px; border-radius:16px; display:inline-block; border:2px solid #e5e7eb; box-shadow:0 8px 24px rgba(0,0,0,0.08);">
-        <div id="enlarged-qr-target" style="display:flex; align-items:center; justify-content:center; min-width:240px; min-height:240px;"></div>
+      <div style="background:#ffffff; padding:12px; border-radius:16px; display:inline-flex; flex-direction:column; align-items:center; justify-content:center; border:2px solid #e5e7eb; box-shadow:0 8px 24px rgba(0,0,0,0.08); max-width:100%; box-sizing:border-box; overflow:hidden;">
+        <div id="enlarged-qr-target" style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:240px; height:240px; max-width:100%; margin:0 auto; overflow:hidden;"></div>
       </div>
 
-      <div id="enlarged-qr-memid" style="font-family:monospace; font-weight:900; font-size:1.15rem; color:#121A14; margin-top:12px; letter-spacing:1px;">--</div>
+      <div id="enlarged-qr-memid" style="font-family:monospace; font-weight:900; font-size:1.15rem; color:#121A14; margin-top:12px; letter-spacing:1px; word-break:break-all; overflow-wrap:anywhere;">--</div>
 
       <button class="btn-primary" style="margin-top:16px; height:46px; font-size:0.9rem;" onclick="closeEnlargedQRModal()">
         <i class="fa-solid fa-check"></i> Done (Close)
@@ -6616,7 +6641,7 @@ function initMainView(memberId) {
       } else {
         const qrBox = document.getElementById('qr-target');
         if (qrBox) {
-          qrBox.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:220px;color:#888;"><div class="spinner" style="width:28px;height:28px;border-width:3px;margin-bottom:10px;"></div><span style="font-size:0.75rem;letter-spacing:1px;font-weight:600;">LOADING SECURE PASS...</span></div>';
+          qrBox.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:210px;color:#888;"><div class="spinner" style="width:28px;height:28px;border-width:3px;margin-bottom:10px;"></div><span style="font-size:0.75rem;letter-spacing:1px;font-weight:600;">LOADING SECURE PASS...</span></div>';
         }
       }
       const qid = document.getElementById('card-qr-memid');
@@ -7273,20 +7298,41 @@ function renderQRCode(text) {
   const payload = (text || (currentMember && currentMember.membership_id) || '').trim();
   if (!payload) return;
 
+  // Always show clean formatted member ID on the pass card, NEVER the raw dynamic auth token string
   const qid = document.getElementById('card-qr-memid');
-  if (qid) qid.textContent = payload;
+  if (qid) {
+    const cleanId = (currentMember && currentMember.membership_id) || (payload.includes(':') ? payload.split(':')[0] : payload);
+    qid.textContent = cleanId;
+  }
 
   container.innerHTML = '';
   if (qrInstance) { try { qrInstance.clear(); } catch (e) {} }
   try {
     qrInstance = new QRCode(container, {
       text:         payload,
-      width:        220,
-      height:       220,
+      width:        210,
+      height:       210,
       colorDark:    '#000000',
       colorLight:   '#ffffff',
       correctLevel: QRCode.CorrectLevel.H
     });
+
+    // Safeguard: Guarantee exactly one rendering child is visible (canvas OR img, never both side-by-side)
+    const enforceSingleQR = () => {
+      const img = container.querySelector('img');
+      const cvs = container.querySelector('canvas');
+      if (img && img.src && img.src.startsWith('data:image')) {
+        if (cvs) cvs.style.setProperty('display', 'none', 'important');
+        img.style.setProperty('display', 'block', 'important');
+      } else if (cvs) {
+        cvs.style.setProperty('display', 'block', 'important');
+        if (img) img.style.setProperty('display', 'none', 'important');
+      }
+    };
+    enforceSingleQR();
+    setTimeout(enforceSingleQR, 50);
+    setTimeout(enforceSingleQR, 150);
+    setTimeout(enforceSingleQR, 400);
   } catch (err) {
     console.error('QR code generation error:', err);
   }
@@ -7302,7 +7348,10 @@ function openEnlargedQRModal() {
   if (!modal || !target) return;
 
   const payload = currentQrToken || (currentMember && currentMember.membership_id) || '';
-  if (memidEl) memidEl.textContent = (currentMember && currentMember.membership_id) || payload || 'NO MEMBER ID';
+  if (memidEl) {
+    const cleanId = (currentMember && currentMember.membership_id) || (payload.includes(':') ? payload.split(':')[0] : payload) || 'NO MEMBER ID';
+    memidEl.textContent = cleanId;
+  }
 
   target.innerHTML = '';
   if (enlargedQrInstance) {
@@ -7319,6 +7368,22 @@ function openEnlargedQRModal() {
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.H
       });
+
+      const enforceSingleEnlargedQR = () => {
+        const img = target.querySelector('img');
+        const cvs = target.querySelector('canvas');
+        if (img && img.src && img.src.startsWith('data:image')) {
+          if (cvs) cvs.style.setProperty('display', 'none', 'important');
+          img.style.setProperty('display', 'block', 'important');
+        } else if (cvs) {
+          cvs.style.setProperty('display', 'block', 'important');
+          if (img) img.style.setProperty('display', 'none', 'important');
+        }
+      };
+      enforceSingleEnlargedQR();
+      setTimeout(enforceSingleEnlargedQR, 50);
+      setTimeout(enforceSingleEnlargedQR, 150);
+      setTimeout(enforceSingleEnlargedQR, 400);
     } catch (e) {
       console.warn('Enlarged QR render error:', e);
     }
