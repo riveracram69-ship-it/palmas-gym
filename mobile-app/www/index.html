@@ -440,50 +440,79 @@
       color: var(--text-muted);
     }
 
-    /* ── iOS SAFARI DATE INPUT COMPATIBILITY ────────────────────────── */
-    input[type="date"] {
+    /* ── ENHANCED DATE SELECTOR & CALENDAR MODAL ─────────────────── */
+    .dob-clickable-wrap {
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: all 0.2s ease;
+    }
+    .dob-clickable-wrap:active {
+      transform: scale(0.985);
+      background: rgba(82, 183, 136, 0.14) !important;
+    }
+    .dob-select {
+      width: 100%;
+      height: 44px;
+      background: rgba(10, 30, 22, 0.85);
+      border: 1.5px solid rgba(82, 183, 136, 0.3);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 0 10px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
       -webkit-appearance: none;
-      -moz-appearance: none;
       appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2352B788' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+    }
+    .dob-select:focus {
+      border-color: var(--gym-light, #52B788);
+      box-shadow: 0 0 0 2px rgba(82, 183, 136, 0.25);
+    }
+    .dob-select option {
+      background: #0d281e;
+      color: #fff;
+    }
+    .cal-day-btn {
+      height: 38px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #fff;
+      font-size: 0.88rem;
+      font-weight: 600;
       display: flex;
       align-items: center;
-      width: 100%;
-      height: 100%;
-      min-height: 48px;
-      color: var(--text-primary) !important;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .cal-day-btn:hover:not(:disabled) {
+      background: rgba(82, 183, 136, 0.2);
+      border-color: rgba(82, 183, 136, 0.4);
+    }
+    .cal-day-btn.selected {
+      background: linear-gradient(135deg, #10b981, #059669) !important;
+      color: #fff !important;
+      font-weight: 800;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+      border-color: #34d399;
+    }
+    .cal-day-btn.today {
+      border-color: var(--gym-light, #52B788);
+    }
+    .cal-day-btn:disabled {
+      color: rgba(255, 255, 255, 0.2);
+      cursor: not-allowed;
       background: transparent;
-      cursor: pointer;
-      font-size: 16px;
-      font-family: 'Inter', sans-serif;
-    }
-    input[type="date"]::-webkit-date-and-time-value {
-      text-align: left;
-      min-height: 1.4em;
-      color: var(--text-primary) !important;
-      padding: 0;
-      margin: 0;
-    }
-    input[type="date"]::-webkit-datetime-edit {
-      color: var(--text-primary);
-      display: inline-flex;
-    }
-    input[type="date"]::-webkit-datetime-edit-fields-wrapper {
-      color: var(--text-primary);
-    }
-    input[type="date"]::-webkit-datetime-edit-text {
-      color: var(--text-muted);
-    }
-    input[type="date"]::-webkit-datetime-edit-month-field,
-    input[type="date"]::-webkit-datetime-edit-day-field,
-    input[type="date"]::-webkit-datetime-edit-year-field {
-      color: var(--text-primary);
-    }
-    input[type="date"]::-webkit-calendar-picker-indicator {
-      cursor: pointer;
-      filter: invert(1) brightness(0.85);
-      opacity: 0.85;
-      padding: 6px;
-      font-size: 1.15rem;
     }
 
     .input-field-wrap .eye-btn {
@@ -2700,21 +2729,67 @@
           </div>
 
           <div class="form-group">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-              <label style="margin:0;">Date of Birth *</label>
-              <span id="reg-dob-age-badge" style="display:none; font-size:0.75rem; background:rgba(82,183,136,0.15); color:var(--gym-light); padding:2px 8px; border-radius:6px; font-weight:700;"></span>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <label style="margin:0; font-weight:700;">Date of Birth *</label>
+              <span id="reg-dob-age-badge" style="display:none; font-size:0.75rem; background:rgba(82,183,136,0.18); color:var(--gym-light); padding:3px 10px; border-radius:8px; font-weight:700; border:1px solid rgba(82,183,136,0.3);"></span>
             </div>
-            <div class="input-field-wrap" onclick="triggerDatePicker(event, 'reg-dob')" style="cursor:pointer; position:relative;">
-              <i class="fa-solid fa-cake-candles" style="color: var(--gym-light); font-size:0.9rem; pointer-events:none;"></i>
-              <input 
-                type="date" 
-                id="reg-dob" 
-                onchange="updateRegDobAge(this.value)" 
-                oninput="updateRegDobAge(this.value)" 
-                onclick="try{if(typeof this.showPicker==='function')this.showPicker();}catch(e){}"
-              />
+
+            <!-- Clickable Date Bar (opens calendar modal) -->
+            <div 
+              id="reg-dob-display-wrap"
+              class="input-field-wrap dob-clickable-wrap" 
+              onclick="openCalendarPickerModal('reg')" 
+              style="cursor:pointer; position:relative; display:flex; align-items:center; justify-content:space-between; padding:0 14px; background:rgba(82,183,136,0.06); border:1px solid rgba(82,183,136,0.28); border-radius:12px; height:52px; margin-bottom:8px;"
+            >
+              <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+                <i class="fa-solid fa-cake-candles" style="color: var(--gym-light); font-size:1rem; flex-shrink:0;"></i>
+                <span id="reg-dob-display-text" style="color:var(--text-muted); font-size:0.92rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  Tap to pick date / open calendar
+                </span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <button type="button" style="background:rgba(82,183,136,0.18); border:1px solid rgba(82,183,136,0.4); color:var(--gym-light); border-radius:8px; padding:5px 10px; font-size:0.78rem; font-weight:700; display:flex; align-items:center; gap:5px; pointer-events:none;">
+                  <i class="fa-solid fa-calendar-days"></i> Calendar
+                </button>
+              </div>
+              <!-- Hidden underlying input preserving standard form integration -->
+              <input type="hidden" id="reg-dob" name="dob" value="" />
             </div>
-            <div style="font-size:0.75rem; color:var(--gym-muted); margin-top:4px;">Age is calculated automatically from your birth date</div>
+
+            <!-- Segmented Month / Day / Year Dropdown Selectors (Guaranteed iOS Wheel Picker) -->
+            <div style="display:grid; grid-template-columns: 2fr 1.1fr 1.4fr; gap:6px; margin-top:6px;">
+              <div>
+                <select id="reg-dob-month" class="dob-select" onchange="onDobDropdownChange('reg')" aria-label="Birth Month">
+                  <option value="">Month</option>
+                  <option value="01">Jan (01)</option>
+                  <option value="02">Feb (02)</option>
+                  <option value="03">Mar (03)</option>
+                  <option value="04">Apr (04)</option>
+                  <option value="05">May (05)</option>
+                  <option value="06">Jun (06)</option>
+                  <option value="07">Jul (07)</option>
+                  <option value="08">Aug (08)</option>
+                  <option value="09">Sep (09)</option>
+                  <option value="10">Oct (10)</option>
+                  <option value="11">Nov (11)</option>
+                  <option value="12">Dec (12)</option>
+                </select>
+              </div>
+              <div>
+                <select id="reg-dob-day" class="dob-select" onchange="onDobDropdownChange('reg')" aria-label="Birth Day">
+                  <option value="">Day</option>
+                </select>
+              </div>
+              <div>
+                <select id="reg-dob-year" class="dob-select" onchange="onDobDropdownChange('reg')" aria-label="Birth Year">
+                  <option value="">Year</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="font-size:0.75rem; color:var(--gym-muted); margin-top:5px; display:flex; justify-content:space-between; align-items:center;">
+              <span>Tap bar for visual calendar or use dropdowns</span>
+            </div>
           </div>
 
           <div class="form-group" style="margin-bottom:20px;">
@@ -3491,6 +3566,106 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════════
+       MODAL: INTERACTIVE CALENDAR & DATE OF BIRTH PICKER
+       ══════════════════════════════════════════════════════════ -->
+  <div id="dob-calendar-modal" style="display:none; position:fixed; inset:0; z-index:999999; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:16px; box-sizing:border-box;">
+    <div style="background:var(--card, #122b22); border:1px solid rgba(82,183,136,0.35); border-radius:24px; max-width:390px; width:100%; max-height:92vh; overflow-y:auto; box-shadow:0 24px 60px rgba(0,0,0,0.8); animation:modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); padding:20px; box-sizing:border-box;">
+      
+      <!-- Modal Header -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:34px; height:34px; border-radius:10px; background:rgba(82,183,136,0.15); display:flex; align-items:center; justify-content:center; color:var(--gym-light, #52B788);">
+            <i class="fa-solid fa-calendar-day" style="font-size:1rem;"></i>
+          </div>
+          <div>
+            <h3 style="margin:0; font-size:1.05rem; font-weight:800; color:#fff;">Select Date of Birth</h3>
+            <p style="margin:0; font-size:0.75rem; color:var(--text-muted, #94a3b8);">Pick your birth month, day, and year</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeCalendarPickerModal()" style="background:rgba(255,255,255,0.06); border:none; width:34px; height:34px; border-radius:50%; color:#fff; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Quick Year & Month Selector Toolbar -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+        <div>
+          <label style="font-size:0.72rem; color:var(--gym-light, #52B788); font-weight:700; text-transform:uppercase; margin-bottom:3px; display:block;">Year</label>
+          <select id="cal-modal-year" onchange="onCalModalNavChange()" style="width:100%; height:42px; background:rgba(10,30,22,0.8); border:1.5px solid rgba(82,183,136,0.3); border-radius:10px; color:#fff; font-size:0.92rem; font-weight:600; padding:0 8px; outline:none; cursor:pointer;">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.72rem; color:var(--gym-light, #52B788); font-weight:700; text-transform:uppercase; margin-bottom:3px; display:block;">Month</label>
+          <select id="cal-modal-month" onchange="onCalModalNavChange()" style="width:100%; height:42px; background:rgba(10,30,22,0.8); border:1.5px solid rgba(82,183,136,0.3); border-radius:10px; color:#fff; font-size:0.92rem; font-weight:600; padding:0 8px; outline:none; cursor:pointer;">
+            <option value="0">January</option>
+            <option value="1">February</option>
+            <option value="2">March</option>
+            <option value="3">April</option>
+            <option value="4">May</option>
+            <option value="5">June</option>
+            <option value="6">July</option>
+            <option value="7">August</option>
+            <option value="8">September</option>
+            <option value="9">October</option>
+            <option value="10">November</option>
+            <option value="11">December</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Calendar Month Navigation Bar -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding:6px 10px; background:rgba(255,255,255,0.03); border-radius:10px;">
+        <button type="button" onclick="calModalPrevMonth()" style="background:none; border:none; color:var(--gym-light, #52B788); font-size:1.1rem; padding:6px 12px; cursor:pointer;">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <span id="cal-modal-header-title" style="font-weight:700; color:#fff; font-size:0.95rem;"></span>
+        <button type="button" onclick="calModalNextMonth()" style="background:none; border:none; color:var(--gym-light, #52B788); font-size:1.1rem; padding:6px 12px; cursor:pointer;">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- Day Headers (Su, Mo, Tu, We, Th, Fr, Sa) -->
+      <div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; text-align:center; margin-bottom:6px;">
+        <span style="font-size:0.75rem; font-weight:700; color:#ef4444;">Su</span>
+        <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted, #94a3b8);">Mo</span>
+        <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted, #94a3b8);">Tu</span>
+        <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted, #94a3b8);">We</span>
+        <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted, #94a3b8);">Th</span>
+        <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted, #94a3b8);">Fr</span>
+        <span style="font-size:0.75rem; font-weight:700; color:var(--gym-light, #52B788);">Sa</span>
+      </div>
+
+      <!-- Calendar Days Grid -->
+      <div id="cal-modal-days-grid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; margin-bottom:16px;">
+        <!-- Day cells generated via JS -->
+      </div>
+
+      <!-- Selected Date & Age Preview Card -->
+      <div id="cal-modal-selection-card" style="background:rgba(82,183,136,0.1); border:1px solid rgba(82,183,136,0.25); border-radius:12px; padding:10px 14px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <div style="font-size:0.72rem; color:var(--text-muted, #94a3b8); font-weight:600;">Selected Date:</div>
+          <div id="cal-modal-preview-date" style="font-size:0.92rem; font-weight:800; color:#fff;">None selected</div>
+        </div>
+        <div id="cal-modal-preview-age-badge" style="display:none; font-size:0.8rem; background:var(--gym-mid, #2D6A4F); color:#fff; padding:4px 10px; border-radius:8px; font-weight:700;">
+          —
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display:flex; gap:10px;">
+        <button type="button" onclick="closeCalendarPickerModal()" class="btn-outline" style="flex:1; height:46px; font-size:0.88rem; margin:0;">
+          Cancel
+        </button>
+        <button type="button" id="btn-cal-modal-confirm" onclick="confirmCalendarPickerModal()" class="btn-primary" style="flex:2; height:46px; font-size:0.88rem; margin:0; background:linear-gradient(135deg, #10b981, #059669);">
+          <i class="fa-solid fa-check"></i> Set Date of Birth
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
        MODAL 1: EDIT PROFILE MODAL
        ══════════════════════════════════════════════════════════ -->
   <ion-modal id="modal-edit-profile">
@@ -3546,19 +3721,62 @@
           </div>
         </div>
         <div class="form-group">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <label style="margin:0;">Date of Birth</label>
-            <span id="edit-dob-age-badge" style="display:none; font-size:0.75rem; background:rgba(82,183,136,0.15); color:var(--primary-light); padding:2px 8px; border-radius:6px; font-weight:700;"></span>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label style="margin:0; font-weight:700;">Date of Birth</label>
+            <span id="edit-dob-age-badge" style="display:none; font-size:0.75rem; background:rgba(82,183,136,0.18); color:var(--primary-light); padding:3px 10px; border-radius:8px; font-weight:700; border:1px solid rgba(82,183,136,0.3);"></span>
           </div>
-          <div class="input-field-wrap" onclick="triggerDatePicker(event, 'edit-dob')" style="cursor:pointer; position:relative;">
-            <i class="fa-solid fa-cake-candles" style="color: var(--primary); font-size:0.9rem; pointer-events:none;"></i>
-            <input 
-              type="date" 
-              id="edit-dob" 
-              onchange="updateEditDobAge(this.value)" 
-              oninput="updateEditDobAge(this.value)"
-              onclick="try{if(typeof this.showPicker==='function')this.showPicker();}catch(e){}"
-            />
+
+          <!-- Clickable Date Bar (opens calendar modal) -->
+          <div 
+            id="edit-dob-display-wrap"
+            class="input-field-wrap dob-clickable-wrap" 
+            onclick="openCalendarPickerModal('edit')" 
+            style="cursor:pointer; position:relative; display:flex; align-items:center; justify-content:space-between; padding:0 14px; background:rgba(82,183,136,0.06); border:1px solid rgba(82,183,136,0.28); border-radius:12px; height:52px; margin-bottom:8px;"
+          >
+            <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+              <i class="fa-solid fa-cake-candles" style="color: var(--primary); font-size:1rem; flex-shrink:0;"></i>
+              <span id="edit-dob-display-text" style="color:var(--text-muted); font-size:0.92rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                Tap to pick date / open calendar
+              </span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button type="button" style="background:rgba(82,183,136,0.18); border:1px solid rgba(82,183,136,0.4); color:var(--primary-light); border-radius:8px; padding:5px 10px; font-size:0.78rem; font-weight:700; display:flex; align-items:center; gap:5px; pointer-events:none;">
+                <i class="fa-solid fa-calendar-days"></i> Calendar
+              </button>
+            </div>
+            <!-- Hidden underlying input -->
+            <input type="hidden" id="edit-dob" name="dob" value="" />
+          </div>
+
+          <!-- Segmented Month / Day / Year Dropdown Selectors -->
+          <div style="display:grid; grid-template-columns: 2fr 1.1fr 1.4fr; gap:6px; margin-top:6px;">
+            <div>
+              <select id="edit-dob-month" class="dob-select" onchange="onDobDropdownChange('edit')" aria-label="Birth Month">
+                <option value="">Month</option>
+                <option value="01">Jan (01)</option>
+                <option value="02">Feb (02)</option>
+                <option value="03">Mar (03)</option>
+                <option value="04">Apr (04)</option>
+                <option value="05">May (05)</option>
+                <option value="06">Jun (06)</option>
+                <option value="07">Jul (07)</option>
+                <option value="08">Aug (08)</option>
+                <option value="09">Sep (09)</option>
+                <option value="10">Oct (10)</option>
+                <option value="11">Nov (11)</option>
+                <option value="12">Dec (12)</option>
+              </select>
+            </div>
+            <div>
+              <select id="edit-dob-day" class="dob-select" onchange="onDobDropdownChange('edit')" aria-label="Birth Day">
+                <option value="">Day</option>
+              </select>
+            </div>
+            <div>
+              <select id="edit-dob-year" class="dob-select" onchange="onDobDropdownChange('edit')" aria-label="Birth Year">
+                <option value="">Year</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -5240,6 +5458,7 @@ function openRegistrationWizard() {
   if (pInp) pInp.value = '';
   if (cpInp) cpInp.value = '';
   selectGender('');
+  syncDobUIFromValue('reg', '');
   goToWizardStep(1);
   loadPlansForRegistration();
   showScreen('view-register');
@@ -5414,19 +5633,280 @@ function populateRegSummary() {
   }
 }
 
-function triggerDatePicker(e, id) {
-  const input = document.getElementById(id);
-  if (!input) return;
-  if (e && e.target === input) return;
-  try {
-    if (typeof input.showPicker === 'function') {
-      input.showPicker();
-    } else {
-      input.focus();
+/* ── DUAL-ENGINE DATE OF BIRTH & CALENDAR LOGIC ──────────── */
+let _calPickerTarget = 'reg';
+let _calPickerViewYear = 2000;
+let _calPickerViewMonth = 0; // 0 = Jan
+let _calPickerSelectedDate = ''; // YYYY-MM-DD
+
+function initDobSelectors() {
+  const currentYear = new Date().getFullYear();
+  const startYear = 1920;
+  
+  // Populate Year dropdowns
+  const yearSelects = ['reg-dob-year', 'edit-dob-year', 'cal-modal-year'];
+  yearSelects.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const isModal = id === 'cal-modal-year';
+    sel.innerHTML = isModal ? '' : '<option value="">Year</option>';
+    for (let y = currentYear; y >= startYear; y--) {
+      const opt = document.createElement('option');
+      opt.value = String(y);
+      opt.textContent = String(y);
+      sel.appendChild(opt);
     }
-  } catch (err) {
-    input.focus();
+  });
+
+  // Populate Day dropdowns
+  const daySelects = ['reg-dob-day', 'edit-dob-day'];
+  daySelects.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Day</option>';
+    for (let d = 1; d <= 31; d++) {
+      const opt = document.createElement('option');
+      const val = d < 10 ? '0' + d : String(d);
+      opt.value = val;
+      opt.textContent = String(d);
+      sel.appendChild(opt);
+    }
+  });
+}
+
+function formatDobDisplay(dobString) {
+  if (!dobString) return 'Tap to pick date / open calendar';
+  const parts = String(dobString).trim().split('-');
+  if (parts.length === 3) {
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    if (!isNaN(y) && !isNaN(m) && !isNaN(d) && monthNames[m]) {
+      return `${monthNames[m]} ${d}, ${y}`;
+    }
   }
+  return dobString;
+}
+
+function syncDobUIFromValue(target, dobValue) {
+  const val = String(dobValue || '').trim();
+  const hiddenInp = document.getElementById(`${target}-dob`);
+  if (hiddenInp) hiddenInp.value = val;
+
+  const dispText = document.getElementById(`${target}-dob-display-text`);
+  if (dispText) {
+    dispText.textContent = formatDobDisplay(val);
+    dispText.style.color = val ? '#ffffff' : 'var(--text-muted)';
+    dispText.style.fontWeight = val ? '700' : '500';
+  }
+
+  const mSel = document.getElementById(`${target}-dob-month`);
+  const dSel = document.getElementById(`${target}-dob-day`);
+  const ySel = document.getElementById(`${target}-dob-year`);
+
+  if (val && val.includes('-')) {
+    const [y, m, d] = val.split('-');
+    if (ySel) ySel.value = y || '';
+    if (mSel) mSel.value = m || '';
+    if (dSel) dSel.value = d || '';
+  } else {
+    if (ySel) ySel.value = '';
+    if (mSel) mSel.value = '';
+    if (dSel) dSel.value = '';
+  }
+
+  if (target === 'reg') {
+    updateRegDobAge(val);
+  } else if (target === 'edit') {
+    updateEditDobAge(val);
+  }
+}
+
+function onDobDropdownChange(target) {
+  const mSel = document.getElementById(`${target}-dob-month`);
+  const dSel = document.getElementById(`${target}-dob-day`);
+  const ySel = document.getElementById(`${target}-dob-year`);
+
+  const m = mSel ? mSel.value : '';
+  const d = dSel ? dSel.value : '';
+  const y = ySel ? ySel.value : '';
+
+  if (!m || !d || !y) {
+    const hiddenInp = document.getElementById(`${target}-dob`);
+    if (hiddenInp) hiddenInp.value = '';
+    const dispText = document.getElementById(`${target}-dob-display-text`);
+    if (dispText) {
+      dispText.textContent = 'Tap to pick date / open calendar';
+      dispText.style.color = 'var(--text-muted)';
+      dispText.style.fontWeight = '500';
+    }
+    if (target === 'reg') updateRegDobAge('');
+    if (target === 'edit') updateEditDobAge('');
+    return;
+  }
+
+  const fullDate = `${y}-${m}-${d}`;
+  const selectedDateObj = new Date(`${fullDate}T00:00:00`);
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+
+  if (selectedDateObj > today) {
+    showToast('Date of birth cannot be in the future.');
+    syncDobUIFromValue(target, '');
+    return;
+  }
+
+  syncDobUIFromValue(target, fullDate);
+}
+
+function openCalendarPickerModal(target) {
+  _calPickerTarget = target || 'reg';
+  const currentVal = (document.getElementById(`${_calPickerTarget}-dob`)?.value || '').trim();
+  
+  const today = new Date();
+  if (currentVal && currentVal.includes('-')) {
+    const [y, m, d] = currentVal.split('-').map(Number);
+    _calPickerViewYear = y;
+    _calPickerViewMonth = m - 1;
+    _calPickerSelectedDate = currentVal;
+  } else {
+    // Default to 20 years ago for rapid adult age selection
+    _calPickerViewYear = today.getFullYear() - 20;
+    _calPickerViewMonth = 0; // January
+    _calPickerSelectedDate = '';
+  }
+
+  renderCalendarGrid();
+  updateCalModalPreview();
+
+  const modal = document.getElementById('dob-calendar-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function closeCalendarPickerModal() {
+  const modal = document.getElementById('dob-calendar-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+function onCalModalNavChange() {
+  const ySel = document.getElementById('cal-modal-year');
+  const mSel = document.getElementById('cal-modal-month');
+  if (ySel) _calPickerViewYear = parseInt(ySel.value, 10);
+  if (mSel) _calPickerViewMonth = parseInt(mSel.value, 10);
+  renderCalendarGrid();
+}
+
+function calModalPrevMonth() {
+  _calPickerViewMonth--;
+  if (_calPickerViewMonth < 0) {
+    _calPickerViewMonth = 11;
+    _calPickerViewYear--;
+  }
+  renderCalendarGrid();
+}
+
+function calModalNextMonth() {
+  _calPickerViewMonth++;
+  if (_calPickerViewMonth > 11) {
+    _calPickerViewMonth = 0;
+    _calPickerViewYear++;
+  }
+  renderCalendarGrid();
+}
+
+function renderCalendarGrid() {
+  const ySel = document.getElementById('cal-modal-year');
+  const mSel = document.getElementById('cal-modal-month');
+  if (ySel) ySel.value = String(_calPickerViewYear);
+  if (mSel) mSel.value = String(_calPickerViewMonth);
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const title = document.getElementById('cal-modal-header-title');
+  if (title) {
+    title.textContent = `${monthNames[_calPickerViewMonth]} ${_calPickerViewYear}`;
+  }
+
+  const grid = document.getElementById('cal-modal-days-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const firstDayIndex = new Date(_calPickerViewYear, _calPickerViewMonth, 1).getDay();
+  const daysInMonth = new Date(_calPickerViewYear, _calPickerViewMonth + 1, 0).getDate();
+
+  // Empty placeholder slots for previous month overflow
+  for (let i = 0; i < firstDayIndex; i++) {
+    const blank = document.createElement('div');
+    grid.appendChild(blank);
+  }
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dayStr = d < 10 ? '0' + d : String(d);
+    const mStr = (_calPickerViewMonth + 1) < 10 ? '0' + (_calPickerViewMonth + 1) : String(_calPickerViewMonth + 1);
+    const dateStr = `${_calPickerViewYear}-${mStr}-${dayStr}`;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cal-day-btn';
+    btn.textContent = String(d);
+
+    const cellDate = new Date(`${dateStr}T00:00:00`);
+    const isFuture = cellDate > today;
+
+    if (isFuture) {
+      btn.disabled = true;
+    } else {
+      if (dateStr === _calPickerSelectedDate) {
+        btn.classList.add('selected');
+      } else if (dateStr === todayStr) {
+        btn.classList.add('today');
+      }
+
+      btn.onclick = () => {
+        _calPickerSelectedDate = dateStr;
+        renderCalendarGrid();
+        updateCalModalPreview();
+      };
+    }
+
+    grid.appendChild(btn);
+  }
+}
+
+function updateCalModalPreview() {
+  const prevDate = document.getElementById('cal-modal-preview-date');
+  const prevBadge = document.getElementById('cal-modal-preview-age-badge');
+  const confirmBtn = document.getElementById('btn-cal-modal-confirm');
+
+  if (_calPickerSelectedDate) {
+    const age = calculateAgeFromDob(_calPickerSelectedDate);
+    if (prevDate) prevDate.textContent = formatDobDisplay(_calPickerSelectedDate);
+    if (prevBadge) {
+      prevBadge.style.display = 'inline-block';
+      prevBadge.textContent = age !== null ? `${age} yrs old` : 'Valid';
+    }
+    if (confirmBtn) confirmBtn.disabled = false;
+  } else {
+    if (prevDate) prevDate.textContent = 'None selected';
+    if (prevBadge) prevBadge.style.display = 'none';
+    if (confirmBtn) confirmBtn.disabled = true;
+  }
+}
+
+function confirmCalendarPickerModal() {
+  if (!_calPickerSelectedDate) {
+    showToast('Please pick a date on the calendar.');
+    return;
+  }
+  syncDobUIFromValue(_calPickerTarget, _calPickerSelectedDate);
+  closeCalendarPickerModal();
 }
 
 function calculateAgeFromDob(dobString) {
@@ -8574,8 +9054,7 @@ function openEditProfileModal() {
 
   const edob = document.getElementById('edit-dob');
   if (edob) {
-    edob.value = currentMember.dob || '';
-    updateEditDobAge(edob.value);
+    syncDobUIFromValue('edit', currentMember.dob || '');
   }
 
   const ehs = document.getElementById('edit-house-street');
@@ -9035,13 +9514,9 @@ function initializeApp() {
   if (window._appInitialized) return;
   window._appInitialized = true;
 
-  // Set max date constraint for Date of Birth inputs (prevents iOS future date bug)
+  // Initialize Date of Birth dropdown options and sync
   try {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const rDob = document.getElementById('reg-dob');
-    if (rDob) { rDob.max = todayStr; rDob.min = '1920-01-01'; }
-    const eDob = document.getElementById('edit-dob');
-    if (eDob) { eDob.max = todayStr; eDob.min = '1920-01-01'; }
+    initDobSelectors();
   } catch (e) {}
 
   const SPLASH_MIN_TIME = 2600; // 2.6s polished brand opening animation
@@ -9221,8 +9696,12 @@ if ('serviceWorker' in navigator && !window.Capacitor) {
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeApp);
+  document.addEventListener('DOMContentLoaded', () => {
+    initDobSelectors();
+    initializeApp();
+  });
 } else {
+  initDobSelectors();
   initializeApp();
 }
 </script>

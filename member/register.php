@@ -486,6 +486,10 @@ img{max-width:100%;display:block}
   outline:none;transition:var(--tr);
   -webkit-appearance:none;appearance:none;
 }
+input[type="date"].if {
+  -webkit-appearance: date-picker-field;
+  appearance: auto;
+}
 .if::placeholder{color:var(--c-faint);font-size:.84rem}
 .if:focus{
   border-color:var(--c-border-f);
