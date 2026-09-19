@@ -2193,54 +2193,127 @@
     .club-info-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.4px; }
     .club-info-value { font-size: 0.85rem; color: var(--text-primary); font-weight: 600; margin-top: 1px; }
 
-    /* ── ATTENDANCE HEATMAP ───────────────────────────────────── */
+    /* ── ATTENDANCE HEATMAP / MONTHLY CALENDAR ────────────────────── */
     .heatmap-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 5px;
+      gap: 6px;
       margin: 10px 0;
     }
     .heatmap-day-label {
       text-align: center;
-      font-size: 0.58rem;
+      font-size: 0.62rem;
       font-weight: 800;
       color: var(--text-muted);
       text-transform: uppercase;
-      padding-bottom: 3px;
+      padding-bottom: 4px;
     }
     .heatmap-day {
       aspect-ratio: 1;
-      border-radius: 6px;
+      border-radius: 8px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 0.6rem;
+      font-size: 0.75rem;
       font-weight: 700;
-      cursor: default;
-      transition: transform 0.15s ease;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+      user-select: none;
+      -webkit-user-select: none;
+      position: relative;
+    }
+    .heatmap-day:active {
+      transform: scale(0.92);
     }
     .heatmap-day.present {
-      background: rgba(82,183,136,0.25);
-      color: var(--primary);
-      border: 1px solid rgba(82,183,136,0.4);
+      background: rgba(82,183,136,0.32);
+      color: #74e1ab;
+      border: 1.5px solid rgba(82,183,136,0.65);
       font-weight: 800;
     }
+    .heatmap-day.present::after {
+      content: '';
+      position: absolute;
+      bottom: 3px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
     .heatmap-day.absent {
-      background: rgba(29,89,68,0.3);
+      background: rgba(20,45,34,0.45);
       color: var(--text-muted);
-      border: 1px solid rgba(32,87,67,0.2);
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .heatmap-day.future {
+      opacity: 0.35;
+      cursor: default;
     }
     .heatmap-day.today {
       background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      color: #061F18;
+      color: #061F18 !important;
       border: none;
-      box-shadow: 0 3px 10px rgba(82,183,136,0.4);
+      box-shadow: 0 3px 12px rgba(82,183,136,0.45);
       font-weight: 900;
+    }
+    .heatmap-day.today.present::after {
+      background: #061F18;
+    }
+    .heatmap-day.selected {
+      outline: 2px solid #52B788;
+      outline-offset: 1px;
+    }
+    .btn-cal-nav {
+      background: rgba(82, 183, 136, 0.12);
+      border: 1px solid rgba(82, 183, 136, 0.3);
+      color: var(--primary);
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      touch-action: manipulation;
+    }
+    .btn-cal-nav:active {
+      transform: scale(0.92);
+      background: rgba(82, 183, 136, 0.28);
+    }
+    .btn-cal-nav:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .btn-cal-today {
+      background: rgba(82, 183, 136, 0.1);
+      border: 1px solid rgba(82, 183, 136, 0.35);
+      color: var(--primary-light, #a7f3d0);
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 0 10px;
+      height: 32px;
+      border-radius: 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      touch-action: manipulation;
+    }
+    .btn-cal-today:active {
+      transform: scale(0.92);
+      background: rgba(82, 183, 136, 0.25);
     }
     .heatmap-legend {
       display: flex; gap: 12px;
       justify-content: flex-end;
-      margin-top: 8px;
+      margin-top: 10px;
     }
     .heatmap-legend-item {
       display: flex; align-items: center;
@@ -3362,8 +3435,11 @@
       <ion-tab tab="tab-attendance">
         <ion-header translucent="true">
           <ion-toolbar>
-            <ion-title class="brand-font">Attendance Log</ion-title>
-            <ion-buttons slot="end">
+            <ion-buttons slot="start" style="width:48px; visibility:hidden; pointer-events:none;">
+              <ion-button style="visibility:hidden;"><ion-icon name="refresh-outline"></ion-icon></ion-button>
+            </ion-buttons>
+            <ion-title class="brand-font" style="text-align:center;">Attendance Log</ion-title>
+            <ion-buttons slot="end" style="width:48px; justify-content:flex-end;">
               <ion-button onclick="refreshDashboard()" style="--color:var(--primary);"><ion-icon name="refresh-outline"></ion-icon></ion-button>
             </ion-buttons>
           </ion-toolbar>
@@ -3396,22 +3472,48 @@
               </div>
             </div>
 
-            <!-- 28-Day Calendar Heatmap -->
+            <!-- Monthly Attendance Calendar -->
             <div class="card" style="padding:16px; margin-bottom:14px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <h4 style="color:var(--text-primary); font-size:0.82rem; text-transform:uppercase; font-weight:800; margin:0; letter-spacing:0.5px;">
-                  <i class="fa-solid fa-calendar-days" style="color:var(--primary); margin-right:6px;"></i>Last 28 Days
-                </h4>
+              <!-- Month Title & Navigation Controls -->
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="width:34px; height:34px; border-radius:10px; background:rgba(82,183,136,0.15); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:16px;">
+                    <i class="fa-solid fa-calendar-days"></i>
+                  </div>
+                  <div>
+                    <h4 id="attendance-calendar-month-title" style="color:var(--text-primary); font-size:0.95rem; font-weight:800; margin:0; letter-spacing:0.3px;">September 2026</h4>
+                    <span id="attendance-calendar-month-sub" style="font-size:0.7rem; color:var(--text-secondary); font-weight:600;">0 visits in Sep</span>
+                  </div>
+                </div>
+                <!-- Prev / Today / Next Controls -->
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <button type="button" class="btn-cal-nav" onclick="changeAttendanceCalendarMonth(-1)" title="Previous Month" aria-label="Previous Month">
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <button type="button" id="btn-att-cal-today" class="btn-cal-today" onclick="resetAttendanceCalendarToCurrent()" title="Back to Current Month">
+                    Today
+                  </button>
+                  <button type="button" id="btn-att-cal-next" class="btn-cal-nav" onclick="changeAttendanceCalendarMonth(1)" title="Next Month" aria-label="Next Month">
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
               </div>
+
+              <!-- Calendar Grid Target -->
               <div id="attendance-heatmap"></div>
+
+              <!-- Interactive Day Detail Banner (Shows check-in details on day tap) -->
+              <div id="attendance-day-detail" style="display:none; margin:10px 0 4px; padding:8px 12px; border-radius:10px; background:rgba(82,183,136,0.12); border:1px solid rgba(82,183,136,0.25); font-size:0.75rem; color:var(--text-primary); text-align:center;"></div>
+
+              <!-- Legend -->
               <div class="heatmap-legend">
                 <div class="heatmap-legend-item">
-                  <div class="heatmap-legend-dot" style="background:rgba(82,183,136,0.25); border:1px solid rgba(82,183,136,0.4);"></div>
+                  <div class="heatmap-legend-dot" style="background:rgba(82,183,136,0.32); border:1.5px solid rgba(82,183,136,0.65);"></div>
                   Present
                 </div>
                 <div class="heatmap-legend-item">
-                  <div class="heatmap-legend-dot" style="background:rgba(29,89,68,0.3); border:1px solid rgba(32,87,67,0.2);"></div>
-                  Absent
+                  <div class="heatmap-legend-dot" style="background:rgba(20,45,34,0.45); border:1px solid rgba(255,255,255,0.06);"></div>
+                  Rest Day
                 </div>
                 <div class="heatmap-legend-item">
                   <div class="heatmap-legend-dot" style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));"></div>
@@ -7637,45 +7739,183 @@ function renderAttendance(list) {
   }
 }
 
+// ── ATTENDANCE MONTHLY CALENDAR ENGINE ──────────────────────────────
+let currentAttendanceCalYear = new Date().getFullYear();
+let currentAttendanceCalMonth = new Date().getMonth(); // 0 = Jan, 8 = Sep
+
+function changeAttendanceCalendarMonth(delta) {
+  const targetDate = new Date(currentAttendanceCalYear, currentAttendanceCalMonth + delta, 1);
+  const now = new Date();
+
+  // Prevent navigating into future months beyond current month
+  if (delta > 0 && (targetDate.getFullYear() > now.getFullYear() || 
+     (targetDate.getFullYear() === now.getFullYear() && targetDate.getMonth() > now.getMonth()))) {
+    return;
+  }
+
+  currentAttendanceCalYear = targetDate.getFullYear();
+  currentAttendanceCalMonth = targetDate.getMonth();
+  renderAttendanceHeatmap(lastAttendanceRecordsList);
+}
+
+function resetAttendanceCalendarToCurrent() {
+  const now = new Date();
+  currentAttendanceCalYear = now.getFullYear();
+  currentAttendanceCalMonth = now.getMonth();
+  renderAttendanceHeatmap(lastAttendanceRecordsList);
+}
+
+function selectAttendanceDay(dateKey, isPresent, isToday, isFuture, timeIn, timeOut) {
+  const detailEl = document.getElementById('attendance-day-detail');
+  if (!detailEl) return;
+
+  const dateObj = new Date(dateKey + 'T00:00:00');
+  const formatted = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
+  // Remove previous selected day highlights
+  const allDays = document.querySelectorAll('.heatmap-day');
+  allDays.forEach(el => el.classList.remove('selected'));
+
+  const clickedCell = document.querySelector(`.heatmap-day[data-date="${dateKey}"]`);
+  if (clickedCell) clickedCell.classList.add('selected');
+
+  if (isPresent) {
+    detailEl.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
+        <i class="fa-solid fa-circle-check" style="color:var(--primary); font-size:0.9rem;"></i>
+        <span><strong>${formatted}</strong> &bull; Present</span>
+      </div>
+      <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:3px;">
+        In: <strong style="color:var(--text-primary);">${timeIn || 'Logged'}</strong> &bull; Out: <strong style="color:var(--text-primary);">${timeOut || 'Active Session'}</strong>
+      </div>
+    `;
+    detailEl.style.display = 'block';
+  } else if (isToday) {
+    detailEl.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
+        <i class="fa-solid fa-calendar-day" style="color:var(--warning); font-size:0.9rem;"></i>
+        <span><strong>${formatted}</strong> &bull; Today (No check-in yet)</span>
+      </div>
+    `;
+    detailEl.style.display = 'block';
+  } else if (isFuture) {
+    detailEl.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
+        <i class="fa-regular fa-clock" style="color:var(--text-muted); font-size:0.9rem;"></i>
+        <span><strong>${formatted}</strong> &bull; Upcoming Day</span>
+      </div>
+    `;
+    detailEl.style.display = 'block';
+  } else {
+    detailEl.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
+        <i class="fa-solid fa-dumbbell" style="color:var(--text-muted); font-size:0.9rem;"></i>
+        <span><strong>${formatted}</strong> &bull; Rest Day (No check-in)</span>
+      </div>
+    `;
+    detailEl.style.display = 'block';
+  }
+}
+
 function renderAttendanceHeatmap(list) {
   const container = document.getElementById('attendance-heatmap');
   if (!container) return;
 
-  const attendanceDates = new Set((list || []).map(a => a.date ? a.date.split(' ')[0] : ''));
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const records = Array.isArray(list) ? list : [];
+  const attendanceMap = new Map();
+  records.forEach(a => {
+    if (a.date) {
+      const dateOnly = a.date.split(' ')[0];
+      attendanceMap.set(dateOnly, a);
+    }
+  });
 
-  const calendarDays = [];
-  for (let i = 27; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(today.getDate() - i);
-    calendarDays.push(d.toISOString().split('T')[0]);
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const isCurrentMonthView = (now.getFullYear() === currentAttendanceCalYear && now.getMonth() === currentAttendanceCalMonth);
+
+  // Month navigation header elements
+  const titleEl = document.getElementById('attendance-calendar-month-title');
+  const subEl = document.getElementById('attendance-calendar-month-sub');
+  const nextBtn = document.getElementById('btn-att-cal-next');
+  const todayBtn = document.getElementById('btn-att-cal-today');
+  const detailEl = document.getElementById('attendance-day-detail');
+  if (detailEl) detailEl.style.display = 'none';
+
+  const firstDate = new Date(currentAttendanceCalYear, currentAttendanceCalMonth, 1);
+  const monthName = firstDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const monthShort = firstDate.toLocaleDateString('en-US', { month: 'short' });
+
+  if (titleEl) titleEl.textContent = monthName;
+
+  // Count visits in this viewed month
+  let monthVisits = 0;
+  const daysInMonth = new Date(currentAttendanceCalYear, currentAttendanceCalMonth + 1, 0).getDate();
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dStr = `${currentAttendanceCalYear}-${String(currentAttendanceCalMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    if (attendanceMap.has(dStr)) monthVisits++;
   }
 
-  const firstDay = new Date(calendarDays[0] + 'T00:00:00');
-  const firstDayOfWeek = firstDay.getDay(); // 0 = Sun, 1 = Mon ...
+  if (subEl) {
+    subEl.textContent = `${monthVisits} ${monthVisits === 1 ? 'visit' : 'visits'} in ${monthShort}`;
+  }
 
+  if (nextBtn) {
+    nextBtn.disabled = isCurrentMonthView;
+  }
+  if (todayBtn) {
+    todayBtn.style.opacity = isCurrentMonthView ? '0.45' : '1';
+    todayBtn.style.pointerEvents = isCurrentMonthView ? 'none' : 'auto';
+  }
+
+  // Generate 7-day columns
+  const firstDayOfWeek = firstDate.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
   const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
   let html = '<div class="heatmap-grid">';
   dayLabels.forEach(label => {
     html += `<div class="heatmap-day-label">${label}</div>`;
   });
 
-  // Empty placeholder cells for day-of-week alignment
+  // Empty leading placeholder cells for start-of-month weekday offset
   for (let b = 0; b < firstDayOfWeek; b++) {
-    html += '<div class="heatmap-day absent" style="opacity:0; pointer-events:none;"></div>';
+    html += '<div class="heatmap-day absent" style="opacity:0; pointer-events:none; border:none; background:transparent;"></div>';
   }
 
-  calendarDays.forEach(dStr => {
+  // Days 1 through daysInMonth (Standard 1-28/30/31 full monthly calendar)
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dStr = `${currentAttendanceCalYear}-${String(currentAttendanceCalMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const isToday = (dStr === todayStr);
-    const isPresent = attendanceDates.has(dStr);
-    const dayNum = parseInt(dStr.split('-')[2], 10);
-    const dateObj = new Date(dStr + 'T00:00:00');
-    const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const rec = attendanceMap.get(dStr);
+    const isPresent = !!rec;
+    const isFuture = (dStr > todayStr);
 
-    let cls = isToday ? 'today' : (isPresent ? 'present' : 'absent');
-    html += `<div class="heatmap-day ${cls}" title="${formattedDate}: ${isPresent ? 'Present' : (isToday ? 'Today' : 'Absent')}">${dayNum}</div>`;
-  });
+    let cls = 'heatmap-day';
+    if (isToday) {
+      cls += ' today';
+      if (isPresent) cls += ' present';
+    } else if (isPresent) {
+      cls += ' present';
+    } else if (isFuture) {
+      cls += ' absent future';
+    } else {
+      cls += ' absent';
+    }
+
+    const tIn = rec && rec.time_in ? rec.time_in : '';
+    const tOut = rec && rec.time_out ? rec.time_out : '';
+    const clickAttr = `onclick="selectAttendanceDay('${dStr}', ${isPresent}, ${isToday}, ${isFuture}, '${tIn}', '${tOut}')"`;
+
+    html += `<div class="${cls}" data-date="${dStr}" ${clickAttr} title="${dStr}: ${isPresent ? 'Present' : (isToday ? 'Today' : (isFuture ? 'Upcoming' : 'Rest Day'))}">${day}</div>`;
+  }
+
+  // Trailing empty placeholder cells to complete the grid row cleanly
+  const totalSlots = firstDayOfWeek + daysInMonth;
+  const trailingCount = (7 - (totalSlots % 7)) % 7;
+  for (let t = 0; t < trailingCount; t++) {
+    html += '<div class="heatmap-day absent" style="opacity:0; pointer-events:none; border:none; background:transparent;"></div>';
+  }
 
   html += '</div>';
   container.innerHTML = html;
