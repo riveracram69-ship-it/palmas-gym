@@ -340,6 +340,9 @@ try {
                 : ($isCancelled ? 'The checkout session was cancelled.' : 'Please wait while we confirm your payment.');
         }
         $webFallback = $destActionUrl;
+        $pwaReturnUrl = ($appUrl && $appUrl !== '..') 
+            ? ($appUrl . '/app/index.html?payment_return=1&ref=' . urlencode($tx['reference_code']) . '&status=' . urlencode($tx['status']))
+            : ('../app/index.html?payment_return=1&ref=' . urlencode($tx['reference_code']) . '&status=' . urlencode($tx['status']));
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -359,37 +362,48 @@ try {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    padding: 20px;
+                    padding: 20px 16px;
                 }
                 .receipt-card {
                     background: #123B2D;
                     border: 1px solid #205743;
-                    border-radius: 24px;
-                    padding: 32px 24px;
+                    border-radius: 20px;
                     max-width: 440px;
                     width: 100%;
+                    padding: 32px 24px;
+                    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
                     text-align: center;
-                    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
                 }
                 .icon-circle {
-                    width: 72px;
-                    height: 72px;
+                    width: 76px;
+                    height: 76px;
                     border-radius: 50%;
-                    background: <?= $isPaid ? 'rgba(62, 130, 65, 0.2)' : ($isCancelled ? 'rgba(240, 106, 106, 0.2)' : 'rgba(244, 201, 93, 0.2)') ?>;
-                    border: 2px solid <?= $statusColor ?>;
-                    color: <?= $statusColor ?>;
+                    background: <?= $isPaid ? 'rgba(82,183,136,0.18)' : ($isCancelled ? 'rgba(240,106,106,0.18)' : 'rgba(244,201,93,0.18)') ?>;
+                    border: 2px solid <?= $isPaid ? '#52B788' : ($isCancelled ? '#F06A6A' : '#F4C95D') ?>;
+                    color: <?= $isPaid ? '#52B788' : ($isCancelled ? '#F06A6A' : '#F4C95D') ?>;
+                    font-size: 34px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 32px;
-                    margin: 0 auto 18px;
+                    margin: 0 auto 20px;
                 }
-                h1 { font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 800; margin-bottom: 6px; }
-                .sub-text { font-size: 14px; color: #B2D8C7; margin-bottom: 24px; }
+                h1 {
+                    font-family: 'Outfit', sans-serif;
+                    font-size: 24px;
+                    font-weight: 800;
+                    margin-bottom: 8px;
+                    color: #F4FFF9;
+                }
+                p.sub-text {
+                    color: #B2D8C7;
+                    font-size: 14px;
+                    line-height: 1.5;
+                    margin-bottom: 24px;
+                }
                 .info-box {
                     background: #0D2E23;
                     border: 1px solid #205743;
-                    border-radius: 16px;
+                    border-radius: 12px;
                     padding: 16px;
                     margin-bottom: 24px;
                     text-align: left;
@@ -398,45 +412,55 @@ try {
                     display: flex;
                     justify-content: space-between;
                     padding: 8px 0;
-                    border-bottom: 1px solid rgba(82, 183, 136, 0.15);
-                    font-size: 13.5px;
+                    border-bottom: 1px solid rgba(32,87,67,0.4);
+                    font-size: 13px;
                 }
-                .info-row:last-child { border-bottom: none; }
-                .info-row .lbl { color: #7EAA96; }
-                .info-row .val { font-weight: 600; color: #F4FFF9; text-align: right; }
-                .amount-val { font-size: 18px; font-weight: 800; color: #52B788; font-family: 'Outfit', sans-serif; }
-                .btn-action {
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 8px;
-                    width: 100%;
-                    height: 52px;
-                    background: linear-gradient(135deg, #3E8241 0%, #2D6A4F 100%);
-                    color: #fff;
-                    text-decoration: none;
-                    border-radius: 14px;
-                    font-family: 'Outfit', sans-serif;
-                    font-size: 16px;
+                .info-row:last-child {
+                    border-bottom: none;
+                }
+                .lbl {
+                    color: #7EAA96;
+                }
+                .val {
+                    color: #F4FFF9;
+                    font-weight: 600;
+                    text-align: right;
+                }
+                .amount-val {
+                    color: #52B788;
                     font-weight: 800;
+                    font-size: 16px;
+                }
+                .btn-action {
+                    display: block;
+                    width: 100%;
+                    padding: 14px;
+                    background: #52B788;
+                    color: #082119;
+                    font-weight: 800;
+                    border-radius: 12px;
+                    text-decoration: none;
+                    text-align: center;
+                    font-size: 14px;
+                    letter-spacing: 0.5px;
+                    transition: background 0.2s;
                     margin-bottom: 10px;
-                    border: 1px solid rgba(82, 183, 136, 0.35);
-                    box-shadow: 0 4px 18px rgba(62, 130, 65, 0.35);
+                }
+                .btn-action:hover {
+                    background: #8FCFBC;
                 }
                 .btn-secondary {
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 8px;
+                    display: block;
                     width: 100%;
-                    height: 48px;
+                    padding: 12px;
                     background: transparent;
-                    color: #B2D8C7;
-                    text-decoration: none;
-                    border-radius: 14px;
-                    font-size: 14px;
-                    font-weight: 600;
                     border: 1px solid #205743;
+                    color: #B2D8C7;
+                    font-weight: 600;
+                    border-radius: 12px;
+                    text-decoration: none;
+                    text-align: center;
+                    font-size: 13px;
                 }
             </style>
         </head>
@@ -512,6 +536,7 @@ try {
                 var status = <?= json_encode($tx['status']) ?>;
                 var deepScheme = "palmasgym://checkout/result?ref=" + encodeURIComponent(ref) + "&status=" + encodeURIComponent(status);
                 var androidIntent = "intent://checkout/result?ref=" + encodeURIComponent(ref) + "&status=" + encodeURIComponent(status) + "#Intent;scheme=palmasgym;package=com.palmaselite.gymmember;end;";
+                var pwaReturnUrl = <?= json_encode($pwaReturnUrl) ?>;
                 var webFallback = <?= json_encode($webFallback) ?>;
 
                 var btn = document.getElementById('btn-return-app');
@@ -529,7 +554,7 @@ try {
                 } catch(e) {}
 
                 var isAndroid = /Android/i.test(navigator.userAgent);
-                var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
                 if (isAndroid) {
                     // Try Android Intent syntax first (native handling for Chrome Custom Tabs)
@@ -537,21 +562,38 @@ try {
                     setTimeout(function() {
                         window.location.href = deepScheme;
                     }, 500);
-                } else if (isMobile) {
-                    window.location.href = deepScheme;
+                } else if (isIOS) {
+                    // iOS Safari / PWA: DO NOT execute palmasgym:// custom scheme!
+                    // Navigate cleanly to the PWA HTTPS interface
+                    window.location.href = pwaReturnUrl || webFallback;
                 } else {
-                    // Desktop browser fallback
-                    window.location.href = webFallback;
+                    // Desktop browser / other
+                    window.location.href = pwaReturnUrl || webFallback;
                 }
             }
 
-            // Auto-trigger instant return on mobile devices
+            // Auto-trigger return on mobile devices
             (function() {
-                var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                var isAndroid = /Android/i.test(navigator.userAgent);
+                var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
                 var statusEl = document.getElementById('auto-return-status');
-                if (statusEl) statusEl.textContent = 'Returning to Palma\'s Elite Gym app...';
-                if (isMobile) {
+
+                if (isAndroid) {
+                    if (statusEl) statusEl.textContent = 'Returning to Palma\'s Elite Gym app...';
                     returnToMobileApp();
+                } else if (isIOS) {
+                    // On iOS PWA, give user 2.5 seconds to see confirmation, then return cleanly
+                    if (statusEl) statusEl.innerHTML = 'Payment verified! Returning to Gym Pass in <span id="countdown-sec">3</span>s...';
+                    var count = 3;
+                    var timer = setInterval(function() {
+                        count--;
+                        var cEl = document.getElementById('countdown-sec');
+                        if (cEl) cEl.textContent = count;
+                        if (count <= 0) {
+                            clearInterval(timer);
+                            returnToMobileApp();
+                        }
+                    }, 1000);
                 }
             })();
             </script>

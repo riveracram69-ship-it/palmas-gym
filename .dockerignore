@@ -24,10 +24,10 @@ uploads/members/*
 backups/email_logs.txt
 email_logs.txt
 
-# Mobile App build artifacts and node_modules
+# Mobile App build artifacts and node_modules (Preserve mobile-app/www for iOS PWA)
 mobile-app/node_modules/
 mobile-app/android/
-mobile-app/www/
+mobile-app/.idea/
 *.apk
 !downloads/*.apk
 !downloads/palmas-elite-gym.apk

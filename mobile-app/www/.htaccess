@@ -1,0 +1,34 @@
+# ==============================================================================
+# PALMA'S ELITE GYM MOBILE PWA - ACCESS & CACHING CONFIGURATION
+# ==============================================================================
+
+# Ensure correct MIME types for PWA
+<IfModule mod_mime.c>
+    AddType application/manifest+json .json .webmanifest
+    AddType application/javascript .js
+</IfModule>
+
+# Allow public access to manifest and service worker
+<FilesMatch "^(manifest\.json|sw\.js)$">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+</FilesMatch>
+
+# Service Worker caching rules: Never cache sw.js
+<IfModule mod_headers.c>
+    <Files "sw.js">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+        Header set Service-Worker-Allowed "/"
+    </Files>
+    <Files "manifest.json">
+        Header set Cache-Control "public, max-age=3600"
+        Header set Access-Control-Allow-Origin "*"
+    </Files>
+</IfModule>

@@ -6,6 +6,17 @@
   <title>Palma's Elite Gym — Member App</title>
   <meta name="description" content="Palma's Elite Gym Membership & Attendance Management Mobile App" />
 
+  <!-- PWA Web Manifest & Apple Mobile Web App Configuration -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Palma's Gym" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/images/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/images/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/images/icon-512.png" />
+  <meta name="theme-color" content="#082119" />
+
   <!-- Ionic CSS & JS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core/css/ionic.bundle.css" />
   <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js"></script>
@@ -92,6 +103,12 @@
       --ion-toolbar-background: var(--background-secondary);
       --ion-toolbar-color: var(--text-primary);
       --ion-toolbar-border-color: var(--border);
+
+      /* Safe-Area Insets for iOS Standalone & Notch/Dynamic Island */
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px);
+      --sar: env(safe-area-inset-right, 0px);
     }
 
     /* ── BASE RESETS & TYPOGRAPHY ─────────────────────────────────── */
@@ -570,7 +587,10 @@
       --border-color: var(--border);
       --border-width: 0 0 1px 0;
       --min-height: 56px;
-      padding: 0 8px;
+      --padding-top: var(--sat);
+      padding-top: var(--sat);
+      padding-left: 8px;
+      padding-right: 8px;
     }
 
     ion-title {
@@ -584,9 +604,9 @@
     ion-tab-bar {
       --background: var(--background-secondary);
       --border: 1px solid var(--border);
-      height: 64px;
+      height: calc(64px + var(--sab));
       box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.45);
-      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-bottom: var(--sab);
     }
 
     ion-tab-button {
@@ -626,6 +646,7 @@
       left: 0;
       width: 100vw;
       height: 100vh;
+      height: 100dvh;
       z-index: 99999;
       background: radial-gradient(circle at center, #0e3728 0%, #051610 85%);
       display: flex;
@@ -753,7 +774,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 32px 16px 44px;
+      padding: calc(28px + var(--sat)) 16px calc(44px + var(--sab));
       width: 100%;
       max-width: 440px;
       margin: 0 auto;
@@ -1455,6 +1476,7 @@
     /* ── REGISTRATION WIZARD ─────────────────────────────────────── */
     .wizard-screen {
       min-height: 100vh;
+      min-height: 100dvh;
       width: 100%;
       max-width: 100vw;
       overflow-x: hidden !important;
@@ -1463,7 +1485,7 @@
     }
 
     .wizard-header {
-      padding: 16px 20px 10px;
+      padding: calc(16px + var(--sat)) 20px 10px;
       position: sticky;
       top: 0;
       z-index: 5;
@@ -1472,6 +1494,34 @@
       width: 100%;
       box-sizing: border-box;
       overflow-x: hidden;
+    }
+
+    /* ── IOS PWA ADD TO HOME SCREEN PROMPT BANNER ─────────────────── */
+    #ios-pwa-banner {
+      position: fixed;
+      bottom: calc(14px + var(--sab));
+      left: 14px;
+      right: 14px;
+      max-width: 440px;
+      margin: 0 auto;
+      background: rgba(18, 59, 45, 0.96);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid #52B788;
+      border-radius: 16px;
+      padding: 12px 14px;
+      z-index: 99998;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      box-sizing: border-box;
+      animation: slideUpPWABanner 0.35s ease-out;
+    }
+    @keyframes slideUpPWABanner {
+      from { transform: translateY(120%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
 
     .wizard-header-inner {
@@ -7765,6 +7815,10 @@ let currentCheckoutUrl = '';
 
 function openCheckoutUrl(url) {
   if (!url) return;
+  const activeRef = currentPendingRef || currentResultRef;
+  if (activeRef && activeRef !== '--') {
+    try { sessionStorage.setItem('peg_pending_checkout_ref', activeRef); } catch (e) {}
+  }
   try {
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
       window.Capacitor.Plugins.Browser.open({
@@ -8830,6 +8884,28 @@ function logout(silent = false) {
   localStorage.removeItem('peg_member');
   localStorage.removeItem('peg_token');
   localStorage.removeItem('peg_pending_identifier');
+  try { sessionStorage.removeItem('peg_pending_checkout_ref'); } catch (e) {}
+
+  // Explicitly reset member-specific DOM nodes to guarantee identity isolation (Maple -> Juan)
+  const qrBox = document.getElementById('qr-target');
+  if (qrBox) qrBox.innerHTML = '';
+  const cName = document.getElementById('card-name');
+  if (cName) cName.textContent = '--';
+  const cCode = document.getElementById('card-code');
+  if (cCode) cCode.textContent = '--';
+  const qid = document.getElementById('card-qr-memid');
+  if (qid) qid.textContent = '--';
+  const pName = document.getElementById('prof-name');
+  if (pName) pName.textContent = '--';
+  const pCode = document.getElementById('prof-code');
+  if (pCode) pCode.textContent = '--';
+  const wrapPass = document.getElementById('member-avatar-wrap');
+  if (wrapPass) wrapPass.innerHTML = '<span id="member-avatar-initials">PE</span>';
+  const wrapProf = document.getElementById('prof-avatar-wrap');
+  if (wrapProf) wrapProf.innerHTML = '<span id="prof-avatar-initials">PE</span>';
+  const notifList = document.getElementById('notif-list');
+  if (notifList) notifList.innerHTML = '';
+
   currentMember = null;
   switchToTab('tab-pass');
   if (typeof google !== 'undefined' && google.accounts) {
@@ -8975,11 +9051,74 @@ function initializeApp() {
     console.warn('[PalmasGym] Error initializing appUrlOpen/Browser listeners:', err);
   }
 
+  // ── BROWSER LIFECYCLE & PWA PAYMENT RESUME LISTENERS ──────────
+  function checkPendingPaymentOnResume() {
+    const activeRef = currentPendingRef || currentResultRef || (function() {
+      try { return sessionStorage.getItem('peg_pending_checkout_ref'); } catch (e) { return null; }
+    })() || (document.getElementById('res-pending-ref') ? document.getElementById('res-pending-ref').textContent.trim() : null);
+
+    if (activeRef && activeRef !== '--') {
+      console.log('[PalmasGym] PWA/Browser resumed. Checking payment confirmation for:', activeRef);
+      pollPaymentStatus(activeRef, 1);
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      checkPendingPaymentOnResume();
+    }
+  });
+  window.addEventListener('focus', checkPendingPaymentOnResume);
+
+  // Check URL query parameters for PWA return from PayMongo/check_status
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('payment_return') && urlParams.has('ref')) {
+      const returnRef = urlParams.get('ref');
+      const returnStatus = urlParams.get('status') || 'success';
+      console.log('[PalmasGym] PWA payment return detected in URL:', returnRef, returnStatus);
+      handlePaymentReturn(`https://palmasgym.internal/?ref=${encodeURIComponent(returnRef)}&status=${encodeURIComponent(returnStatus)}`);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  } catch (err) {
+    console.warn('[PalmasGym] Error checking URL return params:', err);
+  }
+
+  // Check iOS Safari Add to Home Screen install banner
+  checkIOSPWAInstallPrompt();
+
   window.addEventListener('message', (evt) => {
     if (evt && evt.data && evt.data.type === 'PALMAS_PAYMENT_RESULT') {
       console.log('[PalmasGym] Window postMessage payment result:', evt.data);
       handlePaymentReturn(`palmasgym://checkout/result?ref=${encodeURIComponent(evt.data.ref)}&status=${encodeURIComponent(evt.data.status)}`);
     }
+  });
+}
+
+// ── PWA IOS ADD TO HOME SCREEN GUIDANCE PROMPT ────────────────────
+function checkIOSPWAInstallPrompt() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  const dismissed = localStorage.getItem('peg_dismiss_ios_pwa_banner');
+
+  if (isIOS && !isStandalone && !dismissed && !window.Capacitor) {
+    const banner = document.getElementById('ios-pwa-banner');
+    if (banner) banner.style.display = 'flex';
+  }
+}
+
+function dismissIOSPWABanner() {
+  try { localStorage.setItem('peg_dismiss_ios_pwa_banner', '1'); } catch (e) {}
+  const banner = document.getElementById('ios-pwa-banner');
+  if (banner) banner.style.display = 'none';
+}
+
+// ── PWA SERVICE WORKER REGISTRATION ───────────────────────────────
+if ('serviceWorker' in navigator && !window.Capacitor) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js', { scope: './' })
+      .then((reg) => console.log('[PalmasGym PWA] Service Worker registered. Scope:', reg.scope))
+      .catch((err) => console.warn('[PalmasGym PWA] Service Worker registration note:', err));
   });
 }
 
@@ -8989,5 +9128,21 @@ if (document.readyState === 'loading') {
   initializeApp();
 }
 </script>
+
+  <!-- iOS Safari PWA Add to Home Screen Prompt Banner -->
+  <div id="ios-pwa-banner">
+    <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+      <img src="assets/images/apple-touch-icon.png" alt="Palma's Gym" style="width:40px; height:40px; border-radius:10px; border:1.5px solid #52B788; flex-shrink:0;" />
+      <div style="min-width:0;">
+        <div style="font-family:'Outfit',sans-serif; font-size:13.5px; font-weight:800; color:#F4FFF9; letter-spacing:0.2px;">Install Palma's Gym App</div>
+        <div style="font-size:11px; color:#B2D8C7; line-height:1.35; margin-top:1px;">
+          Tap <i class="fa-solid fa-arrow-up-from-bracket" style="color:#52B788;"></i> <strong>Share</strong> then <strong>"Add to Home Screen"</strong> for full-screen pass access.
+        </div>
+      </div>
+    </div>
+    <button type="button" onclick="dismissIOSPWABanner()" style="background:transparent; border:none; color:#7EAA96; font-size:18px; cursor:pointer; padding:6px 8px; flex-shrink:0;" aria-label="Dismiss banner">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
 </body>
 </html>
