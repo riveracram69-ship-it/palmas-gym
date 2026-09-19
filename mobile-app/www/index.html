@@ -2332,6 +2332,116 @@
     }
     .photo-upload-btn:active { background: rgba(82,183,136,0.2); transform: scale(0.98); }
     #photo-file-input { display: none; }
+
+    /* ── DEDICATED PAYMENT REDIRECT & CONFIRMATION OVERLAYS ── */
+    #payment-redirect-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999998;
+      background: rgba(4, 15, 11, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+    .pro-lock-circle {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: rgba(82, 183, 136, 0.15);
+      border: 2px solid #52B788;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #52B788;
+      font-size: 26px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 30px rgba(82, 183, 136, 0.25);
+    }
+    .pro-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3.5px solid rgba(82, 183, 136, 0.2);
+      border-top-color: #52B788;
+      border-radius: 50%;
+      animation: psmSpin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes psmSpin {
+      to { transform: rotate(360deg); }
+    }
+    #payment-success-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999999;
+      background: rgba(4, 15, 11, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      align-items: center;
+      justify-content: center;
+      padding: 20px 16px;
+    }
+    .psm-card {
+      background: #123B2D;
+      border: 1.5px solid #205743;
+      border-radius: 24px;
+      max-width: 420px;
+      width: 100%;
+      padding: 28px 22px 24px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
+      text-align: center;
+      animation: psmCardPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes psmCardPop {
+      0% { transform: scale(0.92); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .psm-check-circle {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: rgba(82, 183, 136, 0.2);
+      border: 2.5px solid #52B788;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #52B788;
+      font-size: 34px;
+      margin: 0 auto 16px;
+      box-shadow: 0 0 35px rgba(82, 183, 136, 0.4);
+    }
+    .psm-info-box {
+      background: #0D2E23;
+      border: 1px solid #205743;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .psm-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(32, 87, 67, 0.45);
+      font-size: 13px;
+    }
+    .psm-row:last-child {
+      border-bottom: none;
+    }
+    .psm-row .lbl {
+      color: #7EAA96;
+    }
+    .psm-row .val {
+      color: #F4FFF9;
+      font-weight: 600;
+      text-align: right;
+    }
   </style>
 </head>
 <body>
@@ -3109,7 +3219,7 @@
               <div style="padding-top:14px; border-top:1px solid var(--border); font-size:0.88rem;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                   <span style="color:var(--text-secondary);">Membership Tier:</span>
-                  <strong id="card-tier" style="color:var(--primary);">Non-Member</strong>
+                  <strong id="card-tier" style="color:var(--primary);">--</strong>
                 </div>
                 <div style="display:none; justify-content:space-between; margin-bottom:8px;" id="card-annual-expiry-row">
                   <span style="color:var(--text-secondary);">Annual Member Expiry:</span>
@@ -3453,7 +3563,7 @@
               <div id="prof-membership-details" style="overflow:hidden; transition:max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin-top 0.3s ease, padding-top 0.3s ease; max-height:600px; opacity:1; margin-top:14px; border-top:1px solid var(--border); padding-top:12px;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;">
                   <span style="color:var(--text-muted);">Membership Tier</span>
-                  <strong id="prof-tier-name" style="color:var(--primary);">Non-Member</strong>
+                  <strong id="prof-tier-name" style="color:var(--primary);">--</strong>
                 </div>
                 <div style="display:none; justify-content:space-between; margin-bottom:8px; font-size:0.88rem;" id="prof-annual-expiry-row">
                   <span style="color:var(--text-muted);">Annual Fee Valid Until</span>
@@ -6426,30 +6536,21 @@ async function submitRegistration() {
 
       showToast('Account created! Opening secure payment checkout...');
 
-      // Switch to Main View & Checkout Result Screen in Pending Mode
-      showScreen('view-main');
-      switchToTab('tab-renew');
+      try {
+        sessionStorage.setItem('peg_pending_checkout_ref', refCode);
+        localStorage.setItem('peg_pending_checkout_ref', refCode);
+      } catch (e) {}
 
-      const m = document.getElementById('modal-renewal');
-      if (m) {
-        m.isOpen = true;
-        if (typeof m.present === 'function') m.present();
-      }
-
-      renderResultState('pending', {
-        ref_code: refCode,
-        amount_formatted: checkoutObj.amount_formatted || ('₱' + parseFloat(selectedPlan ? selectedPlan.price : 500).toFixed(2)),
-        plan_name: checkoutObj.plan_name || (selectedPlan ? selectedPlan.name : 'Membership Pass'),
-        payment_method: selectedRegPaymentMethod || 'Online Payment',
-        checkout_url: checkoutUrl
-      });
-
-      showCheckoutStep('result');
+      // Show dedicated security redirect overlay — NO premature dashboard or renewal modal flash
+      showPaymentRedirectOverlay(
+        'Connecting to PayMongo...',
+        'Securing payment session for ' + refCode + '. Opening secure gateway...'
+      );
 
       // Open Payment Checkout page
       openCheckoutUrl(checkoutUrl);
 
-      // Start live status polling for confirmation
+      // Start live status polling for confirmation (in case user returns via in-app tab)
       startPaymentStatusPolling(refCode);
       return;
     } else if (data.success && data.is_active) {
@@ -6507,7 +6608,7 @@ function initMainView(memberId) {
   setTimeout(() => switchToTab('tab-pass'), 100);
   setTimeout(() => switchToTab('tab-pass'), 350);
 
-  // Immediately render cached member pass, avatar, and QR code placeholder if available
+  // Immediately render cached member pass, avatar, tier, and QR code placeholder if available
   if (currentMember) {
     if (currentMember.membership_id) {
       if (currentQrToken) {
@@ -6524,6 +6625,27 @@ function initMainView(memberId) {
       if (cid) cid.textContent = currentMember.membership_id;
       const cname = document.getElementById('card-name');
       if (cname && currentMember.full_name) cname.textContent = currentMember.full_name;
+    }
+
+    // Instant tier & pass synchronization from cached member state
+    const isOfficial = !!currentMember.is_official_member || (currentMember.annual_membership_expiry && parseSafeDate(currentMember.annual_membership_expiry) >= new Date());
+    const tierName = currentMember.membership_tier || (isOfficial ? 'Official Member' : (currentMember.annual_membership_expiry ? 'Expired Member' : 'Non-Member'));
+    const cardTierEl = document.getElementById('card-tier');
+    if (cardTierEl) cardTierEl.textContent = tierName;
+    const profTierEl = document.getElementById('prof-tier-name');
+    if (profTierEl) profTierEl.textContent = tierName;
+
+    const annExpStr = currentMember.annual_membership_expiry_formatted || (currentMember.annual_membership_expiry ? currentMember.annual_membership_expiry.split(' ')[0] : null);
+    const cardAnnRow = document.getElementById('card-annual-expiry-row');
+    const cardAnnVal = document.getElementById('card-annual-expiry');
+    if (cardAnnRow && cardAnnVal && annExpStr) {
+      cardAnnRow.style.display = 'flex';
+      cardAnnVal.textContent = annExpStr;
+    }
+
+    const cardPlanEl = document.getElementById('card-plan');
+    if (cardPlanEl && (currentMember.workout_pass_name || currentMember.plan_name)) {
+      cardPlanEl.textContent = currentMember.workout_pass_name || currentMember.plan_name;
     }
 
     const initials = getMemberInitials(currentMember.full_name);
@@ -8380,6 +8502,89 @@ async function submitCashRenewalRequest() {
   }
 }
 
+function showPaymentRedirectOverlay(title, subtitle) {
+  const overlay = document.getElementById('payment-redirect-overlay');
+  if (!overlay) return;
+  const t = document.getElementById('pro-title');
+  const s = document.getElementById('pro-subtitle');
+  if (t && title) t.textContent = title;
+  if (s && subtitle) s.textContent = subtitle;
+  overlay.style.display = 'flex';
+}
+
+function hidePaymentRedirectOverlay() {
+  const overlay = document.getElementById('payment-redirect-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function showPaymentSuccessModal(data = {}, member = null) {
+  hidePaymentRedirectOverlay();
+  try { closeRenewalModal(); } catch (e) {}
+
+  const modal = document.getElementById('payment-success-modal');
+  if (!modal) return;
+
+  const mObj = member || currentMember || (data ? data.member : null) || {};
+  const isFee = !!(data.is_membership_fee || (data.plan_category === 'membership_fee') || (mObj && mObj.is_official_member && !data.subscription_id));
+  const refCode = data.reference_code || data.ref_code || currentResultRef || (mObj ? mObj.membership_id : '--');
+  const planName = data.plan_name || (isFee ? '1-Year Official Membership' : (mObj.workout_pass_name || mObj.plan_name || 'Membership Pass'));
+  const amountStr = data.amount_formatted || (data.amount ? ('₱' + parseFloat(data.amount).toFixed(2)) : (isFee ? '₱1,000.00' : '--'));
+  const methodStr = data.payment_method ? `${data.payment_method} (${data.gateway || 'PayMongo'})` : 'GCash via PayMongo';
+
+  const isOfficial = !!(mObj.is_official_member || isFee || (mObj.annual_membership_expiry && parseSafeDate(mObj.annual_membership_expiry) >= new Date()));
+  const tierDisplay = isOfficial ? '👑 Official Member (1 Year Active)' : '● Active Pass';
+
+  const validStr = data.valid_until || mObj.annual_membership_expiry_formatted || (mObj.annual_membership_expiry ? mObj.annual_membership_expiry.split(' ')[0] : (mObj.expiry_date || 'Active'));
+
+  const titleEl = document.getElementById('psm-title');
+  const subEl   = document.getElementById('psm-subtitle');
+  const refEl   = document.getElementById('psm-ref');
+  const planEl  = document.getElementById('psm-plan');
+  const amtEl   = document.getElementById('psm-amount');
+  const mthEl   = document.getElementById('psm-method');
+  const tierEl  = document.getElementById('psm-tier');
+  const valEl   = document.getElementById('psm-valid');
+  const valLbl  = document.getElementById('psm-valid-label');
+
+  if (titleEl) titleEl.textContent = isFee ? 'Official Member Activated! 👑' : 'Payment Successful! 🎉';
+  if (subEl) subEl.textContent = isFee 
+    ? 'Your 1-Year Official Gym Membership has been confirmed and activated.' 
+    : 'Your payment was confirmed by PayMongo and your gym pass is ready to use.';
+  if (refEl) refEl.textContent = refCode;
+  if (planEl) planEl.textContent = planName;
+  if (amtEl) amtEl.textContent = amountStr;
+  if (mthEl) mthEl.textContent = methodStr;
+  if (tierEl) {
+    tierEl.textContent = tierDisplay;
+    tierEl.style.color = isOfficial ? 'var(--warning, #F4C95D)' : 'var(--primary, #52B788)';
+  }
+  if (valLbl) valLbl.textContent = isFee ? 'Membership Valid Until' : 'Pass Valid Until';
+  if (valEl) valEl.textContent = validStr;
+
+  modal.style.display = 'flex';
+
+  try {
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) {
+      window.Capacitor.Plugins.Haptics.notification({ type: 'SUCCESS' });
+    }
+  } catch (e) {}
+}
+
+function dismissPaymentSuccessModal() {
+  const modal = document.getElementById('payment-success-modal');
+  if (modal) {
+    modal.style.transition = 'opacity 0.2s ease-out';
+    modal.style.opacity = '0';
+    setTimeout(() => {
+      modal.style.display = 'none';
+      modal.style.opacity = '1';
+      modal.style.transition = '';
+    }, 200);
+  }
+  showScreen('view-main');
+  switchToTab('tab-pass');
+}
+
 let currentCheckoutUrl = '';
 
 function openCheckoutUrl(url) {
@@ -8641,20 +8846,29 @@ async function pollPaymentStatus(refCode, attempt = 1) {
       currentPendingRef = null;
       currentResultRef = activeRef;
 
-      // Auto-save session token and member data if provided (crucial for new account registrations)
-      if (data.token && !localStorage.getItem('peg_token')) {
+      // Unconditionally save session token if returned
+      if (data.token) {
         localStorage.setItem('peg_token', data.token);
       }
       if (data.member) {
         currentMember = data.member;
         localStorage.setItem('peg_member', JSON.stringify(data.member));
-        if (typeof initMainView === 'function') {
-          initMainView(data.member.id);
-        }
       }
 
-      // 1. Immediately switch modal to success state (green checkmark, active badge)
-      renderResultState('success', data);
+      // Hide redirect overlay & close renewal modal
+      hidePaymentRedirectOverlay();
+      closeRenewalModal();
+
+      // Refresh dashboard in background with fresh database data
+      const memId = (currentMember && currentMember.id) ? currentMember.id : (data.member ? data.member.id : 0);
+      if (memId) {
+        initMainView(memId);
+        loadDashboard(memId);
+      }
+      loadPaymentHistory();
+
+      // Show persistent, dedicated receipt confirmation modal (requires user tap to dismiss)
+      showPaymentSuccessModal(data, currentMember);
 
       const isFee = data.is_membership_fee || (data.plan_category === 'membership_fee');
       const successMsg = isFee 
@@ -8669,18 +8883,9 @@ async function pollPaymentStatus(refCode, attempt = 1) {
         }
       } catch (e) {}
 
-      // Refresh dashboard data in background
-      refreshDashboard();
-      loadPaymentHistory();
-
-      // 2. Smoothly dismiss modal and switch to pass tab after a brief visual confirmation
-      setTimeout(() => {
-        closeRenewalModal();
-        switchToTab('tab-pass');
-        if (typeof fetchFreshQRToken === 'function') {
-          fetchFreshQRToken();
-        }
-      }, 1800);
+      if (typeof fetchFreshQRToken === 'function') {
+        fetchFreshQRToken();
+      }
 
       return true;
     } else if (data.status === 'FAILED') {
@@ -9510,69 +9715,10 @@ async function refreshDashboard() {
 }
 
 // ── STARTUP AUTHENTICATION INITIALIZATION WITH POLISHED BRAND SPLASH ──
-function initializeApp() {
-  if (window._appInitialized) return;
-  window._appInitialized = true;
-
-  // Initialize Date of Birth dropdown options and sync
-  try {
-    initDobSelectors();
-  } catch (e) {}
-
-  const SPLASH_MIN_TIME = 2600; // 2.6s polished brand opening animation
-  const initStartTime = Date.now();
-
-  function dismissSplash(targetScreen, onComplete) {
-    const elapsed = Date.now() - initStartTime;
-    const delay = Math.max(0, SPLASH_MIN_TIME - elapsed);
-
-    setTimeout(() => {
-      const splash = document.getElementById('view-splash');
-      if (splash) {
-        splash.style.transition = 'opacity 0.4s ease-out, transform 0.4s ease-out';
-        splash.style.opacity = '0';
-        splash.style.transform = 'scale(1.02)';
-        setTimeout(() => {
-          splash.style.display = 'none';
-          showScreen(targetScreen);
-          if (typeof onComplete === 'function') onComplete();
-        }, 400);
-      } else {
-        showScreen(targetScreen);
-        if (typeof onComplete === 'function') onComplete();
-      }
-    }, delay);
-  }
-
-  try {
-    const savedToken = localStorage.getItem('peg_token');
-    const savedMember = localStorage.getItem('peg_member');
-
-    if (savedToken && savedMember) {
-      try {
-        currentMember = JSON.parse(savedMember);
-        initMainView(currentMember.id);
-        dismissSplash('view-main');
-      } catch (e) {
-        console.warn('Session parse error:', e);
-        dismissSplash('view-login');
-      }
-    } else {
-      dismissSplash('view-login');
-    }
-  } catch (err) {
-    console.error('App init error:', err);
-    dismissSplash('view-login');
-  }
-
-  // Safety fallback: ensure splash is never permanently stuck
-  setTimeout(() => {
-    const splash = document.getElementById('view-splash');
-    if (splash && splash.style.display !== 'none' && !currentMember) {
-      splash.style.display = 'none';
-      showScreen('view-login');
-    }
-  }, 4000);
+let _listenersRegistered = false;
+function setupAppEventListeners() {
+  if (_listenersRegistered) return;
+  _listenersRegistered = true;
 
   // Initialize Google Sign-In SDK
   if (GOOGLE_CLIENT_ID && typeof google !== 'undefined') {
@@ -9643,20 +9789,6 @@ function initializeApp() {
   });
   window.addEventListener('focus', checkPendingPaymentOnResume);
 
-  // Check URL query parameters for PWA return from PayMongo/check_status
-  try {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('payment_return') && urlParams.has('ref')) {
-      const returnRef = urlParams.get('ref');
-      const returnStatus = urlParams.get('status') || 'success';
-      console.log('[PalmasGym] PWA payment return detected in URL:', returnRef, returnStatus);
-      handlePaymentReturn(`https://palmasgym.internal/?ref=${encodeURIComponent(returnRef)}&status=${encodeURIComponent(returnStatus)}`);
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  } catch (err) {
-    console.warn('[PalmasGym] Error checking URL return params:', err);
-  }
-
   // Check iOS Safari Add to Home Screen install banner
   checkIOSPWAInstallPrompt();
 
@@ -9666,6 +9798,190 @@ function initializeApp() {
       handlePaymentReturn(`palmasgym://checkout/result?ref=${encodeURIComponent(evt.data.ref)}&status=${encodeURIComponent(evt.data.status)}`);
     }
   });
+}
+
+// ── FAST-PATH PWA RETURN PAYMENT VERIFICATION & HYDRATION ─────────
+async function handlePWAReturnVerification(ref, status) {
+  // Dismiss splash screen instantly
+  const splash = document.getElementById('view-splash');
+  if (splash) {
+    splash.style.display = 'none';
+  }
+
+  // Show dedicated verifying screen
+  showPaymentRedirectOverlay('Confirming Payment...', 'Verifying transaction ' + ref + ' with PayMongo...');
+
+  try {
+    const existingToken = localStorage.getItem('peg_token') || '';
+    const headers = { 'Accept': 'application/json' };
+    if (existingToken) headers['Authorization'] = `Bearer ${existingToken}`;
+
+    const res = await authFetch(`${API_URL}/check_status.php?ref=${encodeURIComponent(ref)}&format=json`, {
+      headers: headers
+    });
+    const data = await res.json();
+
+    if (data.success && (data.status === 'PAID' || data.is_paid)) {
+      const freshToken = data.token || existingToken;
+      if (freshToken) {
+        localStorage.setItem('peg_token', freshToken);
+      }
+
+      // Fetch authoritative dashboard data using the fresh token
+      let hydrated = false;
+      if (freshToken) {
+        try {
+          const dashRes = await authFetch(`${API_URL}/member_dashboard.php`, {
+            headers: { 'Authorization': `Bearer ${freshToken}` }
+          });
+          if (dashRes.ok) {
+            const dashData = await dashRes.json();
+            if (dashData.success && dashData.member) {
+              currentMember = dashData.member;
+              localStorage.setItem('peg_member', JSON.stringify(dashData.member));
+              if (dashData.plans) availablePlans = dashData.plans;
+              hydrated = true;
+            }
+          }
+        } catch (dashErr) {
+          console.warn('[PalmasGym] Dashboard hydration notice:', dashErr);
+        }
+      }
+
+      if (!hydrated && data.member) {
+        currentMember = data.member;
+        localStorage.setItem('peg_member', JSON.stringify(data.member));
+      }
+
+      // Render dashboard in background with updated data
+      const memId = (currentMember && currentMember.id) ? currentMember.id : (data.member ? data.member.id : 0);
+      if (memId) {
+        initMainView(memId);
+        loadDashboard(memId);
+      } else {
+        showScreen('view-main');
+        switchToTab('tab-pass');
+      }
+
+      hidePaymentRedirectOverlay();
+
+      // Show persistent, dedicated confirmation modal
+      showPaymentSuccessModal(data, currentMember);
+
+      // Clean the URL query params without reloading
+      try {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (e) {}
+
+      setupAppEventListeners();
+      return;
+    } else if (data.status === 'CANCELLED' || status === 'cancelled') {
+      hidePaymentRedirectOverlay();
+      showToast('Payment checkout was cancelled.');
+    } else {
+      hidePaymentRedirectOverlay();
+      showToast('Payment processing. Please check your status shortly.');
+    }
+  } catch (err) {
+    console.error('[PalmasGym] Return verification error:', err);
+    hidePaymentRedirectOverlay();
+    showToast('Payment verification in progress. Refreshing pass...');
+  }
+
+  // Fallback to normal app launch if verification didn't complete
+  try {
+    const savedToken = localStorage.getItem('peg_token');
+    const savedMember = localStorage.getItem('peg_member');
+    if (savedToken && savedMember) {
+      currentMember = JSON.parse(savedMember);
+      initMainView(currentMember.id);
+    } else {
+      showScreen('view-login');
+    }
+  } catch (e) {
+    showScreen('view-login');
+  }
+  setupAppEventListeners();
+}
+
+function initializeApp() {
+  if (window._appInitialized) return;
+  window._appInitialized = true;
+
+  // Initialize Date of Birth dropdown options and sync
+  try {
+    initDobSelectors();
+  } catch (e) {}
+
+  // Check URL query parameters immediately for return from PayMongo / check_status
+  let urlParams = null;
+  try { urlParams = new URLSearchParams(window.location.search); } catch (e) {}
+  const hasPaymentReturn = urlParams && ((urlParams.has('payment_return') && urlParams.has('ref')) || (urlParams.has('ref') && (urlParams.get('status') === 'PAID' || urlParams.get('status') === 'success')));
+  const returnRef = urlParams ? (urlParams.get('ref') || (urlParams.has('payment_return') ? (function() {
+    try { return sessionStorage.getItem('peg_pending_checkout_ref'); } catch (e) { return null; }
+  })() : null)) : null;
+
+  if (hasPaymentReturn && returnRef) {
+    handlePWAReturnVerification(returnRef, urlParams.get('status') || 'PAID');
+    return;
+  }
+
+  const SPLASH_MIN_TIME = 2600; // 2.6s polished brand opening animation
+  const initStartTime = Date.now();
+
+  function dismissSplash(targetScreen, onComplete) {
+    const elapsed = Date.now() - initStartTime;
+    const delay = Math.max(0, SPLASH_MIN_TIME - elapsed);
+
+    setTimeout(() => {
+      const splash = document.getElementById('view-splash');
+      if (splash) {
+        splash.style.transition = 'opacity 0.4s ease-out, transform 0.4s ease-out';
+        splash.style.opacity = '0';
+        splash.style.transform = 'scale(1.02)';
+        setTimeout(() => {
+          splash.style.display = 'none';
+          showScreen(targetScreen);
+          if (typeof onComplete === 'function') onComplete();
+        }, 400);
+      } else {
+        showScreen(targetScreen);
+        if (typeof onComplete === 'function') onComplete();
+      }
+    }, delay);
+  }
+
+  try {
+    const savedToken = localStorage.getItem('peg_token');
+    const savedMember = localStorage.getItem('peg_member');
+
+    if (savedToken && savedMember) {
+      try {
+        currentMember = JSON.parse(savedMember);
+        initMainView(currentMember.id);
+        dismissSplash('view-main');
+      } catch (e) {
+        console.warn('Session parse error:', e);
+        dismissSplash('view-login');
+      }
+    } else {
+      dismissSplash('view-login');
+    }
+  } catch (err) {
+    console.error('App init error:', err);
+    dismissSplash('view-login');
+  }
+
+  // Safety fallback: ensure splash is never permanently stuck
+  setTimeout(() => {
+    const splash = document.getElementById('view-splash');
+    if (splash && splash.style.display !== 'none' && !currentMember) {
+      splash.style.display = 'none';
+      showScreen('view-login');
+    }
+  }, 4000);
+
+  setupAppEventListeners();
 }
 
 // ── PWA IOS ADD TO HOME SCREEN GUIDANCE PROMPT ────────────────────
@@ -9705,6 +10021,58 @@ if (document.readyState === 'loading') {
   initializeApp();
 }
 </script>
+
+  <!-- Dedicated Payment Redirect Overlay (No premature dashboard/modal flash) -->
+  <div id="payment-redirect-overlay">
+    <div class="pro-lock-circle">
+      <i class="fa-solid fa-shield-halved"></i>
+    </div>
+    <div class="pro-spinner"></div>
+    <h3 id="pro-title" style="font-family:'Outfit',sans-serif; font-size:20px; font-weight:800; color:#F4FFF9; margin:0 0 8px;">Connecting to PayMongo...</h3>
+    <p id="pro-subtitle" style="font-size:13px; color:#B2D8C7; max-width:280px; margin:0 auto; line-height:1.45;">Securing checkout session. Opening payment gateway...</p>
+  </div>
+
+  <!-- Dedicated In-App Payment Confirmation Modal (Persistent Receipt) -->
+  <div id="payment-success-modal">
+    <div class="psm-card">
+      <div class="psm-check-circle">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <h2 id="psm-title" style="font-family:'Outfit',sans-serif; font-size:22px; font-weight:800; color:#F4FFF9; margin:0 0 6px;">Payment Successful! 🎉</h2>
+      <p id="psm-subtitle" style="font-size:13px; color:#B2D8C7; margin:0 0 18px; line-height:1.4;">Your payment has been verified by PayMongo. Your digital pass is active!</p>
+
+      <div class="psm-info-box">
+        <div class="psm-row">
+          <span class="lbl">Reference No.</span>
+          <span class="val" id="psm-ref" style="font-family:monospace; font-size:12.5px; color:#8FCFBC;">--</span>
+        </div>
+        <div class="psm-row">
+          <span class="lbl">Plan / Item</span>
+          <span class="val" id="psm-plan" style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">--</span>
+        </div>
+        <div class="psm-row">
+          <span class="lbl">Amount Paid</span>
+          <span class="val" id="psm-amount" style="color:#52B788; font-size:14.5px; font-weight:800;">--</span>
+        </div>
+        <div class="psm-row">
+          <span class="lbl">Payment Method</span>
+          <span class="val" id="psm-method">--</span>
+        </div>
+        <div class="psm-row">
+          <span class="lbl">Membership Tier</span>
+          <span class="val" id="psm-tier" style="color:#F4C95D; font-weight:700;">👑 Official Member</span>
+        </div>
+        <div class="psm-row">
+          <span class="lbl" id="psm-valid-label">Valid Until</span>
+          <span class="val" id="psm-valid" style="color:#52B788;">--</span>
+        </div>
+      </div>
+
+      <button type="button" id="btn-psm-proceed" onclick="dismissPaymentSuccessModal()" style="width:100%; padding:14px; background:linear-gradient(135deg, #3E8241 0%, #2D6A4F 100%); color:#F4FFF9; border:none; border-radius:14px; font-family:'Outfit',sans-serif; font-size:14.5px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 8px 24px rgba(62, 130, 65, 0.4); text-transform:uppercase; letter-spacing:0.5px;">
+        <span>View My Digital Pass</span> <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+  </div>
 
   <!-- iOS Safari PWA Add to Home Screen Prompt Banner -->
   <div id="ios-pwa-banner">

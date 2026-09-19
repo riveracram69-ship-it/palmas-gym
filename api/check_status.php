@@ -625,6 +625,29 @@ try {
                 $is_official = (!empty($ann_exp) && strtotime($ann_exp . ' 23:59:59') >= time());
                 $member_data['is_official_member'] = $is_official;
                 $member_data['membership_tier'] = $is_official ? 'Official Member' : (!empty($ann_exp) ? 'Expired Member' : 'Non-Member');
+                $member_data['annual_membership_expiry_formatted'] = !empty($ann_exp) ? date('M d, Y', strtotime($ann_exp)) : null;
+
+                // Also attach latest active workout pass info if available
+                $subStmt = $pdo->prepare("
+                    SELECT s.id AS subscription_id, s.expiry_date, p.name AS plan_name
+                    FROM subscriptions s
+                    JOIN membership_plans p ON p.id = s.plan_id
+                    WHERE s.member_id = ? AND (p.plan_category IS NULL OR p.plan_category != 'membership_fee')
+                    ORDER BY (s.expiry_date >= NOW()) DESC, s.expiry_date DESC LIMIT 1
+                ");
+                $subStmt->execute([(int)$tx['member_id']]);
+                $subRow = $subStmt->fetch(PDO::FETCH_ASSOC);
+                if ($subRow) {
+                    $has_sub_active = (strtotime($subRow['expiry_date']) >= time());
+                    $member_data['subscription_id'] = (int)$subRow['subscription_id'];
+                    $member_data['has_active_pass'] = $has_sub_active;
+                    $member_data['expiry_date'] = $subRow['expiry_date'];
+                    $member_data['plan_name'] = $subRow['plan_name'];
+                    $member_data['workout_pass_name'] = $has_sub_active ? $subRow['plan_name'] : ($is_official ? 'No Active Workout Pass' : 'No Active Guest Pass');
+                } else {
+                    $member_data['has_active_pass'] = false;
+                    $member_data['workout_pass_name'] = $is_official ? 'No Active Workout Pass' : 'No Active Guest Pass';
+                }
             }
         } catch (Throwable $tokEx) {
             error_log('check_status token generation notice: ' . $tokEx->getMessage());
