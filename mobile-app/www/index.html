@@ -618,6 +618,10 @@
       object-fit: cover;
     }
 
+    .pass-card .member-avatar {
+      margin: 0 !important;
+    }
+
     /* ── PROGRESS BAR ─────────────────────────────────────────────── */
     .progress-bar-wrap {
       width: 100%;
@@ -1267,17 +1271,21 @@
     .test-promo-banner {
       background: rgba(244, 201, 93, 0.12);
       border: 1px solid var(--warning);
-      border-radius: 12px;
-      padding: 8px 12px;
+      border-radius: 14px;
+      padding: 10px 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      margin-bottom: 12px;
+      text-align: center;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      margin-bottom: 14px;
       font-size: 12px;
       font-weight: 800;
       color: var(--warning);
-      letter-spacing: 0.4px;
+      letter-spacing: 0.3px;
+      line-height: 1.4;
+      box-sizing: border-box;
     }
 
     .countdown-timer {
@@ -3185,11 +3193,14 @@
       <ion-tab tab="tab-pass">
         <ion-header translucent="true">
           <ion-toolbar>
-            <ion-title class="brand-font">Palma's Elite Pass</ion-title>
-            <ion-buttons slot="end">
-              <button onclick="openNotifPanel()" style="background:transparent; border:none; color:var(--primary); font-size:1.25rem; padding:8px 12px; position:relative; cursor:pointer;" aria-label="Notifications">
+            <ion-buttons slot="start" style="width:84px; visibility:hidden; pointer-events:none;">
+              <ion-button style="visibility:hidden;"><ion-icon name="refresh-outline"></ion-icon></ion-button>
+            </ion-buttons>
+            <ion-title class="brand-font" style="text-align:center;">Palma's Elite Pass</ion-title>
+            <ion-buttons slot="end" style="width:84px; justify-content:flex-end;">
+              <button onclick="openNotifPanel()" style="background:transparent; border:none; color:var(--primary); font-size:1.25rem; padding:8px 10px; position:relative; cursor:pointer;" aria-label="Notifications">
                 <i class="fa-solid fa-bell"></i>
-                <span id="notif-badge" style="display:none; position:absolute; top:4px; right:6px; background:var(--danger); color:#fff; font-size:0.65rem; font-weight:800; border-radius:10px; padding:1px 5px;">0</span>
+                <span id="notif-badge" style="display:none; position:absolute; top:4px; right:4px; background:var(--danger); color:#fff; font-size:0.65rem; font-weight:800; border-radius:10px; padding:1px 5px;">0</span>
               </button>
               <ion-button onclick="refreshDashboard()" style="--color:var(--primary);"><ion-icon name="refresh-outline"></ion-icon></ion-button>
             </ion-buttons>
@@ -3204,19 +3215,24 @@
           <div class="pass-container">
             <!-- Test Mode Banner (Dynamic for minute-level test promo) -->
             <div id="test-promo-banner-wrap" class="test-promo-banner" style="display:none;">
-              <i class="fa-solid fa-flask"></i>
-              <span>TEST MODE &bull; <span id="test-promo-name">30-MIN ACCESS</span> &bull; <strong id="promo-countdown-text" class="countdown-timer">--:--</strong></span>
+              <span style="display:inline-flex; align-items:center; gap:6px; background:rgba(244,201,93,0.18); border:1px solid rgba(244,201,93,0.35); border-radius:8px; padding:3px 8px; font-size:0.75rem; letter-spacing:0.5px; font-weight:900;">
+                <i class="fa-solid fa-flask"></i> TEST MODE
+              </span>
+              <span id="test-promo-name" style="font-weight:800; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.3px; max-width:100%; word-break:break-word;">30-MIN ACCESS</span>
+              <span style="display:inline-flex; align-items:center; gap:4px; font-family:monospace; font-weight:800; color:var(--primary); font-size:0.92rem; background:rgba(18,61,46,0.6); border:1px solid rgba(82,183,136,0.3); border-radius:8px; padding:3px 8px;">
+                <i class="fa-regular fa-clock" style="font-size:0.8rem;"></i> <strong id="promo-countdown-text" class="countdown-timer">--:--</strong>
+              </span>
             </div>
 
             <!-- Membership Pass Card -->
             <div class="pass-card">
-              <div style="display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:12px;">
-                <div id="member-avatar-wrap" class="member-avatar" style="width:60px; height:60px; font-size:20px;">
+              <div class="pass-card-header" style="display:flex; align-items:center; justify-content:center; gap:14px; margin:0 auto 14px; max-width:100%; text-align:left;">
+                <div id="member-avatar-wrap" class="member-avatar" style="width:58px; height:58px; font-size:20px; margin:0 !important; flex-shrink:0;">
                   <span id="member-avatar-initials">PE</span>
                 </div>
-                <div style="text-align:left;">
-                  <h3 id="card-name" style="margin:0; font-weight:800; color:var(--text-primary); font-size:1.2rem;">Palma's Member</h3>
-                  <p id="card-code" style="color:var(--primary); margin:2px 0 0; font-weight:700; letter-spacing:1px; font-size:0.82rem; font-family:monospace;">--</p>
+                <div style="text-align:left; min-width:0;">
+                  <h3 id="card-name" style="margin:0; font-weight:800; color:var(--text-primary); font-size:1.25rem; line-height:1.25; text-transform:capitalize; word-break:break-word;">Palma's Member</h3>
+                  <p id="card-code" style="color:var(--primary); margin:3px 0 0; font-weight:700; letter-spacing:1px; font-size:0.85rem; font-family:monospace;">--</p>
                 </div>
               </div>
 
