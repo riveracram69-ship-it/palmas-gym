@@ -440,6 +440,52 @@
       color: var(--text-muted);
     }
 
+    /* ── iOS SAFARI DATE INPUT COMPATIBILITY ────────────────────────── */
+    input[type="date"] {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      min-height: 48px;
+      color: var(--text-primary) !important;
+      background: transparent;
+      cursor: pointer;
+      font-size: 16px;
+      font-family: 'Inter', sans-serif;
+    }
+    input[type="date"]::-webkit-date-and-time-value {
+      text-align: left;
+      min-height: 1.4em;
+      color: var(--text-primary) !important;
+      padding: 0;
+      margin: 0;
+    }
+    input[type="date"]::-webkit-datetime-edit {
+      color: var(--text-primary);
+      display: inline-flex;
+    }
+    input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+      color: var(--text-primary);
+    }
+    input[type="date"]::-webkit-datetime-edit-text {
+      color: var(--text-muted);
+    }
+    input[type="date"]::-webkit-datetime-edit-month-field,
+    input[type="date"]::-webkit-datetime-edit-day-field,
+    input[type="date"]::-webkit-datetime-edit-year-field {
+      color: var(--text-primary);
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      filter: invert(1) brightness(0.85);
+      opacity: 0.85;
+      padding: 6px;
+      font-size: 1.15rem;
+    }
+
     .input-field-wrap .eye-btn {
       background: transparent;
       border: none;
@@ -2658,9 +2704,15 @@
               <label style="margin:0;">Date of Birth *</label>
               <span id="reg-dob-age-badge" style="display:none; font-size:0.75rem; background:rgba(82,183,136,0.15); color:var(--gym-light); padding:2px 8px; border-radius:6px; font-weight:700;"></span>
             </div>
-            <div class="input-field-wrap">
-              <i class="fa-solid fa-cake-candles" style="color: var(--gym-light); font-size:0.9rem;"></i>
-              <input type="date" id="reg-dob" onchange="updateRegDobAge(this.value)" />
+            <div class="input-field-wrap" onclick="triggerDatePicker(event, 'reg-dob')" style="cursor:pointer; position:relative;">
+              <i class="fa-solid fa-cake-candles" style="color: var(--gym-light); font-size:0.9rem; pointer-events:none;"></i>
+              <input 
+                type="date" 
+                id="reg-dob" 
+                onchange="updateRegDobAge(this.value)" 
+                oninput="updateRegDobAge(this.value)" 
+                onclick="try{if(typeof this.showPicker==='function')this.showPicker();}catch(e){}"
+              />
             </div>
             <div style="font-size:0.75rem; color:var(--gym-muted); margin-top:4px;">Age is calculated automatically from your birth date</div>
           </div>
@@ -3498,8 +3550,15 @@
             <label style="margin:0;">Date of Birth</label>
             <span id="edit-dob-age-badge" style="display:none; font-size:0.75rem; background:rgba(82,183,136,0.15); color:var(--primary-light); padding:2px 8px; border-radius:6px; font-weight:700;"></span>
           </div>
-          <div class="input-field-wrap">
-            <input type="date" id="edit-dob" onchange="updateEditDobAge(this.value)" />
+          <div class="input-field-wrap" onclick="triggerDatePicker(event, 'edit-dob')" style="cursor:pointer; position:relative;">
+            <i class="fa-solid fa-cake-candles" style="color: var(--primary); font-size:0.9rem; pointer-events:none;"></i>
+            <input 
+              type="date" 
+              id="edit-dob" 
+              onchange="updateEditDobAge(this.value)" 
+              oninput="updateEditDobAge(this.value)"
+              onclick="try{if(typeof this.showPicker==='function')this.showPicker();}catch(e){}"
+            />
           </div>
         </div>
 
@@ -5355,8 +5414,38 @@ function populateRegSummary() {
   }
 }
 
+function triggerDatePicker(e, id) {
+  const input = document.getElementById(id);
+  if (!input) return;
+  if (e && e.target === input) return;
+  try {
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+    } else {
+      input.focus();
+    }
+  } catch (err) {
+    input.focus();
+  }
+}
+
 function calculateAgeFromDob(dobString) {
   if (!dobString) return null;
+  const parts = String(dobString).trim().split('-');
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+      const today = new Date();
+      let age = today.getFullYear() - year;
+      const m = today.getMonth() - month;
+      if (m < 0 || (m === 0 && today.getDate() < day)) {
+        age--;
+      }
+      return age >= 0 ? age : null;
+    }
+  }
   const birthDate = new Date(dobString);
   if (isNaN(birthDate.getTime())) return null;
   const today = new Date();
@@ -8945,6 +9034,15 @@ async function refreshDashboard() {
 function initializeApp() {
   if (window._appInitialized) return;
   window._appInitialized = true;
+
+  // Set max date constraint for Date of Birth inputs (prevents iOS future date bug)
+  try {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const rDob = document.getElementById('reg-dob');
+    if (rDob) { rDob.max = todayStr; rDob.min = '1920-01-01'; }
+    const eDob = document.getElementById('edit-dob');
+    if (eDob) { eDob.max = todayStr; eDob.min = '1920-01-01'; }
+  } catch (e) {}
 
   const SPLASH_MIN_TIME = 2600; // 2.6s polished brand opening animation
   const initStartTime = Date.now();
