@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please select a membership plan.';
     } else {
         // Fetch and validate selected plan
-        $p_stmt = $pdo->prepare("SELECT id, name, price, duration_months, duration_minutes, is_test_promo, plan_category FROM membership_plans WHERE id = ?");
+        $p_stmt = $pdo->prepare("SELECT id, name, price, duration_months, duration_minutes, is_test_promo, plan_category, is_active FROM membership_plans WHERE id = ?");
         $p_stmt->execute([$plan_id]);
         $plan = $p_stmt->fetch(PDO::FETCH_ASSOC);
 
