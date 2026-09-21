@@ -90,7 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $validation_errors[] = "Contact number must be exactly 11 digits starting with 09.";
     }
     if (empty($address) && empty($municipality)) $validation_errors[] = "Home address details are required.";
-    if (!empty($dob)) {
+    if (empty($dob)) {
+        $validation_errors[] = "Date of birth is required.";
+    } elseif (!empty($dob)) {
         $dob_ts = strtotime($dob);
         if ($dob_ts === false || $dob_ts > time()) {
             $validation_errors[] = "Date of birth cannot be in the future.";
@@ -387,8 +389,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div id="extra-fields" style="display:block; margin-top:1rem; padding:1rem; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:10px;">
                         <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:0.75rem;">
                             <div class="form-group">
-                                <label>Date of Birth <span id="computed-age-badge" style="font-size:0.75rem; color:var(--palmas-primary, #10b981); font-weight:700; margin-left:6px;"></span></label>
-                                <input type="date" name="dob" id="dob-input" class="form-control" max="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($_POST['dob'] ?? ''); ?>" oninput="updateComputedAge(this.value)">
+                                <label>Date of Birth <span style="color:red;">*</span> <span id="computed-age-badge" style="font-size:0.75rem; color:var(--palmas-primary, #10b981); font-weight:700; margin-left:6px;"></span></label>
+                                <input type="date" name="dob" id="dob-input" class="form-control" max="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($_POST['dob'] ?? ''); ?>" oninput="updateComputedAge(this.value)" required>
                             </div>
                             <div class="form-group">
                                 <label>Gender</label>
