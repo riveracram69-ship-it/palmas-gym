@@ -121,7 +121,7 @@ if (isset($_GET['export']) && isset($pdo)) {
             $params['start_date'] = $startDate;
             $params['end_date']   = $endDate;
         }
-        $sql .= " GROUP BY YEAR(p.payment_date), MONTH(p.payment_date) ORDER BY YEAR(p.payment_date) ASC, MONTH(p.payment_date) ASC";
+        $sql .= " GROUP BY DATE_FORMAT(p.payment_date, '%M %Y'), YEAR(p.payment_date), MONTH(p.payment_date) ORDER BY YEAR(p.payment_date) ASC, MONTH(p.payment_date) ASC";
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_NUM);
@@ -179,7 +179,7 @@ if (isset($_GET['export']) && isset($pdo)) {
             $params['start_date'] = $startDate;
             $params['end_date']   = $endDate;
         }
-        $sql .= " GROUP BY HOUR(time_in) ORDER BY HOUR(time_in) ASC";
+        $sql .= " GROUP BY HOUR(time_in), CONCAT(LPAD(HOUR(time_in), 2, '0'), ':00 - ', LPAD(HOUR(time_in)+1, 2, '0'), ':00') ORDER BY HOUR(time_in) ASC";
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_NUM);
@@ -1345,7 +1345,7 @@ try {
                 SUM(amount) as total, COUNT(id) as txns
          FROM payments
          WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH)
-         GROUP BY YEAR(payment_date), MONTH(payment_date)
+         GROUP BY DATE_FORMAT(payment_date, '%b %Y'), YEAR(payment_date), MONTH(payment_date)
          ORDER BY YEAR(payment_date) ASC, MONTH(payment_date) ASC"
     );
     $monthly_rows = $stmt->fetchAll();

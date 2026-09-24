@@ -30,6 +30,11 @@ function switchReportTab(tabId) {
     if (activeBtn) activeBtn.classList.add('active');
 
     localStorage.setItem('palmas_active_report_tab', tabId);
+
+    // Trigger chart recalculation & rendering on visible canvases
+    setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+    }, 50);
 }
 
 // Restore saved tab on load
