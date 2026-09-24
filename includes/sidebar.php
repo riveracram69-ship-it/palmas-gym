@@ -85,6 +85,11 @@ try {
             </a>
         </li>
         <li class="nav-item">
+            <a href="expenses.php" class="nav-link <?php echo nav_active('expenses.php'); ?>">
+                <i class="fas fa-file-invoice-dollar"></i> Expenses
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="users.php" class="nav-link <?php echo nav_active('users.php'); ?>">
                 <i class="fas fa-user-shield"></i> Staff &amp; Users
             </a>

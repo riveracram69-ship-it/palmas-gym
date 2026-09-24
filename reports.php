@@ -263,22 +263,117 @@ if (isset($_GET['export']) && isset($pdo)) {
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_NUM);
 
+    } elseif ($type === 'financial_summary') {
+        $headers = ['Month / Year', 'Gross Revenue (PHP)', 'Total Expenses (PHP)', 'Gross/Net Income (PHP)', 'Net Profit Margin (%)', 'Status'];
+        
+        $months_map = [];
+        $start_ts = !empty($startDate) ? strtotime($startDate) : strtotime('-11 months');
+        $end_ts   = !empty($endDate) ? strtotime($endDate) : time();
+        
+        $curr = strtotime(date('Y-m-01', $start_ts));
+        $last = strtotime(date('Y-m-01', $end_ts));
+        
+        while ($curr <= $last) {
+            $key = date('Y-m', $curr);
+            $months_map[$key] = [
+                'label'    => date('M Y', $curr),
+                'revenue'  => 0.0,
+                'expenses' => 0.0
+            ];
+            $curr = strtotime('+1 month', $curr);
+        }
+
+        // Fetch monthly revenues
+        $sql_rev = "SELECT DATE_FORMAT(payment_date, '%Y-%m') as ym, SUM(amount) as total FROM payments WHERE 1=1";
+        $rev_params = [];
+        if (!empty($startDate) && !empty($endDate)) {
+            $sql_rev .= " AND payment_date BETWEEN :start_date AND :end_date";
+            $rev_params['start_date'] = $startDate;
+            $rev_params['end_date']   = $endDate;
+        }
+        $sql_rev .= " GROUP BY DATE_FORMAT(payment_date, '%Y-%m')";
+        $stmt_r = $pdo->prepare($sql_rev);
+        $stmt_r->execute($rev_params);
+        foreach ($stmt_r->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            if (isset($months_map[$r['ym']])) {
+                $months_map[$r['ym']]['revenue'] = (float)$r['total'];
+            }
+        }
+
+        // Fetch monthly expenses
+        $sql_exp = "SELECT DATE_FORMAT(expense_date, '%Y-%m') as ym, SUM(amount) as total FROM expenses WHERE 1=1";
+        $exp_params = [];
+        if (!empty($startDate) && !empty($endDate)) {
+            $sql_exp .= " AND expense_date BETWEEN :start_date AND :end_date";
+            $exp_params['start_date'] = $startDate;
+            $exp_params['end_date']   = $endDate;
+        }
+        $sql_exp .= " GROUP BY DATE_FORMAT(expense_date, '%Y-%m')";
+        $stmt_e = $pdo->prepare($sql_exp);
+        $stmt_e->execute($exp_params);
+        foreach ($stmt_e->fetchAll(PDO::FETCH_ASSOC) as $e) {
+            if (isset($months_map[$e['ym']])) {
+                $months_map[$e['ym']]['expenses'] = (float)$e['total'];
+            }
+        }
+
+        foreach ($months_map as $m) {
+            $rev = $m['revenue'];
+            $exp = $m['expenses'];
+            $net = $rev - $exp;
+            $margin = $rev > 0 ? round(($net / $rev) * 100, 1) : ($net < 0 ? -100.0 : 0.0);
+            $status = $net > 0 ? 'Profitable' : ($net == 0 ? 'Break-Even' : 'Deficit');
+
+            $rows[] = [
+                $m['label'],
+                number_format($rev, 2, '.', ''),
+                number_format($exp, 2, '.', ''),
+                number_format($net, 2, '.', ''),
+                $margin . '%',
+                $status
+            ];
+        }
+
+    } elseif ($type === 'expenses') {
+        $headers = ['Expense Date', 'Category', 'Particulars / Description', 'Payment Method', 'Reference No', 'Recorded By', 'Amount (PHP)', 'Notes'];
+        $sql = "SELECT e.expense_date, e.category, e.title, e.payment_method, 
+                       COALESCE(e.reference_number, 'N/A'), COALESCE(u.name, 'Admin') as recorded_by,
+                       e.amount, COALESCE(e.notes, '')
+                FROM expenses e
+                LEFT JOIN users u ON e.recorded_by = u.id
+                WHERE 1=1";
+        if (!empty($startDate) && !empty($endDate)) {
+            $sql .= " AND e.expense_date BETWEEN :start_date AND :end_date";
+            $params['start_date'] = $startDate;
+            $params['end_date']   = $endDate;
+        }
+        if ($payMethod !== 'all') {
+            $sql .= " AND e.payment_method = :payment_method";
+            $params['payment_method'] = $payMethod;
+        }
+        $sql .= " ORDER BY e.expense_date DESC, e.id DESC";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_NUM);
+
     } else {
         exit("Invalid Export Type");
     }
 
     while (ob_get_level()) { ob_end_clean(); }
     $type_file_names = [
-        'daily_revenue'   => 'Daily_Revenue',
-        'weekly_revenue'  => 'Weekly_Revenue',
-        'monthly_revenue' => 'Monthly_Revenue',
-        'retention'       => 'Membership_Retention',
-        'conversion'      => 'Member_Conversion',
-        'attendance_hour' => 'Peak_Hours_Attendance',
-        'attendance_day'  => 'Day_Of_Week_Attendance',
-        'members'         => 'Membership',
-        'attendance'      => 'Attendance',
-        'revenue'         => 'Payment'
+        'daily_revenue'     => 'Daily_Revenue',
+        'weekly_revenue'    => 'Weekly_Revenue',
+        'monthly_revenue'   => 'Monthly_Revenue',
+        'financial_summary' => 'Financial_Profitability_Summary',
+        'expenses'          => 'Operational_Expenses_Ledger',
+        'retention'         => 'Membership_Retention',
+        'conversion'        => 'Member_Conversion',
+        'attendance_hour'   => 'Peak_Hours_Attendance',
+        'attendance_day'    => 'Day_Of_Week_Attendance',
+        'members'           => 'Membership',
+        'attendance'        => 'Attendance',
+        'revenue'           => 'Payment'
     ];
     $clean_type = $type_file_names[$type] ?? ucwords(str_replace(' ', '_', str_replace('_', ' ', $type)));
     $period_tag = (!empty($startDate) && !empty($endDate)) ? date('Y-m', strtotime($startDate)) : date('Y-m');
@@ -323,16 +418,18 @@ if (isset($_GET['export']) && isset($pdo)) {
     } elseif ($format === 'pdf' || $format === 'print') {
         // ── EXECUTIVE PDF & PRINTABLE REPORT RENDERER ────────────────────────
         $type_titles = [
-            'daily_revenue'   => 'Daily Revenue & Transaction Ledger',
-            'weekly_revenue'  => 'Weekly Revenue Summary',
-            'monthly_revenue' => 'Monthly Revenue Performance',
-            'retention'       => 'Membership Retention & Lifecycle Audit',
-            'conversion'      => 'Member Registration & Conversion Report',
-            'attendance_hour' => 'Peak Hours Attendance Distribution',
-            'attendance_day'  => 'Day-of-Week Attendance Analytics',
-            'members'         => 'Registered Membership Directory',
-            'attendance'      => 'Member Attendance Check-In Records',
-            'revenue'         => 'Financial Payment Ledger'
+            'daily_revenue'     => 'Daily Revenue & Transaction Ledger',
+            'weekly_revenue'    => 'Weekly Revenue Summary',
+            'monthly_revenue'   => 'Monthly Revenue Performance',
+            'financial_summary' => 'Financial Profitability & Net Income Summary',
+            'expenses'          => 'Gym Operational Expenses & Cost Ledger',
+            'retention'         => 'Membership Retention & Lifecycle Audit',
+            'conversion'        => 'Member Registration & Conversion Report',
+            'attendance_hour'   => 'Peak Hours Attendance Distribution',
+            'attendance_day'    => 'Day-of-Week Attendance Analytics',
+            'members'           => 'Registered Membership Directory',
+            'attendance'        => 'Member Attendance Check-In Records',
+            'revenue'           => 'Financial Payment Ledger'
         ];
         $report_title = $type_titles[$type] ?? ucwords(str_replace('_', ' ', $type)) . ' Report';
 
@@ -1032,7 +1129,11 @@ if ($date_preset !== 'custom' && $date_preset !== 'all') {
 // Global KPIs and Data Arrays Initialization
 $kpis = [
     'period_revenue'    => 0,
+    'period_expenses'   => 0,
+    'period_net_income' => 0,
+    'profit_margin'     => 0,
     'total_txns'        => 0,
+    'total_expenses_cnt'=> 0,
     'period_checkins'   => 0,
     'unique_visitors'   => 0,
     'active_members'    => 0,
@@ -1050,6 +1151,23 @@ $kpis = [
 // Data holders for each report
 $daily_report       = ['date' => $end_date, 'revenue' => 0, 'txns' => 0, 'plan_breakdown' => [], 'method_breakdown' => [], 'transactions' => []];
 $weekly_report      = ['current_total' => 0, 'prev_total' => 0, 'growth_pct' => 0, 'highest_day' => '—', 'highest_amount' => 0, 'days' => []];
+$financial_report   = [
+    'current_month_rev'    => 0,
+    'current_month_exp'    => 0,
+    'current_month_net'    => 0,
+    'current_month_margin' => 0,
+    'prev_month_rev'       => 0,
+    'prev_month_exp'       => 0,
+    'prev_month_net'       => 0,
+    'mom_net_growth_pct'   => 0,
+    'trend_labels'         => [],
+    'trend_revenue'        => [],
+    'trend_expenses'       => [],
+    'trend_net'            => [],
+    'monthly_ledger'       => [],
+    'category_dist'        => [],
+    'itemized_expenses'    => []
+];
 $monthly_report     = ['current_month_rev' => 0, 'prev_month_rev' => 0, 'mom_growth_pct' => 0, 'trend_labels' => [], 'trend_data' => [], 'plan_dist' => [], 'method_dist' => []];
 $retention_report   = ['active_cnt' => 0, 'expired_cnt' => 0, 'renewed_cnt' => 0, 'eligible_cnt' => 0, 'rate_pct' => 0, 'trend_labels' => [], 'trend_data' => [], 'expiring_soon' => []];
 $conversion_report  = ['new_reg' => 0, 'activated' => 0, 'renewals' => 0, 'rate_pct' => 0, 'trend_labels' => [], 'trend_data' => [], 'funnel_stages' => []];
@@ -1065,6 +1183,17 @@ try {
     $res = $stmt->fetch();
     $kpis['period_revenue'] = (float)$res['rev'];
     $kpis['total_txns']     = (int)$res['cnt'];
+
+    // Operational expenses in period
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) as exp, COUNT(id) as cnt FROM expenses WHERE expense_date BETWEEN ? AND ?");
+    $stmt->execute([$start_date, $end_date]);
+    $exp_res = $stmt->fetch();
+    $kpis['period_expenses']    = (float)$exp_res['exp'];
+    $kpis['total_expenses_cnt'] = (int)$exp_res['cnt'];
+    $kpis['period_net_income']  = $kpis['period_revenue'] - $kpis['period_expenses'];
+    $kpis['profit_margin']      = $kpis['period_revenue'] > 0 
+        ? round(($kpis['period_net_income'] / $kpis['period_revenue']) * 100, 1) 
+        : ($kpis['period_net_income'] < 0 ? -100.0 : 0.0);
 
     $stmt = $pdo->prepare("SELECT COUNT(*) as checkins, COUNT(DISTINCT member_id) as uniq FROM attendance WHERE date BETWEEN ? AND ?");
     $stmt->execute([$start_date, $end_date]);
@@ -1264,6 +1393,117 @@ try {
     );
     $stmt->execute([$start_date, $end_date]);
     $monthly_report['method_dist'] = $stmt->fetchAll();
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // FINANCIAL PROFITABILITY & NET INCOME INTELLIGENCE ENGINE
+    // ═════════════════════════════════════════════════════════════════════════
+    // 12-Month Trajectory
+    $fin_months = [];
+    for ($i = 11; $i >= 0; $i--) {
+        $m_date = date('Y-m-01', strtotime("-{$i} months"));
+        $m_key  = date('Y-m', strtotime($m_date));
+        $m_lbl  = date('M Y', strtotime($m_date));
+        $fin_months[$m_key] = [
+            'label'       => $m_lbl,
+            'start'       => $m_date,
+            'end'         => date('Y-m-t', strtotime($m_date)),
+            'revenue'     => 0.0,
+            'expenses'    => 0.0,
+            'net_income'  => 0.0,
+            'margin_pct'  => 0.0,
+            'status'      => 'Break-Even'
+        ];
+    }
+
+    // Populate revenue for 12 months
+    $stmt_fin_rev = $pdo->query("
+        SELECT DATE_FORMAT(payment_date, '%Y-%m') as ym, SUM(amount) as total
+        FROM payments
+        WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH)
+        GROUP BY DATE_FORMAT(payment_date, '%Y-%m')
+    ");
+    foreach ($stmt_fin_rev->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        if (isset($fin_months[$r['ym']])) {
+            $fin_months[$r['ym']]['revenue'] = (float)$r['total'];
+        }
+    }
+
+    // Populate expenses for 12 months
+    $stmt_fin_exp = $pdo->query("
+        SELECT DATE_FORMAT(expense_date, '%Y-%m') as ym, SUM(amount) as total
+        FROM expenses
+        WHERE expense_date >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH)
+        GROUP BY DATE_FORMAT(expense_date, '%Y-%m')
+    ");
+    foreach ($stmt_fin_exp->fetchAll(PDO::FETCH_ASSOC) as $e) {
+        if (isset($fin_months[$e['ym']])) {
+            $fin_months[$e['ym']]['expenses'] = (float)$e['total'];
+        }
+    }
+
+    foreach ($fin_months as $m_key => $fm) {
+        $r = $fm['revenue'];
+        $x = $fm['expenses'];
+        $n = $r - $x;
+        $m_pct = $r > 0 ? round(($n / $r) * 100, 1) : ($n < 0 ? -100.0 : 0.0);
+        $st = $n > 0 ? 'Profitable' : ($n == 0 ? 'Break-Even' : 'Deficit');
+
+        $fin_months[$m_key]['net_income'] = $n;
+        $fin_months[$m_key]['margin_pct'] = $m_pct;
+        $fin_months[$m_key]['status']     = $st;
+
+        $financial_report['trend_labels'][]   = $fm['label'];
+        $financial_report['trend_revenue'][]  = $r;
+        $financial_report['trend_expenses'][] = $x;
+        $financial_report['trend_net'][]      = $n;
+    }
+
+    $financial_report['monthly_ledger'] = array_reverse($fin_months); // Latest first for table
+
+    // Current & previous month profitability
+    $financial_report['current_month_rev'] = $monthly_report['current_month_rev'];
+    
+    $stmt_c_exp = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE expense_date BETWEEN ? AND ?");
+    $stmt_c_exp->execute([$cur_m_start, $cur_m_end]);
+    $financial_report['current_month_exp'] = (float)$stmt_c_exp->fetchColumn();
+    $financial_report['current_month_net'] = $financial_report['current_month_rev'] - $financial_report['current_month_exp'];
+    $financial_report['current_month_margin'] = $financial_report['current_month_rev'] > 0 
+        ? round(($financial_report['current_month_net'] / $financial_report['current_month_rev']) * 100, 1) 
+        : 0.0;
+
+    $financial_report['prev_month_rev'] = $monthly_report['prev_month_rev'];
+    $stmt_p_exp = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE expense_date BETWEEN ? AND ?");
+    $stmt_p_exp->execute([$prev_m_start, $prev_m_end]);
+    $financial_report['prev_month_exp'] = (float)$stmt_p_exp->fetchColumn();
+    $financial_report['prev_month_net'] = $financial_report['prev_month_rev'] - $financial_report['prev_month_exp'];
+
+    if ($financial_report['prev_month_net'] != 0) {
+        $financial_report['mom_net_growth_pct'] = round((($financial_report['current_month_net'] - $financial_report['prev_month_net']) / abs($financial_report['prev_month_net'])) * 100, 1);
+    } else {
+        $financial_report['mom_net_growth_pct'] = $financial_report['current_month_net'] > 0 ? 100 : 0;
+    }
+
+    // Expense Category Breakdown in selected period
+    $stmt_cat = $pdo->prepare("
+        SELECT category as name, SUM(amount) as total, COUNT(id) as count
+        FROM expenses
+        WHERE expense_date BETWEEN ? AND ?
+        GROUP BY category ORDER BY total DESC
+    ");
+    $stmt_cat->execute([$start_date, $end_date]);
+    $financial_report['category_dist'] = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
+
+    // Itemized Expenses for active period
+    $stmt_item = $pdo->prepare("
+        SELECT e.*, u.name as recorded_by_name
+        FROM expenses e
+        LEFT JOIN users u ON e.recorded_by = u.id
+        WHERE e.expense_date BETWEEN ? AND ?
+        ORDER BY e.expense_date DESC, e.id DESC
+        LIMIT 50
+    ");
+    $stmt_item->execute([$start_date, $end_date]);
+    $financial_report['itemized_expenses'] = $stmt_item->fetchAll(PDO::FETCH_ASSOC);
 
     // ═════════════════════════════════════════════════════════════════════════
     // 5. REPORT 4: MEMBERSHIP RETENTION REPORT
@@ -1546,65 +1786,62 @@ try {
     </div>
 
     <!-- ── GLOBAL INTERACTIVE KPI SUMMARY CARDS ───────────────────────────── -->
-    <div class="stats-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.75rem;">
-        <!-- KPI 1: Revenue -->
+    <div class="stats-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.75rem;">
+        <!-- KPI 1: Gross Revenue -->
         <div class="card stat-card" style="padding: 1.25rem;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
                 <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Period Revenue</span>
                 <div class="stat-icon green" style="width:34px; height:34px; font-size:0.95rem; margin:0;"><i class="fas fa-peso-sign"></i></div>
             </div>
-            <h2 class="stat-value" style="font-size:1.6rem; font-weight:800; color:#52b788; margin:0;">&#8369;<?php echo number_format($kpis['period_revenue'], 2); ?></h2>
-            <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:var(--text-muted);"><i class="fas fa-receipt"></i> <?php echo number_format($kpis['total_txns']); ?> transactions</p>
+            <h2 class="stat-value" style="font-size:1.5rem; font-weight:800; color:#52b788; margin:0;">&#8369;<?php echo number_format($kpis['period_revenue'], 2); ?></h2>
+            <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:var(--text-muted);"><i class="fas fa-receipt"></i> <?php echo number_format($kpis['total_txns']); ?> txns</p>
         </div>
 
-        <!-- KPI 2: Total Check-ins -->
+        <!-- KPI 2: Operational Expenses -->
+        <div class="card stat-card" style="padding: 1.25rem;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
+                <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Total Expenses</span>
+                <div class="stat-icon red" style="width:34px; height:34px; font-size:0.95rem; margin:0; background:rgba(239,68,68,0.12); color:#f87171;"><i class="fas fa-file-invoice-dollar"></i></div>
+            </div>
+            <h2 class="stat-value" style="font-size:1.5rem; font-weight:800; color:#f87171; margin:0;">&#8369;<?php echo number_format($kpis['period_expenses'], 2); ?></h2>
+            <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:var(--text-muted);"><i class="fas fa-receipt"></i> <?php echo number_format($kpis['total_expenses_cnt']); ?> expense items</p>
+        </div>
+
+        <!-- KPI 3: Net Income (Gross Profit) -->
+        <?php 
+            $net_is_pos = $kpis['period_net_income'] >= 0;
+            $net_color = $net_is_pos ? '#52b788' : '#ef4444';
+            $net_icon = $net_is_pos ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
+        ?>
+        <div class="card stat-card" style="padding: 1.25rem;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
+                <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Gross/Net Income</span>
+                <div class="stat-icon" style="width:34px; height:34px; font-size:0.95rem; margin:0; background:<?php echo $net_is_pos ? 'rgba(82,183,136,0.12)' : 'rgba(239,68,68,0.12)'; ?>; color:<?php echo $net_color; ?>;"><i class="fas <?php echo $net_icon; ?>"></i></div>
+            </div>
+            <h2 class="stat-value" style="font-size:1.5rem; font-weight:800; color:<?php echo $net_color; ?>; margin:0;"><?php echo ($kpis['period_net_income'] < 0 ? '-' : '') . '&#8369;' . number_format(abs($kpis['period_net_income']), 2); ?></h2>
+            <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:<?php echo $net_color; ?>; font-weight:700;">
+                <?php echo $kpis['profit_margin']; ?>% Profit Margin
+            </p>
+        </div>
+
+        <!-- KPI 4: Total Check-ins -->
         <div class="card stat-card" style="padding: 1.25rem;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
                 <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Gym Check-ins</span>
                 <div class="stat-icon blue" style="width:34px; height:34px; font-size:0.95rem; margin:0;"><i class="fas fa-user-check"></i></div>
             </div>
-            <h2 class="stat-value" style="font-size:1.6rem; font-weight:800; color:#38bdf8; margin:0;"><?php echo number_format($kpis['period_checkins']); ?></h2>
-            <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:var(--text-muted);"><i class="fas fa-users"></i> <?php echo number_format($kpis['unique_visitors']); ?> unique visitors</p>
+            <h2 class="stat-value" style="font-size:1.5rem; font-weight:800; color:#38bdf8; margin:0;"><?php echo number_format($kpis['period_checkins']); ?></h2>
+            <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:var(--text-muted);"><i class="fas fa-users"></i> <?php echo number_format($kpis['unique_visitors']); ?> visitors</p>
         </div>
 
-        <!-- KPI 3: Active Members -->
+        <!-- KPI 5: Active Members -->
         <div class="card stat-card" style="padding: 1.25rem;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
                 <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Active Members</span>
                 <div class="stat-icon green" style="width:34px; height:34px; font-size:0.95rem; margin:0;"><i class="fas fa-id-card"></i></div>
             </div>
-            <h2 class="stat-value" style="font-size:1.6rem; font-weight:800; color:var(--text-main); margin:0;"><?php echo number_format($kpis['active_members']); ?></h2>
+            <h2 class="stat-value" style="font-size:1.5rem; font-weight:800; color:var(--text-main); margin:0;"><?php echo number_format($kpis['active_members']); ?></h2>
             <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:#ef4444;"><i class="fas fa-clock-rotate-left"></i> <?php echo number_format($kpis['expired_members']); ?> expired</p>
-        </div>
-
-        <!-- KPI 4: Retention Rate -->
-        <div class="card stat-card" style="padding: 1.25rem;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
-                <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Retention Rate</span>
-                <div class="stat-icon yellow" style="width:34px; height:34px; font-size:0.95rem; margin:0; background:rgba(234,179,8,0.12); color:#eab308;"><i class="fas fa-arrows-rotate"></i></div>
-            </div>
-            <h2 class="stat-value" style="font-size:1.6rem; font-weight:800; color:#eab308; margin:0;"><?php echo $kpis['retention_rate']; ?>%</h2>
-            <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:var(--text-muted);"><i class="fas fa-repeat"></i> <?php echo number_format($retention_report['renewed_cnt']); ?> renewals</p>
-        </div>
-
-        <!-- KPI 5: Conversion Rate -->
-        <div class="card stat-card" style="padding: 1.25rem;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
-                <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Conversion Rate</span>
-                <div class="stat-icon purple" style="width:34px; height:34px; font-size:0.95rem; margin:0; background:rgba(168,85,247,0.12); color:#c084fc;"><i class="fas fa-filter-circle-dollar"></i></div>
-            </div>
-            <h2 class="stat-value" style="font-size:1.6rem; font-weight:800; color:#c084fc; margin:0;"><?php echo $kpis['conversion_rate']; ?>%</h2>
-            <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:var(--text-muted);"><i class="fas fa-user-plus"></i> <?php echo number_format($conversion_report['new_reg']); ?> registered</p>
-        </div>
-
-        <!-- KPI 6: Peak Hour -->
-        <div class="card stat-card" style="padding: 1.25rem;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
-                <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Peak Gym Hour</span>
-                <div class="stat-icon red" style="width:34px; height:34px; font-size:0.95rem; margin:0; background:rgba(239,68,68,0.12); color:#f87171;"><i class="fas fa-fire"></i></div>
-            </div>
-            <h2 class="stat-value" style="font-size:1.15rem; font-weight:800; color:#f87171; margin:0.35rem 0 0.15rem 0; line-height:1.2;"><?php echo htmlspecialchars($kpis['peak_hour_str']); ?></h2>
-            <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:var(--text-muted);"><i class="fas fa-calendar-day"></i> Top: <?php echo htmlspecialchars($kpis['busiest_day_str']); ?></p>
         </div>
     </div>
 
@@ -1701,7 +1938,7 @@ try {
         </form>
     </div>
 
-    <!-- ── 7-REPORT NAVIGATION TABS ───────────────────────────────────────── -->
+    <!-- ── 8-REPORT NAVIGATION TABS ───────────────────────────────────────── -->
     <div class="report-nav-container no-print" style="margin-bottom:1.5rem;">
         <div class="report-nav-tabs">
             <button class="nav-tab-btn active" data-tab="tab-daily" onclick="switchReportTab('tab-daily')">
@@ -1710,20 +1947,23 @@ try {
             <button class="nav-tab-btn" data-tab="tab-weekly" onclick="switchReportTab('tab-weekly')">
                 <i class="fas fa-chart-column"></i> 2. Weekly Revenue
             </button>
+            <button class="nav-tab-btn" data-tab="tab-financials" onclick="switchReportTab('tab-financials')">
+                <i class="fas fa-scale-balanced"></i> 3. Financials &amp; Net Income
+            </button>
             <button class="nav-tab-btn" data-tab="tab-monthly" onclick="switchReportTab('tab-monthly')">
-                <i class="fas fa-chart-area"></i> 3. Monthly Revenue
+                <i class="fas fa-chart-area"></i> 4. Monthly Revenue
             </button>
             <button class="nav-tab-btn" data-tab="tab-retention" onclick="switchReportTab('tab-retention')">
-                <i class="fas fa-arrows-spin"></i> 4. Retention Rate
+                <i class="fas fa-arrows-spin"></i> 5. Retention Rate
             </button>
             <button class="nav-tab-btn" data-tab="tab-conversion" onclick="switchReportTab('tab-conversion')">
-                <i class="fas fa-bullseye"></i> 5. Conversion Funnel
+                <i class="fas fa-bullseye"></i> 6. Conversion Funnel
             </button>
             <button class="nav-tab-btn" data-tab="tab-hourly" onclick="switchReportTab('tab-hourly')">
-                <i class="fas fa-clock"></i> 6. Attendance by Hour
+                <i class="fas fa-clock"></i> 7. Attendance by Hour
             </button>
             <button class="nav-tab-btn" data-tab="tab-daily-att" onclick="switchReportTab('tab-daily-att')">
-                <i class="fas fa-calendar-week"></i> 7. Attendance by Day
+                <i class="fas fa-calendar-week"></i> 8. Attendance by Day
             </button>
         </div>
     </div>
@@ -1881,7 +2121,215 @@ try {
     </div>
 
     <!-- =======================================================================
-         REPORT 3: MONTHLY REVENUE REPORT
+         REPORT 3: FINANCIAL PROFITABILITY & NET INCOME REPORT
+         ======================================================================= -->
+    <div class="report-tab-pane" id="tab-financials">
+        <!-- Top Metrics & Action Header -->
+        <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg, rgba(27,67,50,0.4), rgba(45,106,79,0.15)); border:1px solid rgba(82,183,136,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                <div>
+                    <span class="badge badge-success" style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.4rem;">
+                        <i class="fas fa-coins"></i> Executive Financial Audit
+                    </span>
+                    <h2 style="margin:0; font-size:1.45rem; color:var(--text-main); font-weight:800;">Monthly Financials &amp; Net Income</h2>
+                    <p style="margin:0.25rem 0 0 0; color:var(--text-muted); font-size:0.82rem;">Complete profitability breakdown: Gross Revenue, Operating Expenses, Net Income, and Margins.</p>
+                </div>
+                <div style="display:flex; gap:0.6rem; align-items:center;">
+                    <a href="expenses.php" class="btn btn-primary" style="font-size:0.82rem; padding:0.45rem 1rem;">
+                        <i class="fas fa-plus"></i> Record Expense
+                    </a>
+                    <button class="btn btn-outline" onclick="openExportModal('financial_summary')" style="font-size:0.82rem; padding:0.45rem 1rem; border-color:var(--border);">
+                        <i class="fas fa-download"></i> Export Summary
+                    </button>
+                </div>
+            </div>
+
+            <!-- Financial Mini Ribbon -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem; margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid rgba(255,255,255,0.08);">
+                <div style="background:rgba(255,255,255,0.03); padding:0.85rem 1rem; border-radius:10px; border:1px solid var(--border);">
+                    <span style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Period Gross Revenue</span>
+                    <h3 style="font-size:1.4rem; font-weight:800; color:#52b788; margin:0.25rem 0 0 0;">&#8369;<?php echo number_format($kpis['period_revenue'], 2); ?></h3>
+                    <span style="font-size:0.7rem; color:var(--text-muted);"><?php echo $kpis['total_txns']; ?> completed sales</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.03); padding:0.85rem 1rem; border-radius:10px; border:1px solid var(--border);">
+                    <span style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Period Operating Costs</span>
+                    <h3 style="font-size:1.4rem; font-weight:800; color:#f87171; margin:0.25rem 0 0 0;">-&#8369;<?php echo number_format($kpis['period_expenses'], 2); ?></h3>
+                    <span style="font-size:0.7rem; color:var(--text-muted);"><?php echo $kpis['total_expenses_cnt']; ?> recorded expenses</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.03); padding:0.85rem 1rem; border-radius:10px; border:1px solid var(--border);">
+                    <span style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Gross/Net Income (Malinis)</span>
+                    <h3 style="font-size:1.4rem; font-weight:800; color:<?php echo $kpis['period_net_income'] >= 0 ? '#52b788' : '#ef4444'; ?>; margin:0.25rem 0 0 0;">
+                        <?php echo ($kpis['period_net_income'] < 0 ? '-' : '') . '&#8369;' . number_format(abs($kpis['period_net_income']), 2); ?>
+                    </h3>
+                    <span style="font-size:0.7rem; color:<?php echo $kpis['period_net_income'] >= 0 ? '#52b788' : '#ef4444'; ?>; font-weight:700;">
+                        <?php echo $kpis['period_net_income'] >= 0 ? '✓ Profitable Period' : '⚠ Deficit Period'; ?>
+                    </span>
+                </div>
+                <div style="background:rgba(255,255,255,0.03); padding:0.85rem 1rem; border-radius:10px; border:1px solid var(--border);">
+                    <span style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Net Profit Margin</span>
+                    <h3 style="font-size:1.4rem; font-weight:800; color:#38bdf8; margin:0.25rem 0 0 0;"><?php echo $kpis['profit_margin']; ?>%</h3>
+                    <span style="font-size:0.7rem; color:var(--text-muted);">Margin on sales</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 12-Month Financial Comparison Chart & Expense Breakdown -->
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+            <!-- Trajectory Chart -->
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.5rem;">
+                    <div>
+                        <h3 class="section-title" style="margin:0;"><i class="fas fa-chart-line" style="color:var(--accent);"></i> 12-Month Revenue vs. Expenses vs. Net Income</h3>
+                        <p style="margin:0.2rem 0 0 0; font-size:0.75rem; color:var(--text-muted);">Historical trajectory comparing sales volume, overhead costs, and net profit.</p>
+                    </div>
+                    <div style="display:flex; gap:0.75rem; font-size:0.75rem; font-weight:600;">
+                        <span style="color:#52b788;"><i class="fas fa-square" style="font-size:0.65rem;"></i> Revenue</span>
+                        <span style="color:#f87171;"><i class="fas fa-square" style="font-size:0.65rem;"></i> Expenses</span>
+                        <span style="color:#38bdf8;"><i class="fas fa-circle" style="font-size:0.65rem;"></i> Net Income</span>
+                    </div>
+                </div>
+                <div style="height:270px; position:relative;">
+                    <canvas id="financialComparisonChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Expense Category Share Doughnut -->
+            <div class="card">
+                <div style="margin-bottom:1.25rem;">
+                    <h3 class="section-title" style="margin:0;"><i class="fas fa-chart-pie" style="color:#f87171;"></i> Expense Distribution</h3>
+                    <p style="margin:0.2rem 0 0 0; font-size:0.75rem; color:var(--text-muted);">Cost allocation across categories for active period.</p>
+                </div>
+                <div style="height:240px; position:relative;">
+                    <?php if (empty($financial_report['category_dist'])): ?>
+                        <div style="display:flex; height:100%; align-items:center; justify-content:center; flex-direction:column; color:var(--text-muted); font-size:0.8rem;">
+                            <i class="fas fa-receipt" style="font-size:2rem; opacity:0.3; margin-bottom:0.5rem;"></i>
+                            No expenses recorded in this period.
+                        </div>
+                    <?php else: ?>
+                        <canvas id="expenseCategoryChart"></canvas>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Profitability Ledger Table -->
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.75rem;">
+                <div>
+                    <h3 class="section-title" style="margin:0;"><i class="fas fa-table-list" style="color:var(--accent);"></i> Monthly Profitability &amp; Margin Ledger</h3>
+                    <p style="margin:0.2rem 0 0 0; font-size:0.78rem; color:var(--text-muted);">Month-by-month accounting breakdown of total revenue, costs, net earnings, and margins.</p>
+                </div>
+                <div>
+                    <button class="btn btn-outline" onclick="openExportModal('financial_summary')" style="font-size:0.8rem; padding:0.4rem 0.85rem;">
+                        <i class="fas fa-download"></i> Export Financial Ledger
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Month / Year</th>
+                            <th style="text-align:right;">Gross Revenue</th>
+                            <th style="text-align:right;">Operating Expenses</th>
+                            <th style="text-align:right;">Gross / Net Income</th>
+                            <th style="text-align:center;">Profit Margin</th>
+                            <th style="text-align:center;">Operational Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($financial_report['monthly_ledger'] as $row): 
+                            $isPos = $row['net_income'] > 0;
+                            $isZero = $row['net_income'] == 0;
+                            $statBadge = $isPos ? 'badge-active' : ($isZero ? 'badge-pending' : 'badge-inactive');
+                            $statLabel = $isPos ? 'Profitable' : ($isZero ? 'Break-Even' : 'Deficit');
+                        ?>
+                        <tr>
+                            <td style="font-weight:700; color:var(--text-main); font-size:0.85rem;">
+                                <i class="fas fa-calendar-days" style="color:var(--accent); margin-right:6px;"></i>
+                                <?php echo htmlspecialchars($row['label']); ?>
+                            </td>
+                            <td style="text-align:right; font-weight:700; color:#52b788; font-size:0.9rem;">
+                                &#8369;<?php echo number_format($row['revenue'], 2); ?>
+                            </td>
+                            <td style="text-align:right; font-weight:700; color:#f87171; font-size:0.9rem;">
+                                -&#8369;<?php echo number_format($row['expenses'], 2); ?>
+                            </td>
+                            <td style="text-align:right; font-weight:800; font-size:0.95rem; color:<?php echo $isPos ? '#52b788' : ($isZero ? 'var(--text-main)' : '#ef4444'); ?>;">
+                                <?php echo ($row['net_income'] < 0 ? '-' : '') . '&#8369;' . number_format(abs($row['net_income']), 2); ?>
+                            </td>
+                            <td style="text-align:center; font-weight:700; color:#38bdf8;">
+                                <?php echo $row['margin_pct']; ?>%
+                            </td>
+                            <td style="text-align:center;">
+                                <span class="badge <?php echo $statBadge; ?>">
+                                    <?php echo $statLabel; ?>
+                                </span>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Period Itemized Expenses Table -->
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.75rem;">
+                <div>
+                    <h3 class="section-title" style="margin:0;"><i class="fas fa-receipt" style="color:#f87171;"></i> Itemized Expense Records for Period</h3>
+                    <p style="margin:0.2rem 0 0 0; font-size:0.78rem; color:var(--text-muted);">Detailed operational expense entries matching active date filter.</p>
+                </div>
+                <div style="display:flex; gap:0.5rem;">
+                    <a href="expenses.php" class="btn btn-outline" style="font-size:0.8rem; padding:0.4rem 0.85rem;">
+                        <i class="fas fa-arrow-up-right-from-square"></i> Open Full Expenses Manager
+                    </a>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Payment Method</th>
+                            <th>Ref / Voucher</th>
+                            <th>Recorded By</th>
+                            <th style="text-align:right;">Amount (PHP)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($financial_report['itemized_expenses'])): ?>
+                        <tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">No individual expense records found in this date range.</td></tr>
+                        <?php else: ?>
+                        <?php foreach ($financial_report['itemized_expenses'] as $item): ?>
+                        <tr>
+                            <td style="font-weight:600; font-size:0.82rem;"><?php echo date('M d, Y', strtotime($item['expense_date'])); ?></td>
+                            <td><span class="badge" style="background:rgba(239,68,68,0.12); color:#f87171; font-weight:700;"><?php echo htmlspecialchars($item['category']); ?></span></td>
+                            <td>
+                                <span style="font-weight:600; color:var(--text-main);"><?php echo htmlspecialchars($item['title']); ?></span>
+                                <?php if (!empty($item['notes'])): ?>
+                                    <div style="font-size:0.72rem; color:var(--text-muted);"><?php echo htmlspecialchars($item['notes']); ?></div>
+                                <?php endif; ?>
+                            </td>
+                            <td><span class="badge" style="background:rgba(255,255,255,0.06);"><?php echo htmlspecialchars($item['payment_method']); ?></span></td>
+                            <td><span style="font-family:monospace; color:var(--text-muted);"><?php echo htmlspecialchars($item['reference_number'] ?: '—'); ?></span></td>
+                            <td style="font-size:0.8rem; color:var(--text-muted);"><?php echo htmlspecialchars($item['recorded_by_name'] ?: 'Admin'); ?></td>
+                            <td style="text-align:right; font-weight:800; color:#f87171; font-size:0.92rem;">-&#8369;<?php echo number_format((float)$item['amount'], 2); ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- =======================================================================
+         REPORT 4: MONTHLY REVENUE REPORT
          ======================================================================= -->
     <div class="report-tab-pane" id="tab-monthly">
         <!-- 12-Month Historical Trend Line -->
@@ -2246,11 +2694,13 @@ try {
                 <select name="export" id="export-type-select" class="form-control" style="margin:0; width:100%;">
                     <option value="daily_revenue">1. Daily Revenue &amp; Ledger</option>
                     <option value="weekly_revenue">2. Weekly Revenue Comparison</option>
-                    <option value="monthly_revenue">3. Monthly Revenue Trend</option>
-                    <option value="retention">4. Membership Retention Records</option>
-                    <option value="conversion">5. Membership Conversion Funnel</option>
-                    <option value="attendance_hour">6. Attendance by Hour Analysis</option>
-                    <option value="attendance_day">7. Attendance by Day Statistics</option>
+                    <option value="financial_summary">3. Financial Profitability &amp; Net Income Summary</option>
+                    <option value="expenses">4. Gym Operational Expenses Ledger</option>
+                    <option value="monthly_revenue">5. Monthly Revenue Trend</option>
+                    <option value="retention">6. Membership Retention Records</option>
+                    <option value="conversion">7. Membership Conversion Funnel</option>
+                    <option value="attendance_hour">8. Attendance by Hour Analysis</option>
+                    <option value="attendance_day">9. Attendance by Day Statistics</option>
                     <option value="members">Master Members Directory</option>
                     <option value="attendance">Raw Attendance Logs</option>
                     <option value="revenue">Master Payments &amp; Revenue</option>
@@ -2469,7 +2919,87 @@ const weeklyCompareChart = new Chart(document.getElementById('weeklyCompareChart
     }
 });
 
-// 3. Report 3 Charts: Monthly Trajectory
+// 3. Report 3 Charts: Financial Profitability & Net Income
+const finCanvas = document.getElementById('financialComparisonChart');
+if (finCanvas) {
+    new Chart(finCanvas, {
+        type: 'bar',
+        data: {
+            labels: <?php echo json_encode($financial_report['trend_labels']); ?>,
+            datasets: [
+                {
+                    label: 'Gross Revenue',
+                    data: <?php echo json_encode($financial_report['trend_revenue']); ?>,
+                    backgroundColor: themeGreen,
+                    borderRadius: 5,
+                    order: 2
+                },
+                {
+                    label: 'Operational Expenses',
+                    data: <?php echo json_encode($financial_report['trend_expenses']); ?>,
+                    backgroundColor: themeRed,
+                    borderRadius: 5,
+                    order: 3
+                },
+                {
+                    type: 'line',
+                    label: 'Net Income (Profit/Loss)',
+                    data: <?php echo json_encode($financial_report['trend_net']); ?>,
+                    borderColor: themeBlue,
+                    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                    borderWidth: 2.5,
+                    pointRadius: 4,
+                    pointBackgroundColor: themeBlue,
+                    tension: 0.35,
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ctx.dataset.label + ': ₱' + Number(ctx.raw).toLocaleString('en-US', { minimumFractionDigits: 2 })
+                    }
+                }
+            },
+            scales: {
+                y: { grid: { color: gridColor }, ticks: { font: themeFont, callback: v => '₱' + Number(v).toLocaleString() } },
+                x: { grid: { display: false }, ticks: { font: themeFont } }
+            }
+        }
+    });
+}
+
+const expCatCanvas = document.getElementById('expenseCategoryChart');
+if (expCatCanvas) {
+    new Chart(expCatCanvas, {
+        type: 'doughnut',
+        data: {
+            labels: <?php echo json_encode(array_column($financial_report['category_dist'], 'name')); ?>,
+            datasets: [{
+                data: <?php echo json_encode(array_map('floatval', array_column($financial_report['category_dist'], 'total'))); ?>,
+                backgroundColor: ['#38bdf8', '#c084fc', '#f87171', '#eab308', '#52b788', '#f97316', '#a855f7', '#64748b'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right', labels: { font: themeFont, color: '#94a3b8', boxWidth: 12 } },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ctx.label + ': ₱' + Number(ctx.raw).toLocaleString('en-US', { minimumFractionDigits: 2 })
+                    }
+                }
+            }
+        }
+    });
+}
+
+// 4. Report 4 Charts: Monthly Trajectory
 const monthlyTrendChart = new Chart(document.getElementById('monthlyTrendChart'), {
     type: 'line',
     data: {

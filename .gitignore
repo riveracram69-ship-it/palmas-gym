@@ -10,11 +10,14 @@ backups/*.gz
 backups/*.zip
 *.sql
 
-# Private Uploads containing Member PII
+# Private Uploads containing Member PII & Financial Receipts
 uploads/members/*
 !uploads/members/.gitkeep
 !uploads/members/default-avatar.png
 !uploads/members/index.php
+uploads/receipts/*
+!uploads/receipts/.htaccess
+!uploads/receipts/index.html
 
 # Logs
 *.log

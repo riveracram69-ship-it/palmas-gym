@@ -58,8 +58,10 @@ try {
         $currently_inside   = (int)$pdo->query("SELECT COUNT(DISTINCT member_id) FROM attendance WHERE date = CURDATE() AND time_out IS NULL")->fetchColumn();
 
         if ($is_admin) {
-            $monthly_revenue = (float)($pdo->query("SELECT SUM(amount) FROM payments WHERE MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE())")->fetchColumn() ?: 0);
-            $total_earnings  = (float)($pdo->query("SELECT SUM(amount) FROM payments")->fetchColumn() ?: 0);
+            $monthly_revenue    = (float)($pdo->query("SELECT SUM(amount) FROM payments WHERE MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE())")->fetchColumn() ?: 0);
+            $monthly_expenses   = (float)($pdo->query("SELECT SUM(amount) FROM expenses WHERE MONTH(expense_date) = MONTH(CURDATE()) AND YEAR(expense_date) = YEAR(CURDATE())")->fetchColumn() ?: 0);
+            $monthly_net_income = $monthly_revenue - $monthly_expenses;
+            $total_earnings     = (float)($pdo->query("SELECT SUM(amount) FROM payments")->fetchColumn() ?: 0);
         } else {
             $expiring_this_week_cnt = (int)$pdo->query("SELECT COUNT(DISTINCT member_id) FROM subscriptions WHERE expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)")->fetchColumn();
         }
@@ -248,17 +250,19 @@ try {
         <div class="card kpi-card">
             <?php if ($is_admin): ?>
             <div class="kpi-card-head">
-                <span class="kpi-label">Monthly Revenue</span>
+                <span class="kpi-label">Monthly Revenue &amp; Net</span>
                 <div class="kpi-icon-box kpi-icon-yellow"><i class="fas fa-peso-sign"></i></div>
             </div>
             <div class="kpi-number-wrap">
-                <h2 class="kpi-number" style="color:#eab308;">&#8369;<?php echo number_format($monthly_revenue, 2); ?></h2>
-                <span class="kpi-trend-pill" style="background:rgba(234,179,8,0.12); color:#b45309;">
-                    <?php echo date('M Y'); ?>
+                <h2 class="kpi-number" style="color:#52b788;">&#8369;<?php echo number_format($monthly_revenue, 2); ?></h2>
+                <span class="kpi-trend-pill" style="background:<?php echo $monthly_net_income >= 0 ? 'rgba(82,183,136,0.12)' : 'rgba(239,68,68,0.12)'; ?>; color:<?php echo $monthly_net_income >= 0 ? '#52b788' : '#ef4444'; ?>; font-weight:700;">
+                    Net: <?php echo ($monthly_net_income < 0 ? '-' : '') . '&#8369;' . number_format(abs($monthly_net_income), 2); ?>
                 </span>
             </div>
             <div class="kpi-footer-meta">
-                <span><i class="fas fa-chart-simple"></i> <strong>&#8369;<?php echo number_format($total_earnings, 2); ?></strong> all-time revenue</span>
+                <span>Costs: <strong style="color:#f87171;">&#8369;<?php echo number_format($monthly_expenses, 2); ?></strong></span>
+                <span>&bull;</span>
+                <a href="reports.php" style="color:var(--accent); text-decoration:none; font-weight:600; font-size:0.75rem;">View Financials &rarr;</a>
             </div>
             <?php else: ?>
             <div class="kpi-card-head">

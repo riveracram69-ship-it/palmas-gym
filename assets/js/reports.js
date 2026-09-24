@@ -96,10 +96,13 @@ function setExportFormat(format) {
 function generatePDFReport(filename) {
     const activeTab = localStorage.getItem('palmas_active_report_tab') || 'tab-daily';
     let exportType = 'daily_revenue';
-    if (activeTab === 'tab-retention') exportType = 'retention';
-    else if (activeTab === 'tab-attendance') exportType = 'attendance_hour';
-    else if (activeTab === 'tab-expenses') exportType = 'revenue';
-    else if (activeTab === 'tab-instructors') exportType = 'members';
+    if (activeTab === 'tab-financials') exportType = 'financial_summary';
+    else if (activeTab === 'tab-weekly') exportType = 'weekly_revenue';
+    else if (activeTab === 'tab-monthly') exportType = 'monthly_revenue';
+    else if (activeTab === 'tab-retention') exportType = 'retention';
+    else if (activeTab === 'tab-conversion') exportType = 'conversion';
+    else if (activeTab === 'tab-hourly') exportType = 'attendance_hour';
+    else if (activeTab === 'tab-daily-att') exportType = 'attendance_day';
 
     const presetInput = document.getElementById('master-preset-input');
     const preset = presetInput ? presetInput.value : 'month';
