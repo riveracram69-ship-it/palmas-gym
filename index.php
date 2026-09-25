@@ -145,6 +145,10 @@ try {
         $stmt_top_month = $pdo->query(sprintf($leaderboard_sql, "YEAR(a.date) = YEAR(CURDATE()) AND MONTH(a.date) = MONTH(CURDATE())"));
         $top_active_month = $stmt_top_month ? $stmt_top_month->fetchAll(PDO::FETCH_ASSOC) : [];
 
+        // Last Month (Previous Month Cycle)
+        $stmt_top_prev = $pdo->query(sprintf($leaderboard_sql, "YEAR(a.date) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AND MONTH(a.date) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))"));
+        $top_active_prev = $stmt_top_prev ? $stmt_top_prev->fetchAll(PDO::FETCH_ASSOC) : [];
+
         // This Week (Mon-Sun ISO week)
         $stmt_top_week = $pdo->query(sprintf($leaderboard_sql, "YEARWEEK(a.date, 1) = YEARWEEK(CURDATE(), 1)"));
         $top_active_week = $stmt_top_week ? $stmt_top_week->fetchAll(PDO::FETCH_ASSOC) : [];
@@ -864,14 +868,17 @@ try {
                         <p class="section-subtitle">Top members by workout visit frequency</p>
                     </div>
                     <!-- Timeframe Tabs -->
-                    <div style="display:flex; gap:0.35rem; background:var(--bg-main, #f8fafc); padding:3px; border-radius:20px; border:1px solid var(--border);">
-                        <button type="button" class="lb-tab-btn active" id="lb-tab-month" onclick="switchLeaderboardTab('month', this)" style="background:#2d6a4f; color:#ffffff; border:none; border-radius:15px; padding:3px 10px; font-size:0.72rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                    <div style="display:flex; gap:0.35rem; background:var(--bg-main, #f8fafc); padding:3px; border-radius:20px; border:1px solid var(--border); overflow-x:auto;">
+                        <button type="button" class="lb-tab-btn active" id="lb-tab-month" onclick="switchLeaderboardTab('month', this)" style="background:#2d6a4f; color:#ffffff; border:none; border-radius:15px; padding:3px 10px; font-size:0.72rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
                             <i class="fas fa-calendar-days"></i> This Month
                         </button>
-                        <button type="button" class="lb-tab-btn" id="lb-tab-week" onclick="switchLeaderboardTab('week', this)" style="background:transparent; color:var(--text-muted); border:none; border-radius:15px; padding:3px 10px; font-size:0.72rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                        <button type="button" class="lb-tab-btn" id="lb-tab-prev" onclick="switchLeaderboardTab('prev', this)" style="background:transparent; color:var(--text-muted); border:none; border-radius:15px; padding:3px 10px; font-size:0.72rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
+                            <i class="fas fa-clock-rotate-left"></i> Last Month
+                        </button>
+                        <button type="button" class="lb-tab-btn" id="lb-tab-week" onclick="switchLeaderboardTab('week', this)" style="background:transparent; color:var(--text-muted); border:none; border-radius:15px; padding:3px 10px; font-size:0.72rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
                             <i class="fas fa-bolt"></i> This Week
                         </button>
-                        <button type="button" class="lb-tab-btn" id="lb-tab-all" onclick="switchLeaderboardTab('all', this)" style="background:transparent; color:var(--text-muted); border:none; border-radius:15px; padding:3px 10px; font-size:0.72rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                        <button type="button" class="lb-tab-btn" id="lb-tab-all" onclick="switchLeaderboardTab('all', this)" style="background:transparent; color:var(--text-muted); border:none; border-radius:15px; padding:3px 10px; font-size:0.72rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
                             <i class="fas fa-crown"></i> All-Time
                         </button>
                     </div>
@@ -889,6 +896,9 @@ try {
                         </thead>
                         <tbody id="lb-tbody-month">
                             <?php echo render_lb_rows($top_active_month, 'this month'); ?>
+                        </tbody>
+                        <tbody id="lb-tbody-prev" style="display:none;">
+                            <?php echo render_lb_rows($top_active_prev, 'last month'); ?>
                         </tbody>
                         <tbody id="lb-tbody-week" style="display:none;">
                             <?php echo render_lb_rows($top_active_week, 'this week'); ?>
@@ -1088,6 +1098,8 @@ function manualCheckout(attendanceId, memberName) {
             executeCheckout();
         }
     }
+}
+
 // ── Loyalty Leaderboard Timeframe Switcher ────────────────────────────────
 function switchLeaderboardTab(period, btn) {
     document.querySelectorAll('.lb-tab-btn').forEach(b => {
@@ -1101,7 +1113,7 @@ function switchLeaderboardTab(period, btn) {
         btn.style.fontWeight = '700';
     }
 
-    const periods = ['month', 'week', 'all'];
+    const periods = ['month', 'prev', 'week', 'all'];
     periods.forEach(p => {
         const tbody = document.getElementById('lb-tbody-' + p);
         if (tbody) {
