@@ -18,6 +18,62 @@ require_login();
 header('Content-Type: application/json; charset=UTF-8');
 header('Cache-Control: no-cache, must-revalidate');
 
+// ── 0. Dynamic Leaderboard Endpoint (Filter by Any Month / Period) ───────────
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'leaderboard_data') {
+    $period = trim($_GET['period'] ?? 'this_month');
+    $where = "1=1";
+    $period_label = "This Month";
+
+    if ($period === 'this_month') {
+        $where = "YEAR(a.date) = YEAR(CURDATE()) AND MONTH(a.date) = MONTH(CURDATE())";
+        $period_label = date('F Y');
+    } elseif ($period === 'prev_month' || $period === 'last_month') {
+        $where = "YEAR(a.date) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AND MONTH(a.date) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))";
+        $period_label = date('F Y', strtotime('-1 month'));
+    } elseif ($period === 'this_week') {
+        $where = "YEARWEEK(a.date, 1) = YEARWEEK(CURDATE(), 1)";
+        $period_label = "This Week";
+    } elseif ($period === 'all_time') {
+        $where = "1=1";
+        $period_label = "All-Time History";
+    } elseif (preg_match('/^\d{4}-\d{2}$/', $period)) {
+        list($y, $m) = explode('-', $period);
+        $where = "YEAR(a.date) = " . intval($y) . " AND MONTH(a.date) = " . intval($m);
+        $period_label = date('F Y', strtotime($period . '-01'));
+    }
+
+    $leaderboard_sql = "
+        SELECT m.id, m.full_name, m.membership_id, m.photo,
+               COALESCE(
+                   (SELECT p2.name 
+                    FROM subscriptions s2 
+                    JOIN membership_plans p2 ON p2.id = s2.plan_id 
+                    WHERE s2.member_id = m.id 
+                      AND p2.plan_category != 'membership_fee' 
+                    ORDER BY (s2.expiry_date >= CURDATE()) DESC, s2.id DESC 
+                    LIMIT 1),
+                   'Standard'
+               ) as plan_name,
+               COUNT(a.id) as visit_count
+        FROM members m
+        JOIN attendance a ON a.member_id = m.id
+        WHERE {$where}
+        GROUP BY m.id, m.full_name, m.membership_id, m.photo
+        HAVING visit_count > 0
+        ORDER BY visit_count DESC, m.full_name ASC
+        LIMIT 5
+    ";
+
+    try {
+        $stmt = $pdo->query($leaderboard_sql);
+        $members = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        echo json_encode(['success' => true, 'period' => $period, 'period_label' => $period_label, 'members' => $members]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage(), 'members' => []]);
+    }
+    exit;
+}
+
 // ── 1. Live Activity Feed ──────────────────────────────────────────────────────
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'live_feed') {
     $feed = [];

@@ -157,6 +157,10 @@ try {
         $stmt_top_all = $pdo->query(sprintf($leaderboard_sql, "1=1"));
         $top_active_all = $stmt_top_all ? $stmt_top_all->fetchAll(PDO::FETCH_ASSOC) : [];
 
+        // Available Months with Check-ins (for Dynamic Month Selector)
+        $stmt_months = $pdo->query("SELECT DISTINCT DATE_FORMAT(date, '%Y-%m') as ym, DATE_FORMAT(date, '%M %Y') as ym_label FROM attendance WHERE date IS NOT NULL ORDER BY ym DESC LIMIT 24");
+        $available_attendance_months = $stmt_months ? $stmt_months->fetchAll(PDO::FETCH_ASSOC) : [];
+
         // ── 5. Server-side Pre-rendered Live Activity Feed ──────────────────────
         $server_live_feed = [];
         try {
@@ -862,24 +866,37 @@ try {
             }
             ?>
             <div class="card" id="card-loyalty-leaderboard">
-                <div class="card-header-flex" style="flex-wrap:wrap; gap:10px;">
+                <div class="card-header-flex" style="flex-wrap:wrap; gap:10px; align-items:center;">
                     <div>
                         <h3 class="section-title"><i class="fas fa-trophy" style="color:#eab308;"></i> Member Loyalty Leaderboard</h3>
-                        <p class="section-subtitle">Top members by workout visit frequency</p>
+                        <p class="section-subtitle">Top champions by workout visits (<strong id="lb-period-title" style="color:var(--accent); font-weight:700;"><?php echo date('F Y'); ?></strong>)</p>
                     </div>
-                    <!-- Timeframe Tabs -->
-                    <div style="display:flex; gap:0.35rem; background:var(--bg-main, #f8fafc); padding:3px; border-radius:20px; border:1px solid var(--border); overflow-x:auto;">
-                        <button type="button" class="lb-tab-btn active" id="lb-tab-month" onclick="switchLeaderboardTab('month', this)" style="background:#2d6a4f; color:#ffffff; border:none; border-radius:15px; padding:3px 10px; font-size:0.72rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
-                            <i class="fas fa-calendar-days"></i> This Month
-                        </button>
-                        <button type="button" class="lb-tab-btn" id="lb-tab-prev" onclick="switchLeaderboardTab('prev', this)" style="background:transparent; color:var(--text-muted); border:none; border-radius:15px; padding:3px 10px; font-size:0.72rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
-                            <i class="fas fa-clock-rotate-left"></i> Last Month
-                        </button>
-                        <button type="button" class="lb-tab-btn" id="lb-tab-week" onclick="switchLeaderboardTab('week', this)" style="background:transparent; color:var(--text-muted); border:none; border-radius:15px; padding:3px 10px; font-size:0.72rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
-                            <i class="fas fa-bolt"></i> This Week
-                        </button>
-                        <button type="button" class="lb-tab-btn" id="lb-tab-all" onclick="switchLeaderboardTab('all', this)" style="background:transparent; color:var(--text-muted); border:none; border-radius:15px; padding:3px 10px; font-size:0.72rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
-                            <i class="fas fa-crown"></i> All-Time
+
+                    <!-- Interactive Month & Period Dropdown Filter -->
+                    <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+                        <div style="display:inline-flex; align-items:center; gap:6px; background:var(--bg-main, #f8fafc); padding:3px 8px; border-radius:12px; border:1px solid var(--border);">
+                            <i class="fas fa-calendar-alt" style="color:#2d6a4f; font-size:0.82rem;"></i>
+                            <select id="lb-period-select" onchange="changeLeaderboardPeriod(this.value)" style="border:none; background:transparent; font-size:0.75rem; font-weight:700; color:var(--text-main); cursor:pointer; outline:none; padding:2px 2px;">
+                                <optgroup label="Presets">
+                                    <option value="this_month" selected>📅 This Month (<?php echo date('M Y'); ?>)</option>
+                                    <option value="prev_month">⏪ Last Month (<?php echo date('M Y', strtotime('-1 month')); ?>)</option>
+                                    <option value="this_week">⚡ This Week</option>
+                                    <option value="all_time">👑 All-Time History</option>
+                                </optgroup>
+                                <?php if (!empty($available_attendance_months)): ?>
+                                <optgroup label="Select Specific Month">
+                                    <?php foreach ($available_attendance_months as $m_opt): 
+                                        if ($m_opt['ym'] === date('Y-m') || $m_opt['ym'] === date('Y-m', strtotime('-1 month'))) continue;
+                                    ?>
+                                        <option value="<?php echo $m_opt['ym']; ?>">🗓️ <?php echo htmlspecialchars($m_opt['ym_label']); ?></option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+                        
+                        <button type="button" class="btn btn-outline btn-sm" onclick="changeLeaderboardPeriod(document.getElementById('lb-period-select').value)" style="padding:0.25rem 0.5rem; font-size:0.75rem; border-radius:8px;" title="Refresh Leaderboard">
+                            <i class="fas fa-arrows-rotate" id="lb-refresh-icon"></i>
                         </button>
                     </div>
                 </div>
@@ -894,17 +911,8 @@ try {
                                 <th style="text-align:right;">Workout Visits</th>
                             </tr>
                         </thead>
-                        <tbody id="lb-tbody-month">
+                        <tbody id="lb-tbody">
                             <?php echo render_lb_rows($top_active_month, 'this month'); ?>
-                        </tbody>
-                        <tbody id="lb-tbody-prev" style="display:none;">
-                            <?php echo render_lb_rows($top_active_prev, 'last month'); ?>
-                        </tbody>
-                        <tbody id="lb-tbody-week" style="display:none;">
-                            <?php echo render_lb_rows($top_active_week, 'this week'); ?>
-                        </tbody>
-                        <tbody id="lb-tbody-all" style="display:none;">
-                            <?php echo render_lb_rows($top_active_all, 'all-time'); ?>
                         </tbody>
                     </table>
                 </div>
@@ -1100,26 +1108,104 @@ function manualCheckout(attendanceId, memberName) {
     }
 }
 
-// ── Loyalty Leaderboard Timeframe Switcher ────────────────────────────────
-function switchLeaderboardTab(period, btn) {
-    document.querySelectorAll('.lb-tab-btn').forEach(b => {
-        b.style.background = 'transparent';
-        b.style.color = 'var(--text-muted)';
-        b.style.fontWeight = '600';
-    });
-    if (btn) {
-        btn.style.background = '#2d6a4f';
-        btn.style.color = '#ffffff';
-        btn.style.fontWeight = '700';
+// ── Loyalty Leaderboard Dynamic Period / Month Selector ───────────────────
+async function changeLeaderboardPeriod(period) {
+    const tbody = document.getElementById('lb-tbody');
+    const refreshIcon = document.getElementById('lb-refresh-icon');
+    const titleEl = document.getElementById('lb-period-title');
+
+    if (refreshIcon) refreshIcon.classList.add('fa-spin');
+    if (tbody) {
+        tbody.style.opacity = '0.4';
     }
 
-    const periods = ['month', 'prev', 'week', 'all'];
-    periods.forEach(p => {
-        const tbody = document.getElementById('lb-tbody-' + p);
-        if (tbody) {
-            tbody.style.display = (p === period) ? '' : 'none';
+    try {
+        const res = await fetch('api/admin_dashboard_ajax.php?ajax=leaderboard_data&period=' + encodeURIComponent(period));
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+                if (titleEl && data.period_label) {
+                    titleEl.textContent = data.period_label;
+                }
+                renderLeaderboardTable(data.members || [], data.period_label || 'this period');
+            }
         }
+    } catch (e) {
+        console.error('Failed to update leaderboard:', e);
+    } finally {
+        if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+        if (tbody) tbody.style.opacity = '1';
+    }
+}
+
+function renderLeaderboardTable(members, periodLabel) {
+    const tbody = document.getElementById('lb-tbody');
+    if (!tbody) return;
+
+    if (!members || members.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:2.2rem 1rem; color:var(--text-muted);"><i class="fas fa-trophy" style="font-size:1.6rem; color:#cbd5e1; display:block; margin-bottom:0.4rem;"></i><strong>No check-ins recorded for ${periodLabel} yet.</strong><p style="margin:4px 0 0 0; font-size:0.75rem;">Visits will appear here once members scan their ID at the kiosk.</p></td></tr>`;
+        return;
+    }
+
+    let html = '';
+    members.forEach((tm, idx) => {
+        let rankBadge = '';
+        let rowBg = '';
+        if (idx === 0) {
+            rankBadge = '<span class="badge" style="background:#fef9c3; color:#a16207; border:1px solid #fde047; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥇 1st</span>';
+            rowBg = 'background:rgba(254,249,195,0.12);';
+        } else if (idx === 1) {
+            rankBadge = '<span class="badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥈 2nd</span>';
+        } else if (idx === 2) {
+            rankBadge = '<span class="badge" style="background:#ffedd5; color:#c2410c; border:1px solid #fed7aa; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥉 3rd</span>';
+        } else {
+            rankBadge = `<span style="font-weight:700; color:var(--text-muted); font-size:0.8rem;">#${idx + 1}</span>`;
+        }
+
+        const avatarContent = tm.photo 
+            ? `<img src="${escapeHtml(tm.photo)}" alt="Photo" style="width:100%; height:100%; object-fit:cover;">`
+            : (tm.full_name ? tm.full_name.charAt(0).toUpperCase() : 'M');
+
+        html += `
+            <tr style="${rowBg}">
+                <td style="text-align:center; width:65px;">${rankBadge}</td>
+                <td>
+                    <div class="member-cell">
+                        <div class="member-avatar" style="width:34px; height:34px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#f1f5f9; font-weight:700; color:#2d6a4f; font-size:0.85rem;">
+                            ${avatarContent}
+                        </div>
+                        <div>
+                            <a href="view-member.php?id=${tm.id}" class="cell-primary" style="font-weight:700; color:var(--text-main); text-decoration:none; font-size:0.84rem;">
+                                ${escapeHtml(tm.full_name)}
+                            </a>
+                            <div style="font-size:0.7rem; color:var(--text-muted); font-family:monospace;">
+                                ${escapeHtml(tm.membership_id)}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge badge-gold" style="font-size:0.7rem; font-weight:700;">${escapeHtml(tm.plan_name || 'Standard')}</span>
+                </td>
+                <td style="text-align:right;">
+                    <span class="badge" style="background:rgba(56,189,248,0.12); color:#0284c7; border:1px solid rgba(56,189,248,0.25); font-weight:800; font-size:0.78rem; padding:4px 9px; border-radius:8px; display:inline-flex; align-items:center; gap:4px;">
+                        <i class="fas fa-dumbbell"></i> ${Number(tm.visit_count).toLocaleString()}
+                    </span>
+                </td>
+            </tr>
+        `;
     });
+    tbody.innerHTML = html;
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 // ── Send 1-Click Single Renewal Reminder ──────────────────────────────────
