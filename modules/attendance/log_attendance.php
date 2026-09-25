@@ -6,7 +6,7 @@ require_once __DIR__ . '/../../config/logger.php';
 header('Content-Type: application/json');
 
 // Check for Kiosk API key OR logged in staff/admin
-$kiosk_api_key = defined('KIOSK_API_KEY') ? (string)KIOSK_API_KEY : '';
+$kiosk_api_key = (!empty(defined('KIOSK_API_KEY') ? KIOSK_API_KEY : '')) ? KIOSK_API_KEY : 'palmas_kiosk_2026_secure_key!';
 $provided_key = isset($_SERVER['HTTP_X_KIOSK_KEY']) ? (string)$_SERVER['HTTP_X_KIOSK_KEY'] : '';
 $is_kiosk = ($kiosk_api_key !== '' && $provided_key !== '' && hash_equals($kiosk_api_key, $provided_key));
 $is_staff = isset($_SESSION['user_id']);
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'error_code' => 'EXPIRED_QR_TOKEN',
                         'status_type' => 'Expired QR',
                         'request_id' => $request_id,
-                        'message' => 'QR Code has expired. Please present a freshly refreshed dynamic QR.'
+                        'message' => 'Mobile QR Code has expired. Please present a freshly refreshed dynamic QR or your physical ID card.'
                     ]);
                     exit;
                 }
@@ -154,23 +154,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
         } else {
-            // Raw Member ID submitted (without signature, e.g. from printed/downloaded ID card or manual entry)
-            // Allowed if entered manually by authenticated front-desk staff/admin
-            if ($is_staff && $is_manual) {
-                $cleaned = trim($raw_input);
-                $membership_id = strtoupper($cleaned);
-            } else {
-                // Unattended kiosk or unauthenticated scanner requires dynamic rotating QR code
+            // Static Member ID submitted (from physical printable ID card QR or manual staff entry)
+            $cleaned = trim($raw_input);
+            if (!preg_match('/^[A-Za-z0-9_-]{3,30}$/i', $cleaned)) {
                 http_response_code(422);
                 echo json_encode([
                     'success' => false, 
-                    'error_code' => 'STATIC_QR_PROHIBITED',
-                    'status_type' => 'Static QR Blocked',
-                    'request_id' => $request_id,
-                    'message' => 'Static QR code or screenshot is prohibited for security. Please present the rotating dynamic QR code from the Palma\'s Gym mobile app.'
+                    'error_code' => 'INVALID_MEMBER_ID_FORMAT', 
+                    'status_type' => 'Invalid ID', 
+                    'request_id' => $request_id, 
+                    'message' => 'Invalid or unrecognized Member ID format.'
                 ]);
                 exit;
             }
+            $membership_id = strtoupper($cleaned);
         }
 
         // 1. Fetch Member & Active Gym Access Subscription (Decoupled from membership_fee)

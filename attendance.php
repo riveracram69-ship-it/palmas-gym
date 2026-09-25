@@ -237,8 +237,8 @@ try {
             </div>
             
             <div class="camera-tip-pill" style="display:flex; align-items:center; gap:8px; background:rgba(62,130,65,0.08); border:1px solid rgba(62,130,65,0.2); padding:8px 12px; border-radius:10px; margin-bottom:14px; font-size:0.75rem; color:#2d6a4f; line-height:1.4;">
-                <i class="fas fa-mobile-screen-button" style="color:#52b788; font-size:1.1rem; flex-shrink:0;"></i>
-                <span><strong>Scan Guidance:</strong> Member should present their rotating pass from the mobile app (~15–20cm from lens).</span>
+                <i class="fas fa-qrcode" style="color:#52b788; font-size:1.1rem; flex-shrink:0;"></i>
+                <span><strong>Scan Guidance:</strong> Member can present dynamic mobile QR or official printed E-ID card (~15–20cm from lens).</span>
             </div>
 
             <!-- Viewfinder with Scanner Frame -->

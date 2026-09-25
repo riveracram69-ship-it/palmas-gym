@@ -268,17 +268,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         <?php echo htmlspecialchars(strtolower($member['full_name'])); ?>
                     </h2>
                     
-                    <!-- MODERN "ACTIVE MEMBER" BADGE WITH SOFT GREEN STYLING -->
-                    <div style="display:inline-flex; align-items:center; gap:0.4rem; background:<?php echo $member['status']==='Active'?'rgba(46,125,50,0.06)':'rgba(229,57,53,0.06)'; ?>; color:<?php echo $member['status']==='Active'?'var(--success)':'var(--danger)'; ?>; padding:4px 12px; border-radius:30px; font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:1rem; border:1px solid <?php echo $member['status']==='Active'?'rgba(46,125,50,0.15)':'rgba(229,57,53,0.15)'; ?>; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
-                        <i class="fas fa-circle-check" style="font-size:0.75rem; color:<?php echo $member['status']==='Active'?'var(--success)':'var(--danger)'; ?>;"></i>
-                        <?php echo htmlspecialchars($member['status']); ?> Member
+                    <!-- OFFICIAL MEMBER BADGE -->
+                    <div style="display:inline-flex; align-items:center; gap:0.4rem; background:rgba(46,125,50,0.06); color:var(--success); padding:4px 12px; border-radius:30px; font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:1rem; border:1px solid rgba(46,125,50,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.02);">
+                        <i class="fas fa-shield-halved" style="font-size:0.75rem; color:var(--success);"></i>
+                        Official Member E-ID
                     </div>
                 </div>
                 
                 <!-- QR CODE INSIDE SOFT ELEVATED CARD -->
-                <div style="background:#ffffff; border-radius:24px; padding:1rem 1rem 0.75rem; border:1px solid #f1f5f9; box-shadow:0 12px 36px rgba(8,28,21,0.06); display:flex; flex-direction:column; align-items:center; width:100%; max-width:160px; margin-bottom:0.75rem; flex-shrink:0;">
-                    <div id="id-qr-box" style="padding:2px; background:#fff;"></div>
-                    <span style="font-family:'Outfit', sans-serif; font-size:0.5rem; font-weight:800; color:#94a3b8; letter-spacing:1.5px; text-transform:uppercase; margin-top:0.6rem; text-align:center;">
+                <div style="background:#ffffff; border-radius:24px; padding:1.1rem 1.1rem 0.85rem; border:1.5px solid #e2e8f0; box-shadow:0 12px 36px rgba(8,28,21,0.06); display:flex; flex-direction:column; align-items:center; width:100%; max-width:240px; margin-bottom:0.75rem; flex-shrink:0;">
+                    <div id="id-qr-box" style="padding:2px; background:#fff; display:flex; justify-content:center;"></div>
+                    <span style="font-family:'Outfit', sans-serif; font-size:0.55rem; font-weight:800; color:#64748b; letter-spacing:1.5px; text-transform:uppercase; margin-top:0.7rem; text-align:center;">
                         SCAN FOR GYM ACCESS
                     </span>
                 </div>
@@ -292,8 +292,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <!-- Right Side Details -->
                     <div style="text-align:right;">
-                        <p style="font-size:0.52rem; color:#94a3b8; text-transform:uppercase; font-weight:700; letter-spacing:1.2px; margin:0 0 2px 0;">Expiry Date</p>
-                        <p style="font-size:0.9rem; font-weight:700; color:#0c2219; margin:0;"><?php echo $member['expiry_date'] ? date('M d, Y', strtotime($member['expiry_date'])) : 'No Active Plan'; ?></p>
+                        <p style="font-size:0.52rem; color:#94a3b8; text-transform:uppercase; font-weight:700; letter-spacing:1.2px; margin:0 0 2px 0;">Member Since</p>
+                        <p style="font-size:0.9rem; font-weight:700; color:#0c2219; margin:0;"><?php echo !empty($member['created_at']) ? date('M d, Y', strtotime($member['created_at'])) : date('M d, Y'); ?></p>
                     </div>
                 </div>
             </div>
@@ -306,9 +306,9 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         </div>
 
-        <div style="display:flex; gap:1rem; margin-top:2rem; justify-content:center;">
+        <div style="display:flex; gap:1rem; margin-top:2rem; justify-content:center; flex-wrap:wrap;">
             <button class="btn btn-outline" style="background:#fff;" onclick="closeIDModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="downloadID()" id="dl-btn"><i class="fas fa-download"></i> Download E-ID</button>
+            <button class="btn btn-primary" onclick="downloadID()" id="dl-btn"><i class="fas fa-download"></i> Download Printable E-ID</button>
         </div>
     </div>
 </div>
@@ -317,8 +317,8 @@ document.addEventListener('DOMContentLoaded', function() {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 const mId = <?php echo json_encode((string)$member['membership_id']); ?>;
-new QRCode(document.getElementById("side-qr"), { text: mId, width: 120, height: 120 });
-new QRCode(document.getElementById("id-qr-box"), { text: mId, width: 100, height: 100 });
+new QRCode(document.getElementById("side-qr"), { text: mId, width: 140, height: 140, correctLevel: QRCode.CorrectLevel.H });
+new QRCode(document.getElementById("id-qr-box"), { text: mId, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.H });
 
 function showIDModal() { document.getElementById('id-modal').classList.add('active'); }
 function closeIDModal() { document.getElementById('id-modal').classList.remove('active'); }
@@ -326,15 +326,15 @@ function closeIDModal() { document.getElementById('id-modal').classList.remove('
 function downloadID() {
     const btn = document.getElementById('dl-btn');
     const captureArea = document.getElementById('id-card-capture');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating HD Card...';
     btn.disabled = true;
 
     const qrCanvas = document.querySelector('#id-qr-box canvas');
     if (qrCanvas) {
         const qrImage = new Image();
         qrImage.src = qrCanvas.toDataURL("image/png");
-        qrImage.style.width = "100px";
-        qrImage.style.height = "100px";
+        qrImage.style.width = "200px";
+        qrImage.style.height = "200px";
         document.getElementById('id-qr-box').innerHTML = '';
         document.getElementById('id-qr-box').appendChild(qrImage);
     }
@@ -342,10 +342,10 @@ function downloadID() {
     setTimeout(() => {
         html2canvas(captureArea, { scale: 3, useCORS: true }).then(canvas => {
             const link = document.createElement('a');
-            link.download = 'Official_ID_' + mId.replace(/[^a-zA-Z0-9_-]/g, '_') + '.png';
+            link.download = 'Printable_ID_' + mId.replace(/[^a-zA-Z0-9_-]/g, '_') + '.png';
             link.href = canvas.toDataURL('image/png');
             link.click();
-            btn.innerHTML = '<i class="fas fa-download"></i> Download E-ID';
+            btn.innerHTML = '<i class="fas fa-download"></i> Download Printable E-ID';
             btn.disabled = false;
         });
     }, 400);

@@ -347,6 +347,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             </div>
         </div>
 
+        <!-- Official E-ID Card Section -->
+        <div class="card fade-up fade-up-d15" style="background:#ffffff; border:1px solid rgba(62,130,65,0.25); border-radius:18px; padding:1.2rem; margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:42px; height:42px; border-radius:12px; background:#d8f3dc; color:#1b4332; display:flex; align-items:center; justify-content:center; font-size:1.25rem; flex-shrink:0;">
+                    <i class="fas fa-id-card"></i>
+                </div>
+                <div>
+                    <h3 style="margin:0; font-size:0.95rem; font-weight:700; color:var(--text-primary);">Printable Official E-ID Card</h3>
+                    <p style="margin:2px 0 0 0; font-size:0.75rem; color:var(--text-secondary);">Download HD card for plastic PVC printing or offline use</p>
+                </div>
+            </div>
+            <a href="id-card.php" class="btn" style="background:#2d6a4f; color:#fff; font-size:0.82rem; font-weight:700; padding:8px 16px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                <i class="fas fa-download"></i> View & Download E-ID
+            </a>
+        </div>
+
         <!-- Update Profile Picture -->
         <div class="edit-section fade-up fade-up-d15" style="margin-bottom: 1.5rem;">
             <p class="section-title" style="margin-bottom:1rem;"><i class="fas fa-camera"></i> Update Profile Picture</p>

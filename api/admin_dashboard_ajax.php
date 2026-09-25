@@ -156,8 +156,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'live_feed') {
 }
 
 // ── 2. Send Reminder ───────────────────────────────────────────────────────────
-if (isset($_GET['action']) && $_GET['action'] === 'send_reminder') {
-    $member_id = intval($_GET['member_id'] ?? 0);
+if (isset($_GET['action']) && ($_GET['action'] === 'send_reminder' || $_GET['action'] === 'send_renewal_reminder')) {
+    $member_id = intval($_GET['member_id'] ?? $_POST['member_id'] ?? 0);
 
     if ($member_id <= 0) {
         echo json_encode(['success' => false, 'message' => 'Invalid member ID specified.']);
@@ -165,7 +165,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'send_reminder') {
     }
 
     try {
-        $stmt = $pdo->prepare("SELECT id, full_name, email, membership_id FROM members WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT m.id, m.full_name, m.email, m.membership_id, s.expiry_date, p.name as plan_name 
+                               FROM members m 
+                               LEFT JOIN (SELECT member_id, MAX(id) as max_id FROM subscriptions GROUP BY member_id) l ON l.member_id = m.id
+                               LEFT JOIN subscriptions s ON s.id = l.max_id
+                               LEFT JOIN membership_plans p ON p.id = s.plan_id
+                               WHERE m.id = ?");
         $stmt->execute([$member_id]);
         $target = $stmt->fetch();
 
@@ -174,22 +179,176 @@ if (isset($_GET['action']) && $_GET['action'] === 'send_reminder') {
             exit;
         }
 
+        if (empty($target['email'])) {
+            echo json_encode(['success' => false, 'message' => 'Member has no registered email address.']);
+            exit;
+        }
+
         $gym_name = $app_settings['gym_name'] ?? "Palma's Elite Gym";
-        $subject  = "We Miss You at {$gym_name}!";
-        $title    = "Friendly Gym Reminder";
-        $body     = "Hi " . htmlspecialchars($target['full_name']) . ",<br><br>"
-                  . "We noticed you haven't visited {$gym_name} recently. "
-                  . "Staying consistent is key to reaching your fitness goals! "
-                  . "Drop by this week for a workout session or check your portal for plan status.";
+        $subject  = "Gym Pass Renewal Reminder — {$gym_name}";
+        $title    = "Membership Renewal Reminder";
+        $exp_date_str = !empty($target['expiry_date']) ? date('M d, Y', strtotime($target['expiry_date'])) : 'recently';
+        $plan_str     = !empty($target['plan_name']) ? htmlspecialchars($target['plan_name']) : 'Gym Pass';
+
+        $body = "Hi <strong>" . htmlspecialchars($target['full_name']) . "</strong>,<br><br>"
+              . "Your <strong>{$plan_str}</strong> at {$gym_name} expired on <strong>{$exp_date_str}</strong>.<br><br>"
+              . "We'd love to have you back on the workout floor! You can renew your pass seamlessly online via GCash/Maya by logging into your member portal, or simply visit the front desk on your next visit.<br><br>"
+              . "<a href='" . (defined('APP_URL') ? APP_URL : '') . "/member/login.php' style='display:inline-block;background:#2d6a4f;color:#ffffff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;'>Renew Membership Online →</a>";
 
         send_email_notification($target['email'], $subject, $title, $body);
-        log_activity($pdo, 'Sent Member Reminder', "Sent reminder notification to {$target['full_name']} ({$target['membership_id']})", 'Member');
+        log_activity($pdo, 'Sent Renewal Reminder', "Sent renewal follow-up to {$target['full_name']} ({$target['membership_id']})", 'Member');
 
-        echo json_encode(['success' => true, 'message' => 'Reminder successfully dispatched to ' . htmlspecialchars($target['full_name']) . '!']);
+        echo json_encode(['success' => true, 'message' => 'Renewal reminder successfully sent to ' . htmlspecialchars($target['full_name']) . '!']);
     } catch (Exception $e) {
         error_log('API Error in admin_dashboard_ajax.php reminder: ' . $e->getMessage());
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Failed to send reminder. An internal server error occurred.']);
+        echo json_encode(['success' => false, 'message' => 'Failed to send reminder. ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// ── 3. Bulk Renewal Reminders ───────────────────────────────────────────────────
+if (isset($_GET['action']) && $_GET['action'] === 'send_bulk_renewal_reminders') {
+    try {
+        $stmt_all = $pdo->query("
+            SELECT m.id, m.full_name, m.email, m.membership_id, s.expiry_date, p.name as plan_name
+            FROM subscriptions s
+            JOIN (
+                SELECT member_id, MAX(id) AS latest_sub_id
+                FROM subscriptions
+                GROUP BY member_id
+            ) latest ON s.id = latest.latest_sub_id
+            JOIN members m ON m.id = s.member_id
+            JOIN membership_plans p ON p.id = s.plan_id
+            WHERE s.expiry_date < CURDATE()
+              AND s.member_id NOT IN (SELECT member_id FROM subscriptions WHERE expiry_date >= CURDATE())
+              AND m.email IS NOT NULL AND m.email != ''
+        ");
+        $expired_members = $stmt_all ? $stmt_all->fetchAll(PDO::FETCH_ASSOC) : [];
+        $sent_count = 0;
+        $gym_name = $app_settings['gym_name'] ?? "Palma's Elite Gym";
+
+        foreach ($expired_members as $target) {
+            $subject  = "Gym Pass Renewal Reminder — {$gym_name}";
+            $title    = "Membership Renewal Reminder";
+            $exp_date_str = !empty($target['expiry_date']) ? date('M d, Y', strtotime($target['expiry_date'])) : 'recently';
+            $plan_str     = !empty($target['plan_name']) ? htmlspecialchars($target['plan_name']) : 'Gym Pass';
+
+            $body = "Hi <strong>" . htmlspecialchars($target['full_name']) . "</strong>,<br><br>"
+                  . "Your <strong>{$plan_str}</strong> at {$gym_name} expired on <strong>{$exp_date_str}</strong>.<br><br>"
+                  . "We'd love to have you back on the workout floor! You can renew your pass online via GCash/Maya or visit the front desk.<br><br>"
+                  . "<a href='" . (defined('APP_URL') ? APP_URL : '') . "/member/login.php' style='display:inline-block;background:#2d6a4f;color:#ffffff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;'>Renew Membership Online →</a>";
+
+            try {
+                send_email_notification($target['email'], $subject, $title, $body);
+                $sent_count++;
+            } catch (Exception $e) {}
+        }
+
+        log_activity($pdo, 'Bulk Renewal Reminders', "Sent automated renewal reminders to {$sent_count} expired members.", 'Member');
+        echo json_encode(['success' => true, 'sent_count' => $sent_count, 'message' => "Successfully dispatched renewal reminders to {$sent_count} member(s)!"]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Failed to send bulk reminders: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// ── 4. Quick Renew Action (Instant Front-Desk Renewal) ─────────────────────────
+if (isset($_GET['action']) && $_GET['action'] === 'quick_renew') {
+    $member_id      = intval($_POST['member_id'] ?? 0);
+    $plan_id        = intval($_POST['plan_id'] ?? 0);
+    $payment_method = trim($_POST['payment_method'] ?? 'Cash');
+    $notes          = trim($_POST['notes'] ?? 'Quick front-desk renewal');
+
+    if ($member_id <= 0 || $plan_id <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Member ID and Plan ID are required.']);
+        exit;
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        $m_stmt = $pdo->prepare("SELECT * FROM members WHERE id = ? FOR UPDATE");
+        $m_stmt->execute([$member_id]);
+        $member = $m_stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$member) {
+            $pdo->rollBack();
+            echo json_encode(['success' => false, 'message' => 'Member not found.']);
+            exit;
+        }
+
+        $p_stmt = $pdo->prepare("SELECT * FROM membership_plans WHERE id = ? AND is_active = 1");
+        $p_stmt->execute([$plan_id]);
+        $plan = $p_stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$plan) {
+            $pdo->rollBack();
+            echo json_encode(['success' => false, 'message' => 'Selected membership plan is invalid or inactive.']);
+            exit;
+        }
+
+        $now_str          = date('Y-m-d H:i:s');
+        $duration_minutes = intval($plan['duration_minutes'] ?? 0);
+        $duration_months  = intval($plan['duration_months'] ?? 0);
+        $plan_category    = $plan['plan_category'] ?? 'legacy';
+        $price            = floatval($plan['price'] ?? 0);
+
+        $is_daily_pass     = ($duration_minutes === 1440 || ($duration_months === 0 && stripos($plan['name'] ?? '', 'Daily') !== false));
+        $is_minute_promo   = ($duration_minutes > 0 && !$is_daily_pass);
+        $is_membership_fee = ($plan_category === 'membership_fee' || stripos($plan['name'] ?? '', 'Annual Membership Fee') !== false);
+
+        if ($is_membership_fee) {
+            $current_ann = $member['annual_membership_expiry'] ?? null;
+            if ($current_ann && strtotime($current_ann) >= strtotime(date('Y-m-d'))) {
+                $new_ann_expiry = date('Y-m-d', strtotime($current_ann . ' +1 year'));
+            } else {
+                $new_ann_expiry = date('Y-m-d', strtotime('+1 year'));
+            }
+            $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved', annual_membership_expiry = ? WHERE id = ?")
+                ->execute([$new_ann_expiry, $member_id]);
+            $start_date  = $now_str;
+            $expiry_date = $new_ann_expiry . ' 23:59:59';
+        } elseif ($is_minute_promo) {
+            $start_date  = $now_str;
+            $expiry_date = date('Y-m-d H:i:s', strtotime("+{$duration_minutes} minutes"));
+            $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved' WHERE id = ?")->execute([$member_id]);
+        } elseif ($is_daily_pass) {
+            $start_date  = $now_str;
+            $expiry_date = date('Y-m-d 23:59:59');
+            $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved' WHERE id = ?")->execute([$member_id]);
+        } else {
+            $months = max(1, $duration_months);
+            $start_date  = $now_str;
+            $expiry_date = date('Y-m-d 23:59:59', strtotime("+{$months} months"));
+            $pdo->prepare("UPDATE members SET status = 'Active', account_status = 'Approved' WHERE id = ?")->execute([$member_id]);
+        }
+
+        // Insert Subscription
+        $ins_sub = $pdo->prepare("INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_at) VALUES (?, ?, ?, ?, NOW())");
+        $ins_sub->execute([$member_id, $plan_id, $start_date, $expiry_date]);
+
+        // Insert Payment
+        $ins_pay = $pdo->prepare("INSERT INTO payments (member_id, amount, payment_method, payment_date, created_at) VALUES (?, ?, ?, CURDATE(), NOW())");
+        $ins_pay->execute([$member_id, $price, $payment_method]);
+
+        $pdo->commit();
+
+        log_activity($pdo, 'Quick Member Renewal', "Renewed {$member['full_name']} ({$member['membership_id']}) with {$plan['name']} (₱" . number_format($price, 2) . ") via {$payment_method}.", 'Attendance');
+
+        echo json_encode([
+            'success' => true,
+            'member_id' => $member_id,
+            'member_name' => $member['full_name'],
+            'plan_name' => $plan['name'],
+            'expiry_date' => date('M d, Y', strtotime($expiry_date)),
+            'message' => "Successfully renewed {$member['full_name']} with {$plan['name']} (₱" . number_format($price, 2) . ")!"
+        ]);
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Renewal failed: ' . $e->getMessage()]);
     }
     exit;
 }

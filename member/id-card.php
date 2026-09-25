@@ -24,16 +24,16 @@ if (!$member) { header('Location: logout.php'); exit; }
         }
 
         .eid-card-wrap {
-            width: 320px;
+            width: 350px;
             max-width: 100%;
             perspective: 1200px;
         }
 
         .eid-card {
             width: 100%;
-            border-radius: 28px;
+            border-radius: 30px;
             overflow: hidden;
-            box-shadow: 0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.06);
+            box-shadow: 0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.08);
             display: flex;
             flex-direction: column;
             background: #fff;
@@ -49,8 +49,8 @@ if (!$member) { header('Location: logout.php'); exit; }
         /* Watermark */
         .eid-watermark {
             position: absolute;
-            right: -30px; top: -20px;
-            width: 200px;
+            right: -40px; top: -30px;
+            width: 240px;
             opacity: 0.03;
             pointer-events: none;
             z-index: 1;
@@ -59,7 +59,7 @@ if (!$member) { header('Location: logout.php'); exit; }
 
         /* Top gradient header */
         .eid-header {
-            height: 150px;
+            height: 155px;
             background: linear-gradient(145deg, #1a4d35 0%, #0d2a1c 60%, #060f0a 100%);
             display: flex;
             flex-direction: column;
@@ -226,24 +226,42 @@ if (!$member) { header('Location: logout.php'); exit; }
         /* QR container */
         .eid-qr-box {
             background: #fff;
-            border-radius: 18px;
-            padding: 0.85rem 0.85rem 0.6rem;
-            border: 1px solid #f0f4f8;
-            box-shadow: 0 8px 24px rgba(8,28,21,0.07);
+            border-radius: 22px;
+            padding: 1.1rem 1.1rem 0.75rem;
+            border: 1.5px solid #e2e8f0;
+            box-shadow: 0 10px 30px rgba(8,28,21,0.08);
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 0.85rem;
+            margin-bottom: 1rem;
+            width: 100%;
+            max-width: 270px;
+            box-sizing: border-box;
+        }
+
+        #eid-qr {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            min-height: 220px;
+        }
+
+        #eid-qr canvas, #eid-qr img {
+            max-width: 100%;
+            height: auto !important;
+            display: block;
+            border-radius: 6px;
         }
 
         .eid-qr-label {
             font-family: 'Outfit', sans-serif;
-            font-size: 0.42rem;
+            font-size: 0.52rem;
             font-weight: 800;
-            color: #94a3b8;
+            color: #64748b;
             letter-spacing: 1.5px;
             text-transform: uppercase;
-            margin-top: 0.5rem;
+            margin-top: 0.65rem;
             text-align: center;
         }
 
@@ -343,10 +361,26 @@ if (!$member) { header('Location: logout.php'); exit; }
         }
         
         @media print {
-            body, .mobile-container, #card-capture {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .app-header, .eid-actions, .tip-card, .bottom-nav {
                 display: none !important;
-                background: #000 !important;
-                color: #000 !important;
+            }
+            .mobile-container {
+                max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .eid-scene {
+                padding: 0 !important;
+                margin: 0 auto !important;
+            }
+            #card-capture {
+                box-shadow: none !important;
+                page-break-inside: avoid;
+                margin: 0 auto;
             }
         }
         
@@ -420,10 +454,9 @@ if (!$member) { header('Location: logout.php'); exit; }
                     <h2 class="eid-member-name"><?php echo htmlspecialchars($member['full_name']); ?></h2>
 
                     <!-- Status badge -->
-                    <?php $is_active = !empty($member['is_active']); ?>
-                    <div class="eid-status-badge <?php echo $is_active ? 'active' : 'expired'; ?>">
-                        <i class="fas <?php echo $is_active ? 'fa-circle-check' : 'fa-circle-xmark'; ?>" style="font-size:0.65rem;"></i>
-                        <?php echo $is_active ? 'Active Member' : 'Expired Member'; ?>
+                    <div class="eid-status-badge active">
+                        <i class="fas fa-shield-halved" style="font-size:0.65rem;"></i>
+                        Official Member ID
                     </div>
 
                     <!-- QR Code -->
@@ -439,8 +472,8 @@ if (!$member) { header('Location: logout.php'); exit; }
                             <p><?php echo htmlspecialchars($member['membership_id']); ?></p>
                         </div>
                         <div class="eid-detail-item right">
-                            <p>Expiry Date</p>
-                            <p><?php echo $member['expiry_date'] ? date('M d, Y', strtotime($member['expiry_date'])) : 'No Plan'; ?></p>
+                            <p>Member Since</p>
+                            <p><?php echo !empty($member['created_at']) ? date('M d, Y', strtotime($member['created_at'])) : date('M d, Y'); ?></p>
                         </div>
                     </div>
                 </div>
@@ -462,12 +495,15 @@ if (!$member) { header('Location: logout.php'); exit; }
             <button class="btn btn-secondary" onclick="shareEID()">
                 <i class="fas fa-share-nodes"></i> Share Card
             </button>
+            <button class="btn btn-outline" onclick="window.print()" style="background:#fff; color:var(--text-primary); border-color:#cbd5e1;">
+                <i class="fas fa-print"></i> Print ID Card
+            </button>
         </div>
 
         <!-- Tip -->
         <div class="tip-card fade-up fade-up-d2">
             <i class="fas fa-lightbulb"></i>
-            <p>Show your QR code at the front desk for instant check-in. Keep this card handy for all gym access and verification.</p>
+            <p>Show this ID card or your mobile QR at the scanner. Access is verified in real-time based on your active membership plan.</p>
         </div>
 
     </main>
@@ -495,111 +531,39 @@ if (!$member) { header('Location: logout.php'); exit; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
-// Screenshot / Capture Protection (toggles black screen when page loses focus or visibility changes)
-const protectScreen = () => {
-    document.body.classList.add('protected-mode');
-};
-const restoreScreen = () => {
-    document.body.classList.remove('protected-mode');
-};
-
-window.addEventListener('blur', protectScreen);
-window.addEventListener('focus', restoreScreen);
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) protectScreen();
-    else restoreScreen();
-});
-
-// Disable PrintScreen, Ctrl+P, Ctrl+S, Ctrl+U, F12
-document.addEventListener('keydown', (e) => {
-    if (
-        e.key === 'PrintScreen' ||
-        (e.ctrlKey && (e.key === 'p' || e.key === 'P' || e.key === 's' || e.key === 'S' || e.key === 'u' || e.key === 'U')) ||
-        (e.metaKey && (e.key === 'p' || e.key === 'P' || e.key === 's' || e.key === 'S')) ||
-        e.keyCode === 123
-    ) {
-        e.preventDefault();
-        e.stopPropagation();
-        protectScreen();
-        setTimeout(restoreScreen, 1000);
-    }
-});
-
-document.addEventListener('keyup', (e) => {
-    if (e.key === 'PrintScreen') {
-        navigator.clipboard.writeText('');
-    }
-});
-
-// Prevent right-click / context menu
-document.addEventListener('contextmenu', e => e.preventDefault());
-
 const memberID = "<?php echo htmlspecialchars($member['membership_id']); ?>";
 let isCapturing = false;
 
-async function refreshQR() {
-    if (isCapturing) return;
+// Render permanent static QR for ID Card (works for all downloads, prints, and scans)
+function renderIDCardQR() {
     const qrContainer = document.getElementById("eid-qr");
-    let offlineBadge = document.getElementById("offline-qr-badge");
-    
-    try {
-        const res = await fetch('get_qr_token.php');
-        const data = await res.json();
-        if (data.success && data.token) {
-            localStorage.setItem('cached_qr_token_' + memberID, data.token);
-            qrContainer.innerHTML = ''; // Clear previous
-            
-            new QRCode(qrContainer, {
-                text: data.token,
-                width: 180,
-                height: 180,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            if (offlineBadge) offlineBadge.remove();
-        }
-    } catch (e) {
-        console.warn("Failed to load secure QR token (offline fallback):", e);
-        const cachedToken = localStorage.getItem('cached_qr_token_' + memberID);
-        if (cachedToken) {
-            qrContainer.innerHTML = '';
-            new QRCode(qrContainer, {
-                text: cachedToken,
-                width: 180,
-                height: 180,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            if (!offlineBadge) {
-                offlineBadge = document.createElement('div');
-                offlineBadge.id = 'offline-qr-badge';
-                offlineBadge.style.cssText = 'font-size:0.55rem; color:#ef4444; font-weight:800; text-transform:uppercase; margin-top:5px; text-align:center; letter-spacing:0.5px;';
-                offlineBadge.innerHTML = '<i class="fas fa-wifi-slash"></i> Offline E-ID';
-                qrContainer.appendChild(offlineBadge);
-            }
-        } else {
-            qrContainer.innerHTML = '<div style="font-size:0.6rem;color:#ef4444;padding:0.5rem;text-align:center;line-height:1.3;">Connect online once<br>to sync E-ID</div>';
-        }
-    }
+    if (!qrContainer) return;
+    qrContainer.innerHTML = '';
+    new QRCode(qrContainer, {
+        text: memberID,
+        width: 220,
+        height: 220,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+    });
 }
 
 // Initial draw
-refreshQR();
+renderIDCardQR();
 
 function downloadEID() {
     isCapturing = true;
     const btn = document.getElementById('download-btn');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating HD Card...';
     btn.disabled = true;
 
-    // Convert canvas QR to image first
+    // Convert canvas QR to image first for crisp html2canvas export
     const qrCanvas = document.querySelector('#eid-qr canvas');
     if (qrCanvas) {
         const img = new Image();
         img.src = qrCanvas.toDataURL('image/png');
-        img.style.cssText = 'width:110px;height:110px;display:block;';
+        img.style.cssText = 'width:200px;height:200px;display:block;margin:0 auto;';
         document.getElementById('eid-qr').innerHTML = '';
         document.getElementById('eid-qr').appendChild(img);
     }
@@ -612,16 +576,16 @@ function downloadEID() {
             logging: false
         }).then(canvas => {
             const link = document.createElement('a');
-            link.download = `EID_${memberID}.png`;
+            link.download = `Printable_ID_${memberID}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
             btn.innerHTML = '<i class="fas fa-download"></i> Download E-ID';
             btn.disabled = false;
             
             isCapturing = false;
-            refreshQR(); // Resume and refresh
+            renderIDCardQR(); // Restore interactive canvas
         });
-    }, 500);
+    }, 400);
 }
 
 async function shareEID() {
@@ -630,7 +594,7 @@ async function shareEID() {
     if (qrCanvas) {
         const img = new Image();
         img.src = qrCanvas.toDataURL('image/png');
-        img.style.cssText = 'width:110px;height:110px;display:block;';
+        img.style.cssText = 'width:200px;height:200px;display:block;margin:0 auto;';
         document.getElementById('eid-qr').innerHTML = '';
         document.getElementById('eid-qr').appendChild(img);
     }
@@ -642,18 +606,18 @@ async function shareEID() {
         canvas.toBlob(async blob => {
             if (navigator.share) {
                 try {
-                    const file = new File([blob], `EID_${memberID}.png`, { type: 'image/png' });
-                    await navigator.share({ files: [file], title: 'My Gym Membership E-ID' });
+                    const file = new File([blob], `Printable_ID_${memberID}.png`, { type: 'image/png' });
+                    await navigator.share({ files: [file], title: 'My Gym Membership Printable ID' });
                 } catch(e) {}
             } else {
                 const link = document.createElement('a');
                 link.href = canvas.toDataURL('image/png');
-                link.download = `EID_${memberID}.png`;
+                link.download = `Printable_ID_${memberID}.png`;
                 link.click();
             }
             
             isCapturing = false;
-            refreshQR(); // Resume and refresh
+            renderIDCardQR();
         }, 'image/png');
     });
 }

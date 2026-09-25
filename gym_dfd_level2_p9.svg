@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1350 920" width="100%" height="100%" style="background:#ffffff; font-family:'Segoe UI', Arial, Helvetica, sans-serif;">
+  <defs>
+    <!-- Arrowhead markers -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#1e293b"/>
+    </marker>
+    <filter id="card-shadow" x="-4%" y="-4%" width="108%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Header Banner -->
+  <rect x="0" y="0" width="1350" height="60" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="675" y="36" text-anchor="middle" font-size="18" font-weight="800" fill="#0f172a" letter-spacing="1">DFD LEVEL 2 — PROCESS 9.0: MANAGE OPERATIONAL EXPENSES</text>
+  <text x="675" y="52" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">Sub-process Decomposition | Operating Cost Ledger • Receipt Voucher Storage • Net Income Analytics</text>
+
+  <!-- ================================================================= -->
+  <!-- EXTERNAL ENTITY (LEFT COLUMN)                                     -->
+  <!-- ================================================================= -->
+  <g id="entity-admin">
+    <rect x="60" y="360" width="180" height="150" rx="4" fill="#ffffff" stroke="#0f172a" stroke-width="2.5" filter="url(#card-shadow)"/>
+    <rect x="60" y="360" width="180" height="12" fill="#fee2e2" stroke="#0f172a" stroke-width="2.5"/>
+    <text x="150" y="420" text-anchor="middle" font-size="17" font-weight="800" fill="#0f172a">ADMIN / STAFF</text>
+    <text x="150" y="445" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">External Entity</text>
+    <text x="150" y="475" text-anchor="middle" font-size="10.5" font-weight="600" fill="#334155">Operating Expense Entry</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- SUB-PROCESSES (CENTER COLUMN: x=480 to x=740, Width=260)         -->
+  <!-- ================================================================= -->
+
+  <!-- 9.1 Receive Expense Entry Data -->
+  <g id="subproc-9-1">
+    <rect x="480" y="100" width="260" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="130" x2="740" y2="130" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="610" y="122" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">9.1</text>
+    <text x="610" y="158" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Receive Expense Entry</text>
+  </g>
+
+  <!-- 9.2 Process Receipt Photo Upload -->
+  <g id="subproc-9-2">
+    <rect x="480" y="300" width="260" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="330" x2="740" y2="330" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="610" y="322" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">9.2</text>
+    <text x="610" y="358" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Process Receipt Voucher</text>
+  </g>
+
+  <!-- 9.3 Store Expense in Ledger -->
+  <g id="subproc-9-3">
+    <rect x="480" y="500" width="260" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="530" x2="740" y2="530" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="610" y="522" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">9.3</text>
+    <text x="610" y="558" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Commit Expense Record</text>
+  </g>
+
+  <!-- 9.4 Calculate Net Income & Category Metrics -->
+  <g id="subproc-9-4">
+    <rect x="480" y="700" width="260" height="75" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2.2" filter="url(#card-shadow)"/>
+    <line x1="480" y1="730" x2="740" y2="730" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="610" y="722" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">9.4</text>
+    <text x="610" y="758" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Calculate Net Income</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- DATA STORES (RIGHT COLUMN: D10 Expenses, D2 Users, D5 Payments, D9 Activity Logs) -->
+  <!-- ================================================================= -->
+
+  <!-- D10 Expenses -->
+  <g id="ds-d10">
+    <line x1="1040" y1="290" x2="1040" y2="340" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1040" y1="290" x2="1300" y2="290" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1040" y1="340" x2="1300" y2="340" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1090" y1="290" x2="1090" y2="340" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1065" y="322" text-anchor="middle" font-size="14" font-weight="800" fill="#0f172a">D10</text>
+    <text x="1195" y="322" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Expenses</text>
+  </g>
+
+  <!-- D5 Payments (For Net Income) -->
+  <g id="ds-d5">
+    <line x1="1040" y1="690" x2="1040" y2="740" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1040" y1="690" x2="1300" y2="690" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1040" y1="740" x2="1300" y2="740" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1090" y1="690" x2="1090" y2="740" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1065" y="722" text-anchor="middle" font-size="14" font-weight="800" fill="#0f172a">D5</text>
+    <text x="1195" y="722" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Payments</text>
+  </g>
+
+  <!-- D9 Activity Logs -->
+  <g id="ds-d9">
+    <line x1="1040" y1="490" x2="1040" y2="540" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1040" y1="490" x2="1300" y2="490" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1040" y1="540" x2="1300" y2="540" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="1090" y1="490" x2="1090" y2="540" stroke="#0f172a" stroke-width="1.8"/>
+    <text x="1065" y="522" text-anchor="middle" font-size="14" font-weight="800" fill="#0f172a">D9</text>
+    <text x="1195" y="522" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Activity_Logs</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- CONNECTING DATA FLOWS                                             -->
+  <!-- ================================================================= -->
+  <g stroke="#0f172a" stroke-width="1.5" fill="none">
+    <!-- Admin -> 9.1 -->
+    <path d="M 240 380 L 360 380 L 360 137 L 478 137" marker-end="url(#arrow)"/>
+    <!-- 9.1 -> 9.2 -->
+    <path d="M 610 175 L 610 298" marker-end="url(#arrow)"/>
+    <!-- 9.2 -> 9.3 -->
+    <path d="M 610 375 L 610 498" marker-end="url(#arrow)"/>
+    <!-- 9.3 -> 9.4 -->
+    <path d="M 610 575 L 610 698" marker-end="url(#arrow)"/>
+    
+    <!-- 9.3 -> D10 Expenses -->
+    <path d="M 740 520 L 890 520 L 890 315 L 1038 315" marker-end="url(#arrow)"/>
+    <!-- 9.3 -> D9 Activity Logs -->
+    <path d="M 740 540 L 1038 540" marker-end="url(#arrow)"/>
+
+    <!-- D5 Payments -> 9.4 (Revenue Data) -->
+    <path d="M 1040 710 L 742 710" marker-end="url(#arrow)"/>
+    <!-- D10 Expenses -> 9.4 (Total Overhead Data) -->
+    <path d="M 1170 340 L 1170 660 L 680 660 L 680 698" marker-end="url(#arrow)"/>
+
+    <!-- 9.4 -> Admin (Net Income & Expense Ledger) -->
+    <path d="M 480 740 L 320 740 L 320 480 L 242 480" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- Flow Labels -->
+  <g font-size="10.5" font-weight="700" fill="#0f172a" text-anchor="middle">
+    <text x="360" y="125" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px;">Expense Form (Category, Title, Amount)</text>
+    <text x="610" y="240" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px;">Validated Entry Payload</text>
+    <text x="610" y="440" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px;">Saved Receipt Image Path</text>
+    <text x="890" y="305" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px;">New Expense Record</text>
+    <text x="890" y="530" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px;">Expense Audit Log</text>
+    <text x="890" y="700" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px;">Gross Revenue Figures</text>
+    <text x="890" y="650" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px;">Aggregated Costs</text>
+    <text x="320" y="730" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px;">Net Income &amp; Category Breakdown</text>
+  </g>
+
+  <!-- Footer Banner -->
+  <rect x="40" y="850" width="1270" height="50" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="60" y="880" font-size="12" font-weight="800" fill="#0f172a">DFD Level 2 Process 9.0 Summary:</text>
+  <text x="330" y="880" font-size="11.5" font-weight="600" fill="#475569">Records verified operating costs, validates receipt vouchers, and computes Net Income (Gross Revenue - Expenses).</text>
+</svg>

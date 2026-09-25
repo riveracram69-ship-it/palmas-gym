@@ -90,20 +90,31 @@ try {
         ");
         $today_attendance_list = $stmt_att ? $stmt_att->fetchAll(PDO::FETCH_ASSOC) : [];
 
-        // ── 3. Overdue Renewals (Latest 5) ──────────────────────────────────────
+        // ── 3. Overdue Renewals (Categorized with Plan Metadata) ────────────────
         $stmt_od = $pdo->query("
             SELECT m.id, m.full_name, m.membership_id, m.contact_number, m.email, m.photo,
-                   s.expiry_date, p.name as plan_name,
+                   m.annual_membership_expiry,
+                   s.expiry_date, p.id as plan_id, p.name as plan_name, p.price as plan_price,
+                   p.duration_months, p.duration_minutes, p.plan_category,
                    DATEDIFF(CURDATE(), s.expiry_date) as overdue_days
             FROM subscriptions s
+            JOIN (
+                SELECT member_id, MAX(id) AS latest_sub_id
+                FROM subscriptions
+                GROUP BY member_id
+            ) latest ON s.id = latest.latest_sub_id
             JOIN members m ON m.id = s.member_id
             JOIN membership_plans p ON p.id = s.plan_id
             WHERE s.expiry_date < CURDATE()
               AND s.member_id NOT IN (SELECT member_id FROM subscriptions WHERE expiry_date >= CURDATE())
             ORDER BY s.expiry_date DESC
-            LIMIT 5
+            LIMIT 50
         ");
         $overdue_renewals = $stmt_od ? $stmt_od->fetchAll(PDO::FETCH_ASSOC) : [];
+
+        // Active plans for quick-renew modal
+        $active_plans_stmt = $pdo->query("SELECT id, name, price, duration_months, duration_minutes, plan_category FROM membership_plans WHERE is_active = 1 ORDER BY (plan_category = 'membership_fee') DESC, (plan_category = 'member_pass') DESC, price ASC");
+        $quick_renew_plans = $active_plans_stmt ? $active_plans_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
         // ── 4. Top Active Members (Top 5 Loyalty Champions) ────────────────────
         $stmt_top = $pdo->query("
@@ -452,53 +463,169 @@ try {
                 </div>
             </div>
 
-            <!-- Card 2: Overdue / Expired Renewals -->
-            <div class="card">
-                <div class="card-header-flex">
+            <!-- Card 2: Overdue / Expired Renewals (Enhanced Follow-up Center) -->
+            <?php
+            $regular_count = 0;
+            $daily_count   = 0;
+            foreach ($overdue_renewals as $od_item) {
+                $is_daily_item = ((int)($od_item['duration_months'] ?? 0) === 0 && (int)($od_item['duration_minutes'] ?? 0) <= 1440);
+                if ($is_daily_item) $daily_count++;
+                else $regular_count++;
+            }
+            ?>
+            <div class="card" id="card-expired-followups">
+                <div class="card-header-flex" style="flex-wrap:wrap; gap:10px;">
                     <div>
                         <h3 class="section-title"><i class="fas fa-triangle-exclamation" style="color:#ef4444;"></i> Expired Plans &amp; Follow-ups</h3>
                         <p class="section-subtitle">Members with expired plans needing renewal follow-up</p>
                     </div>
-                    <span class="badge badge-danger" style="background:rgba(239,68,68,0.12); color:#ef4444;">
-                        <?php echo count($overdue_renewals); ?> Overdue
-                    </span>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <?php if (!empty($overdue_renewals)): ?>
+                        <button type="button" class="btn btn-outline btn-sm" id="btn-bulk-notify" onclick="sendBulkRenewalReminders()" style="font-size:0.75rem; padding:0.35rem 0.75rem; border-color:#fca5a5; color:#dc2626; background:#fff5f5; display:inline-flex; align-items:center; gap:5px; font-weight:700; border-radius:8px;" title="Send renewal reminder email to all expired members with email addresses">
+                            <i class="fas fa-bullhorn"></i> <span id="bulk-notify-label">Notify All Overdue (<?php echo count($overdue_renewals); ?>)</span>
+                        </button>
+                        <?php endif; ?>
+                        <span class="badge badge-danger" id="overdue-total-badge" style="background:rgba(239,68,68,0.12); color:#ef4444; font-weight:700;">
+                            <?php echo count($overdue_renewals); ?> Overdue
+                        </span>
+                    </div>
                 </div>
 
-                <div class="table-container">
-                    <table>
+                <!-- Filter Tabs: Regular Members vs 1-Day Walk-ins -->
+                <div style="display:flex; gap:0.4rem; margin:0.85rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.6rem; overflow-x:auto;">
+                    <button type="button" class="od-filter-tab active" id="tab-btn-regular" onclick="filterOverdueTable('regular', this)" style="background:rgba(45,106,79,0.12); color:#2d6a4f; border:1px solid rgba(82,183,136,0.35); border-radius:20px; padding:4px 12px; font-size:0.75rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+                        <i class="fas fa-user-clock"></i> Regular (Monthly/Yearly) <span class="badge" style="background:#2d6a4f; color:#fff; font-size:0.65rem; padding:1px 6px; border-radius:10px;" id="count-tab-regular"><?php echo $regular_count; ?></span>
+                    </button>
+                    <button type="button" class="od-filter-tab" id="tab-btn-daily" onclick="filterOverdueTable('daily', this)" style="background:transparent; color:var(--text-muted); border:1px solid var(--border); border-radius:20px; padding:4px 12px; font-size:0.75rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+                        <i class="fas fa-ticket"></i> Daily / Walk-in <span class="badge" style="background:#64748b; color:#fff; font-size:0.65rem; padding:1px 6px; border-radius:10px;" id="count-tab-daily"><?php echo $daily_count; ?></span>
+                    </button>
+                    <button type="button" class="od-filter-tab" id="tab-btn-all" onclick="filterOverdueTable('all', this)" style="background:transparent; color:var(--text-muted); border:1px solid var(--border); border-radius:20px; padding:4px 12px; font-size:0.75rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+                        <i class="fas fa-list"></i> All (<?php echo count($overdue_renewals); ?>)
+                    </button>
+                </div>
+
+                <div class="table-container" style="max-height: 480px; overflow-y: auto;">
+                    <table id="overdue-table">
                         <thead>
                             <tr>
                                 <th>Member</th>
                                 <th>Expired Date</th>
                                 <th>Plan</th>
-                                <th style="text-align:right;">Action</th>
+                                <th style="text-align:right;">Follow-up &amp; Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="overdue-tbody">
                             <?php if (empty($overdue_renewals)): ?>
-                            <tr>
-                                <td colspan="4" style="text-align:center; padding:2rem; color:var(--text-muted);">
-                                    <i class="fas fa-circle-check" style="font-size:1.5rem; color:#52b788; display:block; margin-bottom:0.4rem;"></i>
-                                    All active member subscriptions are in good standing!
+                            <tr id="row-no-overdue">
+                                <td colspan="4" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
+                                    <i class="fas fa-circle-check" style="font-size:1.8rem; color:#52b788; display:block; margin-bottom:0.5rem;"></i>
+                                    <strong>All active member subscriptions are in good standing!</strong>
+                                    <p style="margin:4px 0 0 0; font-size:0.78rem;">No expired passes requiring immediate follow-up.</p>
                                 </td>
                             </tr>
                             <?php else: ?>
-                            <?php foreach ($overdue_renewals as $od): ?>
-                            <tr>
+                            <?php foreach ($overdue_renewals as $od): 
+                                $is_daily = ((int)($od['duration_months'] ?? 0) === 0 && (int)($od['duration_minutes'] ?? 0) <= 1440);
+                                $days = max(1, intval($od['overdue_days'] ?? 1));
+                                
+                                // Color-coded days overdue
+                                if ($days <= 3) {
+                                    $od_badge_style = 'background:#fef3c7; color:#b45309; border:1px solid #fde68a;';
+                                    $od_label = "🟡 {$days}d ago (Fresh)";
+                                } elseif ($days <= 14) {
+                                    $od_badge_style = 'background:#ffedd5; color:#c2410c; border:1px solid #fed7aa;';
+                                    $od_label = "🟠 {$days}d ago";
+                                } else {
+                                    $od_badge_style = 'background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;';
+                                    $od_label = "🔴 {$days}d ago (Lapsed)";
+                                }
+
+                                $phone_clean = preg_replace('/[^0-9]/', '', $od['contact_number'] ?? '');
+                                $wa_phone = $phone_clean;
+                                if (str_starts_with($phone_clean, '09')) {
+                                    $wa_phone = '63' . substr($phone_clean, 1);
+                                }
+                                $gym_name_str = htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym");
+                                $portal_url_str = defined('APP_URL') ? APP_URL . '/member/login.php' : 'https://palmas-gym.onrender.com/member/login.php';
+                                $followup_msg = "Hi {$od['full_name']}! Kumusta po mula sa {$gym_name_str}. Pinaaalala lang po namin na ang inyong {$od['plan_name']} ay nag-expire noong " . date('M d, Y', strtotime($od['expiry_date'])) . ". Pwede po kayong mag-renew sa gym o mag-renew online dito: {$portal_url_str}";
+                            ?>
+                            <tr class="od-row" id="od-row-<?php echo $od['id']; ?>" data-type="<?php echo $is_daily ? 'daily' : 'regular'; ?>">
                                 <td>
-                                    <div style="font-weight:600; color:var(--text-main); font-size:0.85rem;"><?php echo htmlspecialchars($od['full_name']); ?></div>
-                                    <div style="font-size:0.72rem; color:var(--text-muted); font-family:monospace;"><?php echo htmlspecialchars($od['membership_id']); ?></div>
+                                    <div class="member-cell">
+                                        <div class="member-avatar" style="width:34px; height:34px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#f1f5f9; font-weight:700; color:#2d6a4f; font-size:0.85rem;">
+                                            <?php if (!empty($od['photo'])): ?>
+                                                <img src="<?php echo htmlspecialchars($od['photo']); ?>" alt="Photo" style="width:100%; height:100%; object-fit:cover;">
+                                            <?php else: ?>
+                                                <?php echo strtoupper(substr($od['full_name'], 0, 1)); ?>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div>
+                                            <a href="view-member.php?id=<?php echo $od['id']; ?>" class="cell-primary" style="font-weight:700; color:var(--text-main); text-decoration:none; font-size:0.85rem;">
+                                                <?php echo htmlspecialchars($od['full_name']); ?>
+                                            </a>
+                                            <div style="font-size:0.72rem; color:var(--text-muted); font-family:monospace;">
+                                                <?php echo htmlspecialchars($od['membership_id']); ?>
+                                                <?php if (!empty($od['contact_number'])): ?>
+                                                    • <a href="tel:<?php echo htmlspecialchars($phone_clean); ?>" style="color:var(--accent); text-decoration:none;" title="Call member"><i class="fas fa-phone" style="font-size:0.65rem;"></i> <?php echo htmlspecialchars($od['contact_number']); ?></a>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
-                                    <span style="font-size:0.82rem; color:#ef4444; font-weight:600;">
-                                        <?php echo date('M d, Y', strtotime($od['expiry_date'])); ?>
-                                    </span>
+                                    <div style="display:flex; flex-direction:column; gap:2px;">
+                                        <span style="font-size:0.82rem; color:#ef4444; font-weight:700;">
+                                            <?php echo date('M d, Y', strtotime($od['expiry_date'])); ?>
+                                        </span>
+                                        <span class="badge" style="<?php echo $od_badge_style; ?> font-size:0.65rem; padding:2px 6px; border-radius:6px; font-weight:700; width:fit-content;">
+                                            <?php echo $od_label; ?>
+                                        </span>
+                                    </div>
                                 </td>
-                                <td><span class="badge badge-gold"><?php echo htmlspecialchars($od['plan_name']); ?></span></td>
+                                <td>
+                                    <div style="display:flex; flex-direction:column; gap:2px;">
+                                        <span class="badge badge-gold" style="font-size:0.75rem; font-weight:700;"><?php echo htmlspecialchars($od['plan_name']); ?></span>
+                                        <span style="font-size:0.68rem; color:var(--text-muted);">
+                                            <?php echo $is_daily ? 'Single-Day Pass' : 'Recurring Plan'; ?>
+                                        </span>
+                                    </div>
+                                </td>
                                 <td style="text-align:right;">
-                                    <a href="renew-member.php?id=<?php echo $od['id']; ?>" class="btn btn-primary btn-sm" style="padding:0.3rem 0.7rem; font-size:0.75rem;">
-                                        <i class="fas fa-arrows-rotate"></i> Renew
-                                    </a>
+                                    <div style="display:inline-flex; align-items:center; gap:5px; flex-wrap:wrap; justify-content:flex-end;">
+                                        <!-- Quick Renew Button -->
+                                        <button type="button" class="btn btn-primary btn-sm" 
+                                                onclick="openQuickRenewModal(<?php echo $od['id']; ?>, '<?php echo htmlspecialchars(addslashes($od['full_name'])); ?>', '<?php echo htmlspecialchars(addslashes($od['membership_id'])); ?>', <?php echo (int)($od['plan_id'] ?? 0); ?>, <?php echo floatval($od['plan_price'] ?? 0); ?>)" 
+                                                style="padding:0.3rem 0.65rem; font-size:0.75rem; font-weight:700; display:inline-flex; align-items:center; gap:4px; border-radius:7px;" 
+                                                title="Quick Cash Renewal">
+                                            <i class="fas fa-arrows-rotate"></i> Renew
+                                        </button>
+
+                                        <!-- Email Reminder Button -->
+                                        <?php if (!empty($od['email'])): ?>
+                                        <button type="button" class="btn btn-outline btn-sm" 
+                                                onclick="sendRenewalReminder(<?php echo $od['id']; ?>, '<?php echo htmlspecialchars(addslashes($od['full_name'])); ?>', this)" 
+                                                style="padding:0.3rem 0.55rem; font-size:0.75rem; color:#0284c7; border-color:#bae6fd; background:#f0f9ff; border-radius:7px;" 
+                                                title="Send Email Renewal Reminder">
+                                            <i class="fas fa-envelope"></i>
+                                        </button>
+                                        <?php endif; ?>
+
+                                        <!-- SMS / WhatsApp Link -->
+                                        <?php if (!empty($phone_clean)): ?>
+                                        <a href="sms:<?php echo htmlspecialchars($phone_clean); ?>?body=<?php echo rawurlencode($followup_msg); ?>" 
+                                           class="btn btn-outline btn-sm" 
+                                           style="padding:0.3rem 0.55rem; font-size:0.75rem; color:#16a34a; border-color:#bbf7d0; background:#f0fdf4; border-radius:7px; text-decoration:none;" 
+                                           title="Send SMS / Text Message" target="_blank">
+                                            <i class="fas fa-comment-dots"></i>
+                                        </a>
+                                        <a href="https://wa.me/<?php echo htmlspecialchars($wa_phone); ?>?text=<?php echo rawurlencode($followup_msg); ?>" 
+                                           class="btn btn-outline btn-sm" 
+                                           style="padding:0.3rem 0.55rem; font-size:0.75rem; color:#059669; border-color:#a7f3d0; background:#ecfdf5; border-radius:7px; text-decoration:none;" 
+                                           title="Send WhatsApp / Viber Message" target="_blank">
+                                            <i class="fab fa-whatsapp"></i>
+                                        </a>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -770,13 +897,353 @@ function manualCheckout(attendanceId, memberName) {
             executeCheckout();
         }
     }
+// ── Overdue Plans Table Tab Filtering ─────────────────────────────────────
+function filterOverdueTable(type, btn) {
+    const tabs = document.querySelectorAll('.od-filter-tab');
+    tabs.forEach(t => {
+        t.style.background = 'transparent';
+        t.style.color = 'var(--text-muted)';
+        t.style.borderColor = 'var(--border)';
+        t.style.fontWeight = '600';
+    });
+
+    if (btn) {
+        btn.style.background = 'rgba(45,106,79,0.12)';
+        btn.style.color = '#2d6a4f';
+        btn.style.borderColor = 'rgba(82,183,136,0.35)';
+        btn.style.fontWeight = '700';
+    }
+
+    const rows = document.querySelectorAll('.od-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const rowType = row.getAttribute('data-type');
+        if (type === 'all' || rowType === type) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    let noRow = document.getElementById('row-filter-empty');
+    if (visibleCount === 0 && rows.length > 0) {
+        if (!noRow) {
+            noRow = document.createElement('tr');
+            noRow.id = 'row-filter-empty';
+            noRow.innerHTML = '<td colspan="4" style="text-align:center; padding:2rem; color:var(--text-muted);"><i class="fas fa-info-circle" style="color:var(--accent); margin-right:5px;"></i> No expired passes in this category.</td>';
+            document.getElementById('overdue-tbody').appendChild(noRow);
+        }
+        noRow.style.display = '';
+    } else if (noRow) {
+        noRow.style.display = 'none';
+    }
+}
+
+// ── Send 1-Click Single Renewal Reminder ──────────────────────────────────
+function sendRenewalReminder(memberId, memberName, btn) {
+    if (!memberId) return;
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
+
+    fetch('api/admin_dashboard_ajax.php?action=send_renewal_reminder&member_id=' + encodeURIComponent(memberId))
+        .then(r => r.json())
+        .then(data => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+            if (data.success) {
+                if (typeof palmasToast === 'function') {
+                    palmasToast(data.message, 'success');
+                } else {
+                    alert(data.message);
+                }
+            } else {
+                if (typeof palmasToast === 'function') {
+                    palmasToast(data.message || 'Failed to send reminder.', 'error');
+                } else {
+                    alert(data.message || 'Failed to send reminder.');
+                }
+            }
+        })
+        .catch(err => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+            if (typeof palmasToast === 'function') {
+                palmasToast('Network error while sending reminder.', 'error');
+            } else {
+                alert('Network error while sending reminder.');
+            }
+        });
+}
+
+// ── Send Bulk Renewal Reminders to All Overdue ───────────────────────────
+function sendBulkRenewalReminders() {
+    const btn = document.getElementById('btn-bulk-notify');
+    const label = document.getElementById('bulk-notify-label');
+
+    const executeBulk = () => {
+        if (btn) btn.disabled = true;
+        if (label) label.textContent = 'Sending Reminders...';
+
+        fetch('api/admin_dashboard_ajax.php?action=send_bulk_renewal_reminders')
+            .then(r => r.json())
+            .then(data => {
+                if (btn) btn.disabled = false;
+                if (label) label.textContent = 'Notify All Overdue';
+
+                if (data.success) {
+                    if (typeof palmasToast === 'function') {
+                        palmasToast(data.message, 'success');
+                    } else {
+                        alert(data.message);
+                    }
+                } else {
+                    if (typeof palmasToast === 'function') {
+                        palmasToast(data.message || 'Failed to send bulk reminders.', 'error');
+                    } else {
+                        alert(data.message || 'Failed to send bulk reminders.');
+                    }
+                }
+            })
+            .catch(err => {
+                if (btn) btn.disabled = false;
+                if (label) label.textContent = 'Notify All Overdue';
+                if (typeof palmasToast === 'function') {
+                    palmasToast('Network error while sending bulk reminders.', 'error');
+                } else {
+                    alert('Network error while sending bulk reminders.');
+                }
+            });
+    };
+
+    const confirmMsg = 'Send automated renewal reminder emails to all expired members with active email addresses?';
+    if (typeof palmasConfirm === 'function') {
+        palmasConfirm('Bulk Renewal Reminders', confirmMsg, 'Send Reminders', '#0284c7', executeBulk);
+    } else {
+        if (confirm(confirmMsg)) executeBulk();
+    }
+}
+
+// ── Quick Renew Modal Handlers ───────────────────────────────────────────
+function openQuickRenewModal(memberId, memberName, membershipId, planId, planPrice) {
+    document.getElementById('qr-member-id').value = memberId;
+    document.getElementById('qr-member-name').textContent = memberName;
+    document.getElementById('qr-member-code').textContent = membershipId;
+
+    const planSelect = document.getElementById('qr-plan-select');
+    if (planSelect) {
+        if (planId && planSelect.querySelector(`option[value="${planId}"]`)) {
+            planSelect.value = planId;
+        } else if (planSelect.options.length > 0) {
+            planSelect.selectedIndex = 0;
+        }
+        updateQuickRenewPrice();
+    }
+
+    const modal = document.getElementById('quick-renew-modal-overlay');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeQuickRenewModal() {
+    const modal = document.getElementById('quick-renew-modal-overlay');
+    if (modal) modal.style.display = 'none';
+}
+
+function updateQuickRenewPrice() {
+    const select = document.getElementById('qr-plan-select');
+    const priceDisplay = document.getElementById('qr-price-display');
+    if (select && priceDisplay) {
+        const opt = select.options[select.selectedIndex];
+        const price = opt ? opt.getAttribute('data-price') : 0;
+        priceDisplay.textContent = '₱' + parseFloat(price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+}
+
+function submitQuickRenewForm(e) {
+    e.preventDefault();
+    const btn = document.getElementById('qr-submit-btn');
+    const form = document.getElementById('quick-renew-form');
+    const memberId = document.getElementById('qr-member-id').value;
+
+    if (!memberId) return;
+
+    const formData = new FormData(form);
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Renewal...';
+    }
+
+    fetch('api/admin_dashboard_ajax.php?action=quick_renew', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check"></i> Complete Renewal';
+        }
+        if (data.success) {
+            closeQuickRenewModal();
+            if (typeof palmasToast === 'function') {
+                palmasToast(data.message, 'success');
+            }
+
+            // Animate and remove the renewed row from overdue table
+            const row = document.getElementById('od-row-' + memberId);
+            if (row) {
+                row.style.transition = 'all 0.5s ease';
+                row.style.background = '#dcfce7';
+                row.style.opacity = '0';
+                setTimeout(() => {
+                    const rowType = row.getAttribute('data-type');
+                    row.remove();
+
+                    // Update badge counters
+                    const regCountEl = document.getElementById('count-tab-regular');
+                    const dailyCountEl = document.getElementById('count-tab-daily');
+                    const totalBadge = document.getElementById('overdue-total-badge');
+                    const bulkLabel = document.getElementById('bulk-notify-label');
+
+                    if (rowType === 'regular' && regCountEl) {
+                        regCountEl.textContent = Math.max(0, parseInt(regCountEl.textContent || '1') - 1);
+                    } else if (rowType === 'daily' && dailyCountEl) {
+                        dailyCountEl.textContent = Math.max(0, parseInt(dailyCountEl.textContent || '1') - 1);
+                    }
+
+                    const remainingRows = document.querySelectorAll('.od-row').length;
+                    if (totalBadge) totalBadge.textContent = remainingRows + ' Overdue';
+                    if (bulkLabel) bulkLabel.textContent = `Notify All Overdue (${remainingRows})`;
+
+                    if (remainingRows === 0) {
+                        const tbody = document.getElementById('overdue-tbody');
+                        if (tbody) {
+                            tbody.innerHTML = '<tr id="row-no-overdue"><td colspan="4" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);"><i class="fas fa-circle-check" style="font-size:1.8rem; color:#52b788; display:block; margin-bottom:0.5rem;"></i><strong>All active member subscriptions are in good standing!</strong></td></tr>';
+                        }
+                    }
+                }, 500);
+            }
+
+            if (typeof fetchLiveFeed === 'function') {
+                fetchLiveFeed();
+            }
+        } else {
+            if (typeof palmasToast === 'function') {
+                palmasToast(data.message || 'Renewal failed.', 'error');
+            } else {
+                alert(data.message || 'Renewal failed.');
+            }
+        }
+    })
+    .catch(err => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check"></i> Complete Renewal';
+        }
+        if (typeof palmasToast === 'function') {
+            palmasToast('Network error during renewal. Please try again.', 'error');
+        } else {
+            alert('Network error during renewal. Please try again.');
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     fetchLiveFeed();
     setInterval(fetchLiveFeed, 15000);
+    // Initialize default filter
+    filterOverdueTable('regular', document.getElementById('tab-btn-regular'));
 });
 </script>
+
+<!-- Quick Renewal Modal (No Page Reload) -->
+<div id="quick-renew-modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:9999; align-items:center; justify-content:center; padding:1rem; backdrop-filter:blur(3px);">
+    <div style="background:#ffffff; border-radius:20px; width:100%; max-width:440px; box-shadow:0 25px 60px rgba(0,0,0,0.3); border:1px solid #e2e8f0; overflow:hidden; animation:modalPop 0.25s ease-out;">
+        <div style="background:linear-gradient(135deg, #1b4332 0%, #0a2218 100%); padding:1.25rem 1.5rem; color:#ffffff; display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:36px; height:36px; border-radius:10px; background:rgba(82,183,136,0.2); color:#52b788; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
+                    <i class="fas fa-arrows-rotate"></i>
+                </div>
+                <div>
+                    <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:#ffffff;">Quick Member Renewal</h3>
+                    <p style="margin:2px 0 0 0; font-size:0.75rem; color:rgba(255,255,255,0.7);">Instant front-desk subscription extension</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeQuickRenewModal()" style="background:none; border:none; color:rgba(255,255,255,0.7); font-size:1.2rem; cursor:pointer; padding:4px;" title="Close">
+                <i class="fas fa-xmark"></i>
+            </button>
+        </div>
+
+        <form id="quick-renew-form" onsubmit="submitQuickRenewForm(event)" style="padding:1.25rem 1.5rem;">
+            <input type="hidden" name="member_id" id="qr-member-id">
+
+            <!-- Member Summary Pill -->
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:0.75rem 1rem; margin-bottom:1.1rem; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <span style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; font-weight:700; letter-spacing:0.5px; display:block;">Member</span>
+                    <strong id="qr-member-name" style="font-size:0.95rem; color:#0c2219;"></strong>
+                </div>
+                <code id="qr-member-code" style="font-size:0.8rem; font-weight:700; color:var(--accent); background:#dcfce7; padding:3px 8px; border-radius:6px;"></code>
+            </div>
+
+            <!-- Plan Selection -->
+            <div style="margin-bottom:1rem;">
+                <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-main); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.35rem;">Select Renewal Plan *</label>
+                <select name="plan_id" id="qr-plan-select" class="form-control" onchange="updateQuickRenewPrice()" required style="padding:0.6rem 0.8rem; font-size:0.9rem; font-weight:600;">
+                    <?php foreach ($quick_renew_plans as $qp): 
+                        $is_fee = (($qp['plan_category'] ?? '') === 'membership_fee');
+                    ?>
+                    <option value="<?php echo $qp['id']; ?>" data-price="<?php echo $qp['price']; ?>">
+                        <?php echo htmlspecialchars($qp['name']); ?> — ₱<?php echo number_format($qp['price'], 2); ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <!-- Amount & Payment Method -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1.1rem;">
+                <div>
+                    <label style="display:block; font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.35rem;">Amount Due</label>
+                    <div id="qr-price-display" style="font-size:1.15rem; font-weight:800; color:#2d6a4f; padding:0.5rem 0.75rem; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px;">
+                        ₱0.00
+                    </div>
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.35rem;">Payment Method</label>
+                    <select name="payment_method" class="form-control" style="padding:0.55rem 0.75rem; font-size:0.85rem; font-weight:600;">
+                        <option value="Cash" selected>💵 Cash (Counter)</option>
+                        <option value="GCash">📱 GCash</option>
+                        <option value="Maya">💳 Maya</option>
+                        <option value="Bank Transfer">🏦 Bank Transfer</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="display:flex; gap:0.75rem; margin-top:1.25rem;">
+                <button type="button" class="btn btn-outline" onclick="closeQuickRenewModal()" style="flex:1;">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="qr-submit-btn" style="flex:2; font-weight:700;">
+                    <i class="fas fa-check"></i> Complete Renewal
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+@keyframes modalPop {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+}
+</style>
 
 <?php 
 require_once __DIR__ . '/includes/ui_components.php';

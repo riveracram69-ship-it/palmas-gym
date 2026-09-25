@@ -1,0 +1,195 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1000" width="100%" height="100%" style="background:#ffffff; font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <marker id="sa-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#1e293b"/>
+    </marker>
+    <filter id="sa-shadow" x="-3%" y="-3%" width="106%" height="108%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Header Banner -->
+  <rect x="0" y="0" width="1500" height="70" fill="#0f172a"/>
+  <text x="750" y="34" text-anchor="middle" font-size="20" font-weight="800" fill="#ffffff" letter-spacing="1">PALMA'S ELITE GYM — SYSTEM ARCHITECTURE DIAGRAM</text>
+  <text x="750" y="55" text-anchor="middle" font-size="12" font-weight="600" fill="#94a3b8">3-Tier Hybrid Architecture | Web Admin • Member Portal • Native Mobile App (Capacitor) • REST API • MySQL</text>
+
+  <!-- ================================================================= -->
+  <!-- LAYER 1: CLIENT / PRESENTATION TIER (TOP)                         -->
+  <!-- ================================================================= -->
+  <rect x="40" y="90" width="1420" height="230" rx="14" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="60" y="120" font-size="14" font-weight="800" fill="#0f172a">LAYER 1: PRESENTATION &amp; CLIENT ACCESS TIER</text>
+
+  <!-- Card 1: Admin Web Panel -->
+  <g id="client-admin">
+    <rect x="70" y="140" width="410" height="155" rx="10" fill="#ffffff" stroke="#dc2626" stroke-width="2" filter="url(#sa-shadow)"/>
+    <rect x="70" y="140" width="410" height="32" rx="10" fill="#fee2e2"/>
+    <rect x="70" y="160" width="410" height="12" fill="#fee2e2"/>
+    <text x="275" y="162" text-anchor="middle" font-size="14" font-weight="800" fill="#991b1b">🖥️ ADMIN WEB MANAGEMENT PORTAL</text>
+    <text x="90" y="195" font-size="11.5" font-weight="600" fill="#334155">• Desktop / Tablet Responsive Browser UI</text>
+    <text x="90" y="215" font-size="11.5" font-weight="600" fill="#334155">• Real-time Dashboard Analytics &amp; Metrics</text>
+    <text x="90" y="235" font-size="11.5" font-weight="600" fill="#334155">• Member Approvals, Plan Editor &amp; POS Payments</text>
+    <text x="90" y="255" font-size="11.5" font-weight="600" fill="#334155">• Camera QR Scanner for Attendance Check-in</text>
+    <text x="90" y="275" font-size="11.5" font-weight="600" fill="#334155">• Exportable Revenue &amp; Attendance Reports (PDF/CSV)</text>
+  </g>
+
+  <!-- Card 2: Member Web Portal -->
+  <g id="client-member-web">
+    <rect x="545" y="140" width="410" height="155" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2" filter="url(#sa-shadow)"/>
+    <rect x="545" y="140" width="410" height="32" rx="10" fill="#dbeafe"/>
+    <rect x="545" y="160" width="410" height="12" fill="#dbeafe"/>
+    <text x="750" y="162" text-anchor="middle" font-size="14" font-weight="800" fill="#1e40af">🌐 MEMBER RESPONSIVE WEB PORTAL</text>
+    <text x="565" y="195" font-size="11.5" font-weight="600" fill="#334155">• Online Member Self-Registration &amp; Password Setup</text>
+    <text x="565" y="215" font-size="11.5" font-weight="600" fill="#334155">• Google OAuth 2.0 Single Sign-On</text>
+    <text x="565" y="235" font-size="11.5" font-weight="600" fill="#334155">• Live Dynamic Rotating QR Digital Pass</text>
+    <text x="565" y="255" font-size="11.5" font-weight="600" fill="#334155">• PayMongo Online Checkout (GCash / Maya / Cards)</text>
+    <text x="565" y="275" font-size="11.5" font-weight="600" fill="#334155">• Subscription Status &amp; Attendance History Logs</text>
+  </g>
+
+  <!-- Card 3: Mobile App -->
+  <g id="client-mobile">
+    <rect x="1020" y="140" width="410" height="155" rx="10" fill="#ffffff" stroke="#059669" stroke-width="2" filter="url(#sa-shadow)"/>
+    <rect x="1020" y="140" width="410" height="32" rx="10" fill="#d1fae5"/>
+    <rect x="1020" y="160" width="410" height="12" fill="#d1fae5"/>
+    <text x="1225" y="162" text-anchor="middle" font-size="14" font-weight="800" fill="#065f46">📱 HYBRID MOBILE APP (ANDROID APK)</text>
+    <text x="1040" y="195" font-size="11.5" font-weight="600" fill="#334155">• Built with Capacitor JS &amp; Modern Mobile UI</text>
+    <text x="1040" y="215" font-size="11.5" font-weight="600" fill="#334155">• Native Push Notifications via FCM</text>
+    <text x="1040" y="235" font-size="11.5" font-weight="600" fill="#334155">• High-contrast Fullscreen QR Digital ID Pass</text>
+    <text x="1040" y="255" font-size="11.5" font-weight="600" fill="#334155">• Integrated In-App PayMongo Payment Flow</text>
+    <text x="1040" y="275" font-size="11.5" font-weight="600" fill="#334155">• Direct APK Distribution &amp; Auto-Update Ready</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- LAYER 2: APPLICATION & BUSINESS LOGIC TIER (MIDDLE)               -->
+  <!-- ================================================================= -->
+  <rect x="40" y="360" width="1420" height="280" rx="14" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="60" y="390" font-size="14" font-weight="800" fill="#0f172a">LAYER 2: APPLICATION, API &amp; MIDDLEWARE CONTROLLERS TIER (PHP / APACHE)</text>
+
+  <!-- Sub-block 1: Security & Middleware -->
+  <g id="app-middleware">
+    <rect x="70" y="410" width="310" height="205" rx="8" fill="#ffffff" stroke="#64748b" stroke-width="1.8" filter="url(#sa-shadow)"/>
+    <text x="225" y="435" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">🔒 SECURITY &amp; MIDDLEWARE</text>
+    <line x1="85" y1="445" x2="365" y2="445" stroke="#e2e8f0" stroke-width="1.5"/>
+    <text x="85" y="470" font-size="11.5" font-weight="600" fill="#475569">• Rate Limiter (IP/Account Lockout)</text>
+    <text x="85" y="495" font-size="11.5" font-weight="600" fill="#475569">• Bearer Token Auth Middleware</text>
+    <text x="85" y="520" font-size="11.5" font-weight="600" fill="#475569">• CSRF Protection &amp; Session Guard</text>
+    <text x="85" y="545" font-size="11.5" font-weight="600" fill="#475569">• Password Hashing (Bcrypt)</text>
+    <text x="85" y="570" font-size="11.5" font-weight="600" fill="#475569">• Input Validation &amp; Sanitization</text>
+    <text x="85" y="595" font-size="11.5" font-weight="600" fill="#475569">• HMAC-SHA256 QR Security Signature</text>
+  </g>
+
+  <!-- Sub-block 2: REST API Endpoints -->
+  <g id="app-api">
+    <rect x="410" y="410" width="330" height="205" rx="8" fill="#ffffff" stroke="#64748b" stroke-width="1.8" filter="url(#sa-shadow)"/>
+    <text x="575" y="435" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">⚡ RESTful API ENDPOINTS (/api/)</text>
+    <line x1="425" y1="445" x2="725" y2="445" stroke="#e2e8f0" stroke-width="1.5"/>
+    <text x="425" y="470" font-size="11" font-weight="600" fill="#475569">• member_login.php / google_auth.php</text>
+    <text x="425" y="495" font-size="11" font-weight="600" fill="#475569">• member_dashboard.php / profile.php</text>
+    <text x="425" y="520" font-size="11" font-weight="600" fill="#475569">• create_payment_checkout.php</text>
+    <text x="425" y="545" font-size="11" font-weight="600" fill="#475569">• member_renew.php / get_plans.php</text>
+    <text x="425" y="570" font-size="11" font-weight="600" fill="#475569">• register_device.php (FCM Push)</text>
+    <text x="425" y="595" font-size="11" font-weight="600" fill="#475569">• payment_webhook.php (PayMongo)</text>
+  </g>
+
+  <!-- Sub-block 3: Core Business Services -->
+  <g id="app-services">
+    <rect x="770" y="410" width="340" height="205" rx="8" fill="#ffffff" stroke="#64748b" stroke-width="1.8" filter="url(#sa-shadow)"/>
+    <text x="940" y="435" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">⚙️ CORE BUSINESS LOGIC MODULES</text>
+    <line x1="785" y1="445" x2="1095" y2="445" stroke="#e2e8f0" stroke-width="1.5"/>
+    <text x="785" y="470" font-size="11.5" font-weight="600" fill="#475569">• Subscription &amp; Plan Engine</text>
+    <text x="785" y="495" font-size="11.5" font-weight="600" fill="#475569">• QR Pass Attendance Validation Engine</text>
+    <text x="785" y="520" font-size="11.5" font-weight="600" fill="#475569">• Payment Gateway Integration Engine</text>
+    <text x="785" y="545" font-size="11.5" font-weight="600" fill="#475569">• Financial &amp; Attendance Analytics Engine</text>
+    <text x="785" y="570" font-size="11.5" font-weight="600" fill="#475569">• Notification Dispatcher (Email + Push)</text>
+    <text x="785" y="595" font-size="11.5" font-weight="600" fill="#475569">• Database Audit Logger &amp; Backup Worker</text>
+  </g>
+
+  <!-- Sub-block 4: Automation & Cron -->
+  <g id="app-cron">
+    <rect x="1140" y="410" width="290" height="205" rx="8" fill="#ffffff" stroke="#64748b" stroke-width="1.8" filter="url(#sa-shadow)"/>
+    <text x="1285" y="435" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">⏰ BACKGROUND AUTOMATION</text>
+    <line x1="1155" y1="445" x2="1415" y2="445" stroke="#e2e8f0" stroke-width="1.5"/>
+    <text x="1155" y="470" font-size="11.5" font-weight="600" fill="#475569">• cron/daily_maintenance.php</text>
+    <text x="1155" y="500" font-size="11.5" font-weight="600" fill="#475569">• Auto-expire Subscriptions</text>
+    <text x="1155" y="530" font-size="11.5" font-weight="600" fill="#475569">• Send 3-Day Expiry Notifications</text>
+    <text x="1155" y="560" font-size="11.5" font-weight="600" fill="#475569">• Purge Stale Tokens &amp; Rate Limits</text>
+    <text x="1155" y="590" font-size="11.5" font-weight="600" fill="#475569">• Automated Database Snapshot</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- LAYER 3: DATA & THIRD-PARTY SERVICES TIER (BOTTOM)                -->
+  <!-- ================================================================= -->
+  <rect x="40" y="680" width="1420" height="240" rx="14" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="60" y="710" font-size="14" font-weight="800" fill="#0f172a">LAYER 3: DATA STORAGE &amp; THIRD-PARTY CLOUD SERVICES TIER</text>
+
+  <!-- MySQL Database Box -->
+  <g id="data-mysql">
+    <rect x="70" y="730" width="580" height="170" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="2" filter="url(#sa-shadow)"/>
+    <rect x="70" y="730" width="580" height="32" rx="10" fill="#e0f2fe"/>
+    <rect x="70" y="750" width="580" height="12" fill="#e0f2fe"/>
+    <text x="360" y="752" text-anchor="middle" font-size="14" font-weight="800" fill="#0369a1">🗄️ MySQL / MariaDB RELATIONAL DATABASE (InnoDB, UTF8MB4)</text>
+    <text x="90" y="785" font-size="11.5" font-weight="600" fill="#334155">• 14 Production Tables: members, users, membership_plans, subscriptions, payments</text>
+    <text x="90" y="805" font-size="11.5" font-weight="600" fill="#334155">• payment_transactions, attendance, renewal_requests, notifications, member_devices</text>
+    <text x="90" y="825" font-size="11.5" font-weight="600" fill="#334155">• auth_tokens, activity_logs, login_rate_limits, system_settings</text>
+    <text x="90" y="850" font-size="11" font-weight="700" fill="#0369a1">Indexed FK Relations | Cascade On Member Delete | B-Tree Optimized Indexes</text>
+    <text x="90" y="875" font-size="11" font-weight="600" fill="#64748b">PDO Prepared Statements with Parameter Binding for 100% SQL Injection Immunity</text>
+  </g>
+
+  <!-- Third-party Cloud Integrations -->
+  <g id="data-third-party">
+    <rect x="680" y="730" width="750" height="170" rx="10" fill="#ffffff" stroke="#7c3aed" stroke-width="2" filter="url(#sa-shadow)"/>
+    <rect x="680" y="730" width="750" height="32" rx="10" fill="#ede9fe"/>
+    <rect x="680" y="750" width="750" height="12" fill="#ede9fe"/>
+    <text x="1055" y="752" text-anchor="middle" font-size="14" font-weight="800" fill="#5b21b6">☁️ THIRD-PARTY CLOUD APIS &amp; EXTERNAL GATEWAYS</text>
+    
+    <!-- Mini cards inside third-party -->
+    <rect x="700" y="775" width="165" height="110" rx="6" fill="#f5f3ff" stroke="#c4b5fd"/>
+    <text x="782" y="800" text-anchor="middle" font-size="12" font-weight="800" fill="#6d28d9">PayMongo API</text>
+    <text x="710" y="825" font-size="10.5" font-weight="600" fill="#475569">• GCash / Maya</text>
+    <text x="710" y="845" font-size="10.5" font-weight="600" fill="#475569">• Credit / Debit</text>
+    <text x="710" y="865" font-size="10.5" font-weight="600" fill="#475569">• Webhook Events</text>
+
+    <rect x="880" y="775" width="165" height="110" rx="6" fill="#f5f3ff" stroke="#c4b5fd"/>
+    <text x="962" y="800" text-anchor="middle" font-size="12" font-weight="800" fill="#6d28d9">Google OAuth</text>
+    <text x="890" y="825" font-size="10.5" font-weight="600" fill="#475569">• Identity Tokens</text>
+    <text x="890" y="845" font-size="10.5" font-weight="600" fill="#475569">• Google Sign-In</text>
+    <text x="890" y="865" font-size="10.5" font-weight="600" fill="#475569">• Profile Sync</text>
+
+    <rect x="1060" y="775" width="165" height="110" rx="6" fill="#f5f3ff" stroke="#c4b5fd"/>
+    <text x="1142" y="800" text-anchor="middle" font-size="12" font-weight="800" fill="#6d28d9">PHPMailer / SMTP</text>
+    <text x="1070" y="825" font-size="10.5" font-weight="600" fill="#475569">• Welcome Emails</text>
+    <text x="1070" y="845" font-size="10.5" font-weight="600" fill="#475569">• OTP Setup Codes</text>
+    <text x="1070" y="865" font-size="10.5" font-weight="600" fill="#475569">• Expiry Warnings</text>
+
+    <rect x="1240" y="775" width="170" height="110" rx="6" fill="#f5f3ff" stroke="#c4b5fd"/>
+    <text x="1325" y="800" text-anchor="middle" font-size="12" font-weight="800" fill="#6d28d9">Firebase (FCM)</text>
+    <text x="1250" y="825" font-size="10.5" font-weight="600" fill="#475569">• Device Tokens</text>
+    <text x="1250" y="845" font-size="10.5" font-weight="600" fill="#475569">• Push Alerts</text>
+    <text x="1250" y="865" font-size="10.5" font-weight="600" fill="#475569">• Background Sync</text>
+  </g>
+
+  <!-- Connectors Layer 1 to Layer 2 -->
+  <g stroke="#1e293b" stroke-width="2" fill="none">
+    <path d="M 275 295 L 275 360" marker-end="url(#sa-arrow)"/>
+    <path d="M 750 295 L 750 360" marker-end="url(#sa-arrow)"/>
+    <path d="M 1225 295 L 1225 360" marker-end="url(#sa-arrow)"/>
+  </g>
+  <g font-size="10" font-weight="700" fill="#1e293b" text-anchor="middle">
+    <text x="275" y="330" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px;">HTTPS / Session State</text>
+    <text x="750" y="330" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px;">HTTPS / JSON Payloads</text>
+    <text x="1225" y="330" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px;">REST API / Bearer Token</text>
+  </g>
+
+  <!-- Connectors Layer 2 to Layer 3 -->
+  <g stroke="#1e293b" stroke-width="2" fill="none">
+    <path d="M 575 640 L 575 680" marker-end="url(#sa-arrow)"/>
+    <path d="M 940 640 L 940 680" marker-end="url(#sa-arrow)"/>
+  </g>
+  <g font-size="10" font-weight="700" fill="#1e293b" text-anchor="middle">
+    <text x="575" y="662" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px;">PDO Prepared Queries / Transactions</text>
+    <text x="940" y="662" style="paint-order: stroke fill; stroke: #ffffff; stroke-width: 4px;">cURL / TLS 1.3 Webhooks &amp; SDK Calls</text>
+  </g>
+
+  <!-- Footer Banner -->
+  <rect x="40" y="945" width="1420" height="40" rx="6" fill="#0f172a"/>
+  <text x="750" y="970" text-anchor="middle" font-size="11.5" font-weight="700" fill="#94a3b8">PALMA'S ELITE GYM MANAGEMENT SYSTEM • PRODUCTION-READY HYBRID CLOUD &amp; LOCALHOST ARCHITECTURE</text>
+</svg>

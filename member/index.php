@@ -343,21 +343,23 @@ try {
 
         <!-- Digital Pass & Quick Actions -->
         <div class="card fade-up fade-up-d3" style="background:linear-gradient(135deg, rgba(45,106,79,0.08) 0%, rgba(82,183,136,0.04) 100%); border:1px solid rgba(82,183,136,0.25); border-radius:18px; padding:1.2rem; margin-bottom:1.25rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <div style="width:38px; height:38px; border-radius:10px; background:#d8f3dc; color:#1b4332; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
-                        <i class="fas fa-qrcode"></i>
+                    <div style="width:42px; height:42px; border-radius:12px; background:#d8f3dc; color:#1b4332; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0;">
+                        <i class="fas fa-id-card"></i>
                     </div>
                     <div>
-                        <p style="margin:0; font-weight:700; font-size:0.95rem; color:var(--text-primary);">Entrance Digital Pass</p>
+                        <p style="margin:0; font-weight:700; font-size:0.95rem; color:var(--text-primary);">Official E-ID Card</p>
                         <p style="margin:0; font-size:0.75rem; color:var(--text-secondary);">
-                            <?php echo !empty($member['has_active_gym_pass']) ? 'Pass active • Ready for turnstile scanner' : 'Pass inactive • Requires active gym pass'; ?>
+                            Printable & Downloadable permanent QR pass
                         </p>
                     </div>
                 </div>
-                <a href="id-card.php" class="btn" style="background:#2d6a4f; color:#fff; font-size:0.8rem; font-weight:700; padding:7px 15px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-                    <i class="fas fa-id-card"></i> View Pass
-                </a>
+                <div style="display:flex; gap:6px;">
+                    <a href="id-card.php" class="btn" style="background:#2d6a4f; color:#fff; font-size:0.8rem; font-weight:700; padding:7px 15px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                        <i class="fas fa-download"></i> Download / Print
+                    </a>
+                </div>
             </div>
         </div>
 

@@ -84,7 +84,7 @@ try {
     $stmt->execute([$test_mem_id]);
     $sec_member_id = (int)$pdo->lastInsertId();
 
-    $plan = $pdo->query("SELECT id FROM membership_plans WHERE is_active = 1 LIMIT 1")->fetch();
+    $plan = $pdo->query("SELECT id FROM membership_plans WHERE is_active = 1 AND (plan_category IS NULL OR plan_category = 'non_member_pass') LIMIT 1")->fetch();
     $plan_id = (int)$plan['id'];
 
     $subs_before = (int)$pdo->query("SELECT COUNT(*) FROM subscriptions WHERE member_id = {$sec_member_id}")->fetchColumn();
@@ -118,15 +118,15 @@ try {
     // TEST 2: Dynamic QR Cryptographic HMAC & Scanner Hardening
     // -------------------------------------------------------------------------
     echo "\n--- TEST 2: DYNAMIC QR CRYPTOGRAPHIC VERIFICATION ---\n";
-    $secret_key = defined('QR_SECRET_KEY') ? QR_SECRET_KEY : '';
+    $secret_key = (!empty(defined('QR_SECRET_KEY') ? QR_SECRET_KEY : '')) ? QR_SECRET_KEY : 'palmas_secret_key_987';
     $current_slot = floor(time() / 15);
-    $kiosk_header = ['HTTP_X_KIOSK_KEY' => defined('KIOSK_API_KEY') ? KIOSK_API_KEY : 'palmas_kiosk_2026_secure_key!'];
+    $kiosk_header = ['HTTP_X_KIOSK_KEY' => (!empty(defined('KIOSK_API_KEY') ? KIOSK_API_KEY : '')) ? KIOSK_API_KEY : 'palmas_kiosk_2026_secure_key!'];
 
-    // 2.1 Raw ID submission (Static QR bypass) from scanner -> MUST BE REJECTED
+    // 2.1 Raw ID submission with NO active subscription -> MUST BE REJECTED with SUBSCRIPTION_EXPIRED
     $res_raw = run_php_script('modules/attendance/log_attendance.php', [
         'membership_id' => $test_mem_id
     ], [], $kiosk_header);
-    assert_sec("Scanner rejects raw Membership ID (static screenshot/printout)", ($res_raw['success'] ?? true) === false && strpos($res_raw['message'] ?? '', 'Static QR') !== false);
+    assert_sec("Scanner rejects Member ID without active subscription", ($res_raw['success'] ?? true) === false && strpos($res_raw['error_code'] ?? '', 'SUBSCRIPTION_EXPIRED') !== false);
 
     // 2.2 Tampered Signature -> MUST BE REJECTED
     $tampered_token = $test_mem_id . ':' . $current_slot . ':deadbeefcafebabe';
@@ -135,7 +135,7 @@ try {
     ], [], $kiosk_header);
     assert_sec("Scanner rejects tampered HMAC signature", ($res_tamper['success'] ?? true) === false && strpos($res_tamper['message'] ?? '', 'tampered') !== false);
 
-    // 2.3 Expired QR token (>60s old) -> MUST BE REJECTED
+    // 2.3 Expired dynamic QR token (>60s old) -> MUST BE REJECTED
     $expired_slot = $current_slot - 10;
     $exp_sig = substr(hash_hmac('sha256', $test_mem_id . '|' . $expired_slot, $secret_key), 0, 16);
     $expired_token = $test_mem_id . ':' . $expired_slot . ':' . $exp_sig;
@@ -144,7 +144,7 @@ try {
     ], [], $kiosk_header);
     assert_sec("Scanner rejects expired dynamic QR token (>60s old)", ($res_exp['success'] ?? true) === false && strpos($res_exp['message'] ?? '', 'expired') !== false);
 
-    // 2.4 Valid rotating dynamic QR token -> MUST BE ACCEPTED
+    // 2.4 Valid rotating dynamic QR token with active plan -> MUST BE ACCEPTED
     $pdo->exec("INSERT INTO subscriptions (member_id, plan_id, start_date, expiry_date, created_at) VALUES ({$sec_member_id}, {$plan_id}, NOW(), DATE_ADD(NOW(), INTERVAL 1 MONTH), NOW())");
     $pdo->exec("UPDATE members SET status = 'Active', account_status = 'Approved' WHERE id = {$sec_member_id}");
 
@@ -155,12 +155,11 @@ try {
     ], [], $kiosk_header);
     assert_sec("Scanner accepts valid dynamic HMAC token", ($res_valid['success'] ?? false) === true);
 
-    // 2.5 Authenticated Staff Manual Entry with is_manual=1 -> ACCEPTED
-    $res_manual = run_php_script('modules/attendance/log_attendance.php', [
-        'membership_id' => $test_mem_id,
-        'is_manual' => '1'
-    ], ['user_id' => 1]);
-    assert_sec("Authenticated staff can manually enter Member ID", ($res_manual['success'] ?? false) === true);
+    // 2.5 Physical printable ID Card (Static Member ID) with active plan -> ACCEPTED
+    $res_card = run_php_script('modules/attendance/log_attendance.php', [
+        'membership_id' => $test_mem_id
+    ], [], $kiosk_header);
+    assert_sec("Scanner accepts printable physical ID card when subscription is active", ($res_card['success'] ?? false) === true);
 
     // -------------------------------------------------------------------------
     // TEST 3: PII Privacy in api/check_status.php

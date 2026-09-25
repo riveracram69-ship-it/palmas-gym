@@ -1,0 +1,300 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1850 1220" width="100%" height="100%" style="background:#ffffff; font-family:'Consolas', 'Courier New', 'Lucida Console', monospace;">
+  <defs>
+    <!-- Background Grid Pattern (Exact Draw.io style) -->
+    <pattern id="grid-pattern" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f1f5f9" stroke-width="1"/>
+      <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#e2e8f0" stroke-width="1.2"/>
+    </pattern>
+
+    <!-- Marker Definitions for Crow's Foot & Multiplicity -->
+    <!-- 1. One and Only One (||) -->
+    <marker id="one-one-start" viewBox="0 0 20 20" refX="2" refY="10" markerWidth="12" markerHeight="12" orient="auto-start-reverse">
+      <line x1="8" y1="3" x2="8" y2="17" stroke="#334155" stroke-width="1.6"/>
+      <line x1="14" y1="3" x2="14" y2="17" stroke="#334155" stroke-width="1.6"/>
+    </marker>
+
+    <!-- 2. Zero to Many (o<) -->
+    <marker id="crow-many-end" viewBox="0 0 24 20" refX="22" refY="10" markerWidth="14" markerHeight="14" orient="auto">
+      <circle cx="6" cy="10" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+      <line x1="10" y1="10" x2="22" y2="10" stroke="#334155" stroke-width="1.5"/>
+      <line x1="12" y1="3" x2="22" y2="10" stroke="#334155" stroke-width="1.5"/>
+      <line x1="12" y1="17" x2="22" y2="10" stroke="#334155" stroke-width="1.5"/>
+    </marker>
+
+    <!-- 3. One to Many (| <) -->
+    <marker id="one-many-end" viewBox="0 0 24 20" refX="22" refY="10" markerWidth="14" markerHeight="14" orient="auto">
+      <line x1="6" y1="3" x2="6" y2="17" stroke="#334155" stroke-width="1.5"/>
+      <line x1="6" y1="10" x2="22" y2="10" stroke="#334155" stroke-width="1.5"/>
+      <line x1="12" y1="3" x2="22" y2="10" stroke="#334155" stroke-width="1.5"/>
+      <line x1="12" y1="17" x2="22" y2="10" stroke="#334155" stroke-width="1.5"/>
+    </marker>
+  </defs>
+
+  <!-- Background Grid -->
+  <rect x="0" y="0" width="1850" height="1220" fill="url(#grid-pattern)"/>
+
+  <!-- ================================================================= -->
+  <!-- 1. MEMBERSHIP_PLANS (TOP LEFT)                                    -->
+  <!-- ================================================================= -->
+  <g id="tbl-membership_plans">
+    <rect x="60" y="60" width="220" height="175" rx="8" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+    <text x="170" y="84" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">membership_plans</text>
+    <line x1="60" y1="94" x2="280" y2="94" stroke="#334155" stroke-width="1.2"/>
+    
+    <text x="72" y="115" font-size="11" font-weight="700" fill="#0f172a">membership_plans_id [PK]</text>
+    <text x="72" y="134" font-size="11" fill="#0f172a">name</text>
+    <text x="72" y="153" font-size="11" fill="#0f172a">duration_months</text>
+    <text x="72" y="172" font-size="11" fill="#0f172a">price</text>
+    <text x="72" y="191" font-size="11" fill="#0f172a">benefits</text>
+    <text x="72" y="210" font-size="11" fill="#0f172a">created_at</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 2. ATTENDANCE (MID-TOP LEFT)                                      -->
+  <!-- ================================================================= -->
+  <g id="tbl-attendance">
+    <rect x="360" y="160" width="180" height="155" rx="8" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+    <text x="450" y="184" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">attendance</text>
+    <line x1="360" y1="194" x2="540" y2="194" stroke="#334155" stroke-width="1.2"/>
+
+    <text x="372" y="215" font-size="11" font-weight="700" fill="#0f172a">attendance_id [PK]</text>
+    <text x="372" y="234" font-size="11" fill="#0f172a">member_id [FK]</text>
+    <text x="372" y="253" font-size="11" fill="#0f172a">date</text>
+    <text x="372" y="272" font-size="11" fill="#0f172a">time_in</text>
+    <text x="372" y="291" font-size="11" fill="#0f172a">time_out</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 3. RENEWAL_REQUESTS (MID-LOWER LEFT)                              -->
+  <!-- ================================================================= -->
+  <g id="tbl-renewal_requests">
+    <rect x="60" y="360" width="220" height="265" rx="8" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+    <text x="170" y="384" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">renewal_requests</text>
+    <line x1="60" y1="394" x2="280" y2="394" stroke="#334155" stroke-width="1.2"/>
+
+    <text x="72" y="415" font-size="11" font-weight="700" fill="#0f172a">renewal_request_id [PK]</text>
+    <text x="72" y="434" font-size="11" fill="#0f172a">member_id [FK]</text>
+    <text x="72" y="453" font-size="11" fill="#0f172a">plan_id [FK]</text>
+    <text x="72" y="472" font-size="11" fill="#0f172a">payment_method</text>
+    <text x="72" y="491" font-size="11" fill="#0f172a">reference_no</text>
+    <text x="72" y="510" font-size="11" fill="#0f172a">status</text>
+    <text x="72" y="529" font-size="11" fill="#0f172a">notes</text>
+    <text x="72" y="548" font-size="11" fill="#0f172a">user_id [FK]</text>
+    <text x="72" y="567" font-size="11" fill="#0f172a">created_at</text>
+    <text x="72" y="586" font-size="11" fill="#0f172a">updated_at</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 4. NOTIFICATIONS (BOTTOM LEFT)                                    -->
+  <!-- ================================================================= -->
+  <g id="tbl-notifications">
+    <rect x="120" y="730" width="190" height="225" rx="8" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+    <text x="215" y="754" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">notifications</text>
+    <line x1="120" y1="764" x2="310" y2="764" stroke="#334155" stroke-width="1.2"/>
+
+    <text x="132" y="785" font-size="11" font-weight="700" fill="#0f172a">notification_id [PK]</text>
+    <text x="132" y="804" font-size="11" fill="#0f172a">member_id [FK]</text>
+    <text x="132" y="823" font-size="11" fill="#0f172a">type</text>
+    <text x="132" y="842" font-size="11" fill="#0f172a">title</text>
+    <text x="132" y="861" font-size="11" fill="#0f172a">message</text>
+    <text x="132" y="880" font-size="11" fill="#0f172a">delivery_status</text>
+    <text x="132" y="899" font-size="11" fill="#0f172a">read_status</text>
+    <text x="132" y="918" font-size="11" fill="#0f172a">sent_at</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 5. MEMBERS (CENTER HUB)                                           -->
+  <!-- ================================================================= -->
+  <g id="tbl-members">
+    <rect x="640" y="100" width="220" height="425" rx="8" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <text x="750" y="124" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">members</text>
+    <line x1="640" y1="134" x2="860" y2="134" stroke="#334155" stroke-width="1.2"/>
+
+    <text x="652" y="155" font-size="11" font-weight="700" fill="#0f172a">member_id [PK]</text>
+    <text x="652" y="174" font-size="11" fill="#0f172a">membership_id</text>
+    <text x="652" y="193" font-size="11" fill="#0f172a">full_name</text>
+    <text x="652" y="212" font-size="11" fill="#0f172a">email</text>
+    <text x="652" y="231" font-size="11" fill="#0f172a">password_hash</text>
+    <text x="652" y="250" font-size="11" fill="#0f172a">contact_number</text>
+    <text x="652" y="269" font-size="11" fill="#0f172a">age</text>
+    <text x="652" y="288" font-size="11" fill="#0f172a">gender</text>
+    <text x="652" y="307" font-size="11" fill="#0f172a">photo</text>
+    <text x="652" y="326" font-size="11" fill="#0f172a">account_status</text>
+    <text x="652" y="345" font-size="11" fill="#0f172a">status</text>
+    <text x="652" y="364" font-size="11" fill="#0f172a">user_id [FK]</text>
+    <text x="652" y="383" font-size="11" fill="#0f172a">plan_id [FK]</text>
+    <text x="652" y="402" font-size="11" fill="#0f172a">approved_at</text>
+    <text x="652" y="421" font-size="11" fill="#0f172a">rejection_reason</text>
+    <text x="652" y="440" font-size="11" fill="#0f172a">created_at</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 6. USERS (BOTTOM CENTER)                                          -->
+  <!-- ================================================================= -->
+  <g id="tbl-users">
+    <rect x="630" y="660" width="240" height="175" rx="8" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+    <text x="750" y="684" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">users</text>
+    <line x1="630" y1="694" x2="870" y2="694" stroke="#334155" stroke-width="1.2"/>
+
+    <text x="642" y="715" font-size="11" font-weight="700" fill="#0f172a">user_id [PK]</text>
+    <text x="642" y="734" font-size="11" fill="#0f172a">name</text>
+    <text x="642" y="753" font-size="11" fill="#0f172a">email</text>
+    <text x="642" y="772" font-size="11" fill="#0f172a">password</text>
+    <text x="642" y="791" font-size="11" fill="#0f172a">role</text>
+    <text x="642" y="810" font-size="11" fill="#0f172a">created_at</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 7. PAYMENTS (TOP RIGHT)                                           -->
+  <!-- ================================================================= -->
+  <g id="tbl-payments">
+    <rect x="990" y="100" width="200" height="265" rx="8" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+    <text x="1090" y="124" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">payments</text>
+    <line x1="990" y1="134" x2="1190" y2="134" stroke="#334155" stroke-width="1.2"/>
+
+    <text x="1002" y="155" font-size="11" font-weight="700" fill="#0f172a">payment_id [PK]</text>
+    <text x="1002" y="174" font-size="11" fill="#0f172a">member_id [FK]</text>
+    <text x="1002" y="193" font-size="11" fill="#0f172a">subscription_id [FK]</text>
+    <text x="1002" y="212" font-size="11" fill="#0f172a">amount</text>
+    <text x="1002" y="231" font-size="11" fill="#0f172a">payment_method</text>
+    <text x="1002" y="250" font-size="11" fill="#0f172a">reference_number</text>
+    <text x="1002" y="269" font-size="11" fill="#0f172a">payment_date</text>
+    <text x="1002" y="288" font-size="11" fill="#0f172a">user_id [FK]</text>
+    <text x="1002" y="307" font-size="11" fill="#0f172a">notes</text>
+    <text x="1002" y="326" font-size="11" fill="#0f172a">created_at</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 8. SUBSCRIPTIONS (MIDDLE RIGHT)                                   -->
+  <!-- ================================================================= -->
+  <g id="tbl-subscriptions">
+    <rect x="1270" y="360" width="200" height="200" rx="8" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+    <text x="1370" y="384" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">subscriptions</text>
+    <line x1="1270" y1="394" x2="1470" y2="394" stroke="#334155" stroke-width="1.2"/>
+
+    <text x="1282" y="415" font-size="11" font-weight="700" fill="#0f172a">subscription_id [PK]</text>
+    <text x="1282" y="434" font-size="11" fill="#0f172a">member_id [FK]</text>
+    <text x="1282" y="453" font-size="11" fill="#0f172a">plan_id [FK]</text>
+    <text x="1282" y="472" font-size="11" fill="#0f172a">start_date</text>
+    <text x="1282" y="491" font-size="11" fill="#0f172a">expiry_date</text>
+    <text x="1282" y="510" font-size="11" fill="#0f172a">user_id [FK]</text>
+    <text x="1282" y="529" font-size="11" fill="#0f172a">created_at</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 9. PAYMENT_TRANSACTIONS (FAR RIGHT TOP)                           -->
+  <!-- ================================================================= -->
+  <g id="tbl-payment_transactions">
+    <rect x="1540" y="100" width="245" height="255" rx="8" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+    <text x="1662" y="124" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">payment_transactions</text>
+    <line x1="1540" y1="134" x2="1785" y2="134" stroke="#334155" stroke-width="1.2"/>
+
+    <text x="1552" y="155" font-size="11" font-weight="700" fill="#0f172a">transaction_id [PK]</text>
+    <text x="1552" y="174" font-size="11" fill="#0f172a">member_id [FK]</text>
+    <text x="1552" y="193" font-size="11" fill="#0f172a">plan_id [FK]</text>
+    <text x="1552" y="212" font-size="11" fill="#0f172a">reference_code</text>
+    <text x="1552" y="231" font-size="11" fill="#0f172a">checkout_url</text>
+    <text x="1552" y="250" font-size="11" fill="#0f172a">payment_method</text>
+    <text x="1552" y="269" font-size="11" fill="#0f172a">amount</text>
+    <text x="1552" y="288" font-size="11" fill="#0f172a">status</text>
+    <text x="1552" y="307" font-size="11" fill="#0f172a">created_at</text>
+    <text x="1552" y="326" font-size="11" fill="#0f172a">updated_at</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 10. ACTIVITY_LOGS (BOTTOM RIGHT - CENTER)                         -->
+  <!-- ================================================================= -->
+  <g id="tbl-activity_logs">
+    <rect x="980" y="680" width="210" height="230" rx="8" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+    <text x="1085" y="704" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">activity_logs</text>
+    <line x1="980" y1="714" x2="1190" y2="714" stroke="#334155" stroke-width="1.2"/>
+
+    <text x="992" y="735" font-size="11" font-weight="700" fill="#0f172a">log_id [PK]</text>
+    <text x="992" y="754" font-size="11" fill="#0f172a">user_id [FK]</text>
+    <text x="992" y="773" font-size="11" fill="#0f172a">user_name</text>
+    <text x="992" y="792" font-size="11" fill="#0f172a">action</text>
+    <text x="992" y="811" font-size="11" fill="#0f172a">description</text>
+    <text x="992" y="830" font-size="11" fill="#0f172a">module</text>
+    <text x="992" y="849" font-size="11" fill="#0f172a">ip_address</text>
+    <text x="992" y="868" font-size="11" fill="#0f172a">created_at</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 11. EXPENSES (BOTTOM FAR RIGHT)                                   -->
+  <!-- ================================================================= -->
+  <g id="tbl-expenses">
+    <rect x="1290" y="680" width="235" height="265" rx="8" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+    <text x="1407" y="704" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">expenses</text>
+    <line x1="1290" y1="714" x2="1525" y2="714" stroke="#334155" stroke-width="1.2"/>
+
+    <text x="1302" y="735" font-size="11" font-weight="700" fill="#0f172a">expense_id [PK]</text>
+    <text x="1302" y="754" font-size="11" fill="#0f172a">expense_date</text>
+    <text x="1302" y="773" font-size="11" fill="#0f172a">category</text>
+    <text x="1302" y="792" font-size="11" fill="#0f172a">title</text>
+    <text x="1302" y="811" font-size="11" fill="#0f172a">amount</text>
+    <text x="1302" y="830" font-size="11" fill="#0f172a">payment_method</text>
+    <text x="1302" y="849" font-size="11" fill="#0f172a">reference_number</text>
+    <text x="1302" y="868" font-size="11" fill="#0f172a">receipt_photo</text>
+    <text x="1302" y="887" font-size="11" fill="#0f172a">notes</text>
+    <text x="1302" y="906" font-size="11" fill="#0f172a">user_id [FK]</text>
+    <text x="1302" y="925" font-size="11" fill="#0f172a">created_at</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- PRECISE ORTHOGONAL RELATIONSHIP LINES (CROW'S FOOT NOTATION)      -->
+  <!-- ================================================================= -->
+  <g stroke="#334155" stroke-width="1.4" fill="none">
+    
+    <!-- 1. membership_plans (1) -> subscriptions (Many) -->
+    <path d="M 170 60 L 170 25 L 1370 25 L 1370 360" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 2. membership_plans (1) -> members (Many) -->
+    <path d="M 280 180 L 460 180 L 460 380 L 640 380" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 3. members (1) -> attendance (Many) -->
+    <path d="M 640 180 L 540 180" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 4. members (1) -> renewal_requests (Many) -->
+    <path d="M 640 430 L 480 430 L 480 430 L 280 430" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 5. membership_plans (1) -> renewal_requests (Many) -->
+    <path d="M 100 235 L 100 360" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 6. members (1) -> payments (Many) -->
+    <path d="M 860 180 L 990 180" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 7. subscriptions (1) -> payments (Many) -->
+    <path d="M 1270 420 L 1150 420 L 1150 365" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 8. members (1) -> subscriptions (Many) -->
+    <path d="M 860 440 L 1270 440" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 9. users (1) -> members (Many / Approved) -->
+    <path d="M 750 660 L 750 525" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 10. users (1) -> subscriptions (Many / Created) -->
+    <path d="M 870 730 L 1220 730 L 1220 520 L 1270 520" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 11. users (1) -> payments (Many / Cashier) -->
+    <path d="M 870 700 L 940 700 L 940 285 L 990 285" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 12. users (1) -> activity_logs (Many) -->
+    <path d="M 870 770 L 980 770" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 13. users (1) -> renewal_requests (Many / Processed) -->
+    <path d="M 630 750 L 30 750 L 30 550 L 60 550" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 14. members (1) -> notifications (Many) -->
+    <path d="M 670 525 L 670 810 L 310 810" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 15. users (1) -> expenses (Many / Recorded) -->
+    <path d="M 790 835 L 790 980 L 1400 980 L 1400 945" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 16. members (1) -> payment_transactions (Many) -->
+    <path d="M 810 100 L 810 55 L 1660 55 L 1660 100" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+
+    <!-- 17. membership_plans (1) -> payment_transactions (Many) -->
+    <path d="M 280 120 L 590 120 L 590 75 L 1580 75 L 1580 100" marker-start="url(#one-one-start)" marker-end="url(#crow-many-end)"/>
+  </g>
+
+</svg>

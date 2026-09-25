@@ -2,128 +2,234 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Palma's Elite Gym - System Diagrams (DFD Level 0, 1 & 2)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Palma's Elite Gym - Official System Diagrams Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 30px 20px; }
-    .header { text-align: center; margin-bottom: 25px; }
-    .header h1 { font-size: 24px; font-weight: 800; color: #38bdf8; margin-bottom: 6px; }
-    .header p { color: #94a3b8; font-size: 14px; }
-    .nav-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; }
-    .tab-btn { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 14px; }
-    .tab-btn.active { background: #2563eb; color: #ffffff; border-color: #2563eb; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
-    .tab-btn:hover:not(.active) { background: #334155; color: #ffffff; }
-    .toolbar { display: flex; gap: 12px; margin-bottom: 20px; }
-    .btn { background: #10b981; color: #ffffff; border: none; padding: 9px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; font-size: 13.5px; }
-    .btn:hover { background: #059669; transform: translateY(-1px); }
-    .btn-blue { background: #2563eb; }
-    .btn-blue:hover { background: #1d4ed8; }
-    .card { background: #ffffff; padding: 25px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); max-width: 1450px; width: 100%; }
-    .diagram-view { display: none; width: 100%; }
+    :root {
+      --bg-dark: #090d16;
+      --card-dark: #111827;
+      --card-border: #1f2937;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent-green: #10b981;
+      --accent-purple: #8b5cf6;
+      --accent-amber: #f59e0b;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background: var(--bg-dark); color: var(--text-main); display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 24px 16px; }
+
+    .header-section { text-align: center; margin-bottom: 24px; max-width: 900px; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+    .header-section h1 { font-size: 28px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .header-section h1 span { color: #38bdf8; }
+    .header-section p { color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+
+    /* Category Navigation */
+    .nav-wrapper { width: 100%; max-width: 1550px; margin-bottom: 20px; }
+    .category-title { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; margin-left: 4px; }
+    .nav-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+
+    .tab-btn { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+    .tab-btn:hover:not(.active) { background: #334155; color: #ffffff; border-color: #475569; transform: translateY(-1px); }
+    .tab-btn.active { background: #2563eb; color: #ffffff; border-color: #3b82f6; box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4); }
+
+    /* Toolbar */
+    .toolbar-bar { width: 100%; max-width: 1550px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; background: #111827; border: 1px solid #1f2937; padding: 12px 18px; border-radius: 12px; }
+    .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .diagram-info-tag { font-size: 13.5px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px; }
+
+    .tool-btn { background: #1f2937; color: #e5e7eb; border: 1px solid #374151; padding: 7px 14px; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; transition: 0.15s; }
+    .tool-btn:hover { background: #374151; color: #ffffff; }
+    .tool-btn-primary { background: #10b981; color: #ffffff; border: none; }
+    .tool-btn-primary:hover { background: #059669; }
+    .tool-btn-blue { background: #2563eb; color: #ffffff; border: none; }
+    .tool-btn-blue:hover { background: #1d4ed8; }
+
+    /* Diagram Viewer Area */
+    .viewer-card { background: #ffffff; border-radius: 16px; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.8); width: 100%; max-width: 1550px; overflow: hidden; position: relative; border: 1px solid #334155; min-height: 700px; display: flex; align-items: center; justify-content: center; }
+    .canvas-container { width: 100%; height: 100%; overflow: auto; padding: 20px; display: flex; justify-content: center; align-items: flex-start; }
+    .diagram-view { display: none; width: 100%; transform-origin: top center; transition: transform 0.15s ease; }
     .diagram-view.active { display: block; }
-    img, svg { width: 100%; height: auto; display: block; border-radius: 8px; }
+    .diagram-view img, .diagram-view object { width: 100%; height: auto; display: block; border-radius: 8px; }
+
+    /* Details Panel */
+    .meta-box { width: 100%; max-width: 1550px; margin-top: 16px; background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 13px; color: #94a3b8; }
+    .meta-box strong { color: #f1f5f9; }
+
     @media print {
-      body { background: #ffffff; padding: 0; }
-      .nav-tabs, .toolbar, .header { display: none; }
-      .card { box-shadow: none; padding: 0; }
+      body { background: #ffffff; color: #000000; padding: 0; }
+      .header-section, .nav-wrapper, .toolbar-bar, .meta-box { display: none !important; }
+      .viewer-card { box-shadow: none; border: none; max-width: 100%; }
+      .diagram-view.active { display: block !important; }
     }
   </style>
 </head>
 <body>
 
-  <div class="header">
-    <h1>Palma's Elite Gym Management System</h1>
-    <p>Official System Architecture & Data Flow Diagrams (DFD)</p>
+  <div class="header-section">
+    <div class="badge">🚀 System Architecture &amp; Diagrams Hub</div>
+    <h1>Palma's Elite Gym <span>Diagrams Suite</span></h1>
+    <p>Official technical diagrams with verified coverage of Web Admin, Member Portal, Expenses &amp; Net Income Ledger, PayMongo Gateway, QR attendance, and background cron maintenance.</p>
   </div>
 
-  <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchTab('dfd0', this)">🌐 DFD Level 0 (Context)</button>
-    <button class="tab-btn" onclick="switchTab('dfd1', this)">📊 DFD Level 1 (Decomposition)</button>
-    <button class="tab-btn" onclick="switchTab('dfd2_p1', this)">🔐 DFD Level 2 (1.0 Verify Credentials)</button>
-    <button class="tab-btn" onclick="switchTab('dfd2_p2', this)">📝 DFD Level 2 (2.0 Register Member)</button>
-    <button class="tab-btn" onclick="switchTab('dfd2_p3', this)">💳 DFD Level 2 (3.0 Manage Subscriptions &amp; Plans)</button>
-    <button class="tab-btn" onclick="switchTab('dfd2_p4', this)">💰 DFD Level 2 (4.0 Process Payments)</button>
-    <button class="tab-btn" onclick="switchTab('dfd2_p5', this)">📋 DFD Level 2 (5.0 Track Attendance)</button>
-    <button class="tab-btn" onclick="switchTab('dfd2_p6', this)">🔄 DFD Level 2 (6.0 Handle Renewals)</button>
-    <button class="tab-btn" onclick="switchTab('dfd2_p7', this)">🔔 DFD Level 2 (7.0 Dispatch Notifications)</button>
-    <button class="tab-btn" onclick="switchTab('dfd2_p8', this)">📈 DFD Level 2 (8.0 Generate Reports)</button>
+  <div class="nav-wrapper">
+    <!-- Category 1: DFD Models -->
+    <div class="category-title">📐 Data Flow Diagrams (DFD) — Gane &amp; Sarson Notation</div>
+    <div class="nav-group">
+      <button class="tab-btn active" onclick="switchTab('dfd0', 'gym_context_diagram.svg', 'Palmas_Elite_Gym_DFD_Level0.svg', 'DFD Level 0: Context Diagram (Including Expenses & Net Income)', this)">🌐 Level 0 Context</button>
+      <button class="tab-btn" onclick="switchTab('dfd1', 'gym_dfd_level1.svg', 'Palmas_Elite_Gym_DFD_Level1.svg', 'DFD Level 1: System Decomposition', this)">📊 Level 1 Decomposition</button>
+      <button class="tab-btn" onclick="switchTab('dfd2_p1', 'gym_dfd_level2_p1.svg', 'Palmas_Elite_Gym_DFD_Level2_P1.svg', 'DFD Level 2: 1.0 Verify User Credentials', this)">🔐 Level 2 (1.0 Auth &amp; Login)</button>
+      <button class="tab-btn" onclick="switchTab('dfd2_p2', 'gym_dfd_level2_p2.svg', 'Palmas_Elite_Gym_DFD_Level2_P2.svg', 'DFD Level 2: 2.0 Register Member', this)">📝 Level 2 (2.0 Registration)</button>
+      <button class="tab-btn" onclick="switchTab('dfd2_p3', 'gym_dfd_level2_p3.svg', 'Palmas_Elite_Gym_DFD_Level2_P3.svg', 'DFD Level 2: 3.0 Manage Subscriptions &amp; Plans', this)">💳 Level 2 (3.0 Subscriptions)</button>
+      <button class="tab-btn" onclick="switchTab('dfd2_p4', 'gym_dfd_level2_p4.svg', 'Palmas_Elite_Gym_DFD_Level2_P4.svg', 'DFD Level 2: 4.0 Process Payments', this)">💰 Level 2 (4.0 Payments &amp; POS)</button>
+      <button class="tab-btn" onclick="switchTab('dfd2_p5', 'gym_dfd_level2_p5.svg', 'Palmas_Elite_Gym_DFD_Level2_P5.svg', 'DFD Level 2: 5.0 Track Attendance', this)">📋 Level 2 (5.0 QR Attendance)</button>
+      <button class="tab-btn" onclick="switchTab('dfd2_p6', 'gym_dfd_level2_p6.svg', 'Palmas_Elite_Gym_DFD_Level2_P6.svg', 'DFD Level 2: 6.0 Handle Renewal Requests', this)">🔄 Level 2 (6.0 Renewals)</button>
+      <button class="tab-btn" onclick="switchTab('dfd2_p7', 'gym_dfd_level2_p7.svg', 'Palmas_Elite_Gym_DFD_Level2_P7.svg', 'DFD Level 2: 7.0 Dispatch Notifications', this)">🔔 Level 2 (7.0 Notifications)</button>
+      <button class="tab-btn" onclick="switchTab('dfd2_p8', 'gym_dfd_level2_p8.svg', 'Palmas_Elite_Gym_DFD_Level2_P8.svg', 'DFD Level 2: 8.0 Generate Reports', this)">📈 Level 2 (8.0 Reports &amp; Audit)</button>
+      <button class="tab-btn" onclick="switchTab('dfd2_p9', 'gym_dfd_level2_p9.svg', 'Palmas_Elite_Gym_DFD_Level2_P9.svg', 'DFD Level 2: 9.0 Manage Operational Expenses & Net Income', this)">🧾 Level 2 (9.0 Expenses &amp; Net Income)</button>
+    </div>
+
+    <!-- Category 2: Software Engineering & Research Diagrams -->
+    <div class="category-title">🏛️ System Engineering, Database &amp; UML Diagrams</div>
+    <div class="nav-group">
+      <button class="tab-btn" onclick="switchTab('sys_arch', 'gym_system_architecture.svg', 'Palmas_Elite_Gym_System_Architecture.svg', 'System Architecture (3-Tier Layered Diagram)', this)">🏗️ 3-Tier System Architecture</button>
+      <button class="tab-btn" onclick="switchTab('erd', 'gym_erd_diagram.svg', 'Palmas_Elite_Gym_ERD.svg', 'Entity Relationship Diagram (14 Database Tables including Expenses)', this)">🗄️ Relational Database ERD</button>
+      <button class="tab-btn" onclick="switchTab('use_case', 'gym_use_case_diagram.svg', 'Palmas_Elite_Gym_Use_Case.svg', 'UML Use Case Diagram (Actors &amp; Functions)', this)">👥 UML Use Case Diagram</button>
+      <button class="tab-btn" onclick="switchTab('ipo', 'gym_ipo_diagram.svg', 'Palmas_Elite_Gym_IPO_Model.svg', 'Input-Process-Output (IPO) Conceptual Model', this)">🔄 IPO Conceptual Framework</button>
+    </div>
   </div>
 
-  <div class="toolbar">
-    <button class="btn btn-blue" onclick="window.print()">🖨️ Print / Save as PDF</button>
-    <a id="download-link" href="gym_context_diagram.svg" download="Palmas_Elite_Gym_DFD_Level0.svg" class="btn">⬇️ Download Current SVG</a>
+  <!-- Interactive Toolbar -->
+  <div class="toolbar-bar">
+    <div class="toolbar-left">
+      <div class="diagram-info-tag">
+        <span>📍 Current Diagram:</span>
+        <span id="active-diagram-title" style="color:#ffffff;">DFD Level 0: Context Diagram</span>
+      </div>
+    </div>
+    <div class="toolbar-right">
+      <!-- Zoom controls -->
+      <button class="tool-btn" onclick="adjustZoom(-0.15)">🔍 Zoom Out</button>
+      <button class="tool-btn" onclick="resetZoom()">🔄 100%</button>
+      <button class="tool-btn" onclick="adjustZoom(0.15)">🔎 Zoom In</button>
+      <!-- Print & Download -->
+      <button class="tool-btn tool-btn-blue" onclick="window.print()">🖨️ Print / Save PDF</button>
+      <a id="download-link" href="gym_context_diagram.svg" download="Palmas_Elite_Gym_DFD_Level0.svg" class="tool-btn tool-btn-primary">⬇️ Download SVG</a>
+    </div>
   </div>
 
-  <div class="card">
-    <div id="dfd0" class="diagram-view active">
-      <img src="gym_context_diagram.svg?v=21" alt="DFD Level 0 Context Diagram" style="width:100%; height:auto;">
+  <!-- Viewer Canvas Card -->
+  <div class="viewer-card">
+    <div class="canvas-container" id="canvas-container">
+      
+      <!-- DFD 0 -->
+      <div id="dfd0" class="diagram-view active">
+        <img src="gym_context_diagram.svg?v=26" alt="DFD Level 0 Context Diagram">
+      </div>
+
+      <!-- DFD 1 -->
+      <div id="dfd1" class="diagram-view">
+        <img src="gym_dfd_level1.svg?v=45" alt="DFD Level 1 Diagram">
+      </div>
+
+      <!-- DFD 2 (1 to 9) -->
+      <div id="dfd2_p1" class="diagram-view">
+        <img src="gym_dfd_level2_p1.svg?v=26" alt="DFD Level 2 Process 1.0">
+      </div>
+      <div id="dfd2_p2" class="diagram-view">
+        <img src="gym_dfd_level2_p2.svg?v=26" alt="DFD Level 2 Process 2.0">
+      </div>
+      <div id="dfd2_p3" class="diagram-view">
+        <img src="gym_dfd_level2_p3.svg?v=26" alt="DFD Level 2 Process 3.0">
+      </div>
+      <div id="dfd2_p4" class="diagram-view">
+        <img src="gym_dfd_level2_p4.svg?v=26" alt="DFD Level 2 Process 4.0">
+      </div>
+      <div id="dfd2_p5" class="diagram-view">
+        <img src="gym_dfd_level2_p5.svg?v=26" alt="DFD Level 2 Process 5.0">
+      </div>
+      <div id="dfd2_p6" class="diagram-view">
+        <img src="gym_dfd_level2_p6.svg?v=26" alt="DFD Level 2 Process 6.0">
+      </div>
+      <div id="dfd2_p7" class="diagram-view">
+        <img src="gym_dfd_level2_p7.svg?v=26" alt="DFD Level 2 Process 7.0">
+      </div>
+      <div id="dfd2_p8" class="diagram-view">
+        <img src="gym_dfd_level2_p8.svg?v=26" alt="DFD Level 2 Process 8.0">
+      </div>
+      <div id="dfd2_p9" class="diagram-view">
+        <img src="gym_dfd_level2_p9.svg?v=26" alt="DFD Level 2 Process 9.0 (Expenses)">
+      </div>
+
+      <!-- System Architecture -->
+      <div id="sys_arch" class="diagram-view">
+        <img src="gym_system_architecture.svg?v=26" alt="System Architecture Diagram">
+      </div>
+
+      <!-- ERD -->
+      <div id="erd" class="diagram-view">
+        <img src="gym_erd_diagram.svg?v=26" alt="Entity Relationship Diagram">
+      </div>
+
+      <!-- Use Case -->
+      <div id="use_case" class="diagram-view">
+        <img src="gym_use_case_diagram.svg?v=26" alt="UML Use Case Diagram">
+      </div>
+
+      <!-- IPO -->
+      <div id="ipo" class="diagram-view">
+        <img src="gym_ipo_diagram.svg?v=26" alt="IPO Model Diagram">
+      </div>
+
     </div>
-    <div id="dfd1" class="diagram-view">
-      <img src="gym_dfd_level1.svg?v=21" alt="DFD Level 1 Diagram" style="width:100%; height:auto;">
-    </div>
-    <div id="dfd2_p1" class="diagram-view">
-      <img src="gym_dfd_level2_p1.svg?v=21" alt="DFD Level 2 Process 1.0 Diagram" style="width:100%; height:auto;">
-    </div>
-    <div id="dfd2_p2" class="diagram-view">
-      <img src="gym_dfd_level2_p2.svg?v=21" alt="DFD Level 2 Process 2.0 Diagram" style="width:100%; height:auto;">
-    </div>
-    <div id="dfd2_p3" class="diagram-view">
-      <img src="gym_dfd_level2_p3.svg?v=21" alt="DFD Level 2 Process 3.0 Diagram" style="width:100%; height:auto;">
-    </div>
-    <div id="dfd2_p4" class="diagram-view">
-      <img src="gym_dfd_level2_p4.svg?v=21" alt="DFD Level 2 Process 4.0 Diagram" style="width:100%; height:auto;">
-    </div>
-    <div id="dfd2_p5" class="diagram-view">
-      <img src="gym_dfd_level2_p5.svg?v=21" alt="DFD Level 2 Process 5.0 Diagram" style="width:100%; height:auto;">
-    </div>
-    <div id="dfd2_p6" class="diagram-view">
-      <img src="gym_dfd_level2_p6.svg?v=21" alt="DFD Level 2 Process 6.0 Diagram" style="width:100%; height:auto;">
-    </div>
-    <div id="dfd2_p7" class="diagram-view">
-      <img src="gym_dfd_level2_p7.svg?v=21" alt="DFD Level 2 Process 7.0 Diagram" style="width:100%; height:auto;">
-    </div>
-    <div id="dfd2_p8" class="diagram-view">
-      <img src="gym_dfd_level2_p8.svg?v=21" alt="DFD Level 2 Process 8.0 Diagram" style="width:100%; height:auto;">
-    </div>
+  </div>
+
+  <!-- Meta Footer -->
+  <div class="meta-box">
+    <div>Standard: <strong>Gane &amp; Sarson / UML 2.5 / Crow's Foot ERD</strong></div>
+    <div>System Target: <strong>PHP 8+ • MySQL/MariaDB • Expenses Ledger • PayMongo Gateway</strong></div>
+    <div>Status: <strong style="color: #34d399;">Active Production Verified</strong></div>
   </div>
 
   <script>
-    function switchTab(viewId, btn) {
+    let currentScale = 1.0;
+
+    function switchTab(viewId, fileUrl, downloadName, title, btn) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.diagram-view').forEach(v => v.classList.remove('active'));
+      
       btn.classList.add('active');
-      document.getElementById(viewId).classList.add('active');
+      const activeView = document.getElementById(viewId);
+      if(activeView) activeView.classList.add('active');
+
+      document.getElementById('active-diagram-title').innerText = title;
       const downloadLink = document.getElementById('download-link');
-      if(viewId === 'dfd0') {
-        downloadLink.href = 'gym_context_diagram.svg';
-        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level0.svg';
-      } else if(viewId === 'dfd1') {
-        downloadLink.href = 'gym_dfd_level1.svg';
-        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level1.svg';
-      } else if(viewId === 'dfd2_p1') {
-        downloadLink.href = 'gym_dfd_level2_p1.svg';
-        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process1.svg';
-      } else if(viewId === 'dfd2_p2') {
-        downloadLink.href = 'gym_dfd_level2_p2.svg';
-        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process2.svg';
-      } else if(viewId === 'dfd2_p3') {
-        downloadLink.href = 'gym_dfd_level2_p3.svg';
-        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process3.svg';
-      } else if(viewId === 'dfd2_p4') {
-        downloadLink.href = 'gym_dfd_level2_p4.svg';
-        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process4.svg';
-      } else if(viewId === 'dfd2_p5') {
-        downloadLink.href = 'gym_dfd_level2_p5.svg';
-        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process5.svg';
-      } else if(viewId === 'dfd2_p6') {
-        downloadLink.href = 'gym_dfd_level2_p6.svg';
-        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process6.svg';
-      } else if(viewId === 'dfd2_p7') {
-        downloadLink.href = 'gym_dfd_level2_p7.svg';
-        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process7.svg';
-      } else if(viewId === 'dfd2_p8') {
-        downloadLink.href = 'gym_dfd_level2_p8.svg';
-        downloadLink.download = 'Palmas_Elite_Gym_DFD_Level2_Process8.svg';
+      downloadLink.href = fileUrl;
+      downloadLink.download = downloadName;
+
+      resetZoom();
+    }
+
+    function adjustZoom(delta) {
+      currentScale = Math.min(Math.max(0.4, currentScale + delta), 2.5);
+      applyZoom();
+    }
+
+    function resetZoom() {
+      currentScale = 1.0;
+      applyZoom();
+    }
+
+    function applyZoom() {
+      const activeDiagram = document.querySelector('.diagram-view.active');
+      if (activeDiagram) {
+        activeDiagram.style.transform = `scale(${currentScale})`;
       }
     }
   </script>

@@ -1,0 +1,167 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1000" width="100%" height="100%" style="background:#ffffff; font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <marker id="ipo-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#0f172a"/>
+    </marker>
+    <filter id="ipo-shadow" x="-3%" y="-3%" width="106%" height="108%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Header Banner -->
+  <rect x="0" y="0" width="1500" height="70" fill="#0f172a"/>
+  <text x="750" y="34" text-anchor="middle" font-size="20" font-weight="800" fill="#ffffff" letter-spacing="1">PALMA'S ELITE GYM — INPUT-PROCESS-OUTPUT (IPO) MODEL</text>
+  <text x="750" y="55" text-anchor="middle" font-size="12" font-weight="600" fill="#94a3b8">Conceptual Research &amp; System Execution Framework | Feedback Control Loop</text>
+
+  <!-- ================================================================= -->
+  <!-- COLUMN 1: INPUT (LEFT)                                            -->
+  <!-- ================================================================= -->
+  <g id="col-input">
+    <rect x="50" y="100" width="410" height="720" rx="14" fill="#ffffff" stroke="#2563eb" stroke-width="2.5" filter="url(#ipo-shadow)"/>
+    <rect x="50" y="100" width="410" height="48" rx="14" fill="#2563eb"/>
+    <rect x="50" y="125" width="410" height="23" fill="#2563eb"/>
+    <text x="255" y="132" text-anchor="middle" font-size="16" font-weight="800" fill="#ffffff">📥 INPUT</text>
+
+    <!-- Card: Member Inputs -->
+    <rect x="70" y="170" width="370" height="150" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="85" y="195" font-size="13" font-weight="800" fill="#1e40af">1. Member Inputs</text>
+    <text x="85" y="220" font-size="11.5" font-weight="600" fill="#334155">• Self-Registration Info (Name, Email, Phone)</text>
+    <text x="85" y="240" font-size="11.5" font-weight="600" fill="#334155">• Login Credentials / Google OAuth Token</text>
+    <text x="85" y="260" font-size="11.5" font-weight="600" fill="#334155">• Selected Membership Plan (Tier &amp; Duration)</text>
+    <text x="85" y="280" font-size="11.5" font-weight="600" fill="#334155">• PayMongo Payment Form (GCash / Maya)</text>
+    <text x="85" y="300" font-size="11.5" font-weight="600" fill="#334155">• Dynamic QR Scan Token for Attendance</text>
+
+    <!-- Card: Admin Inputs -->
+    <rect x="70" y="340" width="370" height="150" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="85" y="365" font-size="13" font-weight="800" fill="#1e40af">2. Admin &amp; Staff Inputs</text>
+    <text x="85" y="390" font-size="11.5" font-weight="600" fill="#334155">• Admin Credentials &amp; 2FA Codes</text>
+    <text x="85" y="410" font-size="11.5" font-weight="600" fill="#334155">• Registration Approvals / Rejections</text>
+    <text x="85" y="430" font-size="11.5" font-weight="600" fill="#334155">• Membership Plan Tiers, Duration &amp; Pricing</text>
+    <text x="85" y="450" font-size="11.5" font-weight="600" fill="#334155">• Over-the-counter Cash Payments &amp; Receipts</text>
+    <text x="85" y="470" font-size="11.5" font-weight="600" fill="#334155">• Date Range Filters for Reports &amp; Analytics</text>
+
+    <!-- Card: Environmental & System Inputs -->
+    <rect x="70" y="510" width="370" height="150" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="85" y="535" font-size="13" font-weight="800" fill="#1e40af">3. External &amp; System Inputs</text>
+    <text x="85" y="560" font-size="11.5" font-weight="600" fill="#334155">• PayMongo Webhook Callbacks (Paid / Failed)</text>
+    <text x="85" y="580" font-size="11.5" font-weight="600" fill="#334155">• Google OAuth User Profile Verification Payload</text>
+    <text x="85" y="600" font-size="11.5" font-weight="600" fill="#334155">• System Timestamp &amp; Server Cron Trigger</text>
+    <text x="85" y="620" font-size="11.5" font-weight="600" fill="#334155">• Client IP Address &amp; Device Agent Signatures</text>
+    <text x="85" y="640" font-size="11.5" font-weight="600" fill="#334155">• FCM Mobile Device Tokens</text>
+
+    <!-- Card: Hardware / Scanner Inputs -->
+    <rect x="70" y="680" width="370" height="120" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="85" y="705" font-size="13" font-weight="800" fill="#1e40af">4. Hardware &amp; Sensor Inputs</text>
+    <text x="85" y="730" font-size="11.5" font-weight="600" fill="#334155">• Webcam / Front-facing Camera QR Video Feed</text>
+    <text x="85" y="750" font-size="11.5" font-weight="600" fill="#334155">• Mobile Screen Brightness &amp; Scanner Optics</text>
+    <text x="85" y="770" font-size="11.5" font-weight="600" fill="#334155">• Kiosk Touchscreen Check-in Events</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- COLUMN 2: PROCESS (CENTER)                                        -->
+  <!-- ================================================================= -->
+  <g id="col-process">
+    <rect x="545" y="100" width="410" height="720" rx="14" fill="#ffffff" stroke="#d97706" stroke-width="2.5" filter="url(#ipo-shadow)"/>
+    <rect x="545" y="100" width="410" height="48" rx="14" fill="#d97706"/>
+    <rect x="545" y="125" width="410" height="23" fill="#d97706"/>
+    <text x="750" y="132" text-anchor="middle" font-size="16" font-weight="800" fill="#ffffff">⚙️ PROCESS</text>
+
+    <rect x="565" y="170" width="370" height="630" rx="8" fill="#fffbeb" stroke="#fde68a" stroke-width="1.5"/>
+    
+    <text x="580" y="200" font-size="12.5" font-weight="800" fill="#b45309">1. Authentication &amp; Security Verification</text>
+    <text x="595" y="220" font-size="11" font-weight="600" fill="#451a03">• Rate-limiting inspection &amp; brute-force defense</text>
+    <text x="595" y="238" font-size="11" font-weight="600" fill="#451a03">• Password verification via Bcrypt / OAuth validation</text>
+    <text x="595" y="256" font-size="11" font-weight="600" fill="#451a03">• Bearer auth token &amp; CSRF token generation</text>
+
+    <text x="580" y="290" font-size="12.5" font-weight="800" fill="#b45309">2. Member Profile &amp; Approval Processing</text>
+    <text x="595" y="310" font-size="11" font-weight="600" fill="#451a03">• Validation of contact info &amp; unique checks</text>
+    <text x="595" y="328" font-size="11" font-weight="600" fill="#451a03">• Storing registration in pending approval queue</text>
+    <text x="595" y="346" font-size="11" font-weight="600" fill="#451a03">• Admin verification &amp; activation of membership</text>
+
+    <text x="580" y="380" font-size="12.5" font-weight="800" fill="#b45309">3. Subscription &amp; Plan Expiration Engine</text>
+    <text x="595" y="400" font-size="11" font-weight="600" fill="#451a03">• Dynamic calculation of start and expiry dates</text>
+    <text x="595" y="418" font-size="11" font-weight="600" fill="#451a03">• Auto-transitioning overdue members to 'expired'</text>
+    <text x="595" y="436" font-size="11" font-weight="600" fill="#451a03">• Promotion &amp; multi-month discount evaluation</text>
+
+    <text x="580" y="470" font-size="12.5" font-weight="800" fill="#b45309">4. Payment Gateway &amp; Billing Transaction</text>
+    <text x="595" y="490" font-size="11" font-weight="600" fill="#451a03">• PayMongo checkout intent &amp; link generation</text>
+    <text x="595" y="508" font-size="11" font-weight="600" fill="#451a03">• HMAC-SHA256 signature webhook verification</text>
+    <text x="595" y="526" font-size="11" font-weight="600" fill="#451a03">• Instant auto-activation of renewed subscription</text>
+
+    <text x="580" y="560" font-size="12.5" font-weight="800" fill="#b45309">5. Dynamic QR Attendance Verification</text>
+    <text x="595" y="580" font-size="11" font-weight="600" fill="#451a03">• Decoding rotating QR token &amp; HMAC validation</text>
+    <text x="595" y="598" font-size="11" font-weight="600" fill="#451a03">• Anti-passback logic (same-day check-in/out check)</text>
+    <text x="595" y="616" font-size="11" font-weight="600" fill="#451a03">• Recording timestamped entry and exit records</text>
+
+    <text x="580" y="650" font-size="12.5" font-weight="800" fill="#b45309">6. Notification &amp; Email Dispatch Engine</text>
+    <text x="595" y="670" font-size="11" font-weight="600" fill="#451a03">• Triggering 3-day pre-expiry email &amp; push warnings</text>
+    <text x="595" y="688" font-size="11" font-weight="600" fill="#451a03">• Formatting electronic receipts &amp; password OTPs</text>
+
+    <text x="580" y="722" font-size="12.5" font-weight="800" fill="#b45309">7. Analytics Aggregation &amp; Audit Logging</text>
+    <text x="595" y="742" font-size="11" font-weight="600" fill="#451a03">• Computing monthly/annual revenue totals</text>
+    <text x="595" y="760" font-size="11" font-weight="600" fill="#451a03">• Daily peak-hour gym traffic calculations</text>
+    <text x="595" y="778" font-size="11" font-weight="600" fill="#451a03">• Immutable audit logging of administrative actions</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- COLUMN 3: OUTPUT (RIGHT)                                          -->
+  <!-- ================================================================= -->
+  <g id="col-output">
+    <rect x="1040" y="100" width="410" height="720" rx="14" fill="#ffffff" stroke="#16a34a" stroke-width="2.5" filter="url(#ipo-shadow)"/>
+    <rect x="1040" y="100" width="410" height="48" rx="14" fill="#16a34a"/>
+    <rect x="1040" y="125" width="410" height="23" fill="#16a34a"/>
+    <text x="1245" y="132" text-anchor="middle" font-size="16" font-weight="800" fill="#ffffff">📤 OUTPUT</text>
+
+    <!-- Card: Member Outputs -->
+    <rect x="1060" y="170" width="370" height="150" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="1075" y="195" font-size="13" font-weight="800" fill="#15803d">1. Member Outputs</text>
+    <text x="1075" y="220" font-size="11.5" font-weight="600" fill="#334155">• Active Digital Membership Pass &amp; ID Card</text>
+    <text x="1075" y="240" font-size="11.5" font-weight="600" fill="#334155">• Live Dynamic Rotating QR Code</text>
+    <text x="1075" y="260" font-size="11.5" font-weight="600" fill="#334155">• Electronic Payment Receipts &amp; Reference No.</text>
+    <text x="1075" y="280" font-size="11.5" font-weight="600" fill="#334155">• Personalized Attendance History &amp; Expiry Countdown</text>
+    <text x="1075" y="300" font-size="11.5" font-weight="600" fill="#334155">• Transactional Push Alerts &amp; Email Notifications</text>
+
+    <!-- Card: Admin Outputs -->
+    <rect x="1060" y="340" width="370" height="150" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="1075" y="365" font-size="13" font-weight="800" fill="#15803d">2. Admin &amp; Management Outputs</text>
+    <text x="1075" y="390" font-size="11.5" font-weight="600" fill="#334155">• Real-Time Operational Dashboard with KPIs</text>
+    <text x="1075" y="410" font-size="11.5" font-weight="600" fill="#334155">• Financial Revenue &amp; Collection Breakdown</text>
+    <text x="1075" y="430" font-size="11.5" font-weight="600" fill="#334155">• Attendance Traffic &amp; Peak Hour Heatmaps</text>
+    <text x="1075" y="450" font-size="11.5" font-weight="600" fill="#334155">• Active, Expired, and Pending Member Rosters</text>
+    <text x="1075" y="470" font-size="11.5" font-weight="600" fill="#334155">• Exported PDF / CSV Formal Audit Reports</text>
+
+    <!-- Card: System Outputs -->
+    <rect x="1060" y="510" width="370" height="150" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="1075" y="535" font-size="13" font-weight="800" fill="#15803d">3. Database &amp; System Outputs</text>
+    <text x="1075" y="560" font-size="11.5" font-weight="600" fill="#334155">• Synchronized 14-Table Relational Database</text>
+    <text x="1075" y="580" font-size="11.5" font-weight="600" fill="#334155">• Immutable System Audit Trails (`activity_logs`)</text>
+    <text x="1075" y="600" font-size="11.5" font-weight="600" fill="#334155">• Automated Daily Database Backup Archives (.sql)</text>
+    <text x="1075" y="620" font-size="11.5" font-weight="600" fill="#334155">• PayMongo Transaction State Confirmation</text>
+    <text x="1075" y="640" font-size="11.5" font-weight="600" fill="#334155">• Android APK Distribution Binary</text>
+
+    <!-- Card: Kiosk Outputs -->
+    <rect x="1060" y="680" width="370" height="120" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="1075" y="705" font-size="13" font-weight="800" fill="#15803d">4. Attendance Terminal Feedback</text>
+    <text x="1075" y="730" font-size="11.5" font-weight="600" fill="#334155">• Visual Audio-Visual Green 'ACCESS GRANTED' Modal</text>
+    <text x="1075" y="750" font-size="11.5" font-weight="600" fill="#334155">• Red 'ACCESS DENIED / EXPIRED' Alert Display</text>
+    <text x="1075" y="770" font-size="11.5" font-weight="600" fill="#334155">• Instant Welcome Audio Beep &amp; Time Log Entry</text>
+  </g>
+
+  <!-- Connectors: Input to Process -->
+  <path d="M 460 460 L 540 460" stroke="#0f172a" stroke-width="2.5" fill="none" marker-end="url(#ipo-arrow)"/>
+  <!-- Connectors: Process to Output -->
+  <path d="M 955 460 L 1035 460" stroke="#0f172a" stroke-width="2.5" fill="none" marker-end="url(#ipo-arrow)"/>
+
+  <!-- ================================================================= -->
+  <!-- FEEDBACK LOOP (BOTTOM)                                            -->
+  <!-- ================================================================= -->
+  <g stroke="#dc2626" stroke-width="2" fill="none" stroke-dasharray="6,4">
+    <path d="M 1245 820 L 1245 890 L 255 890 L 255 825" marker-end="url(#ipo-arrow)"/>
+  </g>
+  <rect x="620" y="870" width="260" height="40" rx="6" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="750" y="895" text-anchor="middle" font-size="12" font-weight="800" fill="#991b1b">🔄 SYSTEM FEEDBACK &amp; CONTROL LOOP</text>
+
+  <!-- Footer Banner -->
+  <rect x="0" y="945" width="1500" height="55" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="750" y="978" text-anchor="middle" font-size="12" font-weight="700" fill="#475569">PALMA'S ELITE GYM IPO FRAMEWORK • COMPLETE INPUT-PROCESS-OUTPUT-FEEDBACK ACADEMIC &amp; ENGINEERING MODEL</text>
+</svg>

@@ -1,0 +1,164 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1100" width="100%" height="100%" style="background:#ffffff; font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <filter id="uc-shadow" x="-4%" y="-4%" width="108%" height="110%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Header Banner -->
+  <rect x="0" y="0" width="1500" height="70" fill="#0f172a"/>
+  <text x="750" y="34" text-anchor="middle" font-size="20" font-weight="800" fill="#ffffff" letter-spacing="1">PALMA'S ELITE GYM — UML USE CASE DIAGRAM</text>
+  <text x="750" y="55" text-anchor="middle" font-size="12" font-weight="600" fill="#94a3b8">Standard UML 2.5 Notation | Member Actor • Admin / Staff Actor • Automated System Cron Actor</text>
+
+  <!-- System Boundary Box -->
+  <rect x="360" y="90" width="780" height="980" rx="16" fill="#f8fafc" stroke="#0f172a" stroke-width="2.5" filter="url(#uc-shadow)"/>
+  <rect x="360" y="90" width="780" height="40" rx="16" fill="#0f172a"/>
+  <rect x="360" y="110" width="780" height="20" fill="#0f172a"/>
+  <text x="750" y="118" text-anchor="middle" font-size="14" font-weight="800" fill="#ffffff">SYSTEM BOUNDARY: PALMA'S ELITE GYM MANAGEMENT SYSTEM</text>
+
+  <!-- ================================================================= -->
+  <!-- ACTOR 1: MEMBER (LEFT)                                            -->
+  <!-- ================================================================= -->
+  <g id="actor-member">
+    <!-- Stick Figure -->
+    <circle cx="160" cy="300" r="28" fill="#ffffff" stroke="#2563eb" stroke-width="3.5"/>
+    <line x1="160" y1="328" x2="160" y2="420" stroke="#2563eb" stroke-width="3.5"/>
+    <line x1="110" y1="360" x2="210" y2="360" stroke="#2563eb" stroke-width="3.5"/>
+    <line x1="160" y1="420" x2="120" y2="500" stroke="#2563eb" stroke-width="3.5"/>
+    <line x1="160" y1="420" x2="200" y2="500" stroke="#2563eb" stroke-width="3.5"/>
+    
+    <text x="160" y="535" text-anchor="middle" font-size="17" font-weight="800" fill="#1e40af">MEMBER</text>
+    <text x="160" y="555" text-anchor="middle" font-size="11.5" font-weight="600" fill="#64748b">(Web Portal &amp; Mobile App)</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- ACTOR 2: ADMIN / STAFF (RIGHT)                                    -->
+  <!-- ================================================================= -->
+  <g id="actor-admin">
+    <!-- Stick Figure -->
+    <circle cx="1340" cy="300" r="28" fill="#ffffff" stroke="#dc2626" stroke-width="3.5"/>
+    <line x1="1340" y1="328" x2="1340" y2="420" stroke="#dc2626" stroke-width="3.5"/>
+    <line x1="1290" y1="360" x2="1390" y2="360" stroke="#dc2626" stroke-width="3.5"/>
+    <line x1="1340" y1="420" x2="1300" y2="500" stroke="#dc2626" stroke-width="3.5"/>
+    <line x1="1340" y1="420" x2="1380" y2="500" stroke="#dc2626" stroke-width="3.5"/>
+    
+    <text x="1340" y="535" text-anchor="middle" font-size="17" font-weight="800" fill="#991b1b">ADMIN / STAFF</text>
+    <text x="1340" y="555" text-anchor="middle" font-size="11.5" font-weight="600" fill="#64748b">(Web Admin Panel)</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- ACTOR 3: CRON / SYSTEM SCHEDULER (BOTTOM LEFT)                    -->
+  <!-- ================================================================= -->
+  <g id="actor-cron">
+    <circle cx="160" cy="800" r="28" fill="#ffffff" stroke="#7c3aed" stroke-width="3.5"/>
+    <line x1="160" y1="828" x2="160" y2="900" stroke="#7c3aed" stroke-width="3.5"/>
+    <line x1="120" y1="855" x2="200" y2="855" stroke="#7c3aed" stroke-width="3.5"/>
+    <line x1="160" y1="900" x2="130" y2="970" stroke="#7c3aed" stroke-width="3.5"/>
+    <line x1="160" y1="900" x2="190" y2="970" stroke="#7c3aed" stroke-width="3.5"/>
+    
+    <text x="160" y="1005" text-anchor="middle" font-size="16" font-weight="800" fill="#5b21b6">SYSTEM CRON</text>
+    <text x="160" y="1025" text-anchor="middle" font-size="11.5" font-weight="600" fill="#64748b">(Automated Scheduler)</text>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- USE CASE OVALS (CENTER)                                           -->
+  <!-- ================================================================= -->
+  <!-- UC 1: Self-Registration & Setup -->
+  <ellipse cx="540" cy="175" rx="130" ry="32" fill="#ffffff" stroke="#2563eb" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="540" y="180" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Self-Register &amp; Setup Password</text>
+
+  <!-- UC 2: Login & Google OAuth -->
+  <ellipse cx="540" cy="255" rx="130" ry="32" fill="#ffffff" stroke="#2563eb" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="540" y="260" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Login (Credentials / Google OAuth)</text>
+
+  <!-- UC 3: View Dynamic QR Pass -->
+  <ellipse cx="540" cy="335" rx="130" ry="32" fill="#ffffff" stroke="#2563eb" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="540" y="340" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">View Dynamic QR Pass / ID</text>
+
+  <!-- UC 4: Pay Online via PayMongo -->
+  <ellipse cx="540" cy="415" rx="130" ry="32" fill="#ffffff" stroke="#2563eb" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="540" y="420" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Pay Online (PayMongo GCash/Maya)</text>
+
+  <!-- UC 5: Request Plan Renewal -->
+  <ellipse cx="540" cy="495" rx="130" ry="32" fill="#ffffff" stroke="#2563eb" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="540" y="500" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Request Membership Renewal</text>
+
+  <!-- UC 6: View Notifications & History -->
+  <ellipse cx="540" cy="575" rx="130" ry="32" fill="#ffffff" stroke="#2563eb" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="540" y="580" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">View Notifications &amp; Attendance</text>
+
+  <!-- UC 7: Scan QR & Log Attendance -->
+  <ellipse cx="950" cy="175" rx="135" ry="32" fill="#ffffff" stroke="#dc2626" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="950" y="180" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Scan QR Code &amp; Log Attendance</text>
+
+  <!-- UC 8: Approve Pending Registrations -->
+  <ellipse cx="950" cy="255" rx="135" ry="32" fill="#ffffff" stroke="#dc2626" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="950" y="260" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Approve / Reject Registrations</text>
+
+  <!-- UC 9: Manage Members & Subscriptions -->
+  <ellipse cx="950" cy="335" rx="135" ry="32" fill="#ffffff" stroke="#dc2626" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="950" y="340" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Manage Members &amp; Subscriptions</text>
+
+  <!-- UC 10: Record Cash Payments & POS -->
+  <ellipse cx="950" cy="415" rx="135" ry="32" fill="#ffffff" stroke="#dc2626" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="950" y="420" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Record Cash Payments &amp; Issues</text>
+
+  <!-- UC 11: Configure Membership Plans -->
+  <ellipse cx="950" cy="495" rx="135" ry="32" fill="#ffffff" stroke="#dc2626" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="950" y="500" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Configure Plans &amp; Pricing Tiers</text>
+
+  <!-- UC 12: Generate Reports & Export Data -->
+  <ellipse cx="950" cy="575" rx="135" ry="32" fill="#ffffff" stroke="#dc2626" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="950" y="580" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Generate Reports (Financial/PDF)</text>
+
+  <!-- UC 13: View Activity Logs & System Health -->
+  <ellipse cx="950" cy="655" rx="135" ry="32" fill="#ffffff" stroke="#dc2626" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="950" y="660" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">View Audit Logs &amp; Create Backup</text>
+
+  <!-- UC 14: Automated Auto-Expiration -->
+  <ellipse cx="540" cy="780" rx="135" ry="32" fill="#ffffff" stroke="#7c3aed" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="540" y="785" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Auto-Expire Overdue Subscriptions</text>
+
+  <!-- UC 15: Automated Expiry Alert Dispatch -->
+  <ellipse cx="540" cy="860" rx="135" ry="32" fill="#ffffff" stroke="#7c3aed" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="540" y="865" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Dispatch Expiry Email &amp; Push Alerts</text>
+
+  <!-- UC 16: Security Rate-Limiting Purge -->
+  <ellipse cx="540" cy="940" rx="135" ry="32" fill="#ffffff" stroke="#7c3aed" stroke-width="2" filter="url(#uc-shadow)"/>
+  <text x="540" y="945" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Clean Expired Sessions &amp; Rate Limits</text>
+
+  <!-- ================================================================= -->
+  <!-- ACTOR ASSOCIATIONS (LINES)                                        -->
+  <!-- ================================================================= -->
+  <!-- Member Lines -->
+  <g stroke="#2563eb" stroke-width="1.8" fill="none">
+    <line x1="210" y1="360" x2="410" y2="175"/>
+    <line x1="210" y1="360" x2="410" y2="255"/>
+    <line x1="210" y1="360" x2="410" y2="335"/>
+    <line x1="210" y1="360" x2="410" y2="415"/>
+    <line x1="210" y1="360" x2="410" y2="495"/>
+    <line x1="210" y1="360" x2="410" y2="575"/>
+  </g>
+
+  <!-- Admin Lines -->
+  <g stroke="#dc2626" stroke-width="1.8" fill="none">
+    <line x1="1290" y1="360" x2="1085" y2="175"/>
+    <line x1="1290" y1="360" x2="1085" y2="255"/>
+    <line x1="1290" y1="360" x2="1085" y2="335"/>
+    <line x1="1290" y1="360" x2="1085" y2="415"/>
+    <line x1="1290" y1="360" x2="1085" y2="495"/>
+    <line x1="1290" y1="360" x2="1085" y2="575"/>
+    <line x1="1290" y1="360" x2="1085" y2="655"/>
+  </g>
+
+  <!-- Cron Lines -->
+  <g stroke="#7c3aed" stroke-width="1.8" fill="none">
+    <line x1="200" y1="855" x2="405" y2="780"/>
+    <line x1="200" y1="855" x2="405" y2="860"/>
+    <line x1="200" y1="855" x2="405" y2="940"/>
+  </g>
+
+  <!-- Footer Banner -->
+  <rect x="0" y="1050" width="1500" height="50" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="750" y="1080" text-anchor="middle" font-size="12" font-weight="700" fill="#475569">UML 2.5 USE CASE SPECIFICATION • FULL COVERAGE OF MEMBER PORTAL, MOBILE APP, ADMIN &amp; BACKGROUND WORKERS</text>
+</svg>
