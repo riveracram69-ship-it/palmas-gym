@@ -157,9 +157,25 @@ try {
         $stmt_top_all = $pdo->query(sprintf($leaderboard_sql, "1=1"));
         $top_active_all = $stmt_top_all ? $stmt_top_all->fetchAll(PDO::FETCH_ASSOC) : [];
 
-        // Available Months with Check-ins (for Dynamic Month Selector)
-        $stmt_months = $pdo->query("SELECT DISTINCT DATE_FORMAT(date, '%Y-%m') as ym, DATE_FORMAT(date, '%M %Y') as ym_label FROM attendance WHERE date IS NOT NULL ORDER BY ym DESC LIMIT 24");
-        $available_attendance_months = $stmt_months ? $stmt_months->fetchAll(PDO::FETCH_ASSOC) : [];
+        // Dynamic Month Selector Options (All 12 months for current year + previous year)
+        $current_year = intval(date('Y'));
+        $months_current_year = [];
+        for ($m = 12; $m >= 1; $m--) {
+            $ym = sprintf('%04d-%02d', $current_year, $m);
+            $months_current_year[] = [
+                'ym' => $ym,
+                'ym_label' => date('F Y', strtotime($ym . '-01'))
+            ];
+        }
+
+        $months_prev_year = [];
+        for ($m = 12; $m >= 1; $m--) {
+            $ym = sprintf('%04d-%02d', $current_year - 1, $m);
+            $months_prev_year[] = [
+                'ym' => $ym,
+                'ym_label' => date('F Y', strtotime($ym . '-01'))
+            ];
+        }
 
         // ── 5. Server-side Pre-rendered Live Activity Feed ──────────────────────
         $server_live_feed = [];
@@ -884,15 +900,16 @@ try {
                                     <option value="this_week">⚡ This Week</option>
                                     <option value="all_time">👑 All-Time History</option>
                                 </optgroup>
-                                <?php if (!empty($available_attendance_months)): ?>
-                                <optgroup label="Select Specific Month">
-                                    <?php foreach ($available_attendance_months as $m_opt): 
-                                        if ($m_opt['ym'] === date('Y-m') || $m_opt['ym'] === date('Y-m', strtotime('-1 month'))) continue;
-                                    ?>
+                                <optgroup label="Select Month (<?php echo $current_year; ?>)">
+                                    <?php foreach ($months_current_year as $m_opt): ?>
                                         <option value="<?php echo $m_opt['ym']; ?>">🗓️ <?php echo htmlspecialchars($m_opt['ym_label']); ?></option>
                                     <?php endforeach; ?>
                                 </optgroup>
-                                <?php endif; ?>
+                                <optgroup label="Select Month (<?php echo $current_year - 1; ?>)">
+                                    <?php foreach ($months_prev_year as $m_opt): ?>
+                                        <option value="<?php echo $m_opt['ym']; ?>">🗓️ <?php echo htmlspecialchars($m_opt['ym_label']); ?></option>
+                                    <?php endforeach; ?>
+                                </optgroup>
                             </select>
                         </div>
                         
