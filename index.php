@@ -511,7 +511,7 @@ try {
                                 <th>Member</th>
                                 <th>Expired Date</th>
                                 <th>Plan</th>
-                                <th style="text-align:right;">Follow-up &amp; Actions</th>
+                                <th style="text-align:right;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="overdue-tbody">
@@ -539,15 +539,6 @@ try {
                                     $od_badge_style = 'background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;';
                                     $od_label = "🔴 {$days}d ago (Lapsed)";
                                 }
-
-                                $phone_clean = preg_replace('/[^0-9]/', '', $od['contact_number'] ?? '');
-                                $wa_phone = $phone_clean;
-                                if (str_starts_with($phone_clean, '09')) {
-                                    $wa_phone = '63' . substr($phone_clean, 1);
-                                }
-                                $gym_name_str = htmlspecialchars($app_settings['gym_name'] ?? "Palma's Elite Gym");
-                                $portal_url_str = defined('APP_URL') ? APP_URL . '/member/login.php' : 'https://palmas-gym.onrender.com/member/login.php';
-                                $followup_msg = "Hi {$od['full_name']}! Kumusta po mula sa {$gym_name_str}. Pinaaalala lang po namin na ang inyong {$od['plan_name']} ay nag-expire noong " . date('M d, Y', strtotime($od['expiry_date'])) . ". Pwede po kayong mag-renew sa gym o mag-renew online dito: {$portal_url_str}";
                             ?>
                             <tr class="od-row" id="od-row-<?php echo $od['id']; ?>" data-type="<?php echo $is_daily ? 'daily' : 'regular'; ?>">
                                 <td>
@@ -566,7 +557,7 @@ try {
                                             <div style="font-size:0.72rem; color:var(--text-muted); font-family:monospace;">
                                                 <?php echo htmlspecialchars($od['membership_id']); ?>
                                                 <?php if (!empty($od['contact_number'])): ?>
-                                                    • <a href="tel:<?php echo htmlspecialchars($phone_clean); ?>" style="color:var(--accent); text-decoration:none;" title="Call member"><i class="fas fa-phone" style="font-size:0.65rem;"></i> <?php echo htmlspecialchars($od['contact_number']); ?></a>
+                                                    • <?php echo htmlspecialchars($od['contact_number']); ?>
                                                 <?php endif; ?>
                                             </div>
                                         </div>
@@ -591,40 +582,24 @@ try {
                                     </div>
                                 </td>
                                 <td style="text-align:right;">
-                                    <div style="display:inline-flex; align-items:center; gap:5px; flex-wrap:wrap; justify-content:flex-end;">
-                                        <!-- Quick Renew Button -->
-                                        <button type="button" class="btn btn-primary btn-sm" 
-                                                onclick="openQuickRenewModal(<?php echo $od['id']; ?>, '<?php echo htmlspecialchars(addslashes($od['full_name'])); ?>', '<?php echo htmlspecialchars(addslashes($od['membership_id'])); ?>', <?php echo (int)($od['plan_id'] ?? 0); ?>, <?php echo floatval($od['plan_price'] ?? 0); ?>)" 
-                                                style="padding:0.3rem 0.65rem; font-size:0.75rem; font-weight:700; display:inline-flex; align-items:center; gap:4px; border-radius:7px;" 
-                                                title="Quick Cash Renewal">
-                                            <i class="fas fa-arrows-rotate"></i> Renew
-                                        </button>
-
+                                    <div style="display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
                                         <!-- Email Reminder Button -->
                                         <?php if (!empty($od['email'])): ?>
                                         <button type="button" class="btn btn-outline btn-sm" 
                                                 onclick="sendRenewalReminder(<?php echo $od['id']; ?>, '<?php echo htmlspecialchars(addslashes($od['full_name'])); ?>', this)" 
-                                                style="padding:0.3rem 0.55rem; font-size:0.75rem; color:#0284c7; border-color:#bae6fd; background:#f0f9ff; border-radius:7px;" 
-                                                title="Send Email Renewal Reminder">
-                                            <i class="fas fa-envelope"></i>
+                                                style="padding:0.32rem 0.65rem; font-size:0.75rem; color:#0284c7; border-color:#bae6fd; background:#f0f9ff; border-radius:7px; font-weight:600; display:inline-flex; align-items:center; gap:4px;" 
+                                                title="Send Renewal Reminder Email">
+                                            <i class="fas fa-envelope"></i> Email Notif
                                         </button>
                                         <?php endif; ?>
 
-                                        <!-- SMS / WhatsApp Link -->
-                                        <?php if (!empty($phone_clean)): ?>
-                                        <a href="sms:<?php echo htmlspecialchars($phone_clean); ?>?body=<?php echo rawurlencode($followup_msg); ?>" 
-                                           class="btn btn-outline btn-sm" 
-                                           style="padding:0.3rem 0.55rem; font-size:0.75rem; color:#16a34a; border-color:#bbf7d0; background:#f0fdf4; border-radius:7px; text-decoration:none;" 
-                                           title="Send SMS / Text Message" target="_blank">
-                                            <i class="fas fa-comment-dots"></i>
-                                        </a>
-                                        <a href="https://wa.me/<?php echo htmlspecialchars($wa_phone); ?>?text=<?php echo rawurlencode($followup_msg); ?>" 
-                                           class="btn btn-outline btn-sm" 
-                                           style="padding:0.3rem 0.55rem; font-size:0.75rem; color:#059669; border-color:#a7f3d0; background:#ecfdf5; border-radius:7px; text-decoration:none;" 
-                                           title="Send WhatsApp / Viber Message" target="_blank">
-                                            <i class="fab fa-whatsapp"></i>
-                                        </a>
-                                        <?php endif; ?>
+                                        <!-- Quick Renew Button -->
+                                        <button type="button" class="btn btn-primary btn-sm" 
+                                                onclick="openQuickRenewModal(<?php echo $od['id']; ?>, '<?php echo htmlspecialchars(addslashes($od['full_name'])); ?>', '<?php echo htmlspecialchars(addslashes($od['membership_id'])); ?>', <?php echo (int)($od['plan_id'] ?? 0); ?>, <?php echo floatval($od['plan_price'] ?? 0); ?>)" 
+                                                style="padding:0.32rem 0.75rem; font-size:0.75rem; font-weight:700; display:inline-flex; align-items:center; gap:4px; border-radius:7px;" 
+                                                title="Quick Renewal">
+                                            <i class="fas fa-arrows-rotate"></i> Renew
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
