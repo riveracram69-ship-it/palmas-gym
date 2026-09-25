@@ -98,8 +98,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $validation_errors[] = "Date of birth cannot be in the future.";
         }
     }
-    if ($age !== null && ($age < 5 || $age > 120)) {
-        $validation_errors[] = "Age must be between 5 and 120.";
+    if ($age === null || $age < 15 || $age > 120) {
+        $validation_errors[] = "Age must be between 15 and 120. Members must be at least 15 years old.";
     }
     if (empty($plan_id)) {
         $validation_errors[] = "Please select a membership plan.";

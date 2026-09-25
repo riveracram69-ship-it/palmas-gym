@@ -114,6 +114,19 @@ if (!preg_match('/^09[0-9]{9}$/', $contact_number)) {
     exit;
 }
 
+// Date of Birth & Age validation (Must be at least 15 years old for gym membership)
+if (!empty($dob)) {
+    $dob_ts = strtotime($dob);
+    if ($dob_ts === false || $dob_ts > time()) {
+        echo json_encode(['success' => false, 'message' => 'Date of birth cannot be in the future.']);
+        exit;
+    }
+}
+if ($age === null || $age < 15 || $age > 120) {
+    echo json_encode(['success' => false, 'message' => 'Members must be at least 15 years old to register for a gym membership.']);
+    exit;
+}
+
 // Address validation
 if (empty($address) && empty($municipality)) {
     echo json_encode(['success' => false, 'message' => 'Home address is required.']);

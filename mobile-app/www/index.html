@@ -2787,7 +2787,7 @@
       <div class="wizard-header">
         <div class="wizard-header-inner">
           <div style="display:flex; align-items:center; justify-content:space-between;">
-            <button onclick="cancelRegistration()" style="background:none; border:none; color: var(--gym-light); font-size:1.1rem; cursor:pointer; padding:8px;">
+            <button type="button" id="reg-wizard-top-back-btn" onclick="handleWizardTopBack()" style="background:none; border:none; color: var(--gym-light); font-size:1.1rem; cursor:pointer; padding:8px;" title="Go Back">
               <i class="fa-solid fa-arrow-left"></i>
             </button>
             <h3 style="font-weight:800; color:#fff; margin:0; font-size:1.15rem;" id="wizard-title">Create Membership</h3>
@@ -3006,6 +3006,10 @@
             <div style="font-size:0.75rem; color:var(--gym-muted); margin-top:5px; display:flex; justify-content:space-between; align-items:center;">
               <span>Tap bar for visual calendar or use dropdowns</span>
             </div>
+            <div style="font-size:0.75rem; color:var(--gym-muted); margin-top:4px;">
+              <i class="fa-solid fa-shield-halved" style="color:var(--primary); font-size:0.75rem; margin-right:2px;"></i>
+              Gym safety rule: Members must be at least 15 years old to register.
+            </div>
           </div>
 
           <div class="form-group" style="margin-bottom:20px;">
@@ -3025,47 +3029,92 @@
           </button>
         </div>
 
-        <!-- STEP 4: Residential Address (Clean 1-column mobile sequence) -->
+        <!-- STEP 4: Residential Address (Interactive Mobile Cascading Dropdowns) -->
         <div id="reg-step-4" style="display:none;">
           <div style="margin-bottom:16px;">
             <h4 style="color:#fff; font-size:1.1rem; font-weight:800; margin:0 0 4px;">Residential Address</h4>
-            <p style="color:var(--gym-muted); font-size:0.8rem; margin:0;">Enter your home location for membership records.</p>
+            <p style="color:var(--gym-muted); font-size:0.8rem; margin:0;">Select your home province, city/municipality, and barangay.</p>
           </div>
 
-          <div class="form-group">
-            <label>House No. / Street <span style="font-size:0.75rem; color:var(--gym-muted);">(Optional)</span></label>
-            <div class="input-field-wrap">
-              <i class="fa-solid fa-house" style="color: var(--gym-light); font-size:0.85rem;"></i>
-              <input type="text" id="reg-house-street" placeholder="e.g. 123 Rizal St." autocomplete="address-line1" />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Barangay *</label>
-            <div class="input-field-wrap">
-              <i class="fa-solid fa-map-pin" style="color: var(--gym-light); font-size:0.85rem;"></i>
-              <input type="text" id="reg-barangay" placeholder="e.g. Poblacion" />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Municipality / City *</label>
-            <div class="input-field-wrap">
-              <i class="fa-solid fa-city" style="color: var(--gym-light); font-size:0.85rem;"></i>
-              <input type="text" id="reg-municipality" placeholder="e.g. Talavera" autocomplete="address-level2" />
-            </div>
-          </div>
-
+          <!-- Province Dropdown -->
           <div class="form-group">
             <label>Province *</label>
             <div class="input-field-wrap">
               <i class="fa-solid fa-map" style="color: var(--gym-light); font-size:0.85rem;"></i>
-              <input type="text" id="reg-province" placeholder="e.g. Nueva Ecija" autocomplete="address-level1" />
+              <select id="reg-province" onchange="handleRegProvinceChange(this.value)" style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;">
+                <option value="Nueva Ecija" selected style="background:#0b261a; color:#fff;">Nueva Ecija (Default)</option>
+                <option value="Metro Manila / NCR" style="background:#0b261a; color:#fff;">Metro Manila / NCR</option>
+                <option value="Aurora" style="background:#0b261a; color:#fff;">Aurora</option>
+                <option value="Bataan" style="background:#0b261a; color:#fff;">Bataan</option>
+                <option value="Bulacan" style="background:#0b261a; color:#fff;">Bulacan</option>
+                <option value="Pampanga" style="background:#0b261a; color:#fff;">Pampanga</option>
+                <option value="Tarlac" style="background:#0b261a; color:#fff;">Tarlac</option>
+                <option value="Zambales" style="background:#0b261a; color:#fff;">Zambales</option>
+                <option value="Pangasinan" style="background:#0b261a; color:#fff;">Pangasinan</option>
+                <option value="Batangas" style="background:#0b261a; color:#fff;">Batangas</option>
+                <option value="Cavite" style="background:#0b261a; color:#fff;">Cavite</option>
+                <option value="Laguna" style="background:#0b261a; color:#fff;">Laguna</option>
+                <option value="Rizal" style="background:#0b261a; color:#fff;">Rizal</option>
+                <option value="Quezon" style="background:#0b261a; color:#fff;">Quezon</option>
+                <option value="OTHER" style="background:#0b261a; color:#fff;">Other Province (Type Manually)</option>
+              </select>
             </div>
           </div>
 
+          <div id="reg-province-custom-wrap" class="form-group" style="display:none;">
+            <label>Specify Province *</label>
+            <div class="input-field-wrap">
+              <i class="fa-solid fa-pen" style="color: var(--gym-light); font-size:0.85rem;"></i>
+              <input type="text" id="reg-province-custom" placeholder="Enter your province" autocomplete="address-level1" />
+            </div>
+          </div>
+
+          <!-- Municipality / City Dropdown -->
+          <div class="form-group">
+            <label>Municipality / City *</label>
+            <div class="input-field-wrap">
+              <i class="fa-solid fa-city" style="color: var(--gym-light); font-size:0.85rem;"></i>
+              <select id="reg-municipality" onchange="handleRegMunicipalityChange(this.value)" style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;">
+                <!-- Populated dynamically via JS -->
+              </select>
+            </div>
+          </div>
+
+          <div id="reg-municipality-custom-wrap" class="form-group" style="display:none;">
+            <label>Specify Municipality / City *</label>
+            <div class="input-field-wrap">
+              <i class="fa-solid fa-pen" style="color: var(--gym-light); font-size:0.85rem;"></i>
+              <input type="text" id="reg-municipality-custom" placeholder="Enter your city/municipality" autocomplete="address-level2" />
+            </div>
+          </div>
+
+          <!-- Barangay Dropdown -->
+          <div class="form-group">
+            <label>Barangay *</label>
+            <div class="input-field-wrap" id="reg-barangay-select-wrap">
+              <i class="fa-solid fa-map-pin" style="color: var(--gym-light); font-size:0.85rem;"></i>
+              <select id="reg-barangay" onchange="handleRegBarangayChange(this.value)" style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;">
+                <!-- Populated dynamically via JS -->
+              </select>
+            </div>
+            <div class="input-field-wrap" id="reg-barangay-custom-wrap" style="display:none; margin-top:6px;">
+              <i class="fa-solid fa-pen" style="color: var(--gym-light); font-size:0.85rem;"></i>
+              <input type="text" id="reg-barangay-custom" placeholder="Enter your barangay" />
+            </div>
+          </div>
+
+          <!-- House No. / Street -->
+          <div class="form-group">
+            <label>House No. / Street / Purok <span style="font-size:0.75rem; color:var(--gym-muted);">(Optional)</span></label>
+            <div class="input-field-wrap">
+              <i class="fa-solid fa-house" style="color: var(--gym-light); font-size:0.85rem;"></i>
+              <input type="text" id="reg-house-street" placeholder="e.g. 124 Maharlika Hwy / Purok 2" autocomplete="address-line1" />
+            </div>
+          </div>
+
+          <!-- ZIP Code -->
           <div class="form-group" style="margin-bottom:20px;">
-            <label>ZIP Code <span style="font-size:0.75rem; color:var(--gym-muted);">(Optional)</span></label>
+            <label>ZIP Code <span style="font-size:0.75rem; color:var(--gym-muted);">(Auto-filled)</span></label>
             <div class="input-field-wrap">
               <i class="fa-solid fa-mail-bulk" style="color: var(--gym-light); font-size:0.85rem;"></i>
               <input type="tel" id="reg-zip-code" placeholder="3114" maxlength="10" autocomplete="postal-code" />
@@ -3080,25 +3129,35 @@
           </button>
         </div>
 
-        <!-- STEP 5: Verification Photo -->
+        <!-- STEP 5: Verification Photo (Camera & Upload Options) -->
         <div id="reg-step-5" style="display:none;">
           <div style="margin-bottom:16px; text-align:center;">
             <h4 style="color:#fff; font-size:1.1rem; font-weight:800; margin:0 0 4px;">Verification Photo</h4>
             <p style="color:var(--gym-muted); font-size:0.8rem; margin:0 0 16px;">This photo will appear on your dynamic Digital Gym Pass for front-desk entry.</p>
 
-            <div style="position:relative; width:110px; height:110px; margin:0 auto 12px; border-radius:50%; border:3px dashed var(--gym-mid); background:rgba(82,183,136,0.08); display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" onclick="triggerRegPhotoUpload()">
+            <div style="position:relative; width:110px; height:110px; margin:0 auto 12px; border-radius:50%; border:3px dashed var(--gym-mid); background:rgba(82,183,136,0.08); display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" onclick="triggerRegPhotoChooser()" title="Tap to take or choose photo">
               <i class="fa-solid fa-camera" id="reg-photo-icon" style="font-size:2.2rem; color:var(--gym-light);"></i>
               <img id="reg-photo-preview" src="" alt="Selfie" style="display:none; width:100%; height:100%; object-fit:cover;" />
               <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.65); padding:3px 0; font-size:0.65rem; color:#fff; font-weight:800; letter-spacing:0.5px;">PHOTO</div>
             </div>
+
+            <!-- Native File Inputs: Camera (capture="user") & Gallery -->
+            <input type="file" id="reg-photo-camera" accept="image/*" capture="user" style="display:none;" onchange="handleRegPhotoSelected(this)" />
+            <input type="file" id="reg-photo-gallery" accept="image/*" style="display:none;" onchange="handleRegPhotoSelected(this)" />
             <input type="file" id="reg-photo-input" accept="image/*" style="display:none;" onchange="handleRegPhotoSelected(this)" />
 
-            <div style="display:flex; gap:8px; justify-content:center; margin-bottom:14px;">
-              <button type="button" class="photo-upload-btn" onclick="triggerRegPhotoUpload()" style="padding:8px 16px; font-size:0.82rem;">
-                <i class="fa-solid fa-camera"></i> Take Selfie / Choose Photo
-              </button>
-              <button type="button" id="reg-photo-remove-btn" onclick="removeRegPhoto()" style="display:none; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; border-radius:10px; padding:8px 12px; font-size:0.8rem; cursor:pointer;">
-                <i class="fa-solid fa-trash"></i> Remove
+            <!-- Distinct Buttons: Take Selfie vs Upload File -->
+            <div style="display:flex; flex-direction:column; gap:8px; width:100%; max-width:300px; margin:0 auto 14px;">
+              <div style="display:flex; gap:8px; justify-content:center;">
+                <button type="button" class="photo-upload-btn" onclick="triggerRegPhotoCamera()" style="flex:1; padding:10px 10px; font-size:0.8rem; display:flex; align-items:center; justify-content:center; gap:6px;">
+                  <i class="fa-solid fa-camera"></i> Take Selfie
+                </button>
+                <button type="button" class="photo-upload-btn" onclick="triggerRegPhotoGallery()" style="flex:1; padding:10px 10px; font-size:0.8rem; display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(82,183,136,0.12); border-color:rgba(82,183,136,0.35);">
+                  <i class="fa-solid fa-image"></i> Upload Photo
+                </button>
+              </div>
+              <button type="button" id="reg-photo-remove-btn" onclick="removeRegPhoto()" style="display:none; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; border-radius:10px; padding:8px 12px; font-size:0.8rem; cursor:pointer; width:100%;">
+                <i class="fa-solid fa-trash"></i> Remove Photo
               </button>
             </div>
 
@@ -3637,10 +3696,17 @@
               <h4 style="color:var(--text-primary); font-size:0.82rem; text-transform:uppercase; font-weight:800; margin:0 0 12px; letter-spacing:0.5px;">
                 <i class="fa-solid fa-camera" style="color:var(--primary); margin-right:6px;"></i> Update Profile Picture
               </h4>
-              <input type="file" id="photo-file-input" accept="image/*" onchange="handlePhotoSelected(this)" />
-              <button class="photo-upload-btn" onclick="triggerPhotoUpload()">
-                <i class="fa-solid fa-upload"></i> Choose Photo / Take Selfie
-              </button>
+              <input type="file" id="photo-file-camera" accept="image/*" capture="user" style="display:none;" onchange="handlePhotoSelected(this)" />
+              <input type="file" id="photo-file-gallery" accept="image/*" style="display:none;" onchange="handlePhotoSelected(this)" />
+              <input type="file" id="photo-file-input" accept="image/*" style="display:none;" onchange="handlePhotoSelected(this)" />
+              <div style="display:flex; gap:8px; width:100%;">
+                <button type="button" class="photo-upload-btn" onclick="triggerProfilePhotoCamera()" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px;">
+                  <i class="fa-solid fa-camera"></i> Take Selfie
+                </button>
+                <button type="button" class="photo-upload-btn" onclick="triggerProfilePhotoGallery()" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(82,183,136,0.12); border-color:rgba(82,183,136,0.35);">
+                  <i class="fa-solid fa-image"></i> Upload Photo
+                </button>
+              </div>
               <div id="photo-upload-status" style="display:none; margin-top:8px; font-size:0.75rem; text-align:center;"></div>
             </div>
 
@@ -5030,17 +5096,12 @@ function handleHardwareBack() {
     }
   }
 
-  // 4. Registration wizard back/cancel
+  // 4. Registration wizard back/cancel (supports all steps 6 -> 1)
   const regScreen = document.getElementById('view-register');
   if (regScreen && regScreen.style.display !== 'none') {
-    const step2 = document.getElementById('reg-step-2');
-    const step3 = document.getElementById('reg-step-3');
-    if (step3 && step3.style.display !== 'none') {
-      goToWizardStep(2);
-      return;
-    }
-    if (step2 && step2.style.display !== 'none') {
-      goToWizardStep(1);
+    const curStep = getCurrentWizardStep();
+    if (curStep > 1) {
+      goToWizardStep(curStep - 1);
       return;
     }
     cancelRegistration();
@@ -5624,7 +5685,36 @@ function compressImageClientSide(file, maxWidth = 500, maxHeight = 500, quality 
 let regSelectedPhotoBase64 = '';
 
 function triggerRegPhotoUpload() {
-  const inp = document.getElementById('reg-photo-input');
+  const inp = document.getElementById('reg-photo-gallery') || document.getElementById('reg-photo-input');
+  if (inp) inp.click();
+}
+
+function triggerRegPhotoCamera() {
+  const inp = document.getElementById('reg-photo-camera');
+  if (inp) inp.click();
+  else triggerRegPhotoUpload();
+}
+
+function triggerRegPhotoGallery() {
+  const inp = document.getElementById('reg-photo-gallery') || document.getElementById('reg-photo-input');
+  if (inp) inp.click();
+}
+
+function triggerRegPhotoChooser() {
+  // Mobile avatar tap: invoke camera directly or gallery
+  const cam = document.getElementById('reg-photo-camera');
+  if (cam) cam.click();
+  else triggerRegPhotoUpload();
+}
+
+function triggerProfilePhotoCamera() {
+  const inp = document.getElementById('photo-file-camera');
+  if (inp) inp.click();
+  else triggerPhotoUpload();
+}
+
+function triggerProfilePhotoGallery() {
+  const inp = document.getElementById('photo-file-gallery') || document.getElementById('photo-file-input');
   if (inp) inp.click();
 }
 
@@ -5644,6 +5734,7 @@ async function handleRegPhotoSelected(input) {
 
   const prev = document.getElementById('reg-photo-preview');
   const icon = document.getElementById('reg-photo-icon');
+  const removeBtn = document.getElementById('reg-photo-remove-btn');
 
   try {
     showToast('Optimizing photo for mobile profile...', 1500);
@@ -5654,6 +5745,7 @@ async function handleRegPhotoSelected(input) {
       prev.style.display = 'block';
     }
     if (icon) icon.style.display = 'none';
+    if (removeBtn) removeBtn.style.display = 'block';
   } catch (err) {
     console.error('Photo optimization error:', err);
     showToast('Failed to process selected photo. Please try another.');
@@ -5712,6 +5804,13 @@ function openRegistrationWizard() {
   if (cpInp) cpInp.value = '';
   selectGender('');
   syncDobUIFromValue('reg', '');
+  const dobInp = document.getElementById('reg-dob');
+  if (dobInp) {
+    const maxDobDate = new Date();
+    maxDobDate.setFullYear(maxDobDate.getFullYear() - 15);
+    dobInp.max = maxDobDate.toISOString().split('T')[0];
+  }
+  initRegAddressDropdowns();
   goToWizardStep(1);
   loadPlansForRegistration();
   showScreen('view-register');
@@ -5761,12 +5860,45 @@ function openRegistrationWizardWithPrefill(prefill) {
   const cpwGroup = document.getElementById('reg-confirm-password-group');
   if (pwGroup) pwGroup.style.display = 'none';
   if (cpwGroup) cpwGroup.style.display = 'none';
+
+  const dobInp = document.getElementById('reg-dob');
+  if (dobInp) {
+    const maxDobDate = new Date();
+    maxDobDate.setFullYear(maxDobDate.getFullYear() - 15);
+    dobInp.max = maxDobDate.toISOString().split('T')[0];
+  }
+  updateRegDobAge('');
+  initRegAddressDropdowns();
+
   goToWizardStep(1);
   loadPlansForRegistration();
   showScreen('view-register');
 }
 
 function cancelRegistration() { showScreen('view-login'); }
+
+// ── STEP NAVIGATION CONTROLLERS (Supports all 6 steps smoothly) ────
+let currentWizardStep = 1;
+
+function getCurrentWizardStep() {
+  for (let s = 1; s <= 6; s++) {
+    const el = document.getElementById(`reg-step-${s}`);
+    if (el && el.style.display !== 'none') {
+      currentWizardStep = s;
+      return s;
+    }
+  }
+  return currentWizardStep || 1;
+}
+
+function handleWizardTopBack() {
+  const curStep = getCurrentWizardStep();
+  if (curStep > 1) {
+    goToWizardStep(curStep - 1);
+  } else {
+    cancelRegistration();
+  }
+}
 
 function checkRegPasswordMatch() {
   const p1 = document.getElementById('reg-password')?.value || '';
@@ -5791,15 +5923,20 @@ function removeRegPhoto() {
   regSelectedPhotoBase64 = '';
   const prev = document.getElementById('reg-photo-preview');
   const icon = document.getElementById('reg-photo-icon');
-  const input = document.getElementById('reg-photo-input');
+  const input1 = document.getElementById('reg-photo-input');
+  const input2 = document.getElementById('reg-photo-camera');
+  const input3 = document.getElementById('reg-photo-gallery');
   const removeBtn = document.getElementById('reg-photo-remove-btn');
   if (prev) { prev.src = ''; prev.style.display = 'none'; }
   if (icon) icon.style.display = 'block';
-  if (input) input.value = '';
+  if (input1) input1.value = '';
+  if (input2) input2.value = '';
+  if (input3) input3.value = '';
   if (removeBtn) removeBtn.style.display = 'none';
 }
 
 function goToWizardStep(step) {
+  currentWizardStep = step;
   const regEl = document.getElementById('view-register');
   if (regEl) {
     regEl.scrollTop = 0;
@@ -5830,10 +5967,235 @@ function goToWizardStep(step) {
     ];
     label.textContent = titles[step] || '';
   }
+  if (step === 4) {
+    initRegAddressDropdowns();
+  }
   if (step === 6) {
     loadPlansForRegistration();
     populateRegSummary();
   }
+}
+
+// ── CASCADING ADDRESS DATA & HANDLERS ──────────────────────────────
+const PHILIPPINE_ADDRESS_DATA = {
+  "Nueva Ecija": {
+    "Talavera": {
+      zip: "3114",
+      barangays: [
+        "Maestrang Kikay", "Poblacion Sur", "Poblacion Norte", "Poblacion Center",
+        "Matias", "Sampaloc", "Pag-asa", "San Pascual", "Dimasalang", "Bantug",
+        "La Torre", "Dinarayat", "Valle", "Marcos", "Pulong San Miguel", "Burnay",
+        "Esguerra", "Andal Alino", "Bacal I", "Bacal II", "Bacal III", "Bagong Silang",
+        "Baluga", "Batingan", "Bugtong na Buli", "Bulac", "Caaniplahan", "Cabubulaunan",
+        "Calipahan", "Campos", "Casulucan Este", "Collado", "Concepcion", "Culebra",
+        "Gulod", "Homestead I", "Homestead II", "Kinalanguyan", "Lomboy", "Luna",
+        "Mabuhay", "Maligaya", "Mamandil", "Minabuyoc", "Palac-palac", "Pinagpanaan",
+        "Pula", "Pulong Buri", "San Ricardo", "Sibul", "Sinasajan", "Tabacao", "Tagcheta"
+      ]
+    },
+    "Cabanatuan City": {
+      zip: "3100",
+      barangays: ["General Luna", "Sangitan", "San Josef Sur", "San Josef Norte", "Barrera", "Magsaysay", "Camp Tinio", "Bitas", "Zulueta", "Dicarma", "Valdefuente", "Mayapyap Sur", "Mayapyap Norte", "Kapitan Pepe", "San Roque", "Aduas Centro", "Aduas Norte", "Aduas Sur", "Concepcion", "Rizal", "Sumacab Este", "Sumacab Norte", "Sumacab South", "Mabini Homesite"]
+    },
+    "San Jose City": { zip: "3121", barangays: ["Abar 1st", "Abar 2nd", "Caanawan", "Calaocan", "Canuto Ramos", "Crisamar", "FE Marcos", "Malasin", "Palestina", "Pinili", "Rafael Rueda", "Santo Tomas", "Tayabo"] },
+    "Science City of Muñoz": { zip: "3119", barangays: ["Poblacion East", "Poblacion West", "Poblacion North", "Poblacion South", "Bantug", "Bical", "Catalanacan", "CLSU", "Curva", "Maligaya", "Maragol", "Palusapis", "Rang-ayan", "San Antonio", "Villa Isla", "Villa Nati", "Villa Santos"] },
+    "Gapan City": { zip: "3105", barangays: ["San Vicente", "San Lorenzo", "San Nicolas", "Santa Cruz", "Santo Cristo Norte", "Santo Cristo Sur", "Bayanihan", "Bungo", "Mahipon", "Malimba", "Mangino", "Marelo", "Pambuan", "San Roque"] },
+    "Palayan City": { zip: "3132", barangays: ["Atate", "Cabalan", "Caimito", "Doña Josefa", "Ganaderia", "Imelda Valley", "Langka", "Malate", "Manacnac", "Mapalad", "Militar", "Poblacion", "Singalat"] },
+    "Aliaga": { zip: "3111", barangays: ["Poblacion Centro", "Poblacion East I", "Poblacion East II", "Poblacion West", "Betes", "Bibiclat", "Bucot", "La Purisima", "Magsaysay", "San Carlos", "San Emiliano", "San Felipe", "San Juan", "Santa Monica", "Santo Rosario", "Sunson"] },
+    "Bongabon": { zip: "3128", barangays: ["Commercial", "Kaingin", "Magtanggol", "Manteca", "Palo Maria", "Rizal", "San Agustin", "Social", "Vega Grande"] },
+    "Cabiao": { zip: "3107", barangays: ["San Fernando Norte", "San Fernando Sur", "San Gregorio", "San Roque", "San Vicente", "Santa Ines", "Santa Rita", "Sinipit"] },
+    "Carranglan": { zip: "3123", barangays: ["General Luna", "Joson", "Poblacion", "Putlan", "Salazar", "San Agustin", "R.A. Padilla"] },
+    "Cuyapo": { zip: "3117", barangays: ["District I", "District II", "District III", "District IV", "District V", "District VI", "District VII", "District VIII"] },
+    "Gabaldon": { zip: "3131", barangays: ["North Poblacion", "South Poblacion", "Bagong Sikat", "Cuyapa", "Ligaya", "Malinao", "Pantoc", "Sawmill"] },
+    "General Mamerto Natividad": { zip: "3125", barangays: ["Poblacion", "Balangkare Norte", "Balangkare Sur", "Kabulihan", "Mataas na Kahoy", "Platero", "Pula", "Sapang"] },
+    "General Tinio": { zip: "3104", barangays: ["Poblacion Central", "Poblacion East", "Poblacion West", "Concepcion", "Padolina", "Palale", "Pias", "Rio Chico", "Sampaguita", "San Pedro"] },
+    "Guimba": { zip: "3115", barangays: ["Ayeb", "Bacayao", "Bagong Barrio", "Bantug", "Bunol", "Caballero", "Cabaruan", "Cavite", "Cawayan Bugtong", "Faigal", "Manacsac", "Pacac", "Partida 1st", "Pasong Intsik", "Saint John", "San Agustin", "San Andres", "San Bernardino", "San Marcelino", "San Miguel", "San Roque", "Santa Cruz", "Santa Lucia", "Santa Veronica", "Santo Cristo", "Saranay", "Sinulatan", "Subol", "Tampac 1st", "Tampac 2nd", "Tampac 3rd", "Triala"] },
+    "Jaen": { zip: "3109", barangays: ["Camp Look-out", "Dampulan", "Hilera", "Imbunia", "Lambakin", "Malabon-Kaingin", "Marawa", "Niyugan", "Ocampo-Rivera", "Pakul", "Pamacpacan", "Pinanggaan", "Poblacion", "San Josef", "San Pablo", "San Roque", "Santa Ines", "Santo Tomas South"] },
+    "Laur": { zip: "3129", barangays: ["Barangay I", "Barangay II", "Barangay III", "Barangay IV", "Betania", "Canantong", "Nauzon", "Pang-ol", "Pinagbayanan", "Sagana", "San Fernando", "San Isidro", "San Josep", "San Juan", "San Vicente", "Siclong"] },
+    "Licab": { zip: "3112", barangays: ["Poblacion Norte", "Poblacion Sur", "Aquino", "Linao", "San Agustin", "San Cristobal", "San Jose", "San Mateo", "Santa Maria", "Scout Ramon Albano", "Villarosa"] },
+    "Llanera": { zip: "3126", barangays: ["Bagumbayan", "Bosque", "Caridad Norte", "Caridad Sur", "Casile", "General Luna", "General Ricarte", "Mabini", "Murcon", "Platero", "Poblacion", "San Felipe", "San Francisco", "San Nicolas", "San Vicente", "Santa Barbara", "Victoria", "Villa Viniegas"] },
+    "Lupao": { zip: "3122", barangays: ["Agupalo Este", "Agupalo Weste", "Alalay Chica", "Alalay Grande", "Bagong Flores", "Balbalungao", "Burgos", "Cordero", "Namulandayan", "Parista", "Poblacion East", "Poblacion North", "Poblacion South", "Salvacion", "San Antonio Este", "San Antonio Weste", "San Isidro", "San Pedro", "San Roque", "Santo Niño 1st", "Santo Niño 2nd"] },
+    "Nampicuan": { zip: "3116", barangays: ["Cabistucuan", "Estacion", "Maeling", "Mayantoc", "Mendez", "Monic", "North Poblacion", "Recuerdo", "South Poblacion", "Tony"] },
+    "Pantabangan": { zip: "3124", barangays: ["Cadaclan", "Cambitala", "Conversion", "Fatima", "Ganduz", "Liberty", "Malbang", "Marikit", "Napngan", "Poblacion East", "Poblacion West", "Sampaloc", "San Juan", "Villarica"] },
+    "Peñaranda": { zip: "3103", barangays: ["Callos", "Las Piñas", "Poblacion I", "Poblacion II", "Poblacion III", "Poblacion IV", "San Josef", "Santo Tomas", "Santo Domingo"] },
+    "Quezon": { zip: "3113", barangays: ["Bertese", "Doña Lucia", "Dularyo", "Ilog Baliwag", "Pulong Bahay", "San Alejandro", "San Andres I", "San Andres II", "San Manuel", "San Miguel", "Santa Clara", "Santa Rita", "Santo Cristo", "Santo Tomas Feria", "San Santos"] },
+    "Rizal": { zip: "3127", barangays: ["Agupalo", "Bicos", "Cabucbucan", "Calaocan", "Canaan East", "Canaan West", "Casilagan", "General Luna", "Macapsing", "Maligaya", "Poblacion Central", "Poblacion East", "Poblacion Norte", "Poblacion Sur", "Poblacion West", "Santa Monica", "Villa Paraiso"] },
+    "San Antonio": { zip: "3108", barangays: ["Buliran", "Cama Juan", "Julo", "Lawang Kupang", "Maugat", "Panabingan", "Papaya", "Poblacion", "San Cristo", "San Francisco", "San Jose", "San Mariano", "Santa Barbara", "Santa Cruz", "Santo Cristo", "Tikiw"] },
+    "San Isidro": { zip: "3106", barangays: ["Alua", "Calaba", "Maligaya", "Mangumit", "Poblacion", "Pulo", "San Roque", "Santo Cristo", "Tabon"] },
+    "San Leonardo": { zip: "3102", barangays: ["Bonifacio", "Burgos", "Castellano", "Diversion", "Magpapalayoc", "Mallorca", "Mambangnan", "Nieva", "Rizal", "San Anton", "San Bartolome", "San Francisco", "San Roque", "Tagumpay", "Tambitan"] },
+    "Santa Rosa": { zip: "3101", barangays: ["Aguinaldo", "Berang", "Cojuangco", "Del Pilar", "Gomez", "Inspector", "La Fuente", "Liwayway", "Malinao", "Marlboro", "Poblacion", "Rajal Centro", "Rajal Norte", "Rajal Sur", "San Gregorio", "San Mariano", "San Pedro", "San Roque", "Santa Ines", "Santo Rosario", "Soledad", "Tagpos", "Valenzuela", "Zamora"] },
+    "Santo Domingo": { zip: "3133", barangays: ["Baloc", "Buasao", "Cabugao", "Casulucan", "Comitang", "Concepcion", "Dolores", "General Luna", "Hulo", "Mabini", "Malasin", "Malayantoc", "Mambarao", "Poblacion", "Pulong Buli", "Sagaba", "San Agustin", "San Fabian", "San Francisco", "San Pascual", "Santa Rita", "Santo Domingo", "Santo Rosario"] },
+    "Talugtug": { zip: "3118", barangays: ["Alula", "Baybayao", "Caballero", "Cabiangan", "Calisitan", "Cinense", "Culiat", "Maasin", "Magsaysay", "Nangabulan", "Osmeña", "Pangit", "Patola", "Poblacion", "Quezon", "Quirino", "Roxas", "Saguing", "Sampaloc", "Santa Catalina", "Santo Domingo", "Santo Niño", "Sibul", "Silao", "Taguinod", "Tandoc", "Villa Rosario", "Virgen Milagrosa"] },
+    "Zaragoza": { zip: "3110", barangays: ["Batitang", "Carmen", "Concepcion", "Del Pilar", "General Luna", "H. Romero", "Julio Montemayor", "La Paz", "Macarse", "Manaul", "Mayamot", "Pantoc", "Poblacion", "San Antonio", "San Isidro", "San Rafael", "Santa Cruz", "Santa Lucia Old", "Santa Lucia Young", "Santo Rosario Old", "Santo Rosario Young", "Valeriana"] }
+  },
+  "Metro Manila / NCR": {
+    "Quezon City": { zip: "1100", barangays: ["Diliman", "Cubao", "Commonwealth", "Novaliches", "Batasan Hills", "Loyola Heights", "Kamuning", "Project 4", "Project 6", "Project 8", "Fairview", "Tandang Sora"] },
+    "Manila": { zip: "1000", barangays: ["Sampaloc", "Tondo", "Malate", "Ermita", "Santa Cruz", "Quiapo", "San Miguel", "Paco", "Pandacan", "Santa Ana", "Binondo", "Intramuros"] },
+    "Makati City": { zip: "1200", barangays: ["Bel-Air", "Poblacion", "San Lorenzo", "Urdaneta", "Dasmariñas", "San Antonio", "Pio Del Pilar", "Bangkal", "Guadalupe Nuevo", "Guadalupe Viejo"] },
+    "Taguig City": { zip: "1630", barangays: ["BGC", "Fort Bonifacio", "Ususan", "Tuktukan", "Pinagsama", "Western Bicutan", "Signal Village", "Lower Bicutan", "Maharlika Village"] },
+    "Pasig City": { zip: "1600", barangays: ["Kapitolyo", "San Antonio", "Ugong", "Rosario", "Caniogan", "Maybunga", "Manggahan", "Pinagbuhatan", "Santolan"] },
+    "Caloocan City": { zip: "1400", barangays: ["Grace Park", "Bagong Silang", "Camarin", "Tala", "Deparo", "Caloocan South", "Caloocan North"] }
+  },
+  "Bulacan": {
+    "Malolos City": { zip: "3000", barangays: ["Catmon", "Dakila", "Guinhawa", "Liang", "Lugam", "Mojon", "Panasahan", "San Gabriel", "San Vicente", "Santo Rosario"] },
+    "San Jose del Monte": { zip: "3023", barangays: ["Tungkong Mangga", "Muzon", "Gaya-Gaya", "Graceville", "Kaypian", "Santo Cristo", "Sapang Palay"] },
+    "Baliuag": { zip: "3006", barangays: ["Bagong Nayon", "Concepcion", "Makinabang", "Poblacion", "San Jose", "Santo Cristo", "Subic", "Tanggol", "Tarcan", "Tibag", "Virgen delas Flores"] },
+    "San Ildefonso": { zip: "3010", barangays: ["Anyatam", "Garlang", "Lapnit", "Makapilapil", "Malipampang", "Matimbubong", "Pinaod", "Poblacion", "San Juan", "Sapang Putik"] },
+    "San Miguel": { zip: "3011", barangays: ["Bantog", "Bardias", "Camias", "King Kabayo", "Labne", "Poblacion", "Salangan", "San Agustin", "San Jose", "San Juan", "Santa Ines", "Santa Lucia", "Santa Rita", "Tartaro", "Tigpalas"] }
+  },
+  "Pampanga": {
+    "Angeles City": { zip: "2009", barangays: ["Balibago", "Cutcut", "Lourdes North West", "Malabañas", "Pampang", "Pulung Maragul", "Santo Domingo", "Santo Rosario"] },
+    "San Fernando City": { zip: "2000", barangays: ["Dolores", "Maimpis", "San Agustin", "San Jose", "Sindalan", "Santo Rosario", "Telabastagan"] },
+    "Mabalacat City": { zip: "2010", barangays: ["Dau", "Camachiles", "Mabiga", "Poblacion", "San Francisco", "Santa Ines", "Tabun"] }
+  },
+  "Tarlac": {
+    "Tarlac City": { zip: "2300", barangays: ["Aguso", "Baras-baras", "Binauganan", "Matatalaib", "Poblacion", "San Manuel", "San Nicolas", "San Rafael", "San Roque", "San Sebastian", "Sepung Calzada", "Tibag"] },
+    "Concepcion": { zip: "2316", barangays: ["Alfonso", "Balutu", "Café", "Corazon de Jesus", "Green Village", "Minane", "Poblacion", "San Francisco", "San Jose", "San Nicolas", "Santa Rita"] },
+    "Capas": { zip: "2315", barangays: ["Aranguren", "Cristo Rey", "Cutcut 1st", "Dolores", "Estrada", "Lawy", "Manlapig", "O'Donnell", "Poblacion", "Santa Rita"] },
+    "Victoria": { zip: "2313", barangays: ["Bacabac", "Balayang", "Bangar", "Bantog", "Canal", "Cruz", "Maluid", "Palacpalac", "Poblacion I", "Poblacion II", "San Agustin", "San Andres", "San Fernando", "San Francisco", "San Gavino", "San Jacinto", "San Nicolas", "San Vicente", "Santa Barbara"] },
+    "La Paz": { zip: "2314", barangays: ["Balbalungao", "Bannuar", "Caramutan", "Caut", "Comillas", "Dumarais", "Guevara", "Kapanikian", "La Purisima", "Lara", "Macalong", "Matindeg", "Paludpud", "Rizal", "San Isidro", "San Manuel", "San Roque", "Sierra"] }
+  },
+  "Pangasinan": {
+    "Dagupan City": { zip: "2400", barangays: ["Bonuan Boquig", "Bonuan Gueset", "Downtown", "Lucao", "Mayombo", "Pantalan", "Poblacion Oeste", "Tapuac"] },
+    "Urdaneta City": { zip: "2428", barangays: ["Anonas", "Bactad East", "Camantiles", "Catablan", "Cayambanan", "Nancayasan", "Pinmaludpod", "Poblacion", "San Jose", "San Vicente"] },
+    "San Carlos City": { zip: "2420", barangays: ["Agdao", "Balite Sur", "Bani", "Capaoay", "Coliling", "Ilang", "Mabanogbog", "Palaris", "Poblacion", "Rizal", "Talence"] }
+  }
+};
+
+let isRegAddressInitialized = false;
+
+function initRegAddressDropdowns() {
+  const provEl = document.getElementById('reg-province');
+  if (!provEl) return;
+  if (!provEl.value) {
+    provEl.value = 'Nueva Ecija';
+  }
+  handleRegProvinceChange(provEl.value || 'Nueva Ecija', true);
+  isRegAddressInitialized = true;
+}
+
+function handleRegProvinceChange(provVal, isInitial = false) {
+  const provCustomWrap = document.getElementById('reg-province-custom-wrap');
+  const muniEl = document.getElementById('reg-municipality');
+  const muniCustomWrap = document.getElementById('reg-municipality-custom-wrap');
+  const brgySelectWrap = document.getElementById('reg-barangay-select-wrap');
+  const brgyCustomWrap = document.getElementById('reg-barangay-custom-wrap');
+  const zipEl = document.getElementById('reg-zip-code');
+
+  if (provVal === 'OTHER') {
+    if (provCustomWrap) provCustomWrap.style.display = 'block';
+    if (muniEl) {
+      muniEl.innerHTML = '<option value="OTHER" selected style="background:#0b261a; color:#fff;">Other (Type Manually)</option>';
+    }
+    if (muniCustomWrap) muniCustomWrap.style.display = 'block';
+    if (brgySelectWrap) brgySelectWrap.style.display = 'none';
+    if (brgyCustomWrap) brgyCustomWrap.style.display = 'block';
+    if (zipEl && !isInitial) zipEl.value = '';
+    return;
+  }
+
+  if (provCustomWrap) provCustomWrap.style.display = 'none';
+
+  const provinceData = PHILIPPINE_ADDRESS_DATA[provVal];
+  if (provinceData && muniEl) {
+    const munis = Object.keys(provinceData);
+    let optionsHtml = '';
+    munis.forEach(m => {
+      const isSel = (provVal === 'Nueva Ecija' && m === 'Talavera') ? 'selected' : '';
+      optionsHtml += `<option value="${m}" ${isSel} style="background:#0b261a; color:#fff;">${m}</option>`;
+    });
+    optionsHtml += '<option value="OTHER" style="background:#0b261a; color:#fff;">Other City/Municipality (Type Manually)</option>';
+    muniEl.innerHTML = optionsHtml;
+    const defaultMuni = (provVal === 'Nueva Ecija') ? 'Talavera' : (munis[0] || 'OTHER');
+    muniEl.value = defaultMuni;
+    handleRegMunicipalityChange(defaultMuni, isInitial);
+  } else if (muniEl) {
+    muniEl.innerHTML = '<option value="OTHER" selected style="background:#0b261a; color:#fff;">Other City/Municipality</option>';
+    handleRegMunicipalityChange('OTHER', isInitial);
+  }
+}
+
+function handleRegMunicipalityChange(muniVal, isInitial = false) {
+  const provEl = document.getElementById('reg-province');
+  const provVal = provEl ? provEl.value : 'Nueva Ecija';
+  const muniCustomWrap = document.getElementById('reg-municipality-custom-wrap');
+  const brgyEl = document.getElementById('reg-barangay');
+  const brgySelectWrap = document.getElementById('reg-barangay-select-wrap');
+  const brgyCustomWrap = document.getElementById('reg-barangay-custom-wrap');
+  const zipEl = document.getElementById('reg-zip-code');
+
+  if (muniVal === 'OTHER') {
+    if (muniCustomWrap) muniCustomWrap.style.display = 'block';
+    if (brgySelectWrap) brgySelectWrap.style.display = 'none';
+    if (brgyCustomWrap) brgyCustomWrap.style.display = 'block';
+    if (zipEl && !isInitial) zipEl.value = '';
+    return;
+  }
+
+  if (muniCustomWrap) muniCustomWrap.style.display = 'none';
+
+  const provData = PHILIPPINE_ADDRESS_DATA[provVal];
+  const muniData = provData ? provData[muniVal] : null;
+
+  if (muniData) {
+    if (zipEl && muniData.zip) {
+      zipEl.value = muniData.zip;
+    }
+    if (brgyEl && muniData.barangays && muniData.barangays.length > 0) {
+      if (brgySelectWrap) brgySelectWrap.style.display = 'block';
+      if (brgyCustomWrap) brgyCustomWrap.style.display = 'none';
+
+      let brgyHtml = '';
+      muniData.barangays.forEach((b, idx) => {
+        const isSel = (idx === 0) ? 'selected' : '';
+        brgyHtml += `<option value="${b}" ${isSel} style="background:#0b261a; color:#fff;">${b}</option>`;
+      });
+      brgyHtml += '<option value="OTHER" style="background:#0b261a; color:#fff;">Other Barangay (Type Manually)</option>';
+      brgyEl.innerHTML = brgyHtml;
+      brgyEl.value = muniData.barangays[0];
+    } else {
+      if (brgySelectWrap) brgySelectWrap.style.display = 'none';
+      if (brgyCustomWrap) brgyCustomWrap.style.display = 'block';
+    }
+  } else {
+    if (brgySelectWrap) brgySelectWrap.style.display = 'none';
+    if (brgyCustomWrap) brgyCustomWrap.style.display = 'block';
+  }
+}
+
+function handleRegBarangayChange(brgyVal) {
+  const brgyCustomWrap = document.getElementById('reg-barangay-custom-wrap');
+  if (brgyVal === 'OTHER') {
+    if (brgyCustomWrap) brgyCustomWrap.style.display = 'block';
+  } else {
+    if (brgyCustomWrap) brgyCustomWrap.style.display = 'none';
+  }
+}
+
+function getRegProvinceValue() {
+  const p = document.getElementById('reg-province')?.value || '';
+  if (p === 'OTHER') {
+    return (document.getElementById('reg-province-custom')?.value || '').trim();
+  }
+  return p.trim();
+}
+
+function getRegMunicipalityValue() {
+  const m = document.getElementById('reg-municipality')?.value || '';
+  if (m === 'OTHER') {
+    return (document.getElementById('reg-municipality-custom')?.value || '').trim();
+  }
+  return m.trim();
+}
+
+function getRegBarangayValue() {
+  const b = document.getElementById('reg-barangay')?.value || '';
+  const custom = (document.getElementById('reg-barangay-custom')?.value || '').trim();
+  const isCustomVisible = document.getElementById('reg-barangay-custom-wrap')?.style.display !== 'none';
+  if (b === 'OTHER' || isCustomVisible) {
+    return custom || (b !== 'OTHER' ? b.trim() : '');
+  }
+  return b.trim();
 }
 
 function populateRegSummary() {
@@ -5862,9 +6224,9 @@ function populateRegSummary() {
   }
 
   const hs   = (document.getElementById('reg-house-street')?.value || '').trim();
-  const brgy = (document.getElementById('reg-barangay')?.value || '').trim();
-  const muni = (document.getElementById('reg-municipality')?.value || '').trim();
-  const prov = (document.getElementById('reg-province')?.value || '').trim();
+  const brgy = getRegBarangayValue();
+  const muni = getRegMunicipalityValue();
+  const prov = getRegProvinceValue();
   const zip  = (document.getElementById('reg-zip-code')?.value || '').trim();
   let addrParts = [];
   if (hs) addrParts.push(hs);
@@ -6194,9 +6556,28 @@ function updateRegDobAge(dobVal) {
   const badge = document.getElementById('reg-dob-age-badge');
   if (!badge) return;
   const age = calculateAgeFromDob(dobVal);
-  if (age !== null) {
-    badge.textContent = `Age: ${age} yrs old`;
-    badge.style.display = 'inline-block';
+  if (age !== null && !isNaN(age)) {
+    if (age < 0) {
+      badge.textContent = 'Invalid (future date)';
+      badge.style.display = 'inline-block';
+      badge.style.background = 'rgba(239, 68, 68, 0.2)';
+      badge.style.color = '#fca5a5';
+    } else if (age < 15) {
+      badge.textContent = `Age: ${age} (Min. 15 yrs old required)`;
+      badge.style.display = 'inline-block';
+      badge.style.background = 'rgba(239, 68, 68, 0.2)';
+      badge.style.color = '#fca5a5';
+    } else if (age > 100) {
+      badge.textContent = `Age: ${age} (Invalid age)`;
+      badge.style.display = 'inline-block';
+      badge.style.background = 'rgba(239, 68, 68, 0.2)';
+      badge.style.color = '#fca5a5';
+    } else {
+      badge.textContent = `Age: ${age} yrs old`;
+      badge.style.display = 'inline-block';
+      badge.style.background = 'rgba(82,183,136,0.15)';
+      badge.style.color = 'var(--gym-light)';
+    }
   } else {
     badge.style.display = 'none';
   }
@@ -6206,9 +6587,18 @@ function updateEditDobAge(dobVal) {
   const badge = document.getElementById('edit-dob-age-badge');
   if (!badge) return;
   const age = calculateAgeFromDob(dobVal);
-  if (age !== null) {
-    badge.textContent = `Age: ${age} yrs old`;
-    badge.style.display = 'inline-block';
+  if (age !== null && !isNaN(age)) {
+    if (age < 15) {
+      badge.textContent = `Age: ${age} (Min. 15 required)`;
+      badge.style.display = 'inline-block';
+      badge.style.background = 'rgba(239, 68, 68, 0.2)';
+      badge.style.color = '#fca5a5';
+    } else {
+      badge.textContent = `Age: ${age} yrs old`;
+      badge.style.display = 'inline-block';
+      badge.style.background = 'rgba(82,183,136,0.15)';
+      badge.style.color = 'var(--gym-light)';
+    }
   } else {
     badge.style.display = 'none';
   }
@@ -6309,18 +6699,26 @@ async function wizardNext(fromStep) {
     const dob = (document.getElementById('reg-dob')?.value || '').trim();
     if (!dob) return showToast('Please select your Date of Birth.');
     const computedAge = calculateAgeFromDob(dob);
-    if (computedAge === null || computedAge < 0) return showToast('Please enter a valid Date of Birth.');
+    if (computedAge === null || isNaN(computedAge) || computedAge < 0) {
+      return showToast('Please enter a valid Date of Birth.');
+    }
+    if (computedAge < 15) {
+      return showToast('⚠️ Member must be at least 15 years old to register.');
+    }
+    if (computedAge > 100) {
+      return showToast('⚠️ Please enter a realistic Date of Birth.');
+    }
     if (!selectedGender) return showToast('Please select your gender.');
 
     goToWizardStep(4);
   } else if (fromStep === 4) {
-    const brgy = (document.getElementById('reg-barangay')?.value || '').trim();
-    const muni = (document.getElementById('reg-municipality')?.value || '').trim();
-    const prov = (document.getElementById('reg-province')?.value || '').trim();
+    const prov = getRegProvinceValue();
+    const muni = getRegMunicipalityValue();
+    const brgy = getRegBarangayValue();
 
-    if (!brgy) return showToast('Please enter your Barangay.');
-    if (!muni) return showToast('Please enter your Municipality or City.');
-    if (!prov) return showToast('Please enter your Province.');
+    if (!prov) return showToast('Please select or enter your Province.');
+    if (!muni) return showToast('Please select or enter your Municipality or City.');
+    if (!brgy) return showToast('Please select or enter your Barangay.');
 
     goToWizardStep(5);
   } else if (fromStep === 5) {
@@ -6629,9 +7027,9 @@ async function submitRegistration() {
         contact_number: document.getElementById('reg-phone').value.trim(),
         dob:            document.getElementById('reg-dob')?.value || '',
         house_street:   document.getElementById('reg-house-street')?.value.trim() || '',
-        barangay:       document.getElementById('reg-barangay')?.value.trim() || '',
-        municipality:   document.getElementById('reg-municipality')?.value.trim() || '',
-        province:       document.getElementById('reg-province')?.value.trim() || '',
+        barangay:       getRegBarangayValue(),
+        municipality:   getRegMunicipalityValue(),
+        province:       getRegProvinceValue(),
         zip_code:       document.getElementById('reg-zip-code')?.value.trim() || '',
         password:       document.getElementById('reg-password')?.value || '',
         gender:         selectedGender,
@@ -9365,9 +9763,8 @@ async function openPaymentDetailModal(txIdOrRef) {
       <div class="checkout-summary-card" style="padding:14px;">
         <div class="checkout-row"><span class="lbl">Membership Plan</span><strong class="val">${p.plan.name}</strong></div>
         <div class="checkout-row"><span class="lbl">Payment Method</span><strong class="val">${p.payment_method}</strong></div>
-        <div class="checkout-row"><span class="lbl">Payment Gateway</span><strong class="val">${p.gateway}</strong></div>
-        <div class="checkout-row"><span class="lbl">Reference Number</span><code class="val" style="font-size:0.76rem;">${p.reference_no}</code></div>
-        <div class="checkout-row"><span class="lbl">Gateway Transaction ID</span><code class="val" style="font-size:0.72rem;">${p.gateway_tx_id}</code></div>
+        <div class="checkout-row"><span class="lbl">Payment Type</span><strong class="val">${p.gateway}</strong></div>
+        <div class="checkout-row"><span class="lbl">Official Reference</span><code class="val" style="font-size:0.76rem;">${p.reference_no}</code></div>
         <div class="checkout-row"><span class="lbl">Payment Timestamp</span><span class="val">${p.paid_at || p.created_at}</span></div>
         <div class="checkout-row"><span class="lbl">Membership Period</span><strong class="val" style="font-size:0.8rem;">${p.plan.period_start} &bull; ${p.plan.period_end}</strong></div>
       </div>
