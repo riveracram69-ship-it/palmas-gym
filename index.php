@@ -830,12 +830,13 @@ try {
                             $rank_badge = '<span style="font-weight:700; color:var(--text-muted); font-size:0.8rem;">#' . ($idx + 1) . '</span>';
                         }
 
+                        $initial = strtoupper(substr($tm['full_name'] ?? 'M', 0, 1));
                         $avatar_content = !empty($tm['photo']) 
-                            ? '<img src="' . htmlspecialchars($tm['photo']) . '" alt="Photo" style="width:100%; height:100%; object-fit:cover;">'
-                            : strtoupper(substr($tm['full_name'], 0, 1));
+                            ? '<img src="' . htmlspecialchars($tm['photo']) . '" alt="" onerror="this.onerror=null; this.parentElement.textContent=\'' . htmlspecialchars($initial, ENT_QUOTES) . '\';" style="width:100%; height:100%; object-fit:cover;">'
+                            : htmlspecialchars($initial);
 
                         $html .= '<tr style="' . $row_bg . '">
-                            <td style="text-align:center; width:65px;">' . $rank_badge . '</td>
+                            <td style="text-align:center; width:60px;">' . $rank_badge . '</td>
                             <td>
                                 <div class="member-cell">
                                     <div class="member-avatar" style="width:34px; height:34px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#f1f5f9; font-weight:700; color:#2d6a4f; font-size:0.85rem;">
@@ -854,7 +855,7 @@ try {
                             <td>
                                 <span class="badge badge-gold" style="font-size:0.7rem; font-weight:700;">' . htmlspecialchars($tm['plan_name']) . '</span>
                             </td>
-                            <td style="text-align:right;">
+                            <td style="text-align:right; white-space:nowrap;">
                                 <span class="badge" style="background:rgba(56,189,248,0.12); color:#0284c7; border:1px solid rgba(56,189,248,0.25); font-weight:800; font-size:0.78rem; padding:4px 9px; border-radius:8px; display:inline-flex; align-items:center; gap:4px;">
                                     <i class="fas fa-dumbbell"></i> ' . number_format($tm['visit_count']) . '
                                 </span>
@@ -905,10 +906,10 @@ try {
                     <table>
                         <thead>
                             <tr>
-                                <th style="width:65px; text-align:center;">Rank</th>
+                                <th style="width:60px; text-align:center;">Rank</th>
                                 <th>Member</th>
                                 <th>Plan</th>
-                                <th style="text-align:right;">Workout Visits</th>
+                                <th style="text-align:right; white-space:nowrap;">Visits</th>
                             </tr>
                         </thead>
                         <tbody id="lb-tbody">
@@ -1162,9 +1163,10 @@ function renderLeaderboardTable(members, periodLabel) {
             rankBadge = `<span style="font-weight:700; color:var(--text-muted); font-size:0.8rem;">#${idx + 1}</span>`;
         }
 
+        const initial = tm.full_name ? tm.full_name.charAt(0).toUpperCase() : 'M';
         const avatarContent = tm.photo 
-            ? `<img src="${escapeHtml(tm.photo)}" alt="Photo" style="width:100%; height:100%; object-fit:cover;">`
-            : (tm.full_name ? tm.full_name.charAt(0).toUpperCase() : 'M');
+            ? `<img src="${escapeHtml(tm.photo)}" alt="" onerror="this.onerror=null; this.parentElement.textContent='${escapeHtml(initial)}';" style="width:100%; height:100%; object-fit:cover;">`
+            : escapeHtml(initial);
 
         html += `
             <tr style="${rowBg}">
