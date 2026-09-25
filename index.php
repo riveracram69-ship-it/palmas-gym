@@ -118,21 +118,40 @@ try {
         $active_plans_stmt = $pdo->query("SELECT id, name, price, duration_months, duration_minutes, plan_category FROM membership_plans WHERE is_active = 1 ORDER BY (plan_category = 'membership_fee') DESC, (plan_category = 'member_pass') DESC, price ASC");
         $quick_renew_plans = $active_plans_stmt ? $active_plans_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
-        // ── 4. Top Active Members (Top 5 Loyalty Champions) ────────────────────
-        $stmt_top = $pdo->query("
+        // ── 4. Top Active Members (Loyalty Champions by Period) ────────────────
+        $leaderboard_sql = "
             SELECT m.id, m.full_name, m.membership_id, m.photo,
-                   COALESCE(MAX(p.name), 'Standard') as plan_name,
+                   COALESCE(
+                       (SELECT p2.name 
+                        FROM subscriptions s2 
+                        JOIN membership_plans p2 ON p2.id = s2.plan_id 
+                        WHERE s2.member_id = m.id 
+                          AND p2.plan_category != 'membership_fee' 
+                        ORDER BY (s2.expiry_date >= CURDATE()) DESC, s2.id DESC 
+                        LIMIT 1),
+                       'Standard'
+                   ) as plan_name,
                    COUNT(a.id) as visit_count
             FROM members m
             JOIN attendance a ON a.member_id = m.id
-            LEFT JOIN subscriptions s ON s.member_id = m.id AND s.expiry_date >= CURDATE()
-            LEFT JOIN membership_plans p ON s.plan_id = p.id
+            WHERE %s
             GROUP BY m.id, m.full_name, m.membership_id, m.photo
             HAVING visit_count > 0
-            ORDER BY visit_count DESC
+            ORDER BY visit_count DESC, m.full_name ASC
             LIMIT 5
-        ");
-        $top_active_members = $stmt_top ? $stmt_top->fetchAll(PDO::FETCH_ASSOC) : [];
+        ";
+
+        // This Month (Current Cycle)
+        $stmt_top_month = $pdo->query(sprintf($leaderboard_sql, "YEAR(a.date) = YEAR(CURDATE()) AND MONTH(a.date) = MONTH(CURDATE())"));
+        $top_active_month = $stmt_top_month ? $stmt_top_month->fetchAll(PDO::FETCH_ASSOC) : [];
+
+        // This Week (Mon-Sun ISO week)
+        $stmt_top_week = $pdo->query(sprintf($leaderboard_sql, "YEARWEEK(a.date, 1) = YEARWEEK(CURDATE(), 1)"));
+        $top_active_week = $stmt_top_week ? $stmt_top_week->fetchAll(PDO::FETCH_ASSOC) : [];
+
+        // All-Time
+        $stmt_top_all = $pdo->query(sprintf($leaderboard_sql, "1=1"));
+        $top_active_all = $stmt_top_all ? $stmt_top_all->fetchAll(PDO::FETCH_ASSOC) : [];
 
     }
 } catch (Exception $e) {
@@ -625,49 +644,101 @@ try {
                 </div>
             </div>
 
-            <!-- Top Loyalty Champions -->
-            <div class="card">
-                <div class="card-header-flex">
+            <!-- Top Loyalty Champions (Gamified Leaderboard with Timeframe Filters) -->
+            <?php
+            if (!function_exists('render_lb_rows')) {
+                function render_lb_rows($list, $period_label = 'this month') {
+                    if (empty($list)) {
+                        return '<tr><td colspan="4" style="text-align:center; padding:2rem 1rem; color:var(--text-muted);"><i class="fas fa-trophy" style="font-size:1.6rem; color:#cbd5e1; display:block; margin-bottom:0.4rem;"></i><strong>No check-ins recorded ' . htmlspecialchars($period_label) . ' yet.</strong><p style="margin:4px 0 0 0; font-size:0.75rem;">Visits will appear here once members scan their ID at the kiosk.</p></td></tr>';
+                    }
+                    $html = '';
+                    foreach ($list as $idx => $tm) {
+                        $rank_badge = '';
+                        $row_bg = '';
+                        if ($idx === 0) {
+                            $rank_badge = '<span class="badge" style="background:#fef9c3; color:#a16207; border:1px solid #fde047; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥇 1st</span>';
+                            $row_bg = 'background:rgba(254,249,195,0.12);';
+                        } elseif ($idx === 1) {
+                            $rank_badge = '<span class="badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥈 2nd</span>';
+                        } elseif ($idx === 2) {
+                            $rank_badge = '<span class="badge" style="background:#ffedd5; color:#c2410c; border:1px solid #fed7aa; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥉 3rd</span>';
+                        } else {
+                            $rank_badge = '<span style="font-weight:700; color:var(--text-muted); font-size:0.8rem;">#' . ($idx + 1) . '</span>';
+                        }
+
+                        $avatar_content = !empty($tm['photo']) 
+                            ? '<img src="' . htmlspecialchars($tm['photo']) . '" alt="Photo" style="width:100%; height:100%; object-fit:cover;">'
+                            : strtoupper(substr($tm['full_name'], 0, 1));
+
+                        $html .= '<tr style="' . $row_bg . '">
+                            <td style="text-align:center; width:65px;">' . $rank_badge . '</td>
+                            <td>
+                                <div class="member-cell">
+                                    <div class="member-avatar" style="width:34px; height:34px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#f1f5f9; font-weight:700; color:#2d6a4f; font-size:0.85rem;">
+                                        ' . $avatar_content . '
+                                    </div>
+                                    <div>
+                                        <a href="view-member.php?id=' . $tm['id'] . '" class="cell-primary" style="font-weight:700; color:var(--text-main); text-decoration:none; font-size:0.84rem;">
+                                            ' . htmlspecialchars($tm['full_name']) . '
+                                        </a>
+                                        <div style="font-size:0.7rem; color:var(--text-muted); font-family:monospace;">
+                                            ' . htmlspecialchars($tm['membership_id']) . '
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-gold" style="font-size:0.7rem; font-weight:700;">' . htmlspecialchars($tm['plan_name']) . '</span>
+                            </td>
+                            <td style="text-align:right;">
+                                <span class="badge" style="background:rgba(56,189,248,0.12); color:#0284c7; border:1px solid rgba(56,189,248,0.25); font-weight:800; font-size:0.78rem; padding:4px 9px; border-radius:8px; display:inline-flex; align-items:center; gap:4px;">
+                                    <i class="fas fa-dumbbell"></i> ' . number_format($tm['visit_count']) . '
+                                </span>
+                            </td>
+                        </tr>';
+                    }
+                    return $html;
+                }
+            }
+            ?>
+            <div class="card" id="card-loyalty-leaderboard">
+                <div class="card-header-flex" style="flex-wrap:wrap; gap:10px;">
                     <div>
                         <h3 class="section-title"><i class="fas fa-trophy" style="color:#eab308;"></i> Member Loyalty Leaderboard</h3>
                         <p class="section-subtitle">Top members by workout visit frequency</p>
                     </div>
-                    <span class="badge badge-gold">🏆 Champions</span>
+                    <!-- Timeframe Tabs -->
+                    <div style="display:flex; gap:0.35rem; background:var(--bg-main, #f8fafc); padding:3px; border-radius:20px; border:1px solid var(--border);">
+                        <button type="button" class="lb-tab-btn active" id="lb-tab-month" onclick="switchLeaderboardTab('month', this)" style="background:#2d6a4f; color:#ffffff; border:none; border-radius:15px; padding:3px 10px; font-size:0.72rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                            <i class="fas fa-calendar-days"></i> This Month
+                        </button>
+                        <button type="button" class="lb-tab-btn" id="lb-tab-week" onclick="switchLeaderboardTab('week', this)" style="background:transparent; color:var(--text-muted); border:none; border-radius:15px; padding:3px 10px; font-size:0.72rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                            <i class="fas fa-bolt"></i> This Week
+                        </button>
+                        <button type="button" class="lb-tab-btn" id="lb-tab-all" onclick="switchLeaderboardTab('all', this)" style="background:transparent; color:var(--text-muted); border:none; border-radius:15px; padding:3px 10px; font-size:0.72rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                            <i class="fas fa-crown"></i> All-Time
+                        </button>
+                    </div>
                 </div>
 
-                <div class="table-container">
+                <div class="table-container" style="margin-top:0.6rem;">
                     <table>
                         <thead>
                             <tr>
-                                <th style="width:40px; text-align:center;">#</th>
+                                <th style="width:65px; text-align:center;">Rank</th>
                                 <th>Member</th>
                                 <th>Plan</th>
-                                <th style="text-align:right;">Visits</th>
+                                <th style="text-align:right;">Workout Visits</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php if (empty($top_active_members)): ?>
-                            <tr>
-                                <td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-muted);">No check-in history yet.</td>
-                            </tr>
-                            <?php else: ?>
-                            <?php foreach ($top_active_members as $idx => $tm): ?>
-                            <tr>
-                                <td style="text-align:center; font-weight:800; color:<?php echo $idx === 0 ? '#eab308' : ($idx === 1 ? '#94a3b8' : 'var(--text-muted)'); ?>;">
-                                    <?php echo $idx === 0 ? '🥇' : ($idx === 1 ? '🥈' : ($idx === 2 ? '🥉' : '#' . ($idx + 1))); ?>
-                                </td>
-                                <td>
-                                    <a href="view-member.php?id=<?php echo $tm['id']; ?>" style="font-weight:600; color:var(--text-main); text-decoration:none; font-size:0.84rem;">
-                                        <?php echo htmlspecialchars($tm['full_name']); ?>
-                                    </a>
-                                </td>
-                                <td><span class="badge badge-gold" style="font-size:0.7rem;"><?php echo htmlspecialchars($tm['plan_name']); ?></span></td>
-                                <td style="text-align:right; font-weight:700; color:#38bdf8;">
-                                    <i class="fas fa-dumbbell" style="font-size:0.7rem; margin-right:3px;"></i> <?php echo number_format($tm['visit_count']); ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                            <?php endif; ?>
+                        <tbody id="lb-tbody-month">
+                            <?php echo render_lb_rows($top_active_month, 'this month'); ?>
+                        </tbody>
+                        <tbody id="lb-tbody-week" style="display:none;">
+                            <?php echo render_lb_rows($top_active_week, 'this week'); ?>
+                        </tbody>
+                        <tbody id="lb-tbody-all" style="display:none;">
+                            <?php echo render_lb_rows($top_active_all, 'all-time'); ?>
                         </tbody>
                     </table>
                 </div>
@@ -851,6 +922,26 @@ function manualCheckout(attendanceId, memberName) {
             executeCheckout();
         }
     }
+// ── Loyalty Leaderboard Timeframe Switcher ────────────────────────────────
+function switchLeaderboardTab(period, btn) {
+    document.querySelectorAll('.lb-tab-btn').forEach(b => {
+        b.style.background = 'transparent';
+        b.style.color = 'var(--text-muted)';
+        b.style.fontWeight = '600';
+    });
+    if (btn) {
+        btn.style.background = '#2d6a4f';
+        btn.style.color = '#ffffff';
+        btn.style.fontWeight = '700';
+    }
+
+    const periods = ['month', 'week', 'all'];
+    periods.forEach(p => {
+        const tbody = document.getElementById('lb-tbody-' + p);
+        if (tbody) {
+            tbody.style.display = (p === period) ? '' : 'none';
+        }
+    });
 }
 
 // ── Send 1-Click Single Renewal Reminder ──────────────────────────────────
