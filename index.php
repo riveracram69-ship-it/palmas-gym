@@ -781,11 +781,22 @@ async function fetchLiveFeed() {
     try {
         const res = await fetch('api/admin_dashboard_ajax.php?ajax=live_feed');
         if (res.ok) {
-            rawFeedData = await res.json();
+            const data = await res.json();
+            rawFeedData = Array.isArray(data) ? data : [];
             renderLiveFeed();
+        } else {
+            console.warn('Live feed fetch returned status:', res.status);
+            if (!rawFeedData || rawFeedData.length === 0) {
+                const container = document.getElementById('live-feed-stream');
+                if (container) container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">No recent activities found.</div>';
+            }
         }
     } catch (e) {
         console.error('Failed to fetch live feed:', e);
+        if (!rawFeedData || rawFeedData.length === 0) {
+            const container = document.getElementById('live-feed-stream');
+            if (container) container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">No recent activities found.</div>';
+        }
     } finally {
         if (icon) icon.classList.remove('fa-spin');
     }
@@ -1162,8 +1173,6 @@ function submitQuickRenewForm(e) {
 document.addEventListener('DOMContentLoaded', () => {
     fetchLiveFeed();
     setInterval(fetchLiveFeed, 15000);
-    // Initialize default filter
-    filterOverdueTable('regular', document.getElementById('tab-btn-regular'));
 });
 </script>
 

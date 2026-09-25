@@ -34,7 +34,7 @@ if (!function_exists('verify_csrf_token')) {
 }
 
 // Auto-validate all POST requests (excluding login.php and log_attendance.php)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $current_page = basename($_SERVER['PHP_SELF']);
     if ($current_page !== 'login.php' && $current_page !== 'log_attendance.php') {
         $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
