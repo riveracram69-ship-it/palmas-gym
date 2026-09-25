@@ -277,61 +277,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:1rem;">
                     <div class="form-group">
-                        <label>First Name *</label>
-                        <input type="text" name="first_name" class="form-control" placeholder="e.g. Juan" value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>" required autofocus>
+                        <label for="first_name">First Name <span class="required-star" aria-hidden="true">*</span></label>
+                        <input type="text" name="first_name" id="first_name" class="form-control" placeholder="e.g. Juan" value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>" required aria-required="true" autofocus style="min-height:44px;">
                     </div>
                     <div class="form-group">
-                        <label>Last Name *</label>
-                        <input type="text" name="last_name" class="form-control" placeholder="e.g. Dela Cruz" value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>" required>
+                        <label for="last_name">Last Name <span class="required-star" aria-hidden="true">*</span></label>
+                        <input type="text" name="last_name" id="last_name" class="form-control" placeholder="e.g. Dela Cruz" value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>" required aria-required="true" style="min-height:44px;">
                     </div>
                 </div>
 
                 <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:1rem;">
                     <div class="form-group">
-                        <label>Email Address *</label>
-                        <input type="email" name="email" class="form-control" placeholder="juan@example.com" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
+                        <label for="email">Email Address <span class="required-star" aria-hidden="true">*</span></label>
+                        <input type="email" name="email" id="email" class="form-control" placeholder="juan@example.com" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required aria-required="true" style="min-height:44px;">
+                        <span class="field-hint">Used for digital pass credentials &amp; receipts</span>
                     </div>
                     <div class="form-group">
-                        <label>Contact Number *</label>
-                        <input type="text" name="contact_number" class="form-control" placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}" title="11 digits starting with 09" value="<?php echo htmlspecialchars($_POST['contact_number'] ?? ''); ?>" required>
+                        <label for="contact_number">Contact Number <span class="required-star" aria-hidden="true">*</span></label>
+                        <input type="text" name="contact_number" id="contact_number" class="form-control" placeholder="09XXXXXXXXX" maxlength="11" pattern="09[0-9]{9}" title="11 digits starting with 09" value="<?php echo htmlspecialchars($_POST['contact_number'] ?? ''); ?>" required aria-required="true" style="min-height:44px;">
+                        <span class="field-hint">11-digit Philippine mobile format (09XXXXXXXXX)</span>
                     </div>
                 </div>
 
                 <!-- Structured Address Fields -->
                 <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:12px; padding:1rem; margin-bottom:1rem;">
                     <label style="display:block; font-weight:700; font-size:0.85rem; color:var(--text-main); margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">
-                        <i class="fas fa-location-dot" style="color:var(--palmas-primary, #10b981); margin-right:6px;"></i> Home Address Details
+                        <i class="fas fa-location-dot" style="color:var(--palmas-primary, #10b981); margin-right:6px;" aria-hidden="true"></i> Home Address Details
                     </label>
                     <div class="form-group" style="margin-bottom:0.75rem;">
-                        <label style="font-size:0.8rem;">House No. / Street / Building</label>
-                        <input type="text" name="house_street" class="form-control" placeholder="e.g. 123 Rizal St. or Unit 4B Sunshine Bldg." value="<?php echo htmlspecialchars($_POST['house_street'] ?? ''); ?>">
+                        <label for="house_street" style="font-size:0.8rem;">House No. / Street / Building</label>
+                        <input type="text" name="house_street" id="house_street" class="form-control" placeholder="e.g. 123 Rizal St. or Unit 4B Sunshine Bldg." value="<?php echo htmlspecialchars($_POST['house_street'] ?? ''); ?>" style="min-height:44px;">
                     </div>
                     <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:0.75rem;">
                         <div class="form-group">
-                            <label style="font-size:0.8rem;">Barangay *</label>
-                            <input type="text" name="barangay" class="form-control" placeholder="e.g. Poblacion or San Jose" value="<?php echo htmlspecialchars($_POST['barangay'] ?? ''); ?>" required>
+                            <label for="barangay" style="font-size:0.8rem;">Barangay <span class="required-star" aria-hidden="true">*</span></label>
+                            <input type="text" name="barangay" id="barangay" class="form-control" placeholder="e.g. Poblacion or San Jose" value="<?php echo htmlspecialchars($_POST['barangay'] ?? ''); ?>" required aria-required="true" style="min-height:44px;">
                         </div>
                         <div class="form-group">
-                            <label style="font-size:0.8rem;">Municipality / City *</label>
-                            <input type="text" name="municipality" class="form-control" placeholder="e.g. Talavera or Quezon City" value="<?php echo htmlspecialchars($_POST['municipality'] ?? ''); ?>" required>
+                            <label for="municipality" style="font-size:0.8rem;">Municipality / City <span class="required-star" aria-hidden="true">*</span></label>
+                            <input type="text" name="municipality" id="municipality" class="form-control" placeholder="e.g. Talavera or Quezon City" value="<?php echo htmlspecialchars($_POST['municipality'] ?? ''); ?>" required aria-required="true" style="min-height:44px;">
                         </div>
                     </div>
                     <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
                         <div class="form-group">
-                            <label style="font-size:0.8rem;">Province</label>
-                            <input type="text" name="province" class="form-control" placeholder="e.g. Nueva Ecija" value="<?php echo htmlspecialchars($_POST['province'] ?? 'Nueva Ecija'); ?>">
+                            <label for="province" style="font-size:0.8rem;">Province</label>
+                            <input type="text" name="province" id="province" class="form-control" placeholder="e.g. Nueva Ecija" value="<?php echo htmlspecialchars($_POST['province'] ?? 'Nueva Ecija'); ?>" style="min-height:44px;">
                         </div>
                         <div class="form-group">
-                            <label style="font-size:0.8rem;">ZIP Code</label>
-                            <input type="text" name="zip_code" class="form-control" placeholder="e.g. 3114" maxlength="10" value="<?php echo htmlspecialchars($_POST['zip_code'] ?? ''); ?>">
+                            <label for="zip_code" style="font-size:0.8rem;">ZIP Code</label>
+                            <input type="text" name="zip_code" id="zip_code" class="form-control" placeholder="e.g. 3114" maxlength="10" value="<?php echo htmlspecialchars($_POST['zip_code'] ?? ''); ?>" style="min-height:44px;">
                         </div>
                     </div>
                 </div>
 
                 <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:1rem;">
                     <div class="form-group">
-                        <label>Membership Plan *</label>
-                        <select name="plan_id" class="form-control" required>
+                        <label for="plan_id">Membership Plan <span class="required-star" aria-hidden="true">*</span></label>
+                        <select name="plan_id" id="plan_id" class="form-control" required aria-required="true" style="min-height:44px;">
                             <option value="" disabled <?php echo empty($_POST['plan_id']) ? 'selected' : ''; ?>>Choose a plan...</option>
                             <?php 
                             $sec_fee = array_filter($plans, fn($p) => ($p['plan_category'] ?? '') === 'membership_fee' || stripos($p['name'], 'Annual Membership') !== false);
@@ -443,9 +445,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p class="cell-secondary" style="margin-top:0.5rem; font-size:0.72rem;">Optional photo or selfie</p>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100" style="padding:1rem; font-size:1rem; font-weight:700; margin-top:0.75rem; border-radius:12px; box-shadow: 0 4px 14px rgba(16,185,129,0.3);">
+            <button type="submit" class="btn btn-primary w-100" style="min-height:48px; padding:0.85rem 1.25rem; font-size:1rem; font-weight:700; margin-top:0.75rem; border-radius:12px; box-shadow: 0 4px 14px rgba(45,106,79,0.3); display:inline-flex; align-items:center; justify-content:center; gap:8px;">
                 <i class="fas fa-bolt"></i> Register &amp; Activate
             </button>
+            <a href="members.php" class="btn btn-outline w-100" style="min-height:44px; margin-top:0.65rem; border-radius:12px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:6px; text-decoration:none;">
+                <i class="fas fa-xmark"></i> Cancel &amp; Return
+            </a>
         </div>
 
     </div>

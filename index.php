@@ -149,38 +149,37 @@ try {
         </div>
 
         <div class="dashboard-actions-area">
-            <form method="GET" action="" class="filter-preset-form">
-                <select name="filter_preset" onchange="this.form.submit()" class="form-control filter-select">
+            <form method="GET" action="" class="filter-preset-form" id="dashboard-filter-form">
+                <select name="filter_preset" id="filter-preset-select" class="form-control filter-select" aria-label="Filter dashboard by time period">
                     <option value="today" <?php echo $filter_preset === 'today' ? 'selected' : ''; ?>>📅 Today</option>
                     <option value="week" <?php echo $filter_preset === 'week' ? 'selected' : ''; ?>>📊 This Week</option>
                     <option value="month" <?php echo $filter_preset === 'month' ? 'selected' : ''; ?>>📈 This Month</option>
                 </select>
             </form>
 
-            <a href="add-member.php" class="btn btn-primary btn-action">
-                <i class="fas fa-user-plus"></i> Add Member
+            <?php if ($pending_registrations_cnt > 0 || $pending_renewals_count > 0): ?>
+            <a href="notifications.php" class="topbar-notification-btn" title="View Notifications" aria-label="Notifications">
+                <i class="fas fa-bell"></i>
+                <span class="topbar-notification-dot"></span>
             </a>
+            <?php endif; ?>
         </div>
     </div>
 
     <?php if ($pending_registrations_cnt > 0): ?>
     <!-- ── PENDING REGISTRATIONS ALERT BANNER ─────────────────────────────── -->
-    <div style="background:linear-gradient(135deg, rgba(217,119,6,0.12) 0%, rgba(245,158,11,0.06) 100%); border:1px solid rgba(245,158,11,0.3); border-left:5px solid #F59E0B; border-radius:14px; padding:1.1rem 1.4rem; margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
-        <div style="display:flex; align-items:center; gap:0.85rem;">
-            <div style="width:42px; height:42px; border-radius:12px; background:#FEF3C7; color:#D97706; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0;">
+    <div class="alert-pending-banner" role="alert">
+        <div class="alert-pending-banner-content">
+            <div class="alert-pending-icon" aria-hidden="true">
                 <i class="fas fa-user-clock"></i>
             </div>
-            <div>
-                <h3 style="margin:0 0 2px 0; font-size:0.95rem; font-weight:700; color:var(--text-main);">
-                    <?php echo $pending_registrations_cnt; ?> Member Registration<?php echo $pending_registrations_cnt > 1 ? 's' : ''; ?> Awaiting Review
-                </h3>
-                <p style="margin:0; font-size:0.82rem; color:var(--text-muted);">
-                    New sign-ups require approval before digital passes and QR access are activated.
-                </p>
+            <div class="alert-pending-text">
+                <h3><?php echo $pending_registrations_cnt; ?> Member Registration<?php echo $pending_registrations_cnt > 1 ? 's' : ''; ?> Awaiting Review</h3>
+                <p>New sign-ups require approval before digital passes and QR access are activated.</p>
             </div>
         </div>
-        <a href="pending-registrations.php" class="btn" style="background:#D97706; color:#fff; font-weight:700; border-radius:10px; padding:0.55rem 1.15rem; font-size:0.84rem; text-decoration:none; display:inline-flex; align-items:center; gap:0.5rem;">
-            Review Applications <i class="fas fa-arrow-right"></i>
+        <a href="pending-registrations.php" class="alert-pending-btn">
+            <i class="fas fa-clipboard-check"></i> Review Applications
         </a>
     </div>
     <?php endif; ?>
@@ -280,6 +279,57 @@ try {
             </div>
             <?php endif; ?>
         </div>
+    </div>
+
+    <!-- ── QUICK ACTIONS BAR ─────────────────────────────────────────────────── -->
+    <div class="quick-actions-bar" role="navigation" aria-label="Quick Actions">
+        <a href="add-member.php" class="quick-action-btn">
+            <div class="quick-action-icon" style="background:rgba(62,130,65,0.12); color:#3e8241;">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <div class="quick-action-label">
+                <span>Add Member</span>
+                <small>Register new member</small>
+            </div>
+        </a>
+        <a href="attendance.php" class="quick-action-btn">
+            <div class="quick-action-icon" style="background:rgba(2,132,199,0.12); color:#0284c7;">
+                <i class="fas fa-qrcode"></i>
+            </div>
+            <div class="quick-action-label">
+                <span>QR Scanner</span>
+                <small>Open attendance terminal</small>
+            </div>
+        </a>
+        <a href="pending-registrations.php" class="quick-action-btn">
+            <div class="quick-action-icon" style="background:rgba(245,158,11,0.12); color:#d97706;">
+                <i class="fas fa-user-clock"></i>
+            </div>
+            <div class="quick-action-label">
+                <span>Pending Approvals</span>
+                <small><?php echo $pending_registrations_cnt > 0 ? $pending_registrations_cnt . ' awaiting review' : 'No pending requests'; ?></small>
+            </div>
+        </a>
+        <a href="renewal-requests.php" class="quick-action-btn">
+            <div class="quick-action-icon" style="background:rgba(147,51,234,0.12); color:#9333ea;">
+                <i class="fas fa-arrows-rotate"></i>
+            </div>
+            <div class="quick-action-label">
+                <span>Renewal Requests</span>
+                <small><?php echo $pending_renewals_count > 0 ? $pending_renewals_count . ' awaiting action' : 'No pending renewals'; ?></small>
+            </div>
+        </a>
+        <?php if ($is_admin): ?>
+        <a href="reports.php" class="quick-action-btn">
+            <div class="quick-action-icon" style="background:rgba(212,169,66,0.12); color:#d4a942;">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="quick-action-label">
+                <span>Reports</span>
+                <small>Revenue &amp; analytics</small>
+            </div>
+        </a>
+        <?php endif; ?>
     </div>
 
     <!-- ── STREAMLINED 2-COLUMN OPERATIONAL WORKSPACE ───────────────────────── -->
@@ -385,10 +435,10 @@ try {
                                     <?php else: ?>
                                         <div style="display:inline-flex; align-items:center; gap:8px;">
                                             <span class="badge badge-success"><i class="fas fa-circle" style="font-size:0.35rem; margin-right:4px;"></i> Inside</span>
-                                            <button type="button" class="btn btn-outline btn-sm manual-checkout-btn" 
-                                                    style="padding:3px 9px; font-size:0.72rem; border-radius:6px; color:var(--text-muted); border-color:var(--border); display:inline-flex; align-items:center; gap:4px; font-weight:600; cursor:pointer;"
+                                            <button type="button"
+                                                    class="btn btn-outline manual-checkout-btn"
                                                     onclick="manualCheckout(<?php echo $att['id']; ?>, '<?php echo htmlspecialchars(addslashes($att['full_name'])); ?>')"
-                                                    title="Mark member as Left">
+                                                    aria-label="Check out <?php echo htmlspecialchars($att['full_name']); ?>">
                                                 <i class="fas fa-arrow-right-from-bracket"></i> Check Out
                                             </button>
                                         </div>
@@ -548,214 +598,24 @@ try {
 
 </div>
 
-<!-- ── STYLES FOR STREAMLINED DASHBOARD ──────────────────────────────────── -->
-<style>
-.dashboard-topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-.dashboard-title-area {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-}
-.dashboard-brand-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #1b4332, #2d6a4f);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #52b788;
-    font-size: 1.4rem;
-    box-shadow: 0 6px 18px rgba(45,106,79,0.3);
-    flex-shrink: 0;
-}
-.dashboard-main-title {
-    margin: 0;
-    font-size: 1.65rem;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-}
-.dashboard-date-pill {
-    font-size: 0.72rem;
-    background: rgba(45,106,79,0.1);
-    color: #2d6a4f;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-weight: 700;
-    border: 1px solid rgba(82,183,136,0.25);
-}
-.dashboard-subtitle {
-    margin: 0.2rem 0 0 0;
-    color: var(--text-muted);
-    font-size: 0.84rem;
-}
-.dashboard-actions-area {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    flex-wrap: wrap;
-}
-.filter-select {
-    margin: 0;
-    padding: 0.5rem 0.85rem;
-    font-size: 0.82rem;
-    border-radius: 10px;
-}
+<!-- ── Dashboard styles are in assets/css/main.css (Sections 17-25) ──────── -->
+<!-- All dashboard component styles are centralized in assets/css/main.css -->
 
-/* Master KPI Grid */
-.kpi-master-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-.kpi-card {
-    padding: 1.25rem 1.4rem;
-    position: relative;
-    overflow: hidden;
-}
-.kpi-card-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.6rem;
-}
-.kpi-label {
-    font-size: 0.78rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    color: var(--text-muted);
-}
-.kpi-icon-box {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-}
-.kpi-icon-green { background: rgba(82,183,136,0.14); color: #52b788; }
-.kpi-icon-blue  { background: rgba(56,189,248,0.14); color: #38bdf8; }
-.kpi-icon-yellow{ background: rgba(234,179,8,0.14);  color: #eab308; }
-
-.kpi-number-wrap {
-    display: flex;
-    align-items: baseline;
-    gap: 0.6rem;
-    margin-bottom: 0.5rem;
-}
-.kpi-number {
-    font-size: 1.85rem;
-    font-weight: 800;
-    margin: 0;
-    line-height: 1;
-}
-.kpi-trend-pill {
-    font-size: 0.72rem;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 6px;
-    background: rgba(82,183,136,0.14);
-    color: #52b788;
-}
-.kpi-footer-meta {
-    font-size: 0.76rem;
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-.kpi-progress-bg {
-    width: 100%;
-    height: 5px;
-    background: rgba(0,0,0,0.06);
-    border-radius: 4px;
-    margin-top: 0.6rem;
-    overflow: hidden;
-}
-.kpi-progress-bar {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.3s ease;
-}
-
-/* 2-Column Grid */
-.dashboard-grid-2col {
-    display: grid;
-    grid-template-columns: 1.3fr 0.85fr;
-    gap: 1.5rem;
-}
-
-/* Live Activity Stream */
-.live-dot-pulse {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #52b788;
-    box-shadow: 0 0 0 3px rgba(82,183,136,0.3);
-    animation: pulseDot 2s infinite;
-}
-@keyframes pulseDot {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(82,183,136,0.6); }
-    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(82,183,136,0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(82,183,136,0); }
-}
-
-.feed-filters-bar {
-    display: flex;
-    gap: 0.35rem;
-    flex-wrap: wrap;
-}
-.feed-filter-btn {
-    padding: 0.25rem 0.65rem;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--card-bg);
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.feed-filter-btn.active, .feed-filter-btn:hover {
-    background: #2d6a4f;
-    color: #fff;
-    border-color: #2d6a4f;
-}
-
-.feed-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    border-radius: 10px;
-    background: rgba(0,0,0,0.015);
-    border: 1px solid rgba(0,0,0,0.04);
-    margin-bottom: 0.5rem;
-    transition: background 0.2s;
-}
-.feed-item:hover {
-    background: rgba(0,0,0,0.035);
-}
-
-@media (max-width: 1100px) {
-    .kpi-master-grid { grid-template-columns: repeat(2, 1fr); }
-    .dashboard-grid-2col { grid-template-columns: 1fr; }
-}
-
-@media (max-width: 640px) {
-    .kpi-master-grid { grid-template-columns: 1fr; }
-}
-</style>
+<script>
+// Filter dropdown loading state feedback
+document.addEventListener('DOMContentLoaded', function() {
+    var filterSel = document.getElementById('filter-preset-select');
+    if (filterSel) {
+        filterSel.addEventListener('change', function() {
+            filterSel.classList.add('is-loading');
+            // Brief delay so user sees the loading state before page reloads
+            setTimeout(function() {
+                document.getElementById('dashboard-filter-form').submit();
+            }, 80);
+        });
+    }
+});
+</script>
 
 <!-- ── LIVE ACTIVITY FEED SCRIPT (FETCH API) ────────────────────────────── -->
 <script>

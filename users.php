@@ -387,16 +387,16 @@ $total_users = count($users);
                         </td>
                         <td style="text-align:right;">
                             <div style="display:inline-flex; gap:0.35rem;">
-                                <button type="button" class="btn btn-outline btn-sm btn-icon" title="Edit Profile &amp; Role" 
+                                <button type="button" class="btn btn-outline btn-sm btn-icon" title="Edit Profile &amp; Role" aria-label="Edit Profile &amp; Role"
                                     onclick="openEditUserModal(<?php echo htmlspecialchars(json_encode($u)); ?>)">
                                     <i class="fas fa-pen"></i>
                                 </button>
-                                <button type="button" class="btn btn-outline btn-sm btn-icon" title="Reset Password" 
+                                <button type="button" class="btn btn-outline btn-sm btn-icon" title="Reset Password" aria-label="Reset Password"
                                     onclick="openResetPasswordModal(<?php echo htmlspecialchars(json_encode($u)); ?>)">
                                     <i class="fas fa-key"></i>
                                 </button>
                                 <?php if (!$is_self): ?>
-                                <button type="button" class="btn btn-outline btn-sm btn-icon" style="color:var(--danger); border-color:rgba(239,68,68,0.3);" title="Delete Account" 
+                                <button type="button" class="btn btn-outline btn-sm btn-icon" style="color:var(--danger); border-color:rgba(239,68,68,0.3);" title="Delete Account" aria-label="Delete Account"
                                     onclick="confirmDeleteUser(<?php echo htmlspecialchars(json_encode($u)); ?>)">
                                     <i class="fas fa-trash-can"></i>
                                 </button>

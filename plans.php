@@ -153,6 +153,7 @@ function render_plan_card($p) {
                         data-benefits="<?= htmlspecialchars($p['benefits'] ?? '') ?>"
                         data-category="<?= $p['plan_category'] ?>"
                         data-floor="<?= $p['floor_access'] ?>"
+                        title="Edit Plan"
                         aria-label="Edit Plan">
                     <i class="fas fa-pen"></i>
                 </button>

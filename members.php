@@ -43,7 +43,7 @@ $active = array_filter($members, function($m) {
         <p><?php echo $total; ?> total members registered in the system.</p>
     </div>
     <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
-        <a href="add-member.php" class="btn btn-primary">
+        <a href="add-member.php" class="btn btn-primary" style="min-height:44px; padding:0.65rem 1.4rem; font-weight:700; box-shadow:0 4px 14px rgba(45,106,79,0.3);" id="btn-add-member">
             <i class="fas fa-user-plus"></i> Add Member
         </a>
     </div>
@@ -51,19 +51,22 @@ $active = array_filter($members, function($m) {
 
 <div class="card">
     <div class="toolbar" style="margin-bottom:2rem;">
-        <div class="search-bar">
-            <i class="fas fa-search"></i>
-            <input type="text" class="form-control" id="member-search" placeholder="Search name, email, or ID…">
+        <div class="search-bar" style="position:relative;">
+            <label for="member-search" class="visually-hidden">Search members</label>
+            <i class="fas fa-search" aria-hidden="true"></i>
+            <input type="text" class="form-control" id="member-search" placeholder="Search name, email, or ID…" aria-label="Search members by name, email, or ID" style="min-height:44px;">
         </div>
         <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
-            <select class="form-control" id="status-filter" style="width:auto;min-width:160px;">
+            <label for="status-filter" class="visually-hidden">Filter by membership status</label>
+            <select class="form-control" id="status-filter" style="width:auto;min-width:160px;min-height:44px;" aria-label="Filter by membership status">
                 <option value="">All Members</option>
                 <option value="Active">🟢 Active Pass</option>
                 <option value="Expired">🔴 Expired Pass</option>
                 <option value="official">🏅 Official Members</option>
                 <option value="non-member">⚪ Non-Members</option>
             </select>
-            <select class="form-control" id="per-page-select" style="width:auto;min-width:130px;">
+            <label for="per-page-select" class="visually-hidden">Members per page</label>
+            <select class="form-control" id="per-page-select" style="width:auto;min-width:130px;min-height:44px;" aria-label="Results per page">
                 <option value="10" selected>10 per page</option>
                 <option value="25">25 per page</option>
                 <option value="50">50 per page</option>
@@ -296,9 +299,10 @@ function renderPagination(matchingRows) {
 
     for (let p = 1; p <= totalPages; p++) {
         if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
-            buttonsHtml += `<button type="button" class="pagination-btn ${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+            const isCurrent = (p === currentPage);
+            buttonsHtml += `<button type="button" class="pagination-btn ${isCurrent ? 'active' : ''}" onclick="goToPage(${p})" ${isCurrent ? 'aria-current="page"' : ''} aria-label="Go to page ${p}">${p}</button>`;
         } else if (p === currentPage - 2 || p === currentPage + 2) {
-            buttonsHtml += `<span style="padding:0 4px; color:var(--text-muted); font-size:0.8rem;">…</span>`;
+            buttonsHtml += `<span style="padding:0 6px; color:var(--text-muted); font-size:0.85rem;" aria-hidden="true">…</span>`;
         }
     }
 

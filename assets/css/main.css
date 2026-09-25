@@ -895,9 +895,13 @@ tbody tr:hover td {
 }
 
 .btn-sm {
-    padding: 0.45rem 0.9rem;
-    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.82rem;
+    min-height: 44px;
     border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-lg {
@@ -907,11 +911,17 @@ tbody tr:hover td {
 }
 
 .btn-icon {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     padding: 0 !important;
     border-radius: var(--radius-sm);
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
 }
 
 .w-100 {
@@ -1783,6 +1793,520 @@ textarea:focus-visible {
         height: 28px;
         font-size: 0.72rem;
     }
+}
+
+/* ─── SECTION 17: DASHBOARD LAYOUT COMPONENTS (moved from index.php) ────── */
+
+/* Dashboard Topbar */
+.dashboard-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.dashboard-title-area {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+.dashboard-brand-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #1b4332, #2d6a4f);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #52b788;
+    font-size: 1.4rem;
+    box-shadow: 0 6px 18px rgba(45, 106, 79, 0.3);
+    flex-shrink: 0;
+}
+.dashboard-main-title {
+    margin: 0;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.65rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text-main);
+}
+.dashboard-date-pill {
+    font-size: 0.72rem;
+    background: rgba(45, 106, 79, 0.10);
+    color: #2d6a4f;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+    border: 1px solid rgba(82, 183, 136, 0.25);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.dashboard-subtitle {
+    margin: 0.2rem 0 0 0;
+    color: var(--text-muted);
+    font-size: 0.84rem;
+}
+.dashboard-actions-area {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+.filter-select {
+    margin: 0;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.82rem;
+    border-radius: 10px;
+    min-height: 40px;
+    cursor: pointer;
+}
+
+/* 2-Column Dashboard Grid */
+.dashboard-grid-2col {
+    display: grid;
+    grid-template-columns: 1.3fr 0.85fr;
+    gap: 1.5rem;
+}
+
+/* Live Activity Stream dot */
+.live-dot-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #52b788;
+    box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.3);
+    animation: pulseDot 2s infinite;
+    flex-shrink: 0;
+}
+@keyframes pulseDot {
+    0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(82, 183, 136, 0.6); }
+    70%  { transform: scale(1);    box-shadow: 0 0 0 6px rgba(82, 183, 136, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(82, 183, 136, 0); }
+}
+
+/* Feed Filter Pills */
+.feed-filters-bar {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.feed-filter-btn {
+    padding: 0.28rem 0.7rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 1.4;
+}
+.feed-filter-btn.active,
+.feed-filter-btn:hover {
+    background: var(--palmas-primary-dark);
+    color: #fff;
+    border-color: var(--palmas-primary-dark);
+}
+
+/* Feed Item */
+.feed-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.015);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    margin-bottom: 0.5rem;
+    transition: background 0.2s ease;
+}
+.feed-item:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+/* ─── SECTION 18: QUICK ACTIONS (IMPROVED) ───────────────────────────────── */
+/* Quick action button with both icon + label */
+.quick-action-btn .quick-action-label {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.quick-action-btn .quick-action-label span {
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-main);
+    transition: color var(--transition-fast);
+}
+.quick-action-btn .quick-action-label small {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+.quick-action-btn:hover .quick-action-label span {
+    color: var(--accent);
+}
+
+/* ─── SECTION 19: PENDING ALERT BANNER (SEMANTIC) ─────────────────────────── */
+.alert-pending-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.10) 0%, rgba(245, 158, 11, 0.05) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    border-left: 5px solid #F59E0B;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+}
+.alert-pending-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+.alert-pending-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: #FEF3C7;
+    color: #D97706;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+.alert-pending-text h3 {
+    margin: 0 0 2px 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+    font-family: 'Outfit', sans-serif;
+}
+.alert-pending-text p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+.alert-pending-btn {
+    background: #D97706;
+    color: #fff;
+    font-weight: 700;
+    border-radius: 10px;
+    padding: 0.55rem 1.15rem;
+    font-size: 0.84rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: background var(--transition-fast);
+    white-space: nowrap;
+    border: none;
+    cursor: pointer;
+}
+.alert-pending-btn:hover {
+    background: #B45309;
+    color: #fff;
+}
+
+/* ─── SECTION 20: ATTENDANCE TABLE CHECKOUT BUTTON (TOUCH-SAFE) ──────────── */
+/* Enlarged "Check Out" button in attendance table to meet 44px touch target */
+.manual-checkout-btn {
+    min-height: 34px !important;
+    padding: 0.35rem 0.85rem !important;
+    font-size: 0.78rem !important;
+    border-radius: 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    white-space: nowrap;
+}
+@media (max-width: 768px) {
+    .manual-checkout-btn {
+        min-height: 44px !important;
+        padding: 0.5rem 1rem !important;
+        font-size: 0.85rem !important;
+    }
+}
+
+/* ─── SECTION 21: BREADCRUMB COMPONENT ───────────────────────────────────── */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+.breadcrumb a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color var(--transition-fast);
+}
+.breadcrumb a:hover {
+    color: var(--brand-primary);
+    text-decoration: underline;
+}
+.breadcrumb-sep {
+    color: var(--border);
+    font-size: 0.75rem;
+    user-select: none;
+}
+.breadcrumb-current {
+    font-weight: 600;
+    color: var(--text-soft);
+}
+
+/* ─── SECTION 22: FORM IMPROVEMENTS (READABILITY) ────────────────────────── */
+/* Softer form labels — less harsh uppercase for primary forms */
+.form-label-readable {
+    display: block;
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: var(--text-soft);
+    margin-bottom: var(--space-2);
+    letter-spacing: 0.1px;
+    /* No uppercase — more human and readable */
+}
+/* Helper/hint text below input */
+.field-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    line-height: 1.4;
+}
+/* Required asterisk */
+.required-star {
+    color: var(--danger);
+    margin-left: 2px;
+    font-weight: 700;
+}
+
+/* ─── SECTION 23: FILTER SELECT LOADING STATE ─────────────────────────────── */
+.filter-select.is-loading {
+    opacity: 0.6;
+    pointer-events: none;
+    cursor: wait;
+}
+
+/* ─── SECTION 24: TOPBAR NOTIFICATION BELL ────────────────────────────────── */
+.topbar-notification-btn {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: var(--transition-fast);
+    text-decoration: none;
+}
+.topbar-notification-btn:hover {
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+    background: var(--accent-dim);
+}
+.topbar-notification-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    background: var(--danger);
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+
+/* ─── SECTION 25: DASHBOARD RESPONSIVE ───────────────────────────────────── */
+@media (max-width: 1100px) {
+    .dashboard-grid-2col { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+    .dashboard-main-title { font-size: 1.35rem; }
+    .dashboard-brand-icon { width: 40px; height: 40px; font-size: 1.1rem; }
+}
+@media (max-width: 640px) {
+    .alert-pending-banner { flex-direction: column; align-items: flex-start; }
+    .dashboard-topbar { flex-direction: column; align-items: stretch; }
+    .dashboard-actions-area { justify-content: stretch; }
+    .dashboard-actions-area .btn,
+    .dashboard-actions-area .filter-select { width: 100%; }
+}
+
+/* ─── SECTION 26: QUICK ACTIONS COMPONENT ───────────────────────────────── */
+.quick-actions-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.quick-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1.15rem;
+    min-height: 56px;
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md, 14px);
+    text-decoration: none;
+    color: var(--text-main);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.quick-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
+    border-color: rgba(45, 106, 79, 0.35);
+}
+.quick-action-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+.quick-action-label {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.quick-action-label span {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.25;
+}
+.quick-action-label small {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+@media (max-width: 992px) {
+    .quick-actions-bar {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 560px) {
+    .quick-actions-bar {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ─── SECTION 27: COMPREHENSIVE ACCESSIBILITY & FOCUS VISIBLE ─────────────── */
+:focus-visible {
+    outline: 2.5px solid #2d6a4f !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 4px rgba(82, 183, 136, 0.25) !important;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2.5px solid #2d6a4f !important;
+    outline-offset: 2px !important;
+}
+
+/* ─── SECTION 28: ACCESSIBLE FORM VALIDATION & FEEDBACK ──────────────────── */
+.form-control.is-invalid,
+.form-select.is-invalid {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+}
+.form-control.is-invalid:focus,
+.form-select.is-invalid:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
+    outline: 2px solid #ef4444 !important;
+}
+.invalid-feedback {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #b91c1c;
+    margin-top: 4px;
+}
+
+/* ─── SECTION 29: ACTION BUTTONS & TABLE TOUCH TARGETS (>= 44px) ────────── */
+.btn-action-checkout,
+.manual-checkout-btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.45rem 0.95rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: var(--radius-sm, 8px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+.btn-action-checkout:hover,
+.manual-checkout-btn:hover {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    border-color: #dc2626 !important;
+}
+
+.pagination-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.4rem 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm, 8px);
+    border: 1px solid var(--border);
+    background: #ffffff;
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+.pagination-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+}
+.pagination-btn.active {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+}
+.pagination-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 /* Print stylesheet (performance: strip decorative shadows, sidebars) */

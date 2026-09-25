@@ -377,10 +377,10 @@ try {
                             <?php else: ?>
                                 <div style="display:inline-flex; align-items:center; gap:8px;">
                                     <span class="badge badge-success"><i class="fas fa-circle" style="font-size:0.35rem; margin-right:4px;"></i> Inside</span>
-                                    <button type="button" class="btn btn-outline btn-sm manual-checkout-btn" 
-                                            style="padding:3px 9px; font-size:0.72rem; border-radius:6px; color:var(--text-muted); border-color:var(--border); display:inline-flex; align-items:center; gap:4px; font-weight:600; cursor:pointer;"
+                                    <button type="button" class="btn btn-outline btn-action-checkout" 
                                             onclick="manualCheckout(<?php echo $log['id']; ?>, '<?php echo htmlspecialchars(addslashes($log['full_name'])); ?>')"
-                                            title="Mark member as Left">
+                                            title="Mark <?php echo htmlspecialchars($log['full_name']); ?> as Left"
+                                            aria-label="Check out <?php echo htmlspecialchars($log['full_name']); ?>">
                                         <i class="fas fa-arrow-right-from-bracket"></i> Check Out
                                     </button>
                                 </div>
@@ -831,9 +831,8 @@ function manualCheckin() {
 }
 
 function manualCheckout(attendanceId, memberName) {
-    const confirmMsg = 'Check out ' + (memberName || 'this member') + ' now?';
     const executeCheckout = () => {
-        const btn = document.querySelector(`#att-row-${attendanceId} .manual-checkout-btn`);
+        const btn = document.querySelector(`#att-row-${attendanceId} .btn-action-checkout, #att-row-${attendanceId} .manual-checkout-btn`);
         if (btn) {
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
@@ -887,9 +886,12 @@ function manualCheckout(attendanceId, memberName) {
         });
     };
 
+    const confirmTitle = 'Confirm Check-Out';
+    const confirmMessage = `Check out <strong style="color:var(--text-main);">${escapeHtml(memberName || 'this member')}</strong> now? Their workout departure time will be logged.`;
+
     if (typeof palmasConfirm === 'function') {
-        palmasConfirm(confirmMsg, executeCheckout);
-    } else if (confirm(confirmMsg)) {
+        palmasConfirm(confirmTitle, confirmMessage, 'Check Out', 'var(--accent)', executeCheckout);
+    } else if (confirm('Check out ' + (memberName || 'this member') + ' now?')) {
         executeCheckout();
     }
 }

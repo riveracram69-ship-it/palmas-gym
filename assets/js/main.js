@@ -102,12 +102,28 @@ function palmasConfirm(title, message, confirmBtnText, confirmBtnColor, callback
         confirmBtnColor = null;
     }
 
-    const titleEl = document.getElementById('global-confirm-title');
+    const titleTextEl = document.getElementById('global-confirm-title-text');
+    const titleEl = titleTextEl || document.getElementById('global-confirm-title');
+    const iconEl = document.getElementById('global-confirm-icon');
     const msgEl = document.getElementById('global-confirm-message');
     const confirmBtn = document.getElementById('global-confirm-btn');
 
     if (titleEl) titleEl.textContent = title;
     if (msgEl) msgEl.innerHTML = message;
+
+    // Detect destructive or warning actions to adapt icon styling
+    const isDanger = (confirmBtnColor && (confirmBtnColor.includes('danger') || confirmBtnColor.includes('ef4444') || confirmBtnColor.includes('dc2626') || confirmBtnColor.includes('red'))) ||
+                     (confirmBtnText && (confirmBtnText.toLowerCase().includes('delete') || confirmBtnText.toLowerCase().includes('deactivate') || confirmBtnText.toLowerCase().includes('remove')));
+
+    if (iconEl) {
+        if (isDanger) {
+            iconEl.className = 'fas fa-triangle-exclamation';
+            iconEl.style.color = '#ef4444';
+        } else {
+            iconEl.className = 'fas fa-circle-question';
+            iconEl.style.color = '#2d6a4f';
+        }
+    }
     
     if (confirmBtn) {
         confirmBtn.textContent = confirmBtnText || 'Confirm';
@@ -140,6 +156,20 @@ function closeGlobalConfirm() {
         modal.style.display = 'none';
     }
 }
+
+// Close confirmation modal on Escape key or backdrop click
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeGlobalConfirm();
+    }
+});
+
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('global-confirm-modal');
+    if (modal && e.target === modal) {
+        closeGlobalConfirm();
+    }
+});
 
 // ── Global Toast Notification Helper ──────────────────────────────────────────
 function palmasToast(message, type = 'success') {
