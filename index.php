@@ -153,6 +153,144 @@ try {
         $stmt_top_all = $pdo->query(sprintf($leaderboard_sql, "1=1"));
         $top_active_all = $stmt_top_all ? $stmt_top_all->fetchAll(PDO::FETCH_ASSOC) : [];
 
+        // ── 5. Server-side Pre-rendered Live Activity Feed ──────────────────────
+        $server_live_feed = [];
+        try {
+            // A. Check-ins & Check-outs (Last 12)
+            $stmt_feed_att = $pdo->query("
+                SELECT a.id, a.date, a.time_in, a.time_out, m.full_name, m.membership_id, m.photo
+                FROM attendance a
+                JOIN members m ON m.id = a.member_id
+                ORDER BY a.date DESC, a.time_in DESC
+                LIMIT 12
+            ");
+            if ($stmt_feed_att) {
+                foreach ($stmt_feed_att->fetchAll(PDO::FETCH_ASSOC) as $att) {
+                    $ts = strtotime($att['date'] . ' ' . $att['time_in']);
+                    $server_live_feed[] = [
+                        'type'          => 'checkin',
+                        'timestamp'     => $ts,
+                        'time_formatted'=> date('h:i A', $ts),
+                        'date_formatted'=> date('M d', $ts),
+                        'title'         => htmlspecialchars($att['full_name']) . ' checked in',
+                        'description'   => 'Scanned ID ' . htmlspecialchars($att['membership_id']) . ' at reception.',
+                        'icon'          => 'fa-qrcode',
+                        'color'         => '#38bdf8',
+                        'bg'            => 'rgba(56, 189, 248, 0.12)',
+                        'badge'         => 'Check-in',
+                    ];
+                    if (!empty($att['time_out'])) {
+                        $out = strtotime($att['date'] . ' ' . $att['time_out']);
+                        $server_live_feed[] = [
+                            'type'          => 'checkout',
+                            'timestamp'     => $out,
+                            'time_formatted'=> date('h:i A', $out),
+                            'date_formatted'=> date('M d', $out),
+                            'title'         => htmlspecialchars($att['full_name']) . ' checked out',
+                            'description'   => 'Completed gym session.',
+                            'icon'          => 'fa-door-open',
+                            'color'         => '#94a3b8',
+                            'bg'            => 'rgba(148, 163, 184, 0.12)',
+                            'badge'         => 'Check-out',
+                        ];
+                    }
+                }
+            }
+
+            // B. Payments (Recent 10)
+            if (is_admin()) {
+                $stmt_feed_pay = $pdo->query("
+                    SELECT p.id, p.payment_date, p.created_at, p.amount, p.payment_method, m.full_name, m.membership_id
+                    FROM payments p
+                    JOIN members m ON m.id = p.member_id
+                    ORDER BY p.created_at DESC
+                    LIMIT 10
+                ");
+                if ($stmt_feed_pay) {
+                    foreach ($stmt_feed_pay->fetchAll(PDO::FETCH_ASSOC) as $pay) {
+                        $ts = strtotime($pay['created_at'] ?: $pay['payment_date']);
+                        $server_live_feed[] = [
+                            'type'          => 'payment',
+                            'timestamp'     => $ts,
+                            'time_formatted'=> date('h:i A', $ts),
+                            'date_formatted'=> date('M d', $ts),
+                            'title'         => htmlspecialchars($pay['full_name']) . ' made a payment',
+                            'description'   => 'Paid ₱' . number_format($pay['amount'], 2) . ' via ' . htmlspecialchars($pay['payment_method']) . '.',
+                            'icon'          => 'fa-money-bill-wave',
+                            'color'         => '#52b788',
+                            'bg'            => 'rgba(82, 183, 136, 0.12)',
+                            'badge'         => 'Payment',
+                        ];
+                    }
+                }
+            }
+
+            // C. Renewals & Subscriptions (Recent 8)
+            $stmt_feed_sub = $pdo->query("
+                SELECT s.id, s.start_date, s.created_at, m.full_name, p.name as plan_name
+                FROM subscriptions s
+                JOIN members m ON m.id = s.member_id
+                JOIN membership_plans p ON p.id = s.plan_id
+                ORDER BY s.created_at DESC
+                LIMIT 8
+            ");
+            if ($stmt_feed_sub) {
+                foreach ($stmt_feed_sub->fetchAll(PDO::FETCH_ASSOC) as $sub) {
+                    $ts = strtotime($sub['created_at'] ?: $sub['start_date']);
+                    $server_live_feed[] = [
+                        'type'          => 'renewal',
+                        'timestamp'     => $ts,
+                        'time_formatted'=> date('h:i A', $ts),
+                        'date_formatted'=> date('M d', $ts),
+                        'title'         => htmlspecialchars($sub['full_name']) . ' renewed membership',
+                        'description'   => 'Activated ' . htmlspecialchars($sub['plan_name']) . ' plan.',
+                        'icon'          => 'fa-arrows-rotate',
+                        'color'         => '#eab308',
+                        'bg'            => 'rgba(234, 179, 8, 0.12)',
+                        'badge'         => 'Renewal',
+                    ];
+                }
+            }
+
+            // D. Registrations (Recent 8)
+            $stmt_feed_reg = $pdo->query("
+                SELECT id, full_name, membership_id, created_at
+                FROM members
+                ORDER BY created_at DESC
+                LIMIT 8
+            ");
+            if ($stmt_feed_reg) {
+                foreach ($stmt_feed_reg->fetchAll(PDO::FETCH_ASSOC) as $m_reg) {
+                    $ts = strtotime($m_reg['created_at']);
+                    $server_live_feed[] = [
+                        'type'          => 'registration',
+                        'timestamp'     => $ts,
+                        'time_formatted'=> date('h:i A', $ts),
+                        'date_formatted'=> date('M d', $ts),
+                        'title'         => htmlspecialchars($m_reg['full_name']) . ' registered as a new member',
+                        'description'   => 'Assigned Membership ID: ' . htmlspecialchars($m_reg['membership_id']) . '.',
+                        'icon'          => 'fa-user-plus',
+                        'color'         => '#c084fc',
+                        'bg'            => 'rgba(192, 132, 252, 0.12)',
+                        'badge'         => 'Registration',
+                    ];
+                }
+            }
+
+            usort($server_live_feed, fn($a, $b) => $b['timestamp'] - $a['timestamp']);
+            $server_live_feed = array_slice($server_live_feed, 0, 20);
+            $now = time();
+            foreach ($server_live_feed as &$item) {
+                $diff = $now - $item['timestamp'];
+                if ($diff < 60)         $item['relative_time'] = 'Just now';
+                elseif ($diff < 3600)   $item['relative_time'] = floor($diff / 60) . ' mins ago';
+                elseif ($diff < 86400)  $item['relative_time'] = floor($diff / 3600) . ' hrs ago';
+                else                    $item['relative_time'] = floor($diff / 86400) . ' days ago';
+            }
+        } catch (Exception $e) {
+            $server_live_feed = [];
+        }
+
     }
 } catch (Exception $e) {
     error_log("Dashboard Query Error: " . $e->getMessage());
@@ -638,9 +776,27 @@ try {
 
                 <!-- Feed Items Stream -->
                 <div id="live-feed-stream" class="feed-items-container" style="max-height:360px; overflow-y:auto;">
-                    <div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">
-                        <i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i> Loading live activity stream...
-                    </div>
+                    <?php if (empty($server_live_feed)): ?>
+                        <div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">
+                            <i class="fas fa-inbox" style="font-size:1.6rem; display:block; margin-bottom:0.4rem; color:#cbd5e1;"></i>
+                            No recent activities recorded yet.
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($server_live_feed as $item): ?>
+                            <div class="feed-item" style="display:flex; align-items:flex-start; gap:0.75rem; padding:0.65rem 0.5rem; border-bottom:1px solid var(--border);">
+                                <div style="width:32px; height:32px; border-radius:8px; background:<?php echo $item['bg']; ?>; color:<?php echo $item['color']; ?>; display:flex; align-items:center; justify-content:center; font-size:0.85rem; flex-shrink:0;">
+                                    <i class="fas <?php echo $item['icon']; ?>"></i>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; gap:0.4rem;">
+                                        <span style="font-size:0.82rem; font-weight:700; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?php echo $item['title']; ?></span>
+                                        <span style="font-size:0.7rem; color:var(--text-muted); white-space:nowrap;"><?php echo $item['relative_time']; ?></span>
+                                    </div>
+                                    <p style="font-size:0.75rem; color:var(--text-muted); margin:0.15rem 0 0 0; line-height:1.3;"><?php echo $item['description']; ?></p>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -769,9 +925,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- ── LIVE ACTIVITY FEED SCRIPT (FETCH API) ────────────────────────────── -->
 <script>
-let rawFeedData = [];
+let rawFeedData = <?php echo json_encode($server_live_feed, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?> || [];
 let currentCategory = 'all';
 
 async function fetchLiveFeed() {
