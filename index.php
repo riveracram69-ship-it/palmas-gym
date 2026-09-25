@@ -90,7 +90,7 @@ try {
         ");
         $today_attendance_list = $stmt_att ? $stmt_att->fetchAll(PDO::FETCH_ASSOC) : [];
 
-        // ── 3. Overdue Renewals (Categorized with Plan Metadata) ────────────────
+        // ── 3. Overdue Renewals (Recurring Members Only, Excludes 1-Day Walk-ins) ─
         $stmt_od = $pdo->query("
             SELECT m.id, m.full_name, m.membership_id, m.contact_number, m.email, m.photo,
                    m.annual_membership_expiry,
@@ -106,6 +106,8 @@ try {
             JOIN members m ON m.id = s.member_id
             JOIN membership_plans p ON p.id = s.plan_id
             WHERE s.expiry_date < CURDATE()
+              AND (p.duration_months > 0 OR p.duration_minutes > 1440)
+              AND p.plan_category != 'membership_fee'
               AND s.member_id NOT IN (SELECT member_id FROM subscriptions WHERE expiry_date >= CURDATE())
             ORDER BY s.expiry_date DESC
             LIMIT 50
@@ -463,21 +465,12 @@ try {
                 </div>
             </div>
 
-            <!-- Card 2: Overdue / Expired Renewals (Enhanced Follow-up Center) -->
-            <?php
-            $regular_count = 0;
-            $daily_count   = 0;
-            foreach ($overdue_renewals as $od_item) {
-                $is_daily_item = ((int)($od_item['duration_months'] ?? 0) === 0 && (int)($od_item['duration_minutes'] ?? 0) <= 1440);
-                if ($is_daily_item) $daily_count++;
-                else $regular_count++;
-            }
-            ?>
+            <!-- Card 2: Overdue / Expired Renewals (Follow-up Center) -->
             <div class="card" id="card-expired-followups">
                 <div class="card-header-flex" style="flex-wrap:wrap; gap:10px;">
                     <div>
                         <h3 class="section-title"><i class="fas fa-triangle-exclamation" style="color:#ef4444;"></i> Expired Plans &amp; Follow-ups</h3>
-                        <p class="section-subtitle">Members with expired plans needing renewal follow-up</p>
+                        <p class="section-subtitle">Recurring members with expired plans needing renewal</p>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                         <?php if (!empty($overdue_renewals)): ?>
@@ -491,20 +484,7 @@ try {
                     </div>
                 </div>
 
-                <!-- Filter Tabs: Regular Members vs 1-Day Walk-ins -->
-                <div style="display:flex; gap:0.4rem; margin:0.85rem 0 1rem; border-bottom:1px solid var(--border); padding-bottom:0.6rem; overflow-x:auto;">
-                    <button type="button" class="od-filter-tab active" id="tab-btn-regular" onclick="filterOverdueTable('regular', this)" style="background:rgba(45,106,79,0.12); color:#2d6a4f; border:1px solid rgba(82,183,136,0.35); border-radius:20px; padding:4px 12px; font-size:0.75rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
-                        <i class="fas fa-user-clock"></i> Regular (Monthly/Yearly) <span class="badge" style="background:#2d6a4f; color:#fff; font-size:0.65rem; padding:1px 6px; border-radius:10px;" id="count-tab-regular"><?php echo $regular_count; ?></span>
-                    </button>
-                    <button type="button" class="od-filter-tab" id="tab-btn-daily" onclick="filterOverdueTable('daily', this)" style="background:transparent; color:var(--text-muted); border:1px solid var(--border); border-radius:20px; padding:4px 12px; font-size:0.75rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
-                        <i class="fas fa-ticket"></i> Daily / Walk-in <span class="badge" style="background:#64748b; color:#fff; font-size:0.65rem; padding:1px 6px; border-radius:10px;" id="count-tab-daily"><?php echo $daily_count; ?></span>
-                    </button>
-                    <button type="button" class="od-filter-tab" id="tab-btn-all" onclick="filterOverdueTable('all', this)" style="background:transparent; color:var(--text-muted); border:1px solid var(--border); border-radius:20px; padding:4px 12px; font-size:0.75rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
-                        <i class="fas fa-list"></i> All (<?php echo count($overdue_renewals); ?>)
-                    </button>
-                </div>
-
-                <div class="table-container" style="max-height: 480px; overflow-y: auto;">
+                <div class="table-container" style="max-height: 480px; overflow-y: auto; margin-top: 0.5rem;">
                     <table id="overdue-table">
                         <thead>
                             <tr>
@@ -519,13 +499,12 @@ try {
                             <tr id="row-no-overdue">
                                 <td colspan="4" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
                                     <i class="fas fa-circle-check" style="font-size:1.8rem; color:#52b788; display:block; margin-bottom:0.5rem;"></i>
-                                    <strong>All active member subscriptions are in good standing!</strong>
-                                    <p style="margin:4px 0 0 0; font-size:0.78rem;">No expired passes requiring immediate follow-up.</p>
+                                    <strong>All recurring member subscriptions are in good standing!</strong>
+                                    <p style="margin:4px 0 0 0; font-size:0.78rem;">No expired memberships requiring immediate follow-up.</p>
                                 </td>
                             </tr>
                             <?php else: ?>
                             <?php foreach ($overdue_renewals as $od): 
-                                $is_daily = ((int)($od['duration_months'] ?? 0) === 0 && (int)($od['duration_minutes'] ?? 0) <= 1440);
                                 $days = max(1, intval($od['overdue_days'] ?? 1));
                                 
                                 // Color-coded days overdue
@@ -540,7 +519,7 @@ try {
                                     $od_label = "🔴 {$days}d ago (Lapsed)";
                                 }
                             ?>
-                            <tr class="od-row" id="od-row-<?php echo $od['id']; ?>" data-type="<?php echo $is_daily ? 'daily' : 'regular'; ?>">
+                            <tr class="od-row" id="od-row-<?php echo $od['id']; ?>">
                                 <td>
                                     <div class="member-cell">
                                         <div class="member-avatar" style="width:34px; height:34px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#f1f5f9; font-weight:700; color:#2d6a4f; font-size:0.85rem;">
@@ -577,7 +556,7 @@ try {
                                     <div style="display:flex; flex-direction:column; gap:2px;">
                                         <span class="badge badge-gold" style="font-size:0.75rem; font-weight:700;"><?php echo htmlspecialchars($od['plan_name']); ?></span>
                                         <span style="font-size:0.68rem; color:var(--text-muted);">
-                                            <?php echo $is_daily ? 'Single-Day Pass' : 'Recurring Plan'; ?>
+                                            ₱<?php echo number_format((float)($od['plan_price'] ?? 0), 2); ?> • Recurring Pass
                                         </span>
                                     </div>
                                 </td>
@@ -871,48 +850,6 @@ function manualCheckout(attendanceId, memberName) {
         if (confirm(confirmMsg)) {
             executeCheckout();
         }
-    }
-// ── Overdue Plans Table Tab Filtering ─────────────────────────────────────
-function filterOverdueTable(type, btn) {
-    const tabs = document.querySelectorAll('.od-filter-tab');
-    tabs.forEach(t => {
-        t.style.background = 'transparent';
-        t.style.color = 'var(--text-muted)';
-        t.style.borderColor = 'var(--border)';
-        t.style.fontWeight = '600';
-    });
-
-    if (btn) {
-        btn.style.background = 'rgba(45,106,79,0.12)';
-        btn.style.color = '#2d6a4f';
-        btn.style.borderColor = 'rgba(82,183,136,0.35)';
-        btn.style.fontWeight = '700';
-    }
-
-    const rows = document.querySelectorAll('.od-row');
-    let visibleCount = 0;
-
-    rows.forEach(row => {
-        const rowType = row.getAttribute('data-type');
-        if (type === 'all' || rowType === type) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
-        }
-    });
-
-    let noRow = document.getElementById('row-filter-empty');
-    if (visibleCount === 0 && rows.length > 0) {
-        if (!noRow) {
-            noRow = document.createElement('tr');
-            noRow.id = 'row-filter-empty';
-            noRow.innerHTML = '<td colspan="4" style="text-align:center; padding:2rem; color:var(--text-muted);"><i class="fas fa-info-circle" style="color:var(--accent); margin-right:5px;"></i> No expired passes in this category.</td>';
-            document.getElementById('overdue-tbody').appendChild(noRow);
-        }
-        noRow.style.display = '';
-    } else if (noRow) {
-        noRow.style.display = 'none';
     }
 }
 

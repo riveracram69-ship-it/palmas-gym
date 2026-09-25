@@ -221,6 +221,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'send_bulk_renewal_reminders')
             JOIN members m ON m.id = s.member_id
             JOIN membership_plans p ON p.id = s.plan_id
             WHERE s.expiry_date < CURDATE()
+              AND (p.duration_months > 0 OR p.duration_minutes > 1440)
+              AND p.plan_category != 'membership_fee'
               AND s.member_id NOT IN (SELECT member_id FROM subscriptions WHERE expiry_date >= CURDATE())
               AND m.email IS NOT NULL AND m.email != ''
         ");
