@@ -157,26 +157,6 @@ try {
         $stmt_top_all = $pdo->query(sprintf($leaderboard_sql, "1=1"));
         $top_active_all = $stmt_top_all ? $stmt_top_all->fetchAll(PDO::FETCH_ASSOC) : [];
 
-        // Dynamic Month Selector Options (All 12 months for current year + previous year)
-        $current_year = intval(date('Y'));
-        $months_current_year = [];
-        for ($m = 12; $m >= 1; $m--) {
-            $ym = sprintf('%04d-%02d', $current_year, $m);
-            $months_current_year[] = [
-                'ym' => $ym,
-                'ym_label' => date('F Y', strtotime($ym . '-01'))
-            ];
-        }
-
-        $months_prev_year = [];
-        for ($m = 12; $m >= 1; $m--) {
-            $ym = sprintf('%04d-%02d', $current_year - 1, $m);
-            $months_prev_year[] = [
-                'ym' => $ym,
-                'ym_label' => date('F Y', strtotime($ym . '-01'))
-            ];
-        }
-
         // ── 5. Server-side Pre-rendered Live Activity Feed ──────────────────────
         $server_live_feed = [];
         try {
@@ -889,31 +869,18 @@ try {
                         <p class="section-subtitle">Top champions by workout visits (<strong id="lb-period-title" style="color:var(--accent); font-weight:700;"><?php echo date('F Y'); ?></strong>)</p>
                     </div>
 
-                    <!-- Interactive Month & Period Dropdown Filter -->
+                    <!-- Interactive Native Month Picker Calendar -->
                     <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
-                        <div style="display:inline-flex; align-items:center; gap:6px; background:var(--bg-main, #f8fafc); padding:3px 8px; border-radius:12px; border:1px solid var(--border);">
-                            <i class="fas fa-calendar-alt" style="color:#2d6a4f; font-size:0.82rem;"></i>
-                            <select id="lb-period-select" onchange="changeLeaderboardPeriod(this.value)" style="border:none; background:transparent; font-size:0.75rem; font-weight:700; color:var(--text-main); cursor:pointer; outline:none; padding:2px 2px;">
-                                <optgroup label="Presets">
-                                    <option value="this_month" selected>📅 This Month (<?php echo date('M Y'); ?>)</option>
-                                    <option value="prev_month">⏪ Last Month (<?php echo date('M Y', strtotime('-1 month')); ?>)</option>
-                                    <option value="this_week">⚡ This Week</option>
-                                    <option value="all_time">👑 All-Time History</option>
-                                </optgroup>
-                                <optgroup label="Select Month (<?php echo $current_year; ?>)">
-                                    <?php foreach ($months_current_year as $m_opt): ?>
-                                        <option value="<?php echo $m_opt['ym']; ?>">🗓️ <?php echo htmlspecialchars($m_opt['ym_label']); ?></option>
-                                    <?php endforeach; ?>
-                                </optgroup>
-                                <optgroup label="Select Month (<?php echo $current_year - 1; ?>)">
-                                    <?php foreach ($months_prev_year as $m_opt): ?>
-                                        <option value="<?php echo $m_opt['ym']; ?>">🗓️ <?php echo htmlspecialchars($m_opt['ym_label']); ?></option>
-                                    <?php endforeach; ?>
-                                </optgroup>
-                            </select>
+                        <div style="display:inline-flex; align-items:center; gap:6px; background:var(--bg-main, #f8fafc); padding:3px 8px; border-radius:10px; border:1px solid var(--border);">
+                            <i class="fas fa-calendar-alt" style="color:#2d6a4f; font-size:0.85rem;"></i>
+                            <input type="month" 
+                                   id="lb-month-picker" 
+                                   value="<?php echo date('Y-m'); ?>" 
+                                   onchange="changeLeaderboardPeriod(this.value)" 
+                                   style="border:none; background:transparent; font-size:0.78rem; font-weight:700; color:var(--text-main); cursor:pointer; outline:none; font-family:inherit; padding:2px 0;">
                         </div>
                         
-                        <button type="button" class="btn btn-outline btn-sm" onclick="changeLeaderboardPeriod(document.getElementById('lb-period-select').value)" style="padding:0.25rem 0.5rem; font-size:0.75rem; border-radius:8px;" title="Refresh Leaderboard">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="changeLeaderboardPeriod(document.getElementById('lb-month-picker').value)" style="padding:0.25rem 0.5rem; font-size:0.75rem; border-radius:8px;" title="Refresh Leaderboard">
                             <i class="fas fa-arrows-rotate" id="lb-refresh-icon"></i>
                         </button>
                     </div>
