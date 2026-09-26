@@ -515,8 +515,6 @@ $reg_sql = "
            pt.reference_code as online_ref_code,
            pt.amount as online_amount,
            pt.status as online_status,
-           pt.proof_image as online_proof_image,
-           rr.receipt_image as rr_receipt_image,
            rr.payment_method as rr_payment_method,
            rr.reference_no as rr_reference_no
     FROM members m
