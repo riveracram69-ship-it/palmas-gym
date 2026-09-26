@@ -23,13 +23,133 @@ if (isset($_GET['download'])) {
     }
 }
 
+// Helper function: Pure PHP Database Backup Generator (Cross-platform, Cloud & Localhost compatible)
+function generate_native_sql_backup(PDO $pdo, string $target_file): bool {
+    $fp = @fopen($target_file, 'w');
+    if (!$fp) return false;
+
+    try {
+        @$pdo->exec("SET SESSION sql_quote_show_create = 1");
+        @$pdo->exec("SET SESSION sql_mode = 'NO_AUTO_VALUE_ON_ZERO'");
+    } catch (\Throwable $t) {}
+
+    fwrite($fp, "-- ========================================================\n");
+    fwrite($fp, "-- PALMA'S ELITE GYM MANAGEMENT SYSTEM DATABASE BACKUP\n");
+    fwrite($fp, "-- Generated: " . date('Y-m-d H:i:s') . "\n");
+    fwrite($fp, "-- Server: " . (defined('DB_HOST') ? DB_HOST : 'localhost') . "\n");
+    fwrite($fp, "-- Database: " . (defined('DB_NAME') ? DB_NAME : 'gym_management') . "\n");
+    fwrite($fp, "-- ========================================================\n\n");
+    fwrite($fp, "SET FOREIGN_KEY_CHECKS=0;\n");
+    fwrite($fp, "SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';\n");
+    fwrite($fp, "SET time_zone = '+08:00';\n\n");
+
+    try {
+        $tables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
+
+        foreach ($tables as $table) {
+            fwrite($fp, "-- --------------------------------------------------------\n");
+            fwrite($fp, "-- Table structure for table `{$table}`\n");
+            fwrite($fp, "-- --------------------------------------------------------\n\n");
+            fwrite($fp, "DROP TABLE IF EXISTS `{$table}`;\n");
+
+            $create_row = $pdo->query("SHOW CREATE TABLE `{$table}`")->fetch(PDO::FETCH_NUM);
+            $create_sql = $create_row[1] ?? '';
+            $create_sql = preg_replace('/"([^"]+)"/', '`$1`', $create_sql);
+            fwrite($fp, $create_sql . ";\n\n");
+
+            // Dump rows in batches
+            $stmt = $pdo->query("SELECT * FROM `{$table}`");
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (!empty($rows)) {
+                fwrite($fp, "-- Dumping data for table `{$table}`\n\n");
+                $cols = array_keys($rows[0]);
+                $quoted_cols = array_map(function($col) { return "`" . str_replace("`", "``", $col) . "`"; }, $cols);
+                $col_list = implode(', ', $quoted_cols);
+
+                $chunks = array_chunk($rows, 100);
+                foreach ($chunks as $chunk) {
+                    $val_lines = [];
+                    foreach ($chunk as $row) {
+                        $vals = [];
+                        foreach ($cols as $col) {
+                            $val = $row[$col];
+                            if ($val === null) {
+                                $vals[] = 'NULL';
+                            } elseif (is_int($val) || is_float($val)) {
+                                $vals[] = $val;
+                            } else {
+                                $vals[] = $pdo->quote($val);
+                            }
+                        }
+                        $val_lines[] = "(" . implode(', ', $vals) . ")";
+                    }
+                    fwrite($fp, "INSERT INTO `{$table}` ({$col_list}) VALUES\n" . implode(",\n", $val_lines) . ";\n\n");
+                }
+            }
+        }
+
+        fwrite($fp, "SET FOREIGN_KEY_CHECKS=1;\n");
+        fclose($fp);
+        return true;
+    } catch (\Throwable $e) {
+        error_log("Native SQL Backup failed: " . $e->getMessage());
+        @fclose($fp);
+        if (file_exists($target_file)) @unlink($target_file);
+        return false;
+    }
+}
+
+// Helper function: Pure PHP Database Restore / Importer
+function restore_native_sql_backup(PDO $pdo, string $filepath): bool {
+    if (!file_exists($filepath)) return false;
+    $sql = @file_get_contents($filepath);
+    if ($sql === false || trim($sql) === '') return false;
+
+    $lines = explode("\n", $sql);
+    $current_stmt = '';
+
+    try {
+        $pdo->exec("SET FOREIGN_KEY_CHECKS=0;");
+        $pdo->exec("SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';");
+
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+            if ($trimmed === '' || str_starts_with($trimmed, '--') || str_starts_with($trimmed, '/*') || str_starts_with($trimmed, '#')) {
+                continue;
+            }
+
+            $current_stmt .= $line . "\n";
+
+            if (str_ends_with($trimmed, ';')) {
+                $stmt = trim($current_stmt);
+                $current_stmt = '';
+                if ($stmt !== '') {
+                    $pdo->exec($stmt);
+                }
+            }
+        }
+
+        if (trim($current_stmt) !== '') {
+            $pdo->exec(trim($current_stmt));
+        }
+
+        $pdo->exec("SET FOREIGN_KEY_CHECKS=1;");
+        return true;
+    } catch (\Throwable $e) {
+        error_log("Native SQL Restore failed: " . $e->getMessage());
+        try { $pdo->exec("SET FOREIGN_KEY_CHECKS=1;"); } catch (\Throwable $t) {}
+        return false;
+    }
+}
+
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // CSRF is already auto-verified by auth.php
     $action = $_POST['action'] ?? '';
     $file = isset($_POST['file']) ? basename($_POST['file']) : '';
     $filepath = $backup_dir . $file;
-    global $host, $db, $user, $pass; // From config/db.php included via header.php/sidebar.php usually, but let's just make sure
+    global $host, $db, $user, $pass;
     
     // Fallback if not loaded
     $db_host = defined('DB_HOST') ? DB_HOST : ($host ?? 'localhost');
@@ -46,8 +166,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Check Windows common paths
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             $win_candidates = [
-                'C:\\xam\\mysql\\bin\\' . $bin_name . '.exe',
+                'C:\\xamp\\mysql\\bin\\' . $bin_name . '.exe',
                 'C:\\xampp\\mysql\\bin\\' . $bin_name . '.exe',
+                'D:\\xamp\\mysql\\bin\\' . $bin_name . '.exe',
+                'D:\\xampp\\mysql\\bin\\' . $bin_name . '.exe',
                 $bin_name . '.exe',
                 $bin_name
             ];
@@ -69,52 +191,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         return $bin_name;
     };
 
-    $mysqldump_bin = $resolve_bin(defined('MYSQLDUMP_PATH') ? MYSQLDUMP_PATH : '', 'mysqldump');
-    $mysql_bin = $resolve_bin(defined('MYSQL_PATH') ? MYSQL_PATH : '', 'mysql');
-    
     if ($action === 'generate') {
         $filename = 'gym_backup_' . date('Ymd_His') . '.sql';
         $target = $backup_dir . $filename;
         
-        $e_host = escapeshellarg($db_host);
-        $e_port = escapeshellarg($db_port);
-        $e_user = escapeshellarg($db_user);
-        $e_pass = $db_pass !== '' ? '-p' . escapeshellarg($db_pass) . ' ' : '';
-        $e_name = escapeshellarg($db_name);
-        $e_target = escapeshellarg($target);
+        // 1. Try Native PHP PDO Dumper first (Zero external dependencies, works everywhere)
+        $generated = generate_native_sql_backup($pdo, $target);
 
-        $cmd = escapeshellcmd($mysqldump_bin) . " -h {$e_host} -P {$e_port} -u {$e_user} {$e_pass}{$e_name} > {$e_target}";
-        exec($cmd, $output, $return_var);
+        // 2. Fallback to CLI mysqldump if native failed
+        if (!$generated || !file_exists($target) || filesize($target) === 0) {
+            $mysqldump_bin = $resolve_bin(defined('MYSQLDUMP_PATH') ? MYSQLDUMP_PATH : '', 'mysqldump');
+            $e_host = escapeshellarg($db_host);
+            $e_port = escapeshellarg($db_port);
+            $e_user = escapeshellarg($db_user);
+            $e_pass = $db_pass !== '' ? '-p' . escapeshellarg($db_pass) . ' ' : '';
+            $e_name = escapeshellarg($db_name);
+            $e_target = escapeshellarg($target);
+
+            $cmd = escapeshellcmd($mysqldump_bin) . " -h {$e_host} -P {$e_port} -u {$e_user} {$e_pass}{$e_name} > {$e_target}";
+            @exec($cmd, $output, $return_var);
+            $generated = ($return_var === 0 && file_exists($target) && filesize($target) > 0);
+        }
         
-        if ($return_var === 0 && file_exists($target) && filesize($target) > 0) {
-            $message = "Backup generated successfully: $filename";
+        if ($generated && file_exists($target) && filesize($target) > 0) {
+            $message = "Backup generated successfully: $filename (" . formatBytes(filesize($target)) . ")";
             log_activity($pdo, 'Backup Generated', "Created database backup: $filename", 'System');
         } else {
-            $error = "Failed to generate backup. Please check database permissions or configured binary paths.";
+            $error = "Failed to generate backup. Please check directory write permissions for /backups/.";
         }
     } elseif ($action === 'delete' && file_exists($filepath)) {
-        if (unlink($filepath)) {
+        if (@unlink($filepath)) {
             $message = "Backup deleted successfully: $file";
             log_activity($pdo, 'Backup Deleted', "Removed database backup: $file", 'System');
         } else {
             $error = "Failed to delete backup file.";
         }
     } elseif ($action === 'restore' && file_exists($filepath)) {
-        $e_host = escapeshellarg($db_host);
-        $e_port = escapeshellarg($db_port);
-        $e_user = escapeshellarg($db_user);
-        $e_pass = $db_pass !== '' ? '-p' . escapeshellarg($db_pass) . ' ' : '';
-        $e_name = escapeshellarg($db_name);
-        $e_target = escapeshellarg($filepath);
+        // 1. Try Native PHP PDO Restore first
+        $restored = restore_native_sql_backup($pdo, $filepath);
 
-        $cmd = escapeshellcmd($mysql_bin) . " -h {$e_host} -P {$e_port} -u {$e_user} {$e_pass}{$e_name} < {$e_target}";
-        exec($cmd, $output, $return_var);
+        // 2. Fallback to CLI mysql if native failed
+        if (!$restored) {
+            $mysql_bin = $resolve_bin(defined('MYSQL_PATH') ? MYSQL_PATH : '', 'mysql');
+            $e_host = escapeshellarg($db_host);
+            $e_port = escapeshellarg($db_port);
+            $e_user = escapeshellarg($db_user);
+            $e_pass = $db_pass !== '' ? '-p' . escapeshellarg($db_pass) . ' ' : '';
+            $e_name = escapeshellarg($db_name);
+            $e_target = escapeshellarg($filepath);
+
+            $cmd = escapeshellcmd($mysql_bin) . " -h {$e_host} -P {$e_port} -u {$e_user} {$e_pass}{$e_name} < {$e_target}";
+            @exec($cmd, $output, $return_var);
+            $restored = ($return_var === 0);
+        }
         
-        if ($return_var === 0) {
+        if ($restored) {
             $message = "Database restored successfully from: $file";
             log_activity($pdo, 'Database Restored', "Restored system from backup: $file", 'System');
         } else {
-            $error = "Failed to restore database. Return code: $return_var";
+            $error = "Failed to restore database. Please verify the backup file format.";
         }
     }
 }
