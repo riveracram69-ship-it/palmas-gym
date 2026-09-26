@@ -455,65 +455,14 @@ try {
         </div>
     </div>
 
-    <!-- ── QUICK ACTIONS BAR ─────────────────────────────────────────────────── -->
-    <div class="quick-actions-bar" role="navigation" aria-label="Quick Actions">
-        <a href="add-member.php" class="quick-action-btn">
-            <div class="quick-action-icon" style="background:rgba(62,130,65,0.12); color:#3e8241;">
-                <i class="fas fa-user-plus"></i>
-            </div>
-            <div class="quick-action-label">
-                <span>Add Member</span>
-                <small>Register new member</small>
-            </div>
-        </a>
-        <a href="attendance.php" class="quick-action-btn">
-            <div class="quick-action-icon" style="background:rgba(2,132,199,0.12); color:#0284c7;">
-                <i class="fas fa-qrcode"></i>
-            </div>
-            <div class="quick-action-label">
-                <span>QR Scanner</span>
-                <small>Open attendance terminal</small>
-            </div>
-        </a>
-        <a href="pending-registrations.php" class="quick-action-btn">
-            <div class="quick-action-icon" style="background:rgba(245,158,11,0.12); color:#d97706;">
-                <i class="fas fa-user-clock"></i>
-            </div>
-            <div class="quick-action-label">
-                <span>Pending Approvals</span>
-                <small><?php echo $pending_registrations_cnt > 0 ? $pending_registrations_cnt . ' awaiting review' : 'No pending requests'; ?></small>
-            </div>
-        </a>
-        <a href="renewal-requests.php" class="quick-action-btn">
-            <div class="quick-action-icon" style="background:rgba(147,51,234,0.12); color:#9333ea;">
-                <i class="fas fa-arrows-rotate"></i>
-            </div>
-            <div class="quick-action-label">
-                <span>Renewal Requests</span>
-                <small><?php echo $pending_renewals_count > 0 ? $pending_renewals_count . ' awaiting action' : 'No pending renewals'; ?></small>
-            </div>
-        </a>
-        <?php if ($is_admin): ?>
-        <a href="reports.php" class="quick-action-btn">
-            <div class="quick-action-icon" style="background:rgba(212,169,66,0.12); color:#d4a942;">
-                <i class="fas fa-chart-line"></i>
-            </div>
-            <div class="quick-action-label">
-                <span>Reports</span>
-                <small>Revenue &amp; analytics</small>
-            </div>
-        </a>
-        <?php endif; ?>
-    </div>
-
     <!-- ── STREAMLINED 2-COLUMN OPERATIONAL WORKSPACE ───────────────────────── -->
-    <div class="dashboard-grid-2col">
+    <div class="dashboard-grid-2col" style="margin-top: 1.5rem;">
         
         <!-- LEFT COLUMN: TODAY'S ATTENDANCE & OVERDUE RENEWALS -->
         <div style="display:flex; flex-direction:column; gap:1.5rem;">
             
             <!-- Card 1: Today's Live Attendance Table -->
-            <div class="card dash-equal-card" style="height:440px; min-height:440px; max-height:440px; display:flex; flex-direction:column; overflow:hidden;">
+            <div class="card dash-equal-card" style="height:500px; min-height:500px; max-height:500px; display:flex; flex-direction:column; overflow:hidden;">
                 <div class="card-header-flex" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:0.75rem; flex-shrink:0;">
                     <div>
                         <h3 class="section-title" style="margin:0;"><i class="fas fa-qrcode" style="color:var(--accent);"></i> Today's Live Attendance</h3>
@@ -627,7 +576,7 @@ try {
             </div>
 
             <!-- Card 2: Overdue / Expired Renewals (Follow-up Center) -->
-            <div class="card dash-equal-card" id="card-expired-followups" style="height:440px; min-height:440px; max-height:440px; display:flex; flex-direction:column; overflow:hidden;">
+            <div class="card dash-equal-card" id="card-expired-followups" style="height:500px; min-height:500px; max-height:500px; display:flex; flex-direction:column; overflow:hidden;">
                 <div class="card-header-flex" style="flex-wrap:wrap; gap:10px; margin-bottom:0.75rem; flex-shrink:0;">
                     <div>
                         <h3 class="section-title"><i class="fas fa-triangle-exclamation" style="color:#ef4444;"></i> Expired Plans &amp; Follow-ups</h3>
@@ -756,7 +705,7 @@ try {
         <div style="display:flex; flex-direction:column; gap:1.5rem;">
             
             <!-- Real-Time Activity Feed -->
-            <div class="card dash-equal-card" style="height:440px; min-height:440px; max-height:440px; display:flex; flex-direction:column; overflow:hidden;">
+            <div class="card dash-equal-card" style="height:500px; min-height:500px; max-height:500px; display:flex; flex-direction:column; overflow:hidden;">
                 <div class="card-header-flex" style="margin-bottom:0.5rem; flex-shrink:0;">
                     <div style="display:flex; align-items:center; gap:0.6rem;">
                         <div class="live-dot-pulse"></div>
@@ -862,7 +811,7 @@ try {
                 }
             }
             ?>
-            <div class="card dash-equal-card" id="card-loyalty-leaderboard" style="height:440px; min-height:440px; max-height:440px; display:flex; flex-direction:column; overflow:hidden;">
+            <div class="card dash-equal-card" id="card-loyalty-leaderboard" style="height:500px; min-height:500px; max-height:500px; display:flex; flex-direction:column; overflow:hidden;">
                 <div class="card-header-flex" style="flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:0.75rem; flex-shrink:0;">
                     <div>
                         <h3 class="section-title"><i class="fas fa-trophy" style="color:#eab308;"></i> Member Loyalty Leaderboard</h3>
