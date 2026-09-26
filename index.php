@@ -118,7 +118,9 @@ try {
         $active_plans_stmt = $pdo->query("SELECT id, name, price, duration_months, duration_minutes, plan_category FROM membership_plans WHERE is_active = 1 ORDER BY (plan_category = 'membership_fee') DESC, (plan_category = 'member_pass') DESC, price ASC");
         $quick_renew_plans = $active_plans_stmt ? $active_plans_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
-        // ── 4. Top Active Members (Loyalty Champions by Period) ────────────────
+        // ── 4. Top Active Members (Loyalty Champions — Active Cycle) ─────────
+        // Only the current cycle (Month) is needed for initial dashboard render.
+        // Other timeframes and metrics are loaded on-demand via admin_dashboard_ajax.php.
         $leaderboard_sql = "
             SELECT m.id, m.full_name, m.membership_id, m.photo,
                    COALESCE(
@@ -134,28 +136,14 @@ try {
                    COUNT(a.id) as visit_count
             FROM members m
             JOIN attendance a ON a.member_id = m.id
-            WHERE %s
+            WHERE YEAR(a.date) = YEAR(CURDATE()) AND MONTH(a.date) = MONTH(CURDATE())
             GROUP BY m.id, m.full_name, m.membership_id, m.photo
             HAVING visit_count > 0
             ORDER BY visit_count DESC, m.full_name ASC
             LIMIT 5
         ";
-
-        // This Month (Current Cycle)
-        $stmt_top_month = $pdo->query(sprintf($leaderboard_sql, "YEAR(a.date) = YEAR(CURDATE()) AND MONTH(a.date) = MONTH(CURDATE())"));
+        $stmt_top_month = $pdo->query($leaderboard_sql);
         $top_active_month = $stmt_top_month ? $stmt_top_month->fetchAll(PDO::FETCH_ASSOC) : [];
-
-        // Last Month (Previous Month Cycle)
-        $stmt_top_prev = $pdo->query(sprintf($leaderboard_sql, "YEAR(a.date) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AND MONTH(a.date) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))"));
-        $top_active_prev = $stmt_top_prev ? $stmt_top_prev->fetchAll(PDO::FETCH_ASSOC) : [];
-
-        // This Week (Mon-Sun ISO week)
-        $stmt_top_week = $pdo->query(sprintf($leaderboard_sql, "YEARWEEK(a.date, 1) = YEARWEEK(CURDATE(), 1)"));
-        $top_active_week = $stmt_top_week ? $stmt_top_week->fetchAll(PDO::FETCH_ASSOC) : [];
-
-        // All-Time
-        $stmt_top_all = $pdo->query(sprintf($leaderboard_sql, "1=1"));
-        $top_active_all = $stmt_top_all ? $stmt_top_all->fetchAll(PDO::FETCH_ASSOC) : [];
 
         // ── 5. Server-side Pre-rendered Live Activity Feed ──────────────────────
         $server_live_feed = [];
