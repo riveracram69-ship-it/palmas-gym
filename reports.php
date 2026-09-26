@@ -1291,7 +1291,9 @@ try {
     // ═════════════════════════════════════════════════════════════════════════
     // 3. REPORT 2: WEEKLY REVENUE REPORT
     // ═════════════════════════════════════════════════════════════════════════
-    $week_monday = date('Y-m-d', strtotime('monday this week', strtotime($end_date)));
+    $today_date = date('Y-m-d');
+    $anchor_for_week = (strtotime($end_date) > strtotime($today_date)) ? $today_date : $end_date;
+    $week_monday = date('Y-m-d', strtotime('monday this week', strtotime($anchor_for_week)));
     $prev_week_monday = date('Y-m-d', strtotime('-7 days', strtotime($week_monday)));
 
     $curr_week_days = [];
@@ -1326,9 +1328,11 @@ try {
         }
     }
 
-    $weekly_report['highest_day']    = $highest_day_name;
-    $weekly_report['highest_amount'] = $highest_day_val;
-    $weekly_report['days']           = ['current' => $curr_week_days, 'previous' => $prev_week_days];
+    $weekly_report['highest_day']      = $highest_day_name;
+    $weekly_report['highest_amount']   = $highest_day_val;
+    $weekly_report['curr_week_label']  = date('M d', strtotime($week_monday)) . ' – ' . date('M d', strtotime("+6 days", strtotime($week_monday)));
+    $weekly_report['prev_week_label']  = date('M d', strtotime($prev_week_monday)) . ' – ' . date('M d', strtotime("+6 days", strtotime($prev_week_monday)));
+    $weekly_report['days']             = ['current' => $curr_week_days, 'previous' => $prev_week_days];
 
     if ($weekly_report['prev_total'] > 0) {
         $weekly_report['growth_pct'] = round((($weekly_report['current_total'] - $weekly_report['prev_total']) / $weekly_report['prev_total']) * 100, 1);
@@ -2060,13 +2064,13 @@ try {
                 <div>
                     <h3 class="section-title" style="margin-bottom:1rem;"><i class="fas fa-calendar-check" style="color:var(--accent);"></i> Weekly Performance</h3>
                     <div style="margin-bottom:1.5rem;">
-                        <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Current Week Revenue</span>
+                        <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Current Week Revenue <span style="font-size:0.72rem; font-weight:600; text-transform:none; color:var(--accent);">(<?php echo htmlspecialchars($weekly_report['curr_week_label']); ?>)</span></span>
                         <h2 style="font-size:2.2rem; font-weight:800; color:#52b788; margin:0.25rem 0 0 0;">&#8369;<?php echo number_format($weekly_report['current_total'], 2); ?></h2>
                     </div>
 
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.06);">
                         <div>
-                            <span style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Previous Week</span>
+                            <span style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Previous Week <span style="font-size:0.65rem; font-weight:600; text-transform:none; color:var(--text-muted); display:block;"><?php echo htmlspecialchars($weekly_report['prev_week_label']); ?></span></span>
                             <p style="font-size:1.1rem; font-weight:700; color:var(--text-main); margin:0.2rem 0 0 0;">&#8369;<?php echo number_format($weekly_report['prev_total'], 2); ?></p>
                         </div>
                         <div>
@@ -2088,14 +2092,14 @@ try {
 
             <!-- Weekly Comparison Line & Bar Chart -->
             <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.5rem;">
                     <div>
                         <h3 class="section-title" style="margin:0;"><i class="fas fa-chart-line" style="color:var(--accent);"></i> Daily Revenue Comparison (Mon – Sun)</h3>
                         <p style="margin:0.2rem 0 0 0; font-size:0.75rem; color:var(--text-muted);">Current week vs previous week day-by-day revenue</p>
                     </div>
-                    <div style="display:flex; gap:0.75rem; font-size:0.75rem; font-weight:600;">
-                        <span style="color:#52b788;"><i class="fas fa-circle" style="font-size:0.6rem;"></i> Current Week</span>
-                        <span style="color:rgba(255,255,255,0.4);"><i class="fas fa-circle" style="font-size:0.6rem;"></i> Previous Week</span>
+                    <div style="display:flex; gap:0.75rem; font-size:0.75rem; font-weight:600; flex-wrap:wrap;">
+                        <span style="color:#52b788;"><i class="fas fa-circle" style="font-size:0.6rem;"></i> Current (<?php echo htmlspecialchars($weekly_report['curr_week_label']); ?>)</span>
+                        <span style="color:rgba(255,255,255,0.4);"><i class="fas fa-circle" style="font-size:0.6rem;"></i> Prev (<?php echo htmlspecialchars($weekly_report['prev_week_label']); ?>)</span>
                     </div>
                 </div>
                 <div style="height:260px; position:relative;">
@@ -2551,7 +2555,14 @@ const weeklyCompareChart = new Chart(document.getElementById('weeklyCompareChart
     },
     options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ctx.dataset.label + ': ₱' + Number(ctx.raw).toLocaleString('en-US', { minimumFractionDigits: 2 })
+                }
+            }
+        },
         scales: {
             y: { grid: { color: gridColor }, ticks: { font: themeFont, callback: v => '₱' + Number(v).toLocaleString() } },
             x: { grid: { display: false }, ticks: { font: themeFont } }
