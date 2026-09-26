@@ -46,27 +46,40 @@ try {
         sync_attendance_auto_checkout($pdo);
 
         // ── 1. Master KPI Calculations ──────────────────────────────────────────
-        $total_members    = (int)$pdo->query("SELECT COUNT(*) FROM members")->fetchColumn();
-        $pending_registrations_cnt = (int)$pdo->query("SELECT COUNT(*) FROM members WHERE account_status = 'Pending'")->fetchColumn();
+        // A. Members Master KPIs (Consolidated single scan)
+        $m_stats = $pdo->query("
+            SELECT 
+                COUNT(*) AS total_members,
+                COUNT(CASE WHEN account_status = 'Pending' THEN 1 END) AS pending_registrations_cnt
+            FROM members
+        ")->fetch(PDO::FETCH_ASSOC);
+        $total_members = (int)($m_stats['total_members'] ?? 0);
+        $pending_registrations_cnt = (int)($m_stats['pending_registrations_cnt'] ?? 0);
+
         $active_members   = (int)$pdo->query("SELECT COUNT(DISTINCT member_id) FROM subscriptions WHERE expiry_date >= CURDATE()")->fetchColumn();
         $expired_members  = (int)$pdo->query("SELECT COUNT(DISTINCT member_id) FROM subscriptions WHERE expiry_date < CURDATE() AND member_id NOT IN (SELECT member_id FROM subscriptions WHERE expiry_date >= CURDATE())")->fetchColumn();
         $inactive_members = max(0, $total_members - ($active_members + $expired_members));
 
-        // Attendance counts (distinct unique visitors)
-        $daily_attendance   = (int)$pdo->query("SELECT COUNT(DISTINCT member_id) FROM attendance WHERE date = CURDATE()")->fetchColumn();
+        // B. Monthly Attendance Count
         $monthly_attendance = (int)$pdo->query("SELECT COUNT(DISTINCT CONCAT(member_id, '_', date)) FROM attendance WHERE MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())")->fetchColumn();
-        $currently_inside   = (int)$pdo->query("SELECT COUNT(DISTINCT member_id) FROM attendance WHERE date = CURDATE() AND time_out IS NULL")->fetchColumn();
 
+        // C. Financial Ledger KPIs (Admin consolidated single scan)
         if ($is_admin) {
-            $monthly_revenue    = (float)($pdo->query("SELECT SUM(amount) FROM payments WHERE MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE())")->fetchColumn() ?: 0);
+            $pay_stats = $pdo->query("
+                SELECT 
+                    COALESCE(SUM(amount), 0) AS total_earnings,
+                    COALESCE(SUM(CASE WHEN MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE()) THEN amount ELSE 0 END), 0) AS monthly_revenue
+                FROM payments
+            ")->fetch(PDO::FETCH_ASSOC);
+            $total_earnings     = (float)($pay_stats['total_earnings'] ?? 0);
+            $monthly_revenue    = (float)($pay_stats['monthly_revenue'] ?? 0);
             $monthly_expenses   = (float)($pdo->query("SELECT SUM(amount) FROM expenses WHERE MONTH(expense_date) = MONTH(CURDATE()) AND YEAR(expense_date) = YEAR(CURDATE())")->fetchColumn() ?: 0);
             $monthly_net_income = $monthly_revenue - $monthly_expenses;
-            $total_earnings     = (float)($pdo->query("SELECT SUM(amount) FROM payments")->fetchColumn() ?: 0);
         } else {
             $expiring_this_week_cnt = (int)$pdo->query("SELECT COUNT(DISTINCT member_id) FROM subscriptions WHERE expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)")->fetchColumn();
         }
 
-        // ── 2. Today's Attendance Logs ─────────────────────────────────────────
+        // ── 2. Today's Attendance Logs & Live Occupancy Metrics ─────────────────
         $stmt_att = $pdo->query("
             SELECT a.id, a.date, a.time_in, a.time_out, m.id AS member_id, m.full_name, m.membership_id, m.photo,
                    m.annual_membership_expiry,
@@ -89,6 +102,18 @@ try {
             ORDER BY a.time_in DESC
         ");
         $today_attendance_list = $stmt_att ? $stmt_att->fetchAll(PDO::FETCH_ASSOC) : [];
+
+        // Derive today unique visitors and currently inside in-memory from today's attendance logs
+        $today_visitors = [];
+        $currently_inside_set = [];
+        foreach ($today_attendance_list as $row) {
+            $today_visitors[$row['member_id']] = true;
+            if (empty($row['time_out'])) {
+                $currently_inside_set[$row['member_id']] = true;
+            }
+        }
+        $daily_attendance = count($today_visitors);
+        $currently_inside = count($currently_inside_set);
 
         // ── 3. Overdue Renewals (Recurring Members Only, Excludes 1-Day Walk-ins) ─
         $stmt_od = $pdo->query("
