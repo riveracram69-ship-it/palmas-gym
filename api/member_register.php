@@ -476,9 +476,7 @@ try {
     try {
         require_once __DIR__ . '/../config/email.php';
         // All newly registered members are Pending — send the awaiting-approval email.
-        $auth_text = ($auth_provider === 'google')
-            ? "You can use <strong>Continue with Google</strong> in the Palma's Elite Gym Mobile App once your account is verified."
-            : "Your Membership Reference ID is: <strong>{$membership_id}</strong>.";
+        $auth_text = "Your Membership Reference ID is: <strong>{$membership_id}</strong>.";
         $pay_note = $is_online_payment
             ? "You have initiated an online payment. Please complete the checkout to finalize your registration."
             : "Please settle your cash payment at the gym front desk upon your first visit.";
