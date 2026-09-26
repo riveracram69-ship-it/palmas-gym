@@ -79,3 +79,44 @@ Options -Indexes -MultiViews
     php_value post_max_size 10M
     php_value memory_limit 256M
 </IfModule>
+
+# 7. Gzip / Deflate Compression for High-Speed Network Transfers
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain text/html text/xml text/css text/javascript
+    AddOutputFilterByType DEFLATE application/xml application/xhtml+xml application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript application/json
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# 8. Browser Caching for Static Assets Only (CSS, JS, Static Images, Fonts)
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 day"
+    ExpiresByType image/jpg "access plus 7 days"
+    ExpiresByType image/jpeg "access plus 7 days"
+    ExpiresByType image/png "access plus 7 days"
+    ExpiresByType image/webp "access plus 7 days"
+    ExpiresByType image/svg+xml "access plus 7 days"
+    ExpiresByType image/x-icon "access plus 30 days"
+    ExpiresByType text/css "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType font/woff2 "access plus 30 days"
+    ExpiresByType font/woff "access plus 30 days"
+    ExpiresByType application/font-woff2 "access plus 30 days"
+</IfModule>
+
+# 9. Explicit No-Cache Protection for Dynamic Endpoints, Security Tokens & Real-Time APIs
+<FilesMatch "\.(php|json)$">
+    <IfModule mod_headers.c>
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+    </IfModule>
+</FilesMatch>
+
+# Explicit override for PWA manifest.json
+<Files "manifest.json">
+    <IfModule mod_headers.c>
+        Header set Content-Type "application/manifest+json; charset=utf-8"
+        Header set Cache-Control "public, max-age=3600"
+    </IfModule>
+</Files>

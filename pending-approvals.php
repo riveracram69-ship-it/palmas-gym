@@ -766,7 +766,7 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
                                     <div style="display:flex; align-items:center; gap:0.75rem;">
                                         <div style="width:38px; height:38px; border-radius:50%; background:#2d6a4f; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem; flex-shrink:0; overflow:hidden;">
                                             <?php if (!empty($reg['photo'])): ?>
-                                                <img src="<?php echo htmlspecialchars($reg['photo']); ?>" alt="Photo" style="width:100%; height:100%; object-fit:cover;">
+                                                <img src="<?php echo htmlspecialchars($reg['photo']); ?>" alt="Photo" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover;">
                                             <?php else: ?>
                                                 <?php echo strtoupper(substr($reg['full_name'], 0, 1)); ?>
                                             <?php endif; ?>
@@ -873,7 +873,7 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
                                     <div style="display:flex; align-items:center; gap:0.75rem;">
                                         <div style="width:38px; height:38px; border-radius:50%; background:#2d6a4f; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem; flex-shrink:0; overflow:hidden;">
                                             <?php if (!empty($ren['photo'])): ?>
-                                                <img src="<?php echo htmlspecialchars($ren['photo']); ?>" alt="Photo" style="width:100%; height:100%; object-fit:cover;">
+                                                <img src="<?php echo htmlspecialchars($ren['photo']); ?>" alt="Photo" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover;">
                                             <?php else: ?>
                                                 <?php echo strtoupper(substr($ren['full_name'], 0, 1)); ?>
                                             <?php endif; ?>

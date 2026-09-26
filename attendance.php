@@ -327,7 +327,7 @@ try {
                             <div class="member-cell">
                                 <div class="member-avatar" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                                     <?php if (!empty($log['photo'])): ?>
-                                        <img src="<?php echo htmlspecialchars($log['photo']); ?>" alt="Photo" style="width:100%; height:100%; object-fit:cover;">
+                                        <img src="<?php echo htmlspecialchars($log['photo']); ?>" alt="Photo" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover;">
                                     <?php else: ?>
                                         <?php echo strtoupper(substr($log['full_name'], 0, 1)); ?>
                                     <?php endif; ?>

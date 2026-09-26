@@ -429,7 +429,14 @@ perPageSelect.addEventListener('change', function() {
     filterTable();
 });
 
-searchInput.addEventListener('input', () => { currentPage = 1; filterTable(); });
+let searchDebounceTimer = null;
+searchInput.addEventListener('input', () => {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+        currentPage = 1;
+        filterTable();
+    }, 150);
+});
 statusFilter.addEventListener('change', () => { currentPage = 1; filterTable(); });
 if (sortFilter) {
     sortFilter.addEventListener('change', () => { currentPage = 1; filterTable(); });
