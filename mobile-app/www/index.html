@@ -2922,9 +2922,6 @@
           <button class="btn-primary" onclick="wizardNext(2)" style="margin-top:10px; width:100%;">
             CONTINUE TO PERSONAL INFO <i class="fa-solid fa-arrow-right"></i>
           </button>
-          <button class="btn-outline" onclick="wizardBack(2)" style="margin-top:10px; width:100%;">
-            <i class="fa-solid fa-arrow-left"></i> Back
-          </button>
         </div>
 
         <!-- STEP 3: Personal Information -->
@@ -3013,9 +3010,6 @@
 
           <button class="btn-primary" onclick="wizardNext(3)" style="margin-top:10px; width:100%;">
             CONTINUE TO ADDRESS <i class="fa-solid fa-arrow-right"></i>
-          </button>
-          <button class="btn-outline" onclick="wizardBack(3)" style="margin-top:10px; width:100%;">
-            <i class="fa-solid fa-arrow-left"></i> Back
           </button>
         </div>
 
@@ -3114,9 +3108,6 @@
           <button class="btn-primary" onclick="wizardNext(4)" style="margin-top:10px; width:100%;">
             CONTINUE TO PHOTO <i class="fa-solid fa-arrow-right"></i>
           </button>
-          <button class="btn-outline" onclick="wizardBack(4)" style="margin-top:10px; width:100%;">
-            <i class="fa-solid fa-arrow-left"></i> Back
-          </button>
         </div>
 
         <!-- STEP 5: Verification Photo (Camera & Upload Options) -->
@@ -3159,9 +3150,6 @@
 
           <button class="btn-primary" onclick="wizardNext(5)" style="margin-top:10px; width:100%;">
             CONTINUE TO PLANS <i class="fa-solid fa-arrow-right"></i>
-          </button>
-          <button class="btn-outline" onclick="wizardBack(5)" style="margin-top:10px; width:100%;">
-            <i class="fa-solid fa-arrow-left"></i> Back
           </button>
         </div>
 
@@ -3294,9 +3282,6 @@
 
           <button class="btn-primary" id="btn-submit-reg" onclick="submitRegistration()">
             <i class="fa-solid fa-bolt"></i> COMPLETE &amp; SUBMIT REGISTRATION
-          </button>
-          <button class="btn-outline" onclick="wizardBack(6)" style="margin-top:10px;">
-            <i class="fa-solid fa-arrow-left"></i> Back to Photo
           </button>
         </div>
 
@@ -5871,9 +5856,15 @@ function cancelRegistration() { showScreen('view-login'); }
 let currentWizardStep = 1;
 
 function getCurrentWizardStep() {
+  if (typeof currentWizardStep === 'number' && currentWizardStep >= 1 && currentWizardStep <= 6) {
+    const activeEl = document.getElementById(`reg-step-${currentWizardStep}`);
+    if (activeEl && activeEl.style.display === 'block') {
+      return currentWizardStep;
+    }
+  }
   for (let s = 1; s <= 6; s++) {
     const el = document.getElementById(`reg-step-${s}`);
-    if (el && el.style.display !== 'none') {
+    if (el && el.style.display === 'block') {
       currentWizardStep = s;
       return s;
     }
