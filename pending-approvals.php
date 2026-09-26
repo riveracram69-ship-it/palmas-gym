@@ -1,5 +1,5 @@
 <?php
-$page_title = 'Pending Approvals';
+$page_title = 'Pending Cash & Approvals';
 include 'includes/header.php';
 include 'includes/sidebar.php';
 require_login();
@@ -592,10 +592,10 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
         <div>
             <h1 class="page-title" style="display:flex; align-items:center; gap:0.65rem; margin:0;">
-                <i class="fas fa-clipboard-check" style="color:var(--accent);"></i> Pending Approvals Hub
+                <i class="fas fa-clipboard-check" style="color:var(--accent);"></i> Pending Cash & Approvals Hub
             </h1>
             <p style="color:var(--text-muted); margin:0.25rem 0 0 0; font-size:0.875rem;">
-                Review and approve new member registrations and membership renewal requests in one place.
+                Review and confirm front-desk cash payments and member registration approvals.
             </p>
         </div>
         
@@ -707,7 +707,7 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
                 <select name="status" class="form-control" style="width:130px; font-size:0.82rem; height:36px; border-radius:8px;" onchange="this.form.submit()">
                     <option value="Pending" <?php echo $status_filter === 'Pending' ? 'selected' : ''; ?>>Pending Only</option>
                     <option value="Approved" <?php echo $status_filter === 'Approved' ? 'selected' : ''; ?>>Approved</option>
-                    <option value="Rejected" <?php echo $status_filter === 'Rejected' ? 'selected' : ''; ?>>Rejected</option>
+                    <option value="Rejected" <?php echo $status_filter === 'Rejected' ? 'selected' : ''; ?>>Cancelled</option>
                     <option value="all" <?php echo $status_filter === 'all' ? 'selected' : ''; ?>>All Statuses</option>
                 </select>
 
@@ -736,7 +736,7 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
                             <th style="padding:0.75rem 1rem; text-align:left;">Payment Info</th>
                             <th style="padding:0.75rem 1rem; text-align:left;">Proof / Receipt</th>
                             <th style="padding:0.75rem 1rem; text-align:left;">Submitted</th>
-                            <th style="padding:0.75rem 1rem; text-align:left;">Status</th>
+                            <th style="padding:0.75rem 1rem; text-align:left;">Payment Status</th>
                             <th style="padding:0.75rem 1rem; text-align:right;">Action</th>
                         </tr>
                     </thead>
@@ -751,15 +751,24 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
                             </tr>
                         <?php else: ?>
                             <?php foreach ($registrations_list as $reg): 
-                                $status_badge = 'badge-warning';
-                                if ($reg['account_status'] === 'Approved') $status_badge = 'badge-success';
-                                elseif ($reg['account_status'] === 'Rejected') $status_badge = 'badge-danger';
-
                                 // Find proof receipt if any
                                 $proof_img = $reg['online_proof_image'] ?? $reg['rr_receipt_image'] ?? null;
-                                $pay_method_label = $reg['online_pay_method'] ?? $reg['rr_payment_method'] ?? 'Online / Cash';
+                                $pay_method_label = $reg['online_pay_method'] ?? $reg['rr_payment_method'] ?? 'Cash';
                                 $ref_num_label = $reg['online_ref_code'] ?? $reg['rr_reference_no'] ?? '—';
                                 $reg_amount = $reg['online_amount'] ?? $reg['selected_plan_price'] ?? 0;
+                                
+                                $is_cash = (stripos($pay_method_label, 'Cash') !== false || empty($proof_img));
+
+                                if ($reg['account_status'] === 'Approved') {
+                                    $status_badge = 'badge-success';
+                                    $status_label = 'Approved';
+                                } elseif ($reg['account_status'] === 'Rejected') {
+                                    $status_badge = 'badge-danger';
+                                    $status_label = 'Cancelled';
+                                } else {
+                                    $status_badge = 'badge-warning';
+                                    $status_label = $is_cash ? 'Awaiting Cash Payment' : 'Pending Verification';
+                                }
                             ?>
                             <tr style="border-bottom:1px solid var(--border);">
                                 <td style="padding:0.85rem 1rem;">
@@ -789,7 +798,8 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
                                     </div>
                                 </td>
                                 <td style="padding:0.85rem 1rem;">
-                                    <div style="font-weight:700; font-size:0.82rem; color:var(--text-main);">
+                                    <div style="font-weight:700; font-size:0.82rem; color:var(--text-main); display:flex; align-items:center; gap:4px;">
+                                        <i class="fas <?php echo $is_cash ? 'fa-money-bill-wave' : 'fa-mobile-screen-button'; ?>" style="color:var(--accent); font-size:0.8rem;"></i>
                                         <?php echo htmlspecialchars($pay_method_label); ?>
                                     </div>
                                     <div style="font-size:0.72rem; color:var(--text-muted); font-family:monospace;">
@@ -802,7 +812,7 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
                                             <i class="fas fa-image" style="color:var(--accent);"></i> View Receipt
                                         </button>
                                     <?php else: ?>
-                                        <span style="font-size:0.75rem; color:var(--text-muted); font-style:italic;">No Image</span>
+                                        <span style="font-size:0.75rem; color:var(--text-muted); font-style:italic;">Front-Desk Cash</span>
                                     <?php endif; ?>
                                 </td>
                                 <td style="padding:0.85rem 1rem; font-size:0.8rem; color:var(--text-muted);">
@@ -811,16 +821,16 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
                                 </td>
                                 <td style="padding:0.85rem 1rem;">
                                     <span class="badge <?php echo $status_badge; ?>" style="font-weight:700; font-size:0.75rem;">
-                                        <?php echo htmlspecialchars($reg['account_status']); ?>
+                                        <?php echo htmlspecialchars($status_label); ?>
                                     </span>
                                 </td>
                                 <td style="padding:0.85rem 1rem; text-align:right; white-space:nowrap;">
                                     <?php if ($reg['account_status'] === 'Pending'): ?>
-                                        <button type="button" class="btn btn-primary btn-sm" onclick="confirmApproveReg(<?php echo $reg['id']; ?>, '<?php echo htmlspecialchars(addslashes($reg['full_name'])); ?>', '<?php echo htmlspecialchars(addslashes($reg['selected_plan_name'])); ?>', '<?php echo number_format($reg['selected_plan_price'], 2); ?>')" style="font-size:0.75rem; padding:0.35rem 0.75rem; font-weight:700;">
-                                            <i class="fas fa-check"></i> Approve
+                                        <button type="button" class="btn btn-primary btn-sm" onclick="confirmApproveReg(<?php echo $reg['id']; ?>, '<?php echo htmlspecialchars(addslashes($reg['full_name'])); ?>', '<?php echo htmlspecialchars(addslashes($reg['selected_plan_name'])); ?>', '<?php echo number_format($reg['selected_plan_price'], 2); ?>')" style="font-size:0.75rem; padding:0.35rem 0.75rem; font-weight:700;" title="Confirm Cash Payment Received">
+                                            <i class="fas fa-money-bill-wave"></i> Confirm Payment
                                         </button>
-                                        <button type="button" class="btn btn-danger btn-sm" onclick="openRejectRegModal(<?php echo $reg['id']; ?>, '<?php echo htmlspecialchars(addslashes($reg['full_name'])); ?>')" style="font-size:0.75rem; padding:0.35rem 0.6rem;">
-                                            <i class="fas fa-xmark"></i> Reject
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="openRejectRegModal(<?php echo $reg['id']; ?>, '<?php echo htmlspecialchars(addslashes($reg['full_name'])); ?>')" style="font-size:0.75rem; padding:0.35rem 0.6rem;" title="Cancel Pending Request">
+                                            <i class="fas fa-xmark"></i> Cancel Request
                                         </button>
                                     <?php else: ?>
                                         <a href="view-member.php?id=<?php echo $reg['id']; ?>" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:0.3rem 0.6rem;">
@@ -849,7 +859,7 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
                             <th style="padding:0.75rem 1rem; text-align:left;">Payment Info</th>
                             <th style="padding:0.75rem 1rem; text-align:left;">Receipt / Proof</th>
                             <th style="padding:0.75rem 1rem; text-align:left;">Submitted</th>
-                            <th style="padding:0.75rem 1rem; text-align:left;">Status</th>
+                            <th style="padding:0.75rem 1rem; text-align:left;">Payment Status</th>
                             <th style="padding:0.75rem 1rem; text-align:right;">Action</th>
                         </tr>
                     </thead>
@@ -864,9 +874,18 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
                             </tr>
                         <?php else: ?>
                             <?php foreach ($renewals_list as $ren): 
-                                $status_badge = 'badge-warning';
-                                if ($ren['status'] === 'Approved') $status_badge = 'badge-success';
-                                elseif ($ren['status'] === 'Rejected') $status_badge = 'badge-danger';
+                                $is_ren_cash = (stripos($ren['payment_method'] ?? '', 'Cash') !== false || empty($ren['receipt_image']));
+
+                                if ($ren['status'] === 'Approved') {
+                                    $status_badge = 'badge-success';
+                                    $status_label = 'Approved';
+                                } elseif ($ren['status'] === 'Rejected') {
+                                    $status_badge = 'badge-danger';
+                                    $status_label = 'Cancelled';
+                                } else {
+                                    $status_badge = 'badge-warning';
+                                    $status_label = $is_ren_cash ? 'Awaiting Cash Payment' : 'Pending Verification';
+                                }
                             ?>
                             <tr style="border-bottom:1px solid var(--border);">
                                 <td style="padding:0.85rem 1rem;">
@@ -896,7 +915,8 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
                                     </div>
                                 </td>
                                 <td style="padding:0.85rem 1rem;">
-                                    <div style="font-weight:700; font-size:0.82rem; color:var(--text-main);">
+                                    <div style="font-weight:700; font-size:0.82rem; color:var(--text-main); display:flex; align-items:center; gap:4px;">
+                                        <i class="fas <?php echo $is_ren_cash ? 'fa-money-bill-wave' : 'fa-mobile-screen-button'; ?>" style="color:var(--accent); font-size:0.8rem;"></i>
                                         <?php echo htmlspecialchars($ren['payment_method']); ?>
                                     </div>
                                     <div style="font-size:0.72rem; color:var(--text-muted); font-family:monospace;">
@@ -909,7 +929,7 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
                                             <i class="fas fa-image" style="color:var(--accent);"></i> View Receipt
                                         </button>
                                     <?php else: ?>
-                                        <span style="font-size:0.75rem; color:var(--text-muted); font-style:italic;">No Image</span>
+                                        <span style="font-size:0.75rem; color:var(--text-muted); font-style:italic;">Front-Desk Cash</span>
                                     <?php endif; ?>
                                 </td>
                                 <td style="padding:0.85rem 1rem; font-size:0.8rem; color:var(--text-muted);">
@@ -918,16 +938,16 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
                                 </td>
                                 <td style="padding:0.85rem 1rem;">
                                     <span class="badge <?php echo $status_badge; ?>" style="font-weight:700; font-size:0.75rem;">
-                                        <?php echo htmlspecialchars($ren['status']); ?>
+                                        <?php echo htmlspecialchars($status_label); ?>
                                     </span>
                                 </td>
                                 <td style="padding:0.85rem 1rem; text-align:right; white-space:nowrap;">
                                     <?php if ($ren['status'] === 'Pending'): ?>
-                                        <button type="button" class="btn btn-primary btn-sm" onclick="confirmApproveRenew(<?php echo $ren['id']; ?>, '<?php echo htmlspecialchars(addslashes($ren['full_name'])); ?>', '<?php echo htmlspecialchars(addslashes($ren['plan_name'])); ?>', '<?php echo number_format($ren['plan_price'], 2); ?>')" style="font-size:0.75rem; padding:0.35rem 0.75rem; font-weight:700;">
-                                            <i class="fas fa-check"></i> Approve
+                                        <button type="button" class="btn btn-primary btn-sm" onclick="confirmApproveRenew(<?php echo $ren['id']; ?>, '<?php echo htmlspecialchars(addslashes($ren['full_name'])); ?>', '<?php echo htmlspecialchars(addslashes($ren['plan_name'])); ?>', '<?php echo number_format($ren['plan_price'], 2); ?>')" style="font-size:0.75rem; padding:0.35rem 0.75rem; font-weight:700;" title="Confirm Cash Payment Received">
+                                            <i class="fas fa-money-bill-wave"></i> Confirm Payment
                                         </button>
-                                        <button type="button" class="btn btn-danger btn-sm" onclick="openRejectRenewModal(<?php echo $ren['id']; ?>, '<?php echo htmlspecialchars(addslashes($ren['full_name'])); ?>')" style="font-size:0.75rem; padding:0.35rem 0.6rem;">
-                                            <i class="fas fa-xmark"></i> Reject
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="openRejectRenewModal(<?php echo $ren['id']; ?>, '<?php echo htmlspecialchars(addslashes($ren['full_name'])); ?>')" style="font-size:0.75rem; padding:0.35rem 0.6rem;" title="Cancel Pending Request">
+                                            <i class="fas fa-xmark"></i> Cancel Request
                                         </button>
                                     <?php else: ?>
                                         <a href="view-member.php?id=<?php echo $ren['member_id']; ?>" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:0.3rem 0.6rem;">
@@ -975,125 +995,141 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
     </div>
 </div>
 
-<!-- 2. Approve Registration Modal -->
+<!-- 2. Confirm Cash Payment (Registration) Modal -->
 <div id="approveRegModal" class="modal" style="display:none; position:fixed; z-index:1050; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
     <div style="background:var(--card-bg, #1a231e); border:1px solid var(--border); border-radius:12px; max-width:460px; width:90%; overflow:hidden;">
-        <form method="POST" action="pending-approvals.php" style="margin:0;">
+        <form method="POST" action="pending-approvals.php" id="form-approve-reg" onsubmit="return handleFormSubmit(this, 'Confirming Payment...')" style="margin:0;">
             <input type="hidden" name="form_type" value="registration">
             <input type="hidden" name="action" value="approve">
             <input type="hidden" name="member_id" id="approve_reg_member_id" value="0">
             
             <div style="padding:1.25rem; border-bottom:1px solid var(--border);">
                 <h3 style="margin:0; font-size:1.15rem; color:#52b788; display:flex; align-items:center; gap:0.5rem;">
-                    <i class="fas fa-check-circle"></i> Approve Registration
+                    <i class="fas fa-money-bill-wave"></i> Confirm Cash Payment
                 </h3>
             </div>
             <div style="padding:1.25rem;">
-                <p style="margin:0 0 1rem 0; font-size:0.9rem; color:var(--text-main);">
-                    Are you sure you want to approve and activate the membership account for <strong id="approve_reg_name" style="color:var(--accent);"></strong>?
+                <p style="margin:0 0 1rem 0; font-size:0.9rem; color:var(--text-main); line-height:1.45;">
+                    Confirm that cash payment of <strong style="color:#52b788;">₱<span id="approve_reg_price">0.00</span></strong> was received from <strong id="approve_reg_name" style="color:var(--accent);"></strong> for <strong id="approve_reg_plan">—</strong>?
                 </p>
-                <div style="background:rgba(82,183,136,0.08); border:1px solid rgba(82,183,136,0.2); border-radius:8px; padding:0.85rem 1rem; font-size:0.85rem;">
-                    <div><strong>Selected Plan:</strong> <span id="approve_reg_plan">—</span></div>
-                    <div><strong>Amount to Record:</strong> &#8369;<span id="approve_reg_price">0.00</span></div>
-                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.35rem;">
-                        ✓ This will activate member login access and send an approval notification.
-                    </div>
+                <div style="background:rgba(82,183,136,0.08); border:1px solid rgba(82,183,136,0.2); border-radius:8px; padding:0.85rem 1rem; font-size:0.82rem; color:var(--text-muted); line-height:1.4;">
+                    ✓ Confirming this payment will record the transaction and <strong>activate the member's gym pass</strong> immediately.
                 </div>
             </div>
             <div style="padding:0.85rem 1.25rem; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:0.5rem;">
                 <button type="button" class="btn btn-secondary" onclick="closeApproveRegModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="font-weight:700;"><i class="fas fa-check"></i> Yes, Approve Account</button>
+                <button type="submit" class="btn btn-primary" id="btn-submit-approve-reg" style="font-weight:700;"><i class="fas fa-check"></i> Confirm Payment</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- 3. Reject Registration Modal -->
+<!-- 3. Cancel Request (Registration) Modal -->
 <div id="rejectRegModal" class="modal" style="display:none; position:fixed; z-index:1050; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
     <div style="background:var(--card-bg, #1a231e); border:1px solid var(--border); border-radius:12px; max-width:460px; width:90%; overflow:hidden;">
-        <form method="POST" action="pending-approvals.php" style="margin:0;">
+        <form method="POST" action="pending-approvals.php" id="form-reject-reg" onsubmit="return handleFormSubmit(this, 'Cancelling...')" style="margin:0;">
             <input type="hidden" name="form_type" value="registration">
             <input type="hidden" name="action" value="reject">
             <input type="hidden" name="member_id" id="reject_reg_member_id" value="0">
             
             <div style="padding:1.25rem; border-bottom:1px solid var(--border);">
                 <h3 style="margin:0; font-size:1.15rem; color:#ef4444; display:flex; align-items:center; gap:0.5rem;">
-                    <i class="fas fa-circle-xmark"></i> Reject Registration
+                    <i class="fas fa-circle-xmark"></i> Cancel Pending Request
                 </h3>
             </div>
             <div style="padding:1.25rem;">
-                <p style="margin:0 0 1rem 0; font-size:0.9rem;">
-                    Please enter the reason for rejecting registration of <strong id="reject_reg_name"></strong>:
+                <p style="margin:0 0 0.5rem 0; font-size:0.9rem;">
+                    Cancel the pending registration request for <strong id="reject_reg_name"></strong>?
                 </p>
+                <p style="margin:0 0 0.85rem 0; font-size:0.78rem; color:var(--text-muted);">
+                    ℹ️ <em>This action cancels the pending request. No payment will be recorded.</em>
+                </p>
+                <div style="margin-bottom:0.5rem;">
+                    <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:4px;">Quick Reason:</label>
+                    <div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px;">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="setRegRejectReason('Payment not received at front desk.')" style="font-size:0.72rem; padding:2px 8px; border-radius:6px;">💵 Payment Not Received</button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="setRegRejectReason('Member cancelled request.')" style="font-size:0.72rem; padding:2px 8px; border-radius:6px;">🚫 Member Cancelled</button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="setRegRejectReason('Duplicate or test registration.')" style="font-size:0.72rem; padding:2px 8px; border-radius:6px;">⚠️ Duplicate / Test</button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="setRegRejectReason('')" style="font-size:0.72rem; padding:2px 8px; border-radius:6px;">📝 Other Reason</button>
+                    </div>
+                </div>
                 <div class="form-group" style="margin-bottom:0;">
-                    <textarea name="rejection_reason" class="form-control" rows="3" placeholder="e.g. Invalid payment reference number, unclear ID, etc." required style="font-size:0.85rem; width:100%;"></textarea>
+                    <textarea name="rejection_reason" id="reject_reg_reason_text" class="form-control" rows="3" placeholder="Select a quick reason above or enter details..." required style="font-size:0.85rem; width:100%;"></textarea>
                 </div>
             </div>
             <div style="padding:0.85rem 1.25rem; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:0.5rem;">
-                <button type="button" class="btn btn-secondary" onclick="closeRejectRegModal()">Cancel</button>
-                <button type="submit" class="btn btn-danger" style="font-weight:700;"><i class="fas fa-xmark"></i> Reject Registration</button>
+                <button type="button" class="btn btn-secondary" onclick="closeRejectRegModal()">Back</button>
+                <button type="submit" class="btn btn-danger" id="btn-submit-reject-reg" style="font-weight:700;"><i class="fas fa-xmark"></i> Cancel Request</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- 4. Approve Renewal Modal -->
+<!-- 4. Confirm Cash Payment (Renewal) Modal -->
 <div id="approveRenewModal" class="modal" style="display:none; position:fixed; z-index:1050; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
     <div style="background:var(--card-bg, #1a231e); border:1px solid var(--border); border-radius:12px; max-width:460px; width:90%; overflow:hidden;">
-        <form method="POST" action="pending-approvals.php" style="margin:0;">
+        <form method="POST" action="pending-approvals.php" id="form-approve-ren" onsubmit="return handleFormSubmit(this, 'Confirming Payment...')" style="margin:0;">
             <input type="hidden" name="form_type" value="renewal">
             <input type="hidden" name="action" value="approve_renewal">
             <input type="hidden" name="request_id" id="approve_ren_id" value="0">
             
             <div style="padding:1.25rem; border-bottom:1px solid var(--border);">
                 <h3 style="margin:0; font-size:1.15rem; color:#52b788; display:flex; align-items:center; gap:0.5rem;">
-                    <i class="fas fa-check-circle"></i> Approve Subscription Renewal
+                    <i class="fas fa-money-bill-wave"></i> Confirm Cash Payment
                 </h3>
             </div>
             <div style="padding:1.25rem;">
-                <p style="margin:0 0 1rem 0; font-size:0.9rem; color:var(--text-main);">
-                    Are you sure you want to approve the membership renewal for <strong id="approve_ren_name" style="color:var(--accent);"></strong>?
+                <p style="margin:0 0 1rem 0; font-size:0.9rem; color:var(--text-main); line-height:1.45;">
+                    Confirm that cash payment of <strong style="color:#52b788;">₱<span id="approve_ren_price">0.00</span></strong> was received from <strong id="approve_ren_name" style="color:var(--accent);"></strong> for <strong id="approve_ren_plan">—</strong>?
                 </p>
-                <div style="background:rgba(82,183,136,0.08); border:1px solid rgba(82,183,136,0.2); border-radius:8px; padding:0.85rem 1rem; font-size:0.85rem;">
-                    <div><strong>Renewal Plan:</strong> <span id="approve_ren_plan">—</span></div>
-                    <div><strong>Amount:</strong> &#8369;<span id="approve_ren_price">0.00</span></div>
-                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.35rem;">
-                        ✓ This will automatically extend their subscription and record the verified payment.
-                    </div>
+                <div style="background:rgba(82,183,136,0.08); border:1px solid rgba(82,183,136,0.2); border-radius:8px; padding:0.85rem 1rem; font-size:0.82rem; color:var(--text-muted); line-height:1.4;">
+                    ✓ Confirming this payment will record the transaction and <strong>extend their subscription</strong> immediately.
                 </div>
             </div>
             <div style="padding:0.85rem 1.25rem; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:0.5rem;">
                 <button type="button" class="btn btn-secondary" onclick="closeApproveRenewModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="font-weight:700;"><i class="fas fa-check"></i> Yes, Approve Renewal</button>
+                <button type="submit" class="btn btn-primary" id="btn-submit-approve-ren" style="font-weight:700;"><i class="fas fa-check"></i> Confirm Payment</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- 5. Reject Renewal Modal -->
+<!-- 5. Cancel Request (Renewal) Modal -->
 <div id="rejectRenewModal" class="modal" style="display:none; position:fixed; z-index:1050; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
     <div style="background:var(--card-bg, #1a231e); border:1px solid var(--border); border-radius:12px; max-width:460px; width:90%; overflow:hidden;">
-        <form method="POST" action="pending-approvals.php" style="margin:0;">
+        <form method="POST" action="pending-approvals.php" id="form-reject-ren" onsubmit="return handleFormSubmit(this, 'Cancelling...')" style="margin:0;">
             <input type="hidden" name="form_type" value="renewal">
             <input type="hidden" name="action" value="reject_renewal">
             <input type="hidden" name="request_id" id="reject_ren_id" value="0">
             
             <div style="padding:1.25rem; border-bottom:1px solid var(--border);">
                 <h3 style="margin:0; font-size:1.15rem; color:#ef4444; display:flex; align-items:center; gap:0.5rem;">
-                    <i class="fas fa-circle-xmark"></i> Reject Renewal Request
+                    <i class="fas fa-circle-xmark"></i> Cancel Renewal Request
                 </h3>
             </div>
             <div style="padding:1.25rem;">
-                <p style="margin:0 0 1rem 0; font-size:0.9rem;">
-                    Please enter notes or reason for rejecting renewal of <strong id="reject_ren_name"></strong>:
+                <p style="margin:0 0 0.5rem 0; font-size:0.9rem;">
+                    Cancel the pending renewal request for <strong id="reject_ren_name"></strong>?
                 </p>
+                <p style="margin:0 0 0.85rem 0; font-size:0.78rem; color:var(--text-muted);">
+                    ℹ️ <em>This action cancels the pending request. No payment will be recorded.</em>
+                </p>
+                <div style="margin-bottom:0.5rem;">
+                    <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:4px;">Quick Reason:</label>
+                    <div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px;">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="setRenRejectReason('Payment not received at front desk.')" style="font-size:0.72rem; padding:2px 8px; border-radius:6px;">💵 Payment Not Received</button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="setRenRejectReason('Member cancelled request.')" style="font-size:0.72rem; padding:2px 8px; border-radius:6px;">🚫 Member Cancelled</button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="setRenRejectReason('Duplicate renewal request.')" style="font-size:0.72rem; padding:2px 8px; border-radius:6px;">⚠️ Duplicate Request</button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="setRenRejectReason('')" style="font-size:0.72rem; padding:2px 8px; border-radius:6px;">📝 Other Reason</button>
+                    </div>
+                </div>
                 <div class="form-group" style="margin-bottom:0;">
-                    <textarea name="notes" class="form-control" rows="3" placeholder="e.g. Unverified payment reference, invalid transaction screenshot." required style="font-size:0.85rem; width:100%;"></textarea>
+                    <textarea name="notes" id="reject_ren_reason_text" class="form-control" rows="3" placeholder="Select a quick reason above or enter details..." required style="font-size:0.85rem; width:100%;"></textarea>
                 </div>
             </div>
             <div style="padding:0.85rem 1.25rem; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:0.5rem;">
-                <button type="button" class="btn btn-secondary" onclick="closeRejectRenewModal()">Cancel</button>
-                <button type="submit" class="btn btn-danger" style="font-weight:700;"><i class="fas fa-xmark"></i> Reject Request</button>
+                <button type="button" class="btn btn-secondary" onclick="closeRejectRenewModal()">Back</button>
+                <button type="submit" class="btn btn-danger" id="btn-submit-reject-ren" style="font-weight:700;"><i class="fas fa-xmark"></i> Cancel Request</button>
             </div>
         </form>
     </div>
@@ -1128,6 +1164,17 @@ function switchTab(tab) {
     window.history.replaceState({}, '', url);
 }
 
+// Double-submit protection
+function handleFormSubmit(form, loadingText) {
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn && !btn.disabled) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (loadingText || 'Processing...');
+        return true;
+    }
+    return false;
+}
+
 // Receipt Modal Handler
 function viewReceiptModal(imgSrc, memberName, refNo, amount) {
     document.getElementById('modalReceiptImg').src = imgSrc;
@@ -1155,10 +1202,18 @@ function closeApproveRegModal() {
 function openRejectRegModal(id, name) {
     document.getElementById('reject_reg_member_id').value = id;
     document.getElementById('reject_reg_name').textContent = name;
+    setRegRejectReason('Payment not received at front desk.');
     document.getElementById('rejectRegModal').style.display = 'flex';
 }
 function closeRejectRegModal() {
     document.getElementById('rejectRegModal').style.display = 'none';
+}
+function setRegRejectReason(val) {
+    const ta = document.getElementById('reject_reg_reason_text');
+    if (ta) {
+        ta.value = val;
+        if (!val) ta.focus();
+    }
 }
 
 // Renewal Modals
@@ -1176,10 +1231,18 @@ function closeApproveRenewModal() {
 function openRejectRenewModal(id, name) {
     document.getElementById('reject_ren_id').value = id;
     document.getElementById('reject_ren_name').textContent = name;
+    setRenRejectReason('Payment not received at front desk.');
     document.getElementById('rejectRenewModal').style.display = 'flex';
 }
 function closeRejectRenewModal() {
     document.getElementById('rejectRenewModal').style.display = 'none';
+}
+function setRenRejectReason(val) {
+    const ta = document.getElementById('reject_ren_reason_text');
+    if (ta) {
+        ta.value = val;
+        if (!val) ta.focus();
+    }
 }
 
 // Close modals when clicking outside
@@ -1191,3 +1254,4 @@ window.onclick = function(event) {
 </script>
 
 <?php include 'includes/footer.php'; ?>
+
