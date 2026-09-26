@@ -462,7 +462,7 @@ try {
         <div style="display:flex; flex-direction:column; gap:1.5rem;">
             
             <!-- Card 1: Today's Live Attendance Table -->
-            <div class="card dash-equal-card" style="height:500px; min-height:500px; max-height:500px; display:flex; flex-direction:column; overflow:hidden;">
+            <div class="card dash-equal-card" style="height:580px; min-height:580px; max-height:580px; display:flex; flex-direction:column; overflow:hidden;">
                 <div class="card-header-flex" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:0.75rem; flex-shrink:0;">
                     <div>
                         <h3 class="section-title" style="margin:0;"><i class="fas fa-qrcode" style="color:var(--accent);"></i> Today's Live Attendance</h3>
@@ -576,7 +576,7 @@ try {
             </div>
 
             <!-- Card 2: Overdue / Expired Renewals (Follow-up Center) -->
-            <div class="card dash-equal-card" id="card-expired-followups" style="height:500px; min-height:500px; max-height:500px; display:flex; flex-direction:column; overflow:hidden;">
+            <div class="card dash-equal-card" id="card-expired-followups" style="height:580px; min-height:580px; max-height:580px; display:flex; flex-direction:column; overflow:hidden;">
                 <div class="card-header-flex" style="flex-wrap:wrap; gap:10px; margin-bottom:0.75rem; flex-shrink:0;">
                     <div>
                         <h3 class="section-title"><i class="fas fa-triangle-exclamation" style="color:#ef4444;"></i> Expired Plans &amp; Follow-ups</h3>
@@ -705,7 +705,7 @@ try {
         <div style="display:flex; flex-direction:column; gap:1.5rem;">
             
             <!-- Real-Time Activity Feed -->
-            <div class="card dash-equal-card" style="height:500px; min-height:500px; max-height:500px; display:flex; flex-direction:column; overflow:hidden;">
+            <div class="card dash-equal-card" style="height:580px; min-height:580px; max-height:580px; display:flex; flex-direction:column; overflow:hidden;">
                 <div class="card-header-flex" style="margin-bottom:0.5rem; flex-shrink:0;">
                     <div style="display:flex; align-items:center; gap:0.6rem;">
                         <div class="live-dot-pulse"></div>
@@ -811,7 +811,7 @@ try {
                 }
             }
             ?>
-            <div class="card dash-equal-card" id="card-loyalty-leaderboard" style="height:500px; min-height:500px; max-height:500px; display:flex; flex-direction:column; overflow:hidden;">
+            <div class="card dash-equal-card" id="card-loyalty-leaderboard" style="height:580px; min-height:580px; max-height:580px; display:flex; flex-direction:column; overflow:hidden;">
                 <div class="card-header-flex" style="flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:0.75rem; flex-shrink:0;">
                     <div>
                         <h3 class="section-title"><i class="fas fa-trophy" style="color:#eab308;"></i> Member Loyalty Leaderboard</h3>
