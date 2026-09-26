@@ -60,12 +60,27 @@ function applyPreset(preset) {
 
 // ── SMART EXPORT MODAL ────────────────────────────────────────────────────────
 function openExportModal(type) {
-    document.getElementById('export-type-select').value = type;
-    document.getElementById('advanced-export-modal').style.display = 'flex';
+    const select = document.getElementById('export-type-select');
+    if (select && type) select.value = type;
+    const btn = document.getElementById('btn-export-submit');
+    if (btn) {
+        btn.classList.remove('is-loading');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-download"></i> Generate &amp; Download';
+    }
+    const modal = document.getElementById('advanced-export-modal');
+    if (modal) modal.style.display = 'flex';
 }
 
 function closeExportModal() {
-    document.getElementById('advanced-export-modal').style.display = 'none';
+    const modal = document.getElementById('advanced-export-modal');
+    if (modal) modal.style.display = 'none';
+    const btn = document.getElementById('btn-export-submit');
+    if (btn) {
+        btn.classList.remove('is-loading');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-download"></i> Generate &amp; Download';
+    }
 }
 
 function setExportModalPreset(preset) {
@@ -98,6 +113,41 @@ function setExportFormat(format) {
         }
     });
 }
+
+// Attach export form submit listener for smooth download handling
+document.addEventListener('DOMContentLoaded', () => {
+    const exportForm = document.getElementById('export-form');
+    if (exportForm) {
+        exportForm.addEventListener('submit', function() {
+            const btn = document.getElementById('btn-export-submit');
+            const format = document.querySelector('input[name="format"]:checked')?.value || 'csv';
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+            }
+
+            if (format === 'pdf' || format === 'print') {
+                exportForm.target = '_blank';
+            } else {
+                exportForm.target = '_self';
+            }
+
+            // Restore button state and close modal after download initiates
+            setTimeout(() => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.classList.remove('is-loading');
+                    btn.innerHTML = '<i class="fas fa-download"></i> Generate &amp; Download';
+                }
+                closeExportModal();
+                if (typeof palmasToast === 'function') {
+                    palmasToast('Report download initiated successfully!', 'success');
+                }
+            }, 1000);
+        });
+    }
+});
 
 // ── EXECUTIVE PDF GENERATOR ───────────────────────────────────────────────────
 // Launches the dedicated high-resolution Executive PDF report view in a new window

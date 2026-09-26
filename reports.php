@@ -2829,7 +2829,7 @@ try {
             <!-- Actions -->
             <div style="display:flex; gap:0.75rem; justify-content:flex-end; border-top:1px solid rgba(255,255,255,0.06); padding-top:1.25rem;">
                 <button type="button" class="btn btn-outline" onclick="closeExportModal()" style="padding:0.5rem 1.25rem;">Cancel</button>
-                <button type="submit" class="btn btn-primary" id="btn-export-submit" style="padding:0.5rem 1.5rem;"><i class="fas fa-download"></i> Generate &amp; Download</button>
+                <button type="submit" class="btn btn-primary no-loading no-spin" id="btn-export-submit" style="padding:0.5rem 1.5rem;"><i class="fas fa-download"></i> Generate &amp; Download</button>
             </div>
         </form>
     </div>
