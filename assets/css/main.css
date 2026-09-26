@@ -1867,8 +1867,40 @@ textarea:focus-visible {
 /* 2-Column Dashboard Grid */
 .dashboard-grid-2col {
     display: grid;
-    grid-template-columns: 1.3fr 0.85fr;
+    grid-template-columns: 1.25fr 1fr;
     gap: 1.5rem;
+    align-items: stretch;
+}
+
+/* Equal Height Balanced Dashboard Cards */
+.dash-equal-card {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 485px !important;
+    height: 485px !important;
+}
+
+.dash-scroll-body {
+    flex: 1 1 auto;
+    overflow-y: auto !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(45, 106, 79, 0.3) transparent;
+}
+
+.dash-scroll-body::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.dash-scroll-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 4px;
+}
+.dash-scroll-body::-webkit-scrollbar-thumb {
+    background: rgba(45, 106, 79, 0.25);
+    border-radius: 4px;
+}
+.dash-scroll-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(45, 106, 79, 0.45);
 }
 
 /* Live Activity Stream dot */

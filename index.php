@@ -513,8 +513,8 @@ try {
         <div style="display:flex; flex-direction:column; gap:1.5rem;">
             
             <!-- Card 1: Today's Live Attendance Table -->
-            <div class="card">
-                <div class="card-header-flex" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1.25rem;">
+            <div class="card dash-equal-card">
+                <div class="card-header-flex" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">
                     <div>
                         <h3 class="section-title" style="margin:0;"><i class="fas fa-qrcode" style="color:var(--accent);"></i> Today's Live Attendance</h3>
                         <p class="section-subtitle" style="margin:0.2rem 0 0 0;">Real-time gym visitors recorded today (<?php echo date('M d, Y'); ?>)</p>
@@ -527,7 +527,7 @@ try {
                     </div>
                 </div>
 
-                <div class="table-container" style="max-height: 440px; overflow-y: auto; overflow-x: auto;">
+                <div class="table-container dash-scroll-body">
                     <table style="min-width: 650px;">
                         <thead>
                             <tr>
@@ -627,7 +627,7 @@ try {
             </div>
 
             <!-- Card 2: Overdue / Expired Renewals (Follow-up Center) -->
-            <div class="card" id="card-expired-followups">
+            <div class="card dash-equal-card" id="card-expired-followups">
                 <div class="card-header-flex" style="flex-wrap:wrap; gap:10px;">
                     <div>
                         <h3 class="section-title"><i class="fas fa-triangle-exclamation" style="color:#ef4444;"></i> Expired Plans &amp; Follow-ups</h3>
@@ -645,7 +645,7 @@ try {
                     </div>
                 </div>
 
-                <div class="table-container" style="max-height: 480px; overflow-y: auto; margin-top: 0.5rem;">
+                <div class="table-container dash-scroll-body" style="margin-top: 0.5rem;">
                     <table id="overdue-table">
                         <thead>
                             <tr>
@@ -756,7 +756,7 @@ try {
         <div style="display:flex; flex-direction:column; gap:1.5rem;">
             
             <!-- Real-Time Activity Feed -->
-            <div class="card">
+            <div class="card dash-equal-card">
                 <div class="card-header-flex">
                     <div style="display:flex; align-items:center; gap:0.6rem;">
                         <div class="live-dot-pulse"></div>
@@ -771,7 +771,7 @@ try {
                 </div>
 
                 <!-- Feed Category Filter Pills -->
-                <div class="feed-filters-bar" style="margin-bottom:1rem;">
+                <div class="feed-filters-bar" style="margin-bottom:0.75rem;">
                     <button class="feed-filter-btn active" onclick="filterFeed('all')" data-cat="all">All</button>
                     <button class="feed-filter-btn" onclick="filterFeed('checkin')" data-cat="checkin">Check-ins</button>
                     <button class="feed-filter-btn" onclick="filterFeed('payment')" data-cat="payment">Payments</button>
@@ -779,7 +779,7 @@ try {
                 </div>
 
                 <!-- Feed Items Stream -->
-                <div id="live-feed-stream" class="feed-items-container" style="max-height:360px; overflow-y:auto;">
+                <div id="live-feed-stream" class="feed-items-container dash-scroll-body">
                     <?php if (empty($server_live_feed)): ?>
                         <div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">
                             <i class="fas fa-inbox" style="font-size:1.6rem; display:block; margin-bottom:0.4rem; color:#cbd5e1;"></i>
@@ -862,7 +862,7 @@ try {
                 }
             }
             ?>
-            <div class="card" id="card-loyalty-leaderboard">
+            <div class="card dash-equal-card" id="card-loyalty-leaderboard">
                 <div class="card-header-flex" style="flex-wrap:wrap; gap:10px; align-items:center;">
                     <div>
                         <h3 class="section-title"><i class="fas fa-trophy" style="color:#eab308;"></i> Member Loyalty Leaderboard</h3>
@@ -900,7 +900,7 @@ try {
                     </div>
                 </div>
 
-                <div class="table-container" style="margin-top:0.6rem;">
+                <div class="table-container dash-scroll-body" style="margin-top:0.6rem;">
                     <table>
                         <thead>
                             <tr>
