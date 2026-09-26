@@ -352,7 +352,7 @@ try {
                 <p>New sign-ups require approval before digital passes and QR access are activated.</p>
             </div>
         </div>
-        <a href="pending-registrations.php" class="alert-pending-btn">
+        <a href="pending-approvals.php?tab=registrations" class="alert-pending-btn">
             <i class="fas fa-clipboard-check"></i> Review Applications
         </a>
     </div>

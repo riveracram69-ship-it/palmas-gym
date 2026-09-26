@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <span class="badge badge-warning" style="font-size:0.7rem; padding:2px 7px;">
                                         <i class="fas fa-clock"></i> Pending
                                     </span>
-                                    <a href="renewal-requests.php?status=Pending" style="font-size:0.72rem; margin-left:6px; color:#d97706; text-decoration:underline;">Review</a>
+                                    <a href="pending-approvals.php?tab=renewals&status=Pending" style="font-size:0.72rem; margin-left:6px; color:#d97706; text-decoration:underline;">Review</a>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

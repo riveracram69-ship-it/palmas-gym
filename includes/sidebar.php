@@ -49,18 +49,11 @@ try {
             </a>
         </li>
         <li class="nav-item">
-            <a href="pending-registrations.php" class="nav-link <?php echo nav_active('pending-registrations.php'); ?>">
-                <i class="fas fa-user-clock"></i> Pending Approvals
-                <?php if ($pending_regs_count > 0): ?>
-                    <span class="badge badge-warning" style="margin-left:auto; font-size:0.72rem; padding:0.15rem 0.55rem; border-radius:var(--radius-full);"><?php echo $pending_regs_count; ?></span>
-                <?php endif; ?>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="renewal-requests.php" class="nav-link <?php echo nav_active('renewal-requests.php'); ?>">
-                <i class="fas fa-arrows-rotate"></i> Renewal Requests
-                <?php if ($pending_renewals_count > 0): ?>
-                    <span class="badge badge-warning" style="margin-left:auto; font-size:0.72rem; padding:0.15rem 0.55rem; border-radius:var(--radius-full);"><?php echo $pending_renewals_count; ?></span>
+            <a href="pending-approvals.php" class="nav-link <?php echo (nav_active('pending-approvals.php') || nav_active('pending-registrations.php') || nav_active('renewal-requests.php')) ? 'active' : ''; ?>">
+                <i class="fas fa-clipboard-check"></i> Pending Approvals
+                <?php $total_sidebar_pending = $pending_regs_count + $pending_renewals_count; ?>
+                <?php if ($total_sidebar_pending > 0): ?>
+                    <span class="badge badge-warning" style="margin-left:auto; font-size:0.72rem; padding:0.15rem 0.55rem; border-radius:var(--radius-full);"><?php echo $total_sidebar_pending; ?></span>
                 <?php endif; ?>
             </a>
         </li>
