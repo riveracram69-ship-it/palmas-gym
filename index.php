@@ -869,18 +869,40 @@ try {
                         <p class="section-subtitle">Top champions by workout visits (<strong id="lb-period-title" style="color:var(--accent); font-weight:700;"><?php echo date('F Y'); ?></strong>)</p>
                     </div>
 
-                    <!-- Interactive Native Month Picker Calendar -->
+                    <!-- Interactive Full Calendar Filter -->
                     <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
-                        <div style="display:inline-flex; align-items:center; gap:6px; background:var(--bg-main, #f8fafc); padding:3px 8px; border-radius:10px; border:1px solid var(--border);">
-                            <i class="fas fa-calendar-alt" style="color:#2d6a4f; font-size:0.85rem;"></i>
+                        <!-- Mode Tabs (Month / Day / All-Time) -->
+                        <div style="display:inline-flex; align-items:center; background:var(--bg-main, #f8fafc); padding:2px; border-radius:10px; border:1px solid var(--border);">
+                            <button type="button" id="lb-btn-month" class="btn btn-sm" onclick="setLeaderboardMode('month')" style="padding:3px 8px; font-size:0.75rem; border-radius:8px; background:var(--primary, #2d6a4f); color:#fff; border:none; font-weight:700; cursor:pointer;">
+                                <i class="fas fa-calendar-alt"></i> Month
+                            </button>
+                            <button type="button" id="lb-btn-date" class="btn btn-sm" onclick="setLeaderboardMode('date')" style="padding:3px 8px; font-size:0.75rem; border-radius:8px; background:transparent; color:var(--text-muted); border:none; font-weight:700; cursor:pointer;">
+                                <i class="fas fa-calendar-day"></i> Day
+                            </button>
+                            <button type="button" id="lb-btn-all" class="btn btn-sm" onclick="setLeaderboardMode('all_time')" style="padding:3px 8px; font-size:0.75rem; border-radius:8px; background:transparent; color:var(--text-muted); border:none; font-weight:700; cursor:pointer;">
+                                <i class="fas fa-crown"></i> All-Time
+                            </button>
+                        </div>
+
+                        <!-- Full Month Calendar (Any Year / Month) -->
+                        <div id="lb-month-container" style="display:inline-flex; align-items:center; gap:6px; background:var(--bg-main, #f8fafc); padding:3px 8px; border-radius:10px; border:1px solid var(--border);">
                             <input type="month" 
                                    id="lb-month-picker" 
                                    value="<?php echo date('Y-m'); ?>" 
                                    onchange="changeLeaderboardPeriod(this.value)" 
                                    style="border:none; background:transparent; font-size:0.78rem; font-weight:700; color:var(--text-main); cursor:pointer; outline:none; font-family:inherit; padding:2px 0;">
                         </div>
-                        
-                        <button type="button" class="btn btn-outline btn-sm" onclick="changeLeaderboardPeriod(document.getElementById('lb-month-picker').value)" style="padding:0.25rem 0.5rem; font-size:0.75rem; border-radius:8px;" title="Refresh Leaderboard">
+
+                        <!-- Full Day/Date Calendar (Complete calendar with day/week/month/year grid) -->
+                        <div id="lb-date-container" style="display:none; align-items:center; gap:6px; background:var(--bg-main, #f8fafc); padding:3px 8px; border-radius:10px; border:1px solid var(--border);">
+                            <input type="date" 
+                                   id="lb-date-picker" 
+                                   value="<?php echo date('Y-m-d'); ?>" 
+                                   onchange="changeLeaderboardPeriod(this.value)" 
+                                   style="border:none; background:transparent; font-size:0.78rem; font-weight:700; color:var(--text-main); cursor:pointer; outline:none; font-family:inherit; padding:2px 0;">
+                        </div>
+
+                        <button type="button" class="btn btn-outline btn-sm" onclick="refreshCurrentLeaderboard()" style="padding:0.25rem 0.5rem; font-size:0.75rem; border-radius:8px;" title="Refresh Leaderboard">
                             <i class="fas fa-arrows-rotate" id="lb-refresh-icon"></i>
                         </button>
                     </div>
@@ -1093,7 +1115,65 @@ function manualCheckout(attendanceId, memberName) {
     }
 }
 
-// ── Loyalty Leaderboard Dynamic Period / Month Selector ───────────────────
+// ── Loyalty Leaderboard Dynamic Calendar & Mode Selector ───────────────────
+let currentLbMode = 'month';
+
+function setLeaderboardMode(mode) {
+    currentLbMode = mode;
+    const btnMonth = document.getElementById('lb-btn-month');
+    const btnDate = document.getElementById('lb-btn-date');
+    const btnAll = document.getElementById('lb-btn-all');
+    const monthContainer = document.getElementById('lb-month-container');
+    const dateContainer = document.getElementById('lb-date-container');
+
+    [btnMonth, btnDate, btnAll].forEach(btn => {
+        if (btn) {
+            btn.style.background = 'transparent';
+            btn.style.color = 'var(--text-muted)';
+        }
+    });
+
+    if (mode === 'month') {
+        if (btnMonth) {
+            btnMonth.style.background = 'var(--primary, #2d6a4f)';
+            btnMonth.style.color = '#fff';
+        }
+        if (monthContainer) monthContainer.style.display = 'inline-flex';
+        if (dateContainer) dateContainer.style.display = 'none';
+        const val = document.getElementById('lb-month-picker')?.value || 'this_month';
+        changeLeaderboardPeriod(val);
+    } else if (mode === 'date') {
+        if (btnDate) {
+            btnDate.style.background = 'var(--primary, #2d6a4f)';
+            btnDate.style.color = '#fff';
+        }
+        if (monthContainer) monthContainer.style.display = 'none';
+        if (dateContainer) dateContainer.style.display = 'inline-flex';
+        const val = document.getElementById('lb-date-picker')?.value || 'today';
+        changeLeaderboardPeriod(val);
+    } else if (mode === 'all_time') {
+        if (btnAll) {
+            btnAll.style.background = 'var(--primary, #2d6a4f)';
+            btnAll.style.color = '#fff';
+        }
+        if (monthContainer) monthContainer.style.display = 'none';
+        if (dateContainer) dateContainer.style.display = 'none';
+        changeLeaderboardPeriod('all_time');
+    }
+}
+
+function refreshCurrentLeaderboard() {
+    if (currentLbMode === 'month') {
+        const val = document.getElementById('lb-month-picker')?.value || 'this_month';
+        changeLeaderboardPeriod(val);
+    } else if (currentLbMode === 'date') {
+        const val = document.getElementById('lb-date-picker')?.value || 'today';
+        changeLeaderboardPeriod(val);
+    } else {
+        changeLeaderboardPeriod('all_time');
+    }
+}
+
 async function changeLeaderboardPeriod(period) {
     const tbody = document.getElementById('lb-tbody');
     const refreshIcon = document.getElementById('lb-refresh-icon');

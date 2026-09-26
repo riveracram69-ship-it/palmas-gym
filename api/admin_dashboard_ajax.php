@@ -33,13 +33,24 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'leaderboard_data') {
     } elseif ($period === 'this_week') {
         $where = "YEARWEEK(a.date, 1) = YEARWEEK(CURDATE(), 1)";
         $period_label = "This Week";
+    } elseif ($period === 'today') {
+        $where = "a.date = CURDATE()";
+        $period_label = "Today (" . date('M d, Y') . ")";
     } elseif ($period === 'all_time') {
         $where = "1=1";
         $period_label = "All-Time History";
+    } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $period)) {
+        $where = "a.date = " . $pdo->quote($period);
+        $period_label = date('F d, Y', strtotime($period));
     } elseif (preg_match('/^\d{4}-\d{2}$/', $period)) {
         list($y, $m) = explode('-', $period);
         $where = "YEAR(a.date) = " . intval($y) . " AND MONTH(a.date) = " . intval($m);
         $period_label = date('F Y', strtotime($period . '-01'));
+    } elseif (preg_match('/^(\d{4}-\d{2}-\d{2})_to_(\d{4}-\d{2}-\d{2})$/', $period, $matches)) {
+        $from = $matches[1];
+        $to = $matches[2];
+        $where = "a.date BETWEEN " . $pdo->quote($from) . " AND " . $pdo->quote($to);
+        $period_label = date('M d, Y', strtotime($from)) . ' – ' . date('M d, Y', strtotime($to));
     }
 
     $leaderboard_sql = "
