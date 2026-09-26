@@ -815,25 +815,35 @@ try {
                 <div class="card-header-flex" style="flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:0.75rem; flex-shrink:0;">
                     <div>
                         <h3 class="section-title"><i class="fas fa-trophy" style="color:#eab308;"></i> Member Loyalty Leaderboard</h3>
-                        <p class="section-subtitle">Top champions by workout visits (<strong id="lb-period-title" style="color:var(--accent); font-weight:700;"><?php echo date('F Y'); ?></strong>)</p>
+                        <p class="section-subtitle"><span id="lb-subtitle-mode">Top champions by workout visits</span> (<strong id="lb-period-title" style="color:var(--accent); font-weight:700;"><?php echo date('F Y'); ?></strong>)</p>
                     </div>
 
-                    <!-- Interactive Full Calendar Filter -->
+                    <!-- Metric & Calendar Filter Controls -->
                     <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+                        <!-- Metric Toggle: Gym Visits vs Plans Availed -->
+                        <div style="display:inline-flex; align-items:center; background:var(--bg-main, #f8fafc); padding:2px; border-radius:10px; border:1px solid var(--border);">
+                            <button type="button" id="lb-metric-visits" class="btn btn-sm" onclick="setLeaderboardMetric('visits')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:var(--primary, #2d6a4f); color:#fff; border:none; font-weight:700; cursor:pointer;" title="View Top Active Members by Gym Check-ins">
+                                <i class="fas fa-dumbbell"></i> Visits
+                            </button>
+                            <button type="button" id="lb-metric-plans" class="btn btn-sm" onclick="setLeaderboardMetric('plans')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:transparent; color:var(--text-muted); border:none; font-weight:700; cursor:pointer;" title="View Top Subscribers by Plan Availments">
+                                <i class="fas fa-layer-group"></i> Plans Availed
+                            </button>
+                        </div>
+
                         <!-- Filter Scope: Month View / Day View / All-Time -->
                         <div style="display:inline-flex; align-items:center; background:var(--bg-main, #f8fafc); padding:2px; border-radius:10px; border:1px solid var(--border);">
-                            <button type="button" id="lb-btn-month" class="btn btn-sm" onclick="setLeaderboardScope('month')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:var(--primary, #2d6a4f); color:#fff; border:none; font-weight:700; cursor:pointer;" title="View Top Champions for the Selected Month">
-                                <i class="fas fa-calendar-alt"></i> By Month
+                            <button type="button" id="lb-btn-month" class="btn btn-sm" onclick="setLeaderboardScope('month')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:var(--primary, #2d6a4f); color:#fff; border:none; font-weight:700; cursor:pointer;" title="View for Selected Month">
+                                <i class="fas fa-calendar-alt"></i> Month
                             </button>
-                            <button type="button" id="lb-btn-date" class="btn btn-sm" onclick="setLeaderboardScope('date')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:transparent; color:var(--text-muted); border:none; font-weight:700; cursor:pointer;" title="View Top Champions for the Exact Day">
-                                <i class="fas fa-calendar-day"></i> By Day
+                            <button type="button" id="lb-btn-date" class="btn btn-sm" onclick="setLeaderboardScope('date')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:transparent; color:var(--text-muted); border:none; font-weight:700; cursor:pointer;" title="View for Exact Day">
+                                <i class="fas fa-calendar-day"></i> Day
                             </button>
-                            <button type="button" id="lb-btn-all" class="btn btn-sm" onclick="setLeaderboardScope('all_time')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:transparent; color:var(--text-muted); border:none; font-weight:700; cursor:pointer;" title="View All-Time Top Champions">
+                            <button type="button" id="lb-btn-all" class="btn btn-sm" onclick="setLeaderboardScope('all_time')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:transparent; color:var(--text-muted); border:none; font-weight:700; cursor:pointer;" title="View All-Time">
                                 <i class="fas fa-crown"></i> All-Time
                             </button>
                         </div>
 
-                        <!-- Full Calendar Date Picker (Opens Full Calendar with Days 1-31, Months, Years) -->
+                        <!-- Full Calendar Date Picker -->
                         <div id="lb-calendar-container" style="display:inline-flex; align-items:center; gap:6px; background:var(--bg-main, #f8fafc); padding:3px 10px; border-radius:10px; border:1px solid var(--border);">
                             <i class="fas fa-calendar-days" style="color:#2d6a4f; font-size:0.85rem;"></i>
                             <input type="date" 
@@ -856,7 +866,7 @@ try {
                                 <th style="width:60px; text-align:center;">Rank</th>
                                 <th>Member</th>
                                 <th>Plan</th>
-                                <th style="text-align:right; white-space:nowrap;">Visits</th>
+                                <th style="text-align:right; white-space:nowrap;" id="lb-th-metric">Visits</th>
                             </tr>
                         </thead>
                         <tbody id="lb-tbody">
@@ -1056,8 +1066,43 @@ function manualCheckout(attendanceId, memberName) {
     }
 }
 
-// ── Loyalty Leaderboard Dynamic Calendar & Mode Selector ───────────────────
+// ── Loyalty Leaderboard Dynamic Calendar & Metric Selector ─────────────────
 let currentLbScope = 'month';
+let currentLbMetric = 'visits'; // 'visits' or 'plans'
+
+function setLeaderboardMetric(metric) {
+    currentLbMetric = metric;
+    const btnVisits = document.getElementById('lb-metric-visits');
+    const btnPlans  = document.getElementById('lb-metric-plans');
+    const subtitleMode = document.getElementById('lb-subtitle-mode');
+    const thMetric = document.getElementById('lb-th-metric');
+
+    if (metric === 'plans') {
+        if (btnPlans) {
+            btnPlans.style.background = 'var(--primary, #2d6a4f)';
+            btnPlans.style.color = '#fff';
+        }
+        if (btnVisits) {
+            btnVisits.style.background = 'transparent';
+            btnVisits.style.color = 'var(--text-muted)';
+        }
+        if (subtitleMode) subtitleMode.textContent = 'Top subscribers by plan availments';
+        if (thMetric) thMetric.textContent = 'Plans / Spend';
+    } else {
+        if (btnVisits) {
+            btnVisits.style.background = 'var(--primary, #2d6a4f)';
+            btnVisits.style.color = '#fff';
+        }
+        if (btnPlans) {
+            btnPlans.style.background = 'transparent';
+            btnPlans.style.color = 'var(--text-muted)';
+        }
+        if (subtitleMode) subtitleMode.textContent = 'Top champions by workout visits';
+        if (thMetric) thMetric.textContent = 'Visits';
+    }
+
+    refreshCurrentLeaderboard();
+}
 
 function setLeaderboardScope(scope) {
     currentLbScope = scope;
@@ -1132,14 +1177,15 @@ async function changeLeaderboardPeriod(period) {
     }
 
     try {
-        const res = await fetch('api/admin_dashboard_ajax.php?ajax=leaderboard_data&period=' + encodeURIComponent(period));
+        const url = `api/admin_dashboard_ajax.php?ajax=leaderboard_data&period=${encodeURIComponent(period)}&metric=${encodeURIComponent(currentLbMetric)}`;
+        const res = await fetch(url);
         if (res.ok) {
             const data = await res.json();
             if (data.success) {
                 if (titleEl && data.period_label) {
                     titleEl.textContent = data.period_label;
                 }
-                renderLeaderboardTable(data.members || [], data.period_label || 'this period');
+                renderLeaderboardTable(data.members || [], data.period_label || 'this period', data.metric || currentLbMetric);
             }
         }
     } catch (e) {
@@ -1150,12 +1196,15 @@ async function changeLeaderboardPeriod(period) {
     }
 }
 
-function renderLeaderboardTable(members, periodLabel) {
+function renderLeaderboardTable(members, periodLabel, metric = 'visits') {
     const tbody = document.getElementById('lb-tbody');
     if (!tbody) return;
 
     if (!members || members.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:2.2rem 1rem; color:var(--text-muted);"><i class="fas fa-trophy" style="font-size:1.6rem; color:#cbd5e1; display:block; margin-bottom:0.4rem;"></i><strong>No check-ins recorded for ${periodLabel} yet.</strong><p style="margin:4px 0 0 0; font-size:0.75rem;">Visits will appear here once members scan their ID at the kiosk.</p></td></tr>`;
+        const emptyMsg = (metric === 'plans')
+            ? `<strong>No plan availments recorded for ${periodLabel} yet.</strong><p style="margin:4px 0 0 0; font-size:0.75rem;">Subscriptions &amp; renewals will appear here once availed.</p>`
+            : `<strong>No check-ins recorded for ${periodLabel} yet.</strong><p style="margin:4px 0 0 0; font-size:0.75rem;">Visits will appear here once members scan their ID at the kiosk.</p>`;
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:2.2rem 1rem; color:var(--text-muted);"><i class="fas fa-trophy" style="font-size:1.6rem; color:#cbd5e1; display:block; margin-bottom:0.4rem;"></i>${emptyMsg}</td></tr>`;
         return;
     }
 
@@ -1179,6 +1228,27 @@ function renderLeaderboardTable(members, periodLabel) {
             ? `<img src="${escapeHtml(tm.photo)}" alt="" onerror="this.onerror=null; this.parentElement.textContent='${escapeHtml(initial)}';" style="width:100%; height:100%; object-fit:cover;">`
             : escapeHtml(initial);
 
+        let metricDisplay = '';
+        if (metric === 'plans') {
+            const count = Number(tm.metric_count || 0);
+            const spend = Number(tm.total_spend || 0);
+            metricDisplay = `
+                <div style="display:inline-flex; flex-direction:column; align-items:flex-end; gap:2px;">
+                    <span class="badge" style="background:rgba(234,179,8,0.12); color:#b45309; border:1px solid rgba(234,179,8,0.3); font-weight:800; font-size:0.76rem; padding:3px 8px; border-radius:8px; display:inline-flex; align-items:center; gap:4px;">
+                        <i class="fas fa-layer-group"></i> ${count} ${count === 1 ? 'plan' : 'plans'}
+                    </span>
+                    ${spend > 0 ? `<span style="font-size:0.68rem; font-weight:700; color:#52b788;">₱${spend.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</span>` : ''}
+                </div>
+            `;
+        } else {
+            const visits = Number(tm.metric_count || tm.visit_count || 0);
+            metricDisplay = `
+                <span class="badge" style="background:rgba(56,189,248,0.12); color:#0284c7; border:1px solid rgba(56,189,248,0.25); font-weight:800; font-size:0.78rem; padding:4px 9px; border-radius:8px; display:inline-flex; align-items:center; gap:4px;">
+                    <i class="fas fa-dumbbell"></i> ${visits.toLocaleString()}
+                </span>
+            `;
+        }
+
         html += `
             <tr style="${rowBg}">
                 <td style="text-align:center; width:65px;">${rankBadge}</td>
@@ -1201,9 +1271,7 @@ function renderLeaderboardTable(members, periodLabel) {
                     <span class="badge badge-gold" style="font-size:0.7rem; font-weight:700;">${escapeHtml(tm.plan_name || 'Standard')}</span>
                 </td>
                 <td style="text-align:right;">
-                    <span class="badge" style="background:rgba(56,189,248,0.12); color:#0284c7; border:1px solid rgba(56,189,248,0.25); font-weight:800; font-size:0.78rem; padding:4px 9px; border-radius:8px; display:inline-flex; align-items:center; gap:4px;">
-                        <i class="fas fa-dumbbell"></i> ${Number(tm.visit_count).toLocaleString()}
-                    </span>
+                    ${metricDisplay}
                 </td>
             </tr>
         `;

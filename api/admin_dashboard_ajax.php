@@ -18,67 +18,119 @@ require_login();
 header('Content-Type: application/json; charset=UTF-8');
 header('Cache-Control: no-cache, must-revalidate');
 
-// ── 0. Dynamic Leaderboard Endpoint (Filter by Any Month / Period) ───────────
+// ── 0. Dynamic Leaderboard Endpoint (Filter by Any Month / Period & Metric) ─────────
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'leaderboard_data') {
     $period = trim($_GET['period'] ?? 'this_month');
-    $where = "1=1";
+    $metric = trim($_GET['metric'] ?? 'visits'); // 'visits' or 'plans'
+    $where_att = "1=1";
+    $where_sub = "1=1";
     $period_label = "This Month";
 
     if ($period === 'this_month') {
-        $where = "YEAR(a.date) = YEAR(CURDATE()) AND MONTH(a.date) = MONTH(CURDATE())";
+        $where_att = "YEAR(a.date) = YEAR(CURDATE()) AND MONTH(a.date) = MONTH(CURDATE())";
+        $where_sub = "YEAR(s.start_date) = YEAR(CURDATE()) AND MONTH(s.start_date) = MONTH(CURDATE())";
         $period_label = date('F Y');
     } elseif ($period === 'prev_month' || $period === 'last_month') {
-        $where = "YEAR(a.date) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AND MONTH(a.date) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))";
+        $where_att = "YEAR(a.date) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AND MONTH(a.date) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))";
+        $where_sub = "YEAR(s.start_date) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AND MONTH(s.start_date) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))";
         $period_label = date('F Y', strtotime('-1 month'));
     } elseif ($period === 'this_week') {
-        $where = "YEARWEEK(a.date, 1) = YEARWEEK(CURDATE(), 1)";
+        $where_att = "YEARWEEK(a.date, 1) = YEARWEEK(CURDATE(), 1)";
+        $where_sub = "YEARWEEK(s.start_date, 1) = YEARWEEK(CURDATE(), 1)";
         $period_label = "This Week";
     } elseif ($period === 'today') {
-        $where = "a.date = CURDATE()";
+        $where_att = "a.date = CURDATE()";
+        $where_sub = "DATE(s.start_date) = CURDATE()";
         $period_label = "Today (" . date('M d, Y') . ")";
     } elseif ($period === 'all_time') {
-        $where = "1=1";
+        $where_att = "1=1";
+        $where_sub = "1=1";
         $period_label = "All-Time History";
     } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $period)) {
-        $where = "a.date = " . $pdo->quote($period);
+        $where_att = "a.date = " . $pdo->quote($period);
+        $where_sub = "DATE(s.start_date) = " . $pdo->quote($period);
         $period_label = date('F d, Y', strtotime($period));
     } elseif (preg_match('/^\d{4}-\d{2}$/', $period)) {
         list($y, $m) = explode('-', $period);
-        $where = "YEAR(a.date) = " . intval($y) . " AND MONTH(a.date) = " . intval($m);
+        $where_att = "YEAR(a.date) = " . intval($y) . " AND MONTH(a.date) = " . intval($m);
+        $where_sub = "YEAR(s.start_date) = " . intval($y) . " AND MONTH(s.start_date) = " . intval($m);
         $period_label = date('F Y', strtotime($period . '-01'));
     } elseif (preg_match('/^(\d{4}-\d{2}-\d{2})_to_(\d{4}-\d{2}-\d{2})$/', $period, $matches)) {
         $from = $matches[1];
         $to = $matches[2];
-        $where = "a.date BETWEEN " . $pdo->quote($from) . " AND " . $pdo->quote($to);
+        $where_att = "a.date BETWEEN " . $pdo->quote($from) . " AND " . $pdo->quote($to);
+        $where_sub = "s.start_date BETWEEN " . $pdo->quote($from) . " AND " . $pdo->quote($to);
         $period_label = date('M d, Y', strtotime($from)) . ' – ' . date('M d, Y', strtotime($to));
     }
 
-    $leaderboard_sql = "
-        SELECT m.id, m.full_name, m.membership_id, m.photo,
-               COALESCE(
-                   (SELECT p2.name 
-                    FROM subscriptions s2 
-                    JOIN membership_plans p2 ON p2.id = s2.plan_id 
-                    WHERE s2.member_id = m.id 
-                      AND p2.plan_category != 'membership_fee' 
-                    ORDER BY (s2.expiry_date >= CURDATE()) DESC, s2.id DESC 
-                    LIMIT 1),
-                   'Standard'
-               ) as plan_name,
-               COUNT(a.id) as visit_count
-        FROM members m
-        JOIN attendance a ON a.member_id = m.id
-        WHERE {$where}
-        GROUP BY m.id, m.full_name, m.membership_id, m.photo
-        HAVING visit_count > 0
-        ORDER BY visit_count DESC, m.full_name ASC
-        LIMIT 5
-    ";
-
     try {
+        if ($metric === 'plans') {
+            // Leaderboard by Plans Availed & Spending
+            $leaderboard_sql = "
+                SELECT m.id, m.full_name, m.membership_id, m.photo,
+                       COALESCE(
+                           (SELECT p2.name 
+                            FROM subscriptions s2 
+                            JOIN membership_plans p2 ON p2.id = s2.plan_id 
+                            WHERE s2.member_id = m.id 
+                            GROUP BY s2.plan_id, p2.name 
+                            ORDER BY COUNT(*) DESC, MAX(s2.start_date) DESC 
+                            LIMIT 1),
+                           'Standard'
+                       ) as plan_name,
+                       COALESCE(sub_stats.plans_availed, 0) as metric_count,
+                       COALESCE(pay_stats.total_spend, 0) as total_spend
+                FROM members m
+                JOIN (
+                    SELECT member_id, COUNT(*) as plans_availed
+                    FROM subscriptions s
+                    WHERE {$where_sub}
+                    GROUP BY member_id
+                ) sub_stats ON sub_stats.member_id = m.id
+                LEFT JOIN (
+                    SELECT member_id, SUM(amount) as total_spend
+                    FROM payments
+                    GROUP BY member_id
+                ) pay_stats ON pay_stats.member_id = m.id
+                WHERE sub_stats.plans_availed > 0
+                ORDER BY metric_count DESC, total_spend DESC, m.full_name ASC
+                LIMIT 5
+            ";
+        } else {
+            // Leaderboard by Gym Check-ins (Visits)
+            $leaderboard_sql = "
+                SELECT m.id, m.full_name, m.membership_id, m.photo,
+                       COALESCE(
+                           (SELECT p2.name 
+                            FROM subscriptions s2 
+                            JOIN membership_plans p2 ON p2.id = s2.plan_id 
+                            WHERE s2.member_id = m.id 
+                              AND p2.plan_category != 'membership_fee' 
+                            ORDER BY (s2.expiry_date >= CURDATE()) DESC, s2.id DESC 
+                            LIMIT 1),
+                           'Standard'
+                       ) as plan_name,
+                       COUNT(a.id) as metric_count,
+                       0 as total_spend
+                FROM members m
+                JOIN attendance a ON a.member_id = m.id
+                WHERE {$where_att}
+                GROUP BY m.id, m.full_name, m.membership_id, m.photo
+                HAVING metric_count > 0
+                ORDER BY metric_count DESC, m.full_name ASC
+                LIMIT 5
+            ";
+        }
+
         $stmt = $pdo->query($leaderboard_sql);
         $members = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
-        echo json_encode(['success' => true, 'period' => $period, 'period_label' => $period_label, 'members' => $members]);
+        echo json_encode([
+            'success'      => true, 
+            'metric'       => $metric,
+            'period'       => $period, 
+            'period_label' => $period_label, 
+            'members'      => $members
+        ]);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => $e->getMessage(), 'members' => []]);
     }

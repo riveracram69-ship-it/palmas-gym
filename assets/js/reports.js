@@ -40,7 +40,7 @@ function switchReportTab(tabId) {
 // Restore saved tab on load
 document.addEventListener('DOMContentLoaded', () => {
     let saved = localStorage.getItem('palmas_active_report_tab') || 'tab-daily';
-    const validTabs = ['tab-daily', 'tab-weekly', 'tab-financials'];
+    const validTabs = ['tab-daily', 'tab-weekly', 'tab-financials', 'tab-subscribers'];
     if (!validTabs.includes(saved)) {
         saved = 'tab-daily';
     }
@@ -107,6 +107,7 @@ function generatePDFReport(filename) {
     let exportType = 'daily_revenue';
     if (activeTab === 'tab-financials') exportType = 'financial_summary';
     else if (activeTab === 'tab-weekly') exportType = 'weekly_revenue';
+    else if (activeTab === 'tab-subscribers') exportType = 'top_subscribers';
 
     const presetInput = document.getElementById('master-preset-input');
     const preset = presetInput ? presetInput.value : 'month';

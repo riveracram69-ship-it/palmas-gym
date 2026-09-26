@@ -356,6 +356,86 @@ if (isset($_GET['export']) && isset($pdo)) {
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_NUM);
 
+    } elseif ($type === 'top_subscribers') {
+        $headers = ['Rank', 'Membership ID', 'Member Name', 'Contact Number', 'Email', 'Account Status', 'Plans Availed', 'Total Spend (PHP)', 'Favorite Plan', 'Last Availment Date', 'Gym Check-ins', 'Engagement Tier'];
+        $where_sub_filter = "1=1";
+        if (!empty($startDate) && !empty($endDate) && $datePreset !== 'all') {
+            $where_sub_filter .= " AND s.start_date BETWEEN :start_date AND :end_date";
+            $params['start_date'] = $startDate;
+            $params['end_date']   = $endDate;
+        }
+        if ($planId !== 'all') {
+            $where_sub_filter .= " AND s.plan_id = :plan_id";
+            $params['plan_id'] = $planId;
+        }
+
+        $sql = "
+            SELECT 
+                m.membership_id,
+                m.full_name,
+                COALESCE(m.contact_number, '—') AS contact_number,
+                COALESCE(m.email, '—') AS email,
+                m.status,
+                COALESCE(sub_stats.plans_availed, 0) AS plans_availed,
+                COALESCE(pay_stats.total_spend, 0) AS total_spend,
+                COALESCE((
+                    SELECT p.name 
+                    FROM subscriptions s 
+                    JOIN membership_plans p ON p.id = s.plan_id 
+                    WHERE s.member_id = m.id 
+                    GROUP BY s.plan_id, p.name 
+                    ORDER BY COUNT(*) DESC, MAX(s.start_date) DESC 
+                    LIMIT 1
+                ), 'None') AS favorite_plan,
+                COALESCE(sub_stats.last_availment_date, '—') AS last_availment_date,
+                COALESCE(att_stats.total_visits, 0) AS total_visits
+            FROM members m
+            JOIN (
+                SELECT member_id, COUNT(*) AS plans_availed, MAX(start_date) AS last_availment_date
+                FROM subscriptions s
+                WHERE {$where_sub_filter}
+                GROUP BY member_id
+            ) sub_stats ON sub_stats.member_id = m.id
+            LEFT JOIN (
+                SELECT member_id, SUM(amount) AS total_spend
+                FROM payments
+                GROUP BY member_id
+            ) pay_stats ON pay_stats.member_id = m.id
+            LEFT JOIN (
+                SELECT member_id, COUNT(*) AS total_visits
+                FROM attendance
+                GROUP BY member_id
+            ) att_stats ON att_stats.member_id = m.id
+            WHERE sub_stats.plans_availed > 0
+            ORDER BY plans_availed DESC, total_spend DESC, m.full_name ASC
+        ";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $raw_sub_rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($raw_sub_rows as $s_idx => $sr) {
+            $p_cnt = (int)$sr['plans_availed'];
+            $tier = 'New Subscriber';
+            if ($p_cnt >= 10) $tier = 'Top Subscriber';
+            elseif ($p_cnt >= 5) $tier = 'Active Subscriber';
+            elseif ($p_cnt >= 2) $tier = 'Regular Subscriber';
+
+            $rows[] = [
+                $s_idx + 1,
+                $sr['membership_id'],
+                $sr['full_name'],
+                $sr['contact_number'],
+                $sr['email'],
+                $sr['status'],
+                $p_cnt,
+                number_format((float)$sr['total_spend'], 2, '.', ''),
+                $sr['favorite_plan'],
+                $sr['last_availment_date'],
+                $sr['total_visits'],
+                $tier
+            ];
+        }
+
     } else {
         exit("Invalid Export Type");
     }
@@ -367,6 +447,7 @@ if (isset($_GET['export']) && isset($pdo)) {
         'monthly_revenue'   => 'Monthly_Revenue',
         'financial_summary' => 'Financial_Profitability_Summary',
         'expenses'          => 'Operational_Expenses_Ledger',
+        'top_subscribers'   => 'Top_Subscribers_Engagement',
         'retention'         => 'Membership_Retention',
         'conversion'        => 'Member_Conversion',
         'attendance_hour'   => 'Peak_Hours_Attendance',
@@ -423,6 +504,7 @@ if (isset($_GET['export']) && isset($pdo)) {
             'monthly_revenue'   => 'Monthly Revenue Performance',
             'financial_summary' => 'Financial Profitability & Net Income Summary',
             'expenses'          => 'Gym Operational Expenses & Cost Ledger',
+            'top_subscribers'   => 'Top Subscribers & Member Engagement Analysis',
             'retention'         => 'Membership Retention & Lifecycle Audit',
             'conversion'        => 'Member Registration & Conversion Report',
             'attendance_hour'   => 'Peak Hours Attendance Distribution',
@@ -1751,6 +1833,120 @@ try {
     $day_report['avg_daily']     = round($total_day_checkins / $period_days, 1);
     $kpis['busiest_day_str']     = $busiest_day;
 
+    // ═════════════════════════════════════════════════════════════════════════
+    // 7. REPORT 4 (TAB 4): TOP SUBSCRIBERS & PLAN ENGAGEMENT REPORT
+    // ═════════════════════════════════════════════════════════════════════════
+    $top_subscribers_report = [
+        'subscribers'        => [],
+        'total_subscribers'  => 0,
+        'top_availer_name'   => '—',
+        'top_availer_plans'  => 0,
+        'top_spender_name'   => '—',
+        'top_spender_amount' => 0,
+        'avg_plans'          => 0,
+        'total_plans'        => 0,
+        'total_spend'        => 0
+    ];
+
+    $where_sub_filter = "1=1";
+    $sub_filter_params = [];
+    if (!empty($start_date) && !empty($end_date) && $date_preset !== 'all') {
+        $where_sub_filter .= " AND s.start_date BETWEEN ? AND ?";
+        $sub_filter_params[] = $start_date;
+        $sub_filter_params[] = $end_date;
+    }
+    if ($plan_filter !== 'all') {
+        $where_sub_filter .= " AND s.plan_id = ?";
+        $sub_filter_params[] = $plan_filter;
+    }
+
+    $top_sub_sql = "
+        SELECT 
+            m.id,
+            m.membership_id,
+            m.full_name,
+            m.contact_number,
+            m.email,
+            m.status,
+            m.photo,
+            COALESCE(sub_stats.plans_availed, 0) AS plans_availed,
+            COALESCE(pay_stats.total_spend, 0) AS total_spend,
+            COALESCE(att_stats.total_visits, 0) AS total_visits,
+            sub_stats.last_availment_date,
+            (
+                SELECT p.name 
+                FROM subscriptions s 
+                JOIN membership_plans p ON p.id = s.plan_id 
+                WHERE s.member_id = m.id 
+                GROUP BY s.plan_id, p.name 
+                ORDER BY COUNT(*) DESC, MAX(s.start_date) DESC 
+                LIMIT 1
+            ) AS favorite_plan,
+            (
+                SELECT p2.name 
+                FROM subscriptions s2 
+                JOIN membership_plans p2 ON p2.id = s2.plan_id 
+                WHERE s2.member_id = m.id 
+                ORDER BY s2.start_date DESC, s2.id DESC 
+                LIMIT 1
+            ) AS latest_plan
+        FROM members m
+        JOIN (
+            SELECT member_id, COUNT(*) AS plans_availed, MAX(start_date) AS last_availment_date
+            FROM subscriptions s
+            WHERE {$where_sub_filter}
+            GROUP BY member_id
+        ) sub_stats ON sub_stats.member_id = m.id
+        LEFT JOIN (
+            SELECT member_id, SUM(amount) AS total_spend
+            FROM payments
+            GROUP BY member_id
+        ) pay_stats ON pay_stats.member_id = m.id
+        LEFT JOIN (
+            SELECT member_id, COUNT(*) AS total_visits
+            FROM attendance
+            GROUP BY member_id
+        ) att_stats ON att_stats.member_id = m.id
+        WHERE sub_stats.plans_availed > 0
+        ORDER BY plans_availed DESC, total_spend DESC, m.full_name ASC
+    ";
+
+    $stmt_top_sub = $pdo->prepare($top_sub_sql);
+    $stmt_top_sub->execute($sub_filter_params);
+    $top_sub_rows = $stmt_top_sub->fetchAll(PDO::FETCH_ASSOC);
+
+    $top_subscribers_report['subscribers'] = $top_sub_rows;
+    $top_subscribers_report['total_subscribers'] = count($top_sub_rows);
+
+    $sum_plans = 0;
+    $sum_spend = 0;
+    $highest_plans = 0;
+    $highest_spend = 0;
+
+    foreach ($top_sub_rows as $ts_row) {
+        $p_cnt = (int)$ts_row['plans_availed'];
+        $s_amt = (float)$ts_row['total_spend'];
+        $sum_plans += $p_cnt;
+        $sum_spend += $s_amt;
+
+        if ($p_cnt > $highest_plans) {
+            $highest_plans = $p_cnt;
+            $top_subscribers_report['top_availer_name'] = $ts_row['full_name'];
+            $top_subscribers_report['top_availer_plans'] = $p_cnt;
+        }
+        if ($s_amt > $highest_spend) {
+            $highest_spend = $s_amt;
+            $top_subscribers_report['top_spender_name'] = $ts_row['full_name'];
+            $top_subscribers_report['top_spender_amount'] = $s_amt;
+        }
+    }
+
+    $top_subscribers_report['total_plans'] = $sum_plans;
+    $top_subscribers_report['total_spend'] = $sum_spend;
+    $top_subscribers_report['avg_plans'] = ($top_subscribers_report['total_subscribers'] > 0)
+        ? round($sum_plans / $top_subscribers_report['total_subscribers'], 1)
+        : 0;
+
 } catch (Exception $e) {
     error_log("Reports Analytics error: " . $e->getMessage());
 }
@@ -1942,7 +2138,7 @@ try {
         </form>
     </div>
 
-    <!-- ── 3-REPORT NAVIGATION TABS ───────────────────────────────────────── -->
+    <!-- ── 4-REPORT NAVIGATION TABS ───────────────────────────────────────── -->
     <div class="report-nav-container no-print" style="margin-bottom:1.5rem;">
         <div class="report-nav-tabs">
             <button class="nav-tab-btn active" data-tab="tab-daily" onclick="switchReportTab('tab-daily')">
@@ -1953,6 +2149,9 @@ try {
             </button>
             <button class="nav-tab-btn" data-tab="tab-financials" onclick="switchReportTab('tab-financials')">
                 <i class="fas fa-scale-balanced"></i> 3. Financials &amp; Net Income
+            </button>
+            <button class="nav-tab-btn" data-tab="tab-subscribers" onclick="switchReportTab('tab-subscribers')">
+                <i class="fas fa-crown" style="color:#eab308;"></i> 4. Top Subscribers &amp; Engagement
             </button>
         </div>
     </div>
@@ -2317,6 +2516,225 @@ try {
         </div>
     </div>
 
+    <!-- =======================================================================
+         REPORT 4: TOP SUBSCRIBERS & PLAN ENGAGEMENT REPORT
+         ======================================================================= -->
+    <div class="report-tab-pane" id="tab-subscribers">
+        <!-- 4 Engagement Highlights Ribbon -->
+        <div class="stats-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <!-- Card 1: Top Plan Availer -->
+            <div class="card stat-card" style="padding: 1.25rem;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
+                    <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Top Plan Subscriber</span>
+                    <div class="stat-icon" style="width:34px; height:34px; font-size:0.95rem; margin:0; background:rgba(234,179,8,0.15); color:#eab308;"><i class="fas fa-crown"></i></div>
+                </div>
+                <h2 class="stat-value" style="font-size:1.3rem; font-weight:800; color:var(--text-main); margin:0; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="<?php echo htmlspecialchars($top_subscribers_report['top_availer_name']); ?>">
+                    <?php echo htmlspecialchars($top_subscribers_report['top_availer_name']); ?>
+                </h2>
+                <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:#eab308; font-weight:700;">
+                    <i class="fas fa-layer-group"></i> <?php echo number_format($top_subscribers_report['top_availer_plans']); ?> Plans Availed
+                </p>
+            </div>
+
+            <!-- Card 2: Highest Spender -->
+            <div class="card stat-card" style="padding: 1.25rem;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
+                    <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Highest Spending Member</span>
+                    <div class="stat-icon green" style="width:34px; height:34px; font-size:0.95rem; margin:0;"><i class="fas fa-money-bill-trend-up"></i></div>
+                </div>
+                <h2 class="stat-value" style="font-size:1.3rem; font-weight:800; color:#52b788; margin:0; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="<?php echo htmlspecialchars($top_subscribers_report['top_spender_name']); ?>">
+                    <?php echo htmlspecialchars($top_subscribers_report['top_spender_name']); ?>
+                </h2>
+                <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:#52b788; font-weight:700;">
+                    ₱<?php echo number_format($top_subscribers_report['top_spender_amount'], 2); ?> Total Spend
+                </p>
+            </div>
+
+            <!-- Card 3: Avg Plans per Member -->
+            <div class="card stat-card" style="padding: 1.25rem;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
+                    <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Average Plans / Member</span>
+                    <div class="stat-icon blue" style="width:34px; height:34px; font-size:0.95rem; margin:0;"><i class="fas fa-chart-pie"></i></div>
+                </div>
+                <h2 class="stat-value" style="font-size:1.4rem; font-weight:800; color:#38bdf8; margin:0;">
+                    <?php echo $top_subscribers_report['avg_plans']; ?> <span style="font-size:0.85rem; font-weight:600; color:var(--text-muted);">plans / member</span>
+                </h2>
+                <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:var(--text-muted);">
+                    <i class="fas fa-receipt"></i> <?php echo number_format($top_subscribers_report['total_plans']); ?> total plans availed
+                </p>
+            </div>
+
+            <!-- Card 4: Total Subscribers -->
+            <div class="card stat-card" style="padding: 1.25rem;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
+                    <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Active Subscribers Population</span>
+                    <div class="stat-icon" style="width:34px; height:34px; font-size:0.95rem; margin:0; background:rgba(192,132,252,0.15); color:#c084fc;"><i class="fas fa-users-viewfinder"></i></div>
+                </div>
+                <h2 class="stat-value" style="font-size:1.4rem; font-weight:800; color:#c084fc; margin:0;">
+                    <?php echo number_format($top_subscribers_report['total_subscribers']); ?>
+                </h2>
+                <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:var(--text-muted);">
+                    <i class="fas fa-wallet"></i> ₱<?php echo number_format($top_subscribers_report['total_spend'], 2); ?> total volume
+                </p>
+            </div>
+        </div>
+
+        <!-- Top Subscribers Analytics Table Card -->
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.75rem;">
+                <div>
+                    <h3 class="section-title" style="margin:0;"><i class="fas fa-medal" style="color:#eab308;"></i> Top Subscribers &amp; Member Engagement Ranking</h3>
+                    <p style="margin:0.2rem 0 0 0; font-size:0.78rem; color:var(--text-muted);">Ranked analytical breakdown of plan subscriptions, cumulative spend, favorite plans, and check-in engagement.</p>
+                </div>
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <div style="position:relative; width:220px;">
+                        <input type="text" id="subscribers-search-input" placeholder="Search members..." onkeyup="filterSubscribersTable()" class="form-control" style="margin:0; padding:0.4rem 0.75rem 0.4rem 2rem; font-size:0.8rem;">
+                        <i class="fas fa-search" style="position:absolute; left:0.75rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.75rem;"></i>
+                    </div>
+                    <select id="subscribers-sort-select" onchange="sortSubscribersTable(this.value)" class="form-control" style="margin:0; padding:0.4rem 0.75rem; font-size:0.8rem; width:auto;">
+                        <option value="plans-desc">Sort: Most Plans Availed</option>
+                        <option value="spend-desc">Sort: Highest Spending</option>
+                        <option value="visits-desc">Sort: Most Check-ins</option>
+                        <option value="date-desc">Sort: Latest Availment</option>
+                        <option value="name-asc">Sort: Name (A-Z)</option>
+                    </select>
+                    <button class="btn btn-outline" onclick="openExportModal('top_subscribers')" style="font-size:0.8rem; padding:0.4rem 0.85rem;">
+                        <i class="fas fa-download"></i> Export Analytics
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table id="top-subscribers-table">
+                    <thead>
+                        <tr>
+                            <th style="width:50px; text-align:center;">Rank</th>
+                            <th>Member</th>
+                            <th>Contact &amp; Email</th>
+                            <th style="text-align:center;">Status</th>
+                            <th style="text-align:center;">Plans Availed</th>
+                            <th style="text-align:right;">Total Spend</th>
+                            <th>Favorite Plan</th>
+                            <th>Last Availment</th>
+                            <th style="text-align:center;">Check-ins</th>
+                            <th style="text-align:center;">Engagement Tier</th>
+                            <th style="text-align:center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="top-subscribers-tbody">
+                        <?php if (empty($top_subscribers_report['subscribers'])): ?>
+                        <tr><td colspan="11" style="text-align:center; padding:2.5rem; color:var(--text-muted);"><i class="fas fa-folder-open" style="font-size:1.8rem; color:#cbd5e1; display:block; margin-bottom:0.5rem;"></i>No subscriber records found for the selected timeframe.</td></tr>
+                        <?php else: ?>
+                        <?php foreach ($top_subscribers_report['subscribers'] as $s_idx => $sr): 
+                            $p_cnt = (int)$sr['plans_availed'];
+                            $s_amt = (float)$sr['total_spend'];
+                            $v_cnt = (int)$sr['total_visits'];
+                            $last_d = $sr['last_availment_date'] ? date('M d, Y', strtotime($sr['last_availment_date'])) : '—';
+
+                            $rank_badge = '';
+                            $row_bg = '';
+                            if ($s_idx === 0) {
+                                $rank_badge = '<span class="badge" style="background:#fef9c3; color:#a16207; border:1px solid #fde047; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥇 1st</span>';
+                                $row_bg = 'background:rgba(254,249,195,0.12);';
+                            } elseif ($s_idx === 1) {
+                                $rank_badge = '<span class="badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥈 2nd</span>';
+                            } elseif ($s_idx === 2) {
+                                $rank_badge = '<span class="badge" style="background:#ffedd5; color:#c2410c; border:1px solid #fed7aa; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥉 3rd</span>';
+                            } else {
+                                $rank_badge = '<span style="font-weight:700; color:var(--text-muted); font-size:0.8rem;">#' . ($s_idx + 1) . '</span>';
+                            }
+
+                            // Engagement Tier
+                            $tier_badge = '';
+                            if ($p_cnt >= 10) {
+                                $tier_badge = '<span class="badge" style="background:rgba(234,179,8,0.15); color:#a16207; border:1px solid rgba(234,179,8,0.4); font-weight:800;"><i class="fas fa-crown"></i> Top Subscriber</span>';
+                            } elseif ($p_cnt >= 5) {
+                                $tier_badge = '<span class="badge" style="background:rgba(82,183,136,0.15); color:#2d6a4f; border:1px solid rgba(82,183,136,0.4); font-weight:700;"><i class="fas fa-star"></i> Active Subscriber</span>';
+                            } elseif ($p_cnt >= 2) {
+                                $tier_badge = '<span class="badge" style="background:rgba(56,189,248,0.12); color:#0284c7; border:1px solid rgba(56,189,248,0.3); font-weight:700;"><i class="fas fa-user-check"></i> Regular</span>';
+                            } else {
+                                $tier_badge = '<span class="badge badge-gray" style="font-weight:600;"><i class="fas fa-user"></i> New</span>';
+                            }
+
+                            $initial = strtoupper(substr($sr['full_name'] ?? 'M', 0, 1));
+                            $avatar_content = !empty($sr['photo']) 
+                                ? '<img src="' . htmlspecialchars($sr['photo']) . '" alt="" onerror="this.onerror=null; this.parentElement.textContent=\'' . htmlspecialchars($initial, ENT_QUOTES) . '\';" style="width:100%; height:100%; object-fit:cover;">'
+                                : htmlspecialchars($initial);
+
+                            $status_cls = (strtolower($sr['status']) === 'active') ? 'badge-active' : 'badge-inactive';
+                        ?>
+                        <tr class="subscriber-row" 
+                            style="<?php echo $row_bg; ?>"
+                            data-name="<?php echo strtolower(htmlspecialchars($sr['full_name'])); ?>"
+                            data-id="<?php echo strtolower(htmlspecialchars($sr['membership_id'])); ?>"
+                            data-plans="<?php echo $p_cnt; ?>"
+                            data-spend="<?php echo $s_amt; ?>"
+                            data-visits="<?php echo $v_cnt; ?>"
+                            data-date="<?php echo htmlspecialchars($sr['last_availment_date'] ?? '1970-01-01'); ?>">
+                            <td style="text-align:center;" class="rank-cell"><?php echo $rank_badge; ?></td>
+                            <td>
+                                <div class="member-cell">
+                                    <div class="member-avatar" style="width:34px; height:34px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#f1f5f9; font-weight:700; color:#2d6a4f; font-size:0.85rem;">
+                                        <?php echo $avatar_content; ?>
+                                    </div>
+                                    <div>
+                                        <a href="view-member.php?id=<?php echo $sr['id']; ?>" class="cell-primary" style="font-weight:700; color:var(--text-main); text-decoration:none; font-size:0.85rem;">
+                                            <?php echo htmlspecialchars($sr['full_name']); ?>
+                                        </a>
+                                        <div style="font-size:0.7rem; color:var(--text-muted); font-family:monospace;">
+                                            <?php echo htmlspecialchars($sr['membership_id']); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="font-size:0.78rem;">
+                                <div><i class="fas fa-phone" style="font-size:0.7rem; color:var(--text-muted); width:14px;"></i> <?php echo htmlspecialchars($sr['contact_number'] ?: '—'); ?></div>
+                                <div style="color:var(--text-muted); font-size:0.72rem; margin-top:2px;"><i class="fas fa-envelope" style="font-size:0.7rem; width:14px;"></i> <?php echo htmlspecialchars($sr['email'] ?: '—'); ?></div>
+                            </td>
+                            <td style="text-align:center;">
+                                <span class="badge <?php echo $status_cls; ?>" style="font-size:0.72rem;">
+                                    <?php echo htmlspecialchars($sr['status']); ?>
+                                </span>
+                            </td>
+                            <td style="text-align:center;">
+                                <span class="badge badge-gold" style="font-size:0.78rem; font-weight:800; padding:4px 10px; display:inline-flex; align-items:center; gap:5px;">
+                                    <i class="fas fa-layer-group"></i> <?php echo number_format($p_cnt); ?> <?php echo $p_cnt === 1 ? 'plan' : 'plans'; ?>
+                                </span>
+                            </td>
+                            <td style="text-align:right; font-weight:800; color:#52b788; font-size:0.92rem;">
+                                ₱<?php echo number_format($s_amt, 2); ?>
+                            </td>
+                            <td>
+                                <span class="badge" style="background:rgba(255,255,255,0.06); font-weight:600; font-size:0.75rem; color:var(--text-main);">
+                                    <i class="fas fa-dumbbell" style="color:var(--accent); margin-right:4px;"></i>
+                                    <?php echo htmlspecialchars($sr['favorite_plan'] ?: 'Standard'); ?>
+                                </span>
+                            </td>
+                            <td style="font-size:0.78rem; color:var(--text-muted); white-space:nowrap;">
+                                <i class="fas fa-calendar-check" style="margin-right:4px;"></i> <?php echo $last_d; ?>
+                            </td>
+                            <td style="text-align:center;">
+                                <span class="badge" style="background:rgba(56,189,248,0.12); color:#0284c7; font-weight:800; font-size:0.78rem; padding:3px 8px; border-radius:8px;">
+                                    <?php echo number_format($v_cnt); ?>
+                                </span>
+                            </td>
+                            <td style="text-align:center;">
+                                <?php echo $tier_badge; ?>
+                            </td>
+                            <td style="text-align:center; white-space:nowrap;">
+                                <a href="view-member.php?id=<?php echo $sr['id']; ?>" class="btn btn-outline btn-sm" style="padding:4px 10px; font-size:0.75rem; border-radius:6px;" title="View Member Profile">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     </div> <!-- End of #analytics-master-container -->
 
 <!-- ── ADVANCED SMART EXPORT MODAL ────────────────────────────────────────── -->
@@ -2344,7 +2762,8 @@ try {
                     <option value="daily_revenue">1. Daily Revenue &amp; Ledger</option>
                     <option value="weekly_revenue">2. Weekly Revenue Comparison</option>
                     <option value="financial_summary">3. Financial Profitability &amp; Net Income Summary</option>
-                    <option value="expenses">4. Gym Operational Expenses Ledger</option>
+                    <option value="top_subscribers">4. Top Subscribers &amp; Member Engagement</option>
+                    <option value="expenses">5. Gym Operational Expenses Ledger</option>
                     <option value="members">Master Members Directory</option>
                     <option value="attendance">Raw Attendance Logs</option>
                     <option value="revenue">Master Payments &amp; Revenue</option>
@@ -2648,8 +3067,56 @@ if (expCatCanvas) {
             }
         }
     });
+// ── Top Subscribers Client-Side Search & Sort ────────────────────────────────
+function filterSubscribersTable() {
+    const q = (document.getElementById('subscribers-search-input')?.value || '').toLowerCase().trim();
+    const rows = document.querySelectorAll('.subscriber-row');
+    rows.forEach(row => {
+        const name = row.getAttribute('data-name') || '';
+        const id = row.getAttribute('data-id') || '';
+        const matches = !q || name.includes(q) || id.includes(q);
+        row.style.display = matches ? '' : 'none';
+    });
 }
 
+function sortSubscribersTable(sortVal) {
+    const tbody = document.getElementById('top-subscribers-tbody');
+    if (!tbody) return;
+    const rows = Array.from(tbody.querySelectorAll('.subscriber-row'));
+
+    rows.sort((a, b) => {
+        const plansA = parseInt(a.getAttribute('data-plans') || '0', 10);
+        const plansB = parseInt(b.getAttribute('data-plans') || '0', 10);
+        const spendA = parseFloat(a.getAttribute('data-spend') || '0');
+        const spendB = parseFloat(b.getAttribute('data-spend') || '0');
+        const visitsA = parseInt(a.getAttribute('data-visits') || '0', 10);
+        const visitsB = parseInt(b.getAttribute('data-visits') || '0', 10);
+        const dateA = a.getAttribute('data-date') || '';
+        const dateB = b.getAttribute('data-date') || '';
+        const nameA = a.getAttribute('data-name') || '';
+        const nameB = b.getAttribute('data-name') || '';
+
+        switch (sortVal) {
+            case 'plans-desc': return plansB - plansA || spendB - spendA;
+            case 'spend-desc': return spendB - spendA || plansB - plansA;
+            case 'visits-desc': return visitsB - visitsA || plansB - plansA;
+            case 'date-desc': return dateB.localeCompare(dateA);
+            case 'name-asc': return nameA.localeCompare(nameB);
+            default: return 0;
+        }
+    });
+
+    rows.forEach((row, idx) => {
+        const rankCell = row.querySelector('.rank-cell');
+        if (rankCell) {
+            if (idx === 0) rankCell.innerHTML = '<span class="badge" style="background:#fef9c3; color:#a16207; border:1px solid #fde047; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥇 1st</span>';
+            else if (idx === 1) rankCell.innerHTML = '<span class="badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥈 2nd</span>';
+            else if (idx === 2) rankCell.innerHTML = '<span class="badge" style="background:#ffedd5; color:#c2410c; border:1px solid #fed7aa; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥉 3rd</span>';
+            else rankCell.innerHTML = `<span style="font-weight:700; color:var(--text-muted); font-size:0.8rem;">#${idx + 1}</span>`;
+        }
+        tbody.appendChild(row);
+    });
+}
 </script>
 
 <?php include 'includes/footer.php'; ?>

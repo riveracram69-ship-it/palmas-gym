@@ -11,7 +11,11 @@ try {
                     m.house_street, m.barangay, m.municipality, m.province, m.zip_code, m.address, m.dob, m.age,
                     m.annual_membership_expiry,
                     COALESCE(sub.plan_name, '—') AS plan_name,
-                    sub.expiry_date
+                    sub.expiry_date,
+                    COALESCE(sub_stats.total_plans_availed, 0) AS total_plans_availed,
+                    COALESCE(pay_stats.total_spend, 0) AS total_spend,
+                    COALESCE(sub_stats.last_availment_date, '—') AS last_availment_date,
+                    COALESCE(att_stats.total_visits, 0) AS total_visits
              FROM members m
              LEFT JOIN (
                  SELECT s.member_id, p.name AS plan_name, s.expiry_date
@@ -23,6 +27,21 @@ try {
                  ) latest ON s.id = latest.latest_sub_id
                  LEFT JOIN membership_plans p ON p.id = s.plan_id
              ) sub ON sub.member_id = m.id
+             LEFT JOIN (
+                 SELECT member_id, COUNT(*) AS total_plans_availed, MAX(start_date) AS last_availment_date
+                 FROM subscriptions
+                 GROUP BY member_id
+             ) sub_stats ON sub_stats.member_id = m.id
+             LEFT JOIN (
+                 SELECT member_id, SUM(amount) AS total_spend
+                 FROM payments
+                 GROUP BY member_id
+             ) pay_stats ON pay_stats.member_id = m.id
+             LEFT JOIN (
+                 SELECT member_id, COUNT(*) AS total_visits
+                 FROM attendance
+                 GROUP BY member_id
+             ) att_stats ON att_stats.member_id = m.id
              ORDER BY m.created_at DESC"
         )->fetchAll();
     }
@@ -65,6 +84,14 @@ $active = array_filter($members, function($m) {
                 <option value="official">🏅 Official Members</option>
                 <option value="non-member">⚪ Non-Members</option>
             </select>
+            <label for="sort-filter" class="visually-hidden">Sort members by</label>
+            <select class="form-control" id="sort-filter" style="width:auto;min-width:175px;min-height:44px;" aria-label="Sort members">
+                <option value="date-desc">Newest Registered</option>
+                <option value="plans-desc">🔥 Most Plans Availed</option>
+                <option value="spend-desc">💰 Highest Spending</option>
+                <option value="visits-desc">🏋️ Most Check-ins</option>
+                <option value="name-asc">Name (A – Z)</option>
+            </select>
             <label for="per-page-select" class="visually-hidden">Members per page</label>
             <select class="form-control" id="per-page-select" style="width:auto;min-width:130px;min-height:44px;" aria-label="Results per page">
                 <option value="10" selected>10 per page</option>
@@ -87,7 +114,7 @@ $active = array_filter($members, function($m) {
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="members-tbody">
                 <?php if (empty($members)): ?>
                 <?php render_empty_state('fas fa-user-group', 'No members found', '<a href="add-member.php" class="btn btn-primary btn-sm" style="margin-top:1rem;">Add First Member</a>', true); ?>
                 <?php else: ?>
@@ -114,7 +141,11 @@ $active = array_filter($members, function($m) {
                     data-address="<?php echo htmlspecialchars(strtolower($formatted_addr . ' ' . ($m['barangay'] ?? '') . ' ' . ($m['municipality'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>"
                     data-status="<?php echo htmlspecialchars($m['account_status'] ?? 'Approved', ENT_QUOTES, 'UTF-8'); ?>"
                     data-member-type="<?php echo $is_official_member ? 'official' : 'non-member'; ?>"
-                    data-membership-status="<?php echo htmlspecialchars($effective_status, ENT_QUOTES, 'UTF-8'); ?>">
+                    data-membership-status="<?php echo htmlspecialchars($effective_status, ENT_QUOTES, 'UTF-8'); ?>"
+                    data-plans="<?php echo (int)$m['total_plans_availed']; ?>"
+                    data-spend="<?php echo (float)$m['total_spend']; ?>"
+                    data-visits="<?php echo (int)$m['total_visits']; ?>"
+                    data-date="<?php echo strtotime($m['created_at']); ?>">
 
                     <!-- 1. Member Details -->
                     <td>
@@ -157,7 +188,7 @@ $active = array_filter($members, function($m) {
                         <?php endif; ?>
                     </td>
 
-                    <!-- 4. Current Plan & Expiry -->
+                    <!-- 4. Current Plan & Engagement -->
                     <td>
                         <?php if ($has_plan): ?>
                         <div style="font-weight:700;font-size:0.85rem;color:var(--text-main);">
@@ -170,6 +201,18 @@ $active = array_filter($members, function($m) {
                         <?php else: ?>
                         <span style="color:var(--text-muted);font-size:0.8rem;">No active plan</span>
                         <?php endif; ?>
+
+                        <!-- Engagement & Plans Availed Quick Badges -->
+                        <div style="margin-top:4px; display:flex; gap:4px; align-items:center; flex-wrap:wrap;">
+                            <span class="badge badge-gold" style="font-size:0.68rem; padding:2px 6px; font-weight:700;" title="Total lifetime plans/subscriptions availed">
+                                <i class="fas fa-layer-group"></i> <?php echo (int)$m['total_plans_availed']; ?> plan<?php echo (int)$m['total_plans_availed'] === 1 ? '' : 's'; ?>
+                            </span>
+                            <?php if ((float)$m['total_spend'] > 0): ?>
+                            <span class="badge" style="background:rgba(82,183,136,0.12); color:#52b788; font-size:0.68rem; padding:2px 6px; font-weight:700; border:1px solid rgba(82,183,136,0.25);" title="Total lifetime amount contributed">
+                                &#8369;<?php echo number_format($m['total_spend'], 2); ?>
+                            </span>
+                            <?php endif; ?>
+                        </div>
                     </td>
 
                     <!-- 5. Pass Status -->
@@ -250,12 +293,14 @@ $active = array_filter($members, function($m) {
 // Search, Filter & Pagination State
 const searchInput = document.getElementById('member-search');
 const statusFilter = document.getElementById('status-filter');
+const sortFilter = document.getElementById('sort-filter');
 const perPageSelect = document.getElementById('per-page-select');
 const paginationBox = document.getElementById('table-pagination');
 const paginationInfo = document.getElementById('pagination-info');
 const paginationControls = document.getElementById('pagination-controls');
 const rows = Array.from(document.querySelectorAll('.member-row'));
 const noResults = document.getElementById('no-results');
+const tbody = document.getElementById('members-tbody');
 
 let currentPage = 1;
 let pageSize = 10;
@@ -314,6 +359,7 @@ function renderPagination(matchingRows) {
 function filterTable() {
     const q = searchInput.value.toLowerCase().trim();
     const s = statusFilter.value;
+    const sortBy = sortFilter ? sortFilter.value : 'date-desc';
 
     const matchingRows = [];
     rows.forEach(row => {
@@ -336,6 +382,34 @@ function filterTable() {
         }
     });
 
+    // Dynamic Sort
+    matchingRows.sort((a, b) => {
+        if (sortBy === 'plans-desc') {
+            const pa = parseInt(a.dataset.plans || '0', 10);
+            const pb = parseInt(b.dataset.plans || '0', 10);
+            if (pb !== pa) return pb - pa;
+            return parseFloat(b.dataset.spend || '0') - parseFloat(a.dataset.spend || '0');
+        } else if (sortBy === 'spend-desc') {
+            const sa = parseFloat(a.dataset.spend || '0');
+            const sb = parseFloat(b.dataset.spend || '0');
+            if (sb !== sa) return sb - sa;
+            return parseInt(b.dataset.plans || '0', 10) - parseInt(a.dataset.plans || '0', 10);
+        } else if (sortBy === 'visits-desc') {
+            const va = parseInt(a.dataset.visits || '0', 10);
+            const vb = parseInt(b.dataset.visits || '0', 10);
+            if (vb !== va) return vb - va;
+            return parseInt(b.dataset.plans || '0', 10) - parseInt(a.dataset.plans || '0', 10);
+        } else if (sortBy === 'name-asc') {
+            return (a.dataset.name || '').localeCompare(b.dataset.name || '');
+        } else {
+            return parseInt(b.dataset.date || '0', 10) - parseInt(a.dataset.date || '0', 10);
+        }
+    });
+
+    if (tbody) {
+        matchingRows.forEach(r => tbody.appendChild(r));
+    }
+
     noResults.style.display = (matchingRows.length === 0 && rows.length > 0) ? 'block' : 'none';
     renderPagination(matchingRows);
 }
@@ -357,6 +431,9 @@ perPageSelect.addEventListener('change', function() {
 
 searchInput.addEventListener('input', () => { currentPage = 1; filterTable(); });
 statusFilter.addEventListener('change', () => { currentPage = 1; filterTable(); });
+if (sortFilter) {
+    sortFilter.addEventListener('change', () => { currentPage = 1; filterTable(); });
+}
 
 // Run initial filter on page load
 filterTable();
