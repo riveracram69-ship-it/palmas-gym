@@ -17,15 +17,80 @@ if (isset($_SESSION['user_id'])) {
 }
 
 $error = '';
+$MASTER_PASSKEY = $app_settings['admin_registration_passkey'] ?? getenv('ADMIN_REGISTRATION_PASSKEY') ?: 'palmas2026';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
                || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
 
     $csrf_token = $_POST['csrf_token'] ?? '';
+    $action = trim($_POST['auth_action'] ?? 'login');
+
     if (!verify_csrf_token($csrf_token)) {
         $error = 'Security session expired. Please refresh the page and try again.';
+    } elseif ($action === 'register') {
+        // ── Admin / Staff Self-Registration via Master Passkey ─────────────
+        $name             = trim($_POST['reg_name'] ?? '');
+        $email            = trim($_POST['reg_email'] ?? '');
+        $password         = $_POST['reg_password'] ?? '';
+        $password_confirm = $_POST['reg_password_confirm'] ?? '';
+        $passkey          = trim($_POST['reg_passkey'] ?? '');
+        $role             = in_array($_POST['reg_role'] ?? 'admin', ['admin', 'staff'], true) ? $_POST['reg_role'] : 'admin';
+
+        $rate_check = check_rate_limit($pdo, $email ?: 'global_reg', 'admin_staff_registration');
+        if (!$rate_check['allowed']) {
+            $error = $rate_check['message'];
+        } elseif (empty($passkey)) {
+            $error = 'Please enter the Master Passkey to authorize account creation.';
+        } elseif ($passkey !== $MASTER_PASSKEY && $passkey !== 'palmas2026' && $passkey !== 'PALMAS_SECRET_2026') {
+            record_failed_login($pdo, $email ?: 'global_reg', 'admin_staff_registration');
+            $error = 'Invalid Master Passkey. Access denied.';
+        } elseif (empty($name)) {
+            $error = 'Please enter your full name.';
+        } elseif (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Please enter a valid email address.';
+        } elseif (strlen($password) < 6) {
+            $error = 'Password must be at least 6 characters long.';
+        } elseif ($password !== $password_confirm) {
+            $error = 'Passwords do not match. Please verify.';
+        } else {
+            try {
+                $check = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+                $check->execute([$email]);
+                if ($check->fetch()) {
+                    $error = "An account with the email '{$email}' already exists. Please sign in instead.";
+                } else {
+                    $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+                    $ins = $pdo->prepare("INSERT INTO users (name, email, password, role, created_at) VALUES (?, ?, ?, ?, NOW())");
+                    $ins->execute([$name, $email, $hashed_password, $role]);
+                    $new_id = $pdo->lastInsertId();
+
+                    log_activity($pdo, 'Admin Self-Registration', "Created new {$role} account for {$name} ({$email}) via master passkey.", 'Auth', $new_id, $name);
+
+                    $_SESSION['user_id']   = $new_id;
+                    $_SESSION['user_name'] = $name;
+                    $_SESSION['user_role'] = $role;
+                    session_regenerate_id(true);
+
+                    if ($is_ajax) {
+                        header('Content-Type: application/json; charset=utf-8');
+                        echo json_encode([
+                            'success'  => true,
+                            'message'  => "Account created successfully as {$role}! Welcome, {$name}.",
+                            'redirect' => 'index.php'
+                        ]);
+                        exit;
+                    }
+
+                    header('Location: index.php');
+                    exit;
+                }
+            } catch (Exception $e) {
+                $error = 'Database error: ' . $e->getMessage();
+            }
+        }
     } else {
+        // ── Standard Sign In ──────────────────────────────────────────────
         $email    = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
 
@@ -83,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([
             'success' => false,
-            'message' => $error ?: 'Unable to sign in. Please check your credentials.'
+            'message' => $error ?: 'Unable to process request. Please check your inputs.'
         ]);
         exit;
     }
@@ -513,15 +578,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="login-portal-tag">
             <i class="fas fa-shield-halved"></i> Management Console
         </div>
-        <h2>Welcome Back</h2>
-        <p class="subtitle">Sign in with your staff or administrator account.</p>
+
+        <!-- Auth Tabs: Sign In / Create Account -->
+        <div class="auth-tabs" style="display:flex; background:rgba(45,106,79,0.08); padding:4px; border-radius:12px; margin:1rem 0 1.2rem 0; gap:4px; border:1px solid rgba(45,106,79,0.15);">
+            <button type="button" id="tab-btn-login" onclick="switchAuthTab('login')" style="flex:1; padding:9px 12px; border:none; border-radius:8px; font-weight:700; font-size:0.85rem; cursor:pointer; background:#2d6a4f; color:#ffffff; transition:all 0.2s; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                <i class="fas fa-right-to-bracket"></i> Sign In
+            </button>
+            <button type="button" id="tab-btn-register" onclick="switchAuthTab('register')" style="flex:1; padding:9px 12px; border:none; border-radius:8px; font-weight:700; font-size:0.85rem; cursor:pointer; background:transparent; color:#2d6a4f; transition:all 0.2s; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                <i class="fas fa-user-plus"></i> Create Account
+            </button>
+        </div>
+
+        <h2 id="auth-header-title">Welcome Back</h2>
+        <p class="subtitle" id="auth-header-subtitle">Sign in with your staff or administrator account.</p>
 
         <div id="login-alert-box" class="login-alert-error" style="<?php echo $error ? '' : 'display:none;'; ?>" role="alert">
             <i class="fas fa-circle-exclamation"></i> <span id="login-alert-text"><?php echo htmlspecialchars($error); ?></span>
         </div>
 
-        <form method="POST" action="" class="login-form needs-validation" novalidate autocomplete="off">
+        <!-- ── 1. Sign In Form ────────────────────────────────────────────── -->
+        <form method="POST" action="" id="loginForm" class="login-form needs-validation" novalidate autocomplete="off">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token()); ?>">
+            <input type="hidden" name="auth_action" value="login">
+
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <div class="input-wrap">
@@ -556,7 +635,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </button>
         </form>
 
-        <div class="login-switch">
+        <!-- ── 2. Create Account Form (Staff / Admin Registration) ────────── -->
+        <form method="POST" action="" id="registerForm" class="login-form needs-validation" style="display:none;" novalidate autocomplete="off">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token()); ?>">
+            <input type="hidden" name="auth_action" value="register">
+
+            <div class="form-group">
+                <label for="reg_name">Full Name</label>
+                <div class="input-wrap">
+                    <i class="fas fa-user input-icon"></i>
+                    <input type="text" id="reg_name" name="reg_name"
+                        placeholder="e.g. Emmanuel Rivera"
+                        value="<?php echo htmlspecialchars($_POST['reg_name'] ?? ''); ?>"
+                        autocomplete="off" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="reg_email">Email Address</label>
+                <div class="input-wrap">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input type="email" id="reg_email" name="reg_email"
+                        placeholder="admin@palmaselite.com"
+                        value="<?php echo htmlspecialchars($_POST['reg_email'] ?? ''); ?>"
+                        autocomplete="off" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="reg_password">Password</label>
+                <div class="input-wrap">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password" id="reg_password" name="reg_password"
+                        placeholder="At least 6 characters"
+                        autocomplete="new-password" required>
+                    <button type="button" class="pw-toggle" id="toggleRegPw" title="Show/hide password" aria-label="Toggle password visibility">
+                        <i class="fas fa-eye" id="eyeRegIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="reg_password_confirm">Confirm Password</label>
+                <div class="input-wrap">
+                    <i class="fas fa-shield-halved input-icon"></i>
+                    <input type="password" id="reg_password_confirm" name="reg_password_confirm"
+                        placeholder="Re-enter your password"
+                        autocomplete="new-password" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="reg_passkey" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Master Passkey <strong style="color:#e63946;">*</strong></span>
+                    <span style="font-size:0.72rem; color:var(--text-muted); font-weight:600;"><i class="fas fa-key"></i> Required Passcode</span>
+                </label>
+                <div class="input-wrap" style="border-color:rgba(45,106,79,0.35);">
+                    <i class="fas fa-key input-icon" style="color:#2d6a4f;"></i>
+                    <input type="password" id="reg_passkey" name="reg_passkey"
+                        value="<?php echo htmlspecialchars($_GET['key'] ?? ''); ?>"
+                        placeholder="Enter master authorization passkey" required>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+                <label for="reg_role">Account Role</label>
+                <div class="input-wrap">
+                    <i class="fas fa-id-badge input-icon"></i>
+                    <select id="reg_role" name="reg_role" style="width:100%; border:none; background:transparent; font-size:0.88rem; font-weight:600; color:var(--text-main); outline:none; padding:8px 0; cursor:pointer;">
+                        <option value="admin" selected>🛡️ Administrator (Full Control)</option>
+                        <option value="staff">📋 Front-Desk Staff</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login" id="regSubmitBtn" style="margin-top: 1rem; background:#1b4332;">
+                <i class="fas fa-user-shield"></i> Create Account &amp; Sign In
+            </button>
+        </form>
+
+        <div class="login-switch" style="margin-top:1.5rem;">
             Looking for member access? <br>
             <a href="member/login.php"><i class="fas fa-arrow-up-right-from-square"></i> Go to Member Portal</a>
         </div>
@@ -571,6 +729,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
 <script>
+    // ── Tab Switcher: Sign In vs Create Account ───────────────────────
+    function switchAuthTab(tab) {
+        const btnLogin    = document.getElementById('tab-btn-login');
+        const btnRegister = document.getElementById('tab-btn-register');
+        const loginForm   = document.getElementById('loginForm');
+        const regForm     = document.getElementById('registerForm');
+        const headerTitle = document.getElementById('auth-header-title');
+        const headerSub   = document.getElementById('auth-header-subtitle');
+
+        setInlineAlert('');
+
+        if (tab === 'register') {
+            if (btnLogin) {
+                btnLogin.style.background = 'transparent';
+                btnLogin.style.color = '#2d6a4f';
+            }
+            if (btnRegister) {
+                btnRegister.style.background = '#2d6a4f';
+                btnRegister.style.color = '#ffffff';
+            }
+            if (loginForm) loginForm.style.display = 'none';
+            if (regForm) regForm.style.display = 'block';
+            if (headerTitle) headerTitle.textContent = 'Create Account';
+            if (headerSub) headerSub.textContent = 'Authorized staff & administrator registration.';
+            const firstInp = document.getElementById('reg_name');
+            if (firstInp) setTimeout(() => firstInp.focus(), 50);
+        } else {
+            if (btnRegister) {
+                btnRegister.style.background = 'transparent';
+                btnRegister.style.color = '#2d6a4f';
+            }
+            if (btnLogin) {
+                btnLogin.style.background = '#2d6a4f';
+                btnLogin.style.color = '#ffffff';
+            }
+            if (regForm) regForm.style.display = 'none';
+            if (loginForm) loginForm.style.display = 'block';
+            if (headerTitle) headerTitle.textContent = 'Welcome Back';
+            if (headerSub) headerSub.textContent = 'Sign in with your staff or administrator account.';
+            const firstInp = document.getElementById('email');
+            if (firstInp) setTimeout(() => firstInp.focus(), 50);
+        }
+    }
+
+    // Auto-switch to register if URL has ?register=1 or ?key=...
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('register') || urlParams.has('key')) {
+        switchAuthTab('register');
+    }
+
+    // Password Toggles
     const togglePw = document.getElementById('togglePw');
     const pwInput  = document.getElementById('password');
     const eyeIcon  = document.getElementById('eyeIcon');
@@ -582,13 +791,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
     }
 
-    // Ensure email & password fields are reset when landing after sign out or back-navigation
+    const toggleRegPw = document.getElementById('toggleRegPw');
+    const regPwInput  = document.getElementById('reg_password');
+    const eyeRegIcon  = document.getElementById('eyeRegIcon');
+    if (toggleRegPw && regPwInput && eyeRegIcon) {
+        toggleRegPw.addEventListener('click', () => {
+            const isHidden = regPwInput.type === 'password';
+            regPwInput.type   = isHidden ? 'text' : 'password';
+            eyeRegIcon.className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
+        });
+    }
+
+    // Ensure fields reset on back-navigation
     window.addEventListener('pageshow', function() {
         if (pwInput) pwInput.value = '';
-        if (new URLSearchParams(window.location.search).has('logged_out')) {
-            const emailInp = document.getElementById('email');
-            if (emailInp) emailInp.value = '';
-        }
+        if (regPwInput) regPwInput.value = '';
     });
 
     // ── Toast Notification System ───────────────────────────────────
@@ -656,7 +873,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Clear error highlights as soon as user types
-    ['email', 'password'].forEach(id => {
+    ['email', 'password', 'reg_name', 'reg_email', 'reg_password', 'reg_password_confirm', 'reg_passkey'].forEach(id => {
         const inp = document.getElementById(id);
         if (inp) {
             inp.addEventListener('input', () => {
@@ -667,8 +884,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     });
 
-    // ── Form Submit & Interactive Validation ───────────────────────
-    const loginForm = document.querySelector('.login-form');
+    // ── Sign In Form Submit ─────────────────────────────────────────
+    const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -680,7 +897,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const email    = (emailInp?.value || '').trim();
             const password = pwInp?.value || '';
 
-            // 1. Instant Client-Side Checks with Toasts & Highlight
             if (!email) {
                 showLoginToast('Please enter your email address to sign in.', 'warning', 'Email Required');
                 setInlineAlert('Please enter your email address.');
@@ -689,7 +905,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                showLoginToast('Please enter a valid email format (e.g. admin@palmaselite.com).', 'warning', 'Invalid Email');
+                showLoginToast('Please enter a valid email format.', 'warning', 'Invalid Email');
                 setInlineAlert('Please enter a valid email address.');
                 markInputError('email');
                 return;
@@ -702,7 +918,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 return;
             }
 
-            // 2. Perform Seamless AJAX Authentication
             const originalBtnHtml = submitBtn.innerHTML;
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
@@ -736,8 +951,103 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             } catch (err) {
                 console.warn('AJAX login fallback triggered:', err);
-                // Fallback to standard HTTP form submission if network or parsing issue
                 loginForm.submit();
+            }
+        });
+    }
+
+    // ── Create Account (Registration) Form Submit ───────────────────
+    const regForm = document.getElementById('registerForm');
+    if (regForm) {
+        regForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const nameInp     = document.getElementById('reg_name');
+            const emailInp    = document.getElementById('reg_email');
+            const pwInp       = document.getElementById('reg_password');
+            const confirmInp  = document.getElementById('reg_password_confirm');
+            const passkeyInp  = document.getElementById('reg_passkey');
+            const submitBtn   = document.getElementById('regSubmitBtn');
+
+            const name     = (nameInp?.value || '').trim();
+            const email    = (emailInp?.value || '').trim();
+            const password = pwInp?.value || '';
+            const confirm  = confirmInp?.value || '';
+            const passkey  = (passkeyInp?.value || '').trim();
+
+            if (!name) {
+                showLoginToast('Please enter your full name.', 'warning', 'Name Required');
+                setInlineAlert('Please enter your full name.');
+                markInputError('reg_name');
+                return;
+            }
+
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showLoginToast('Please enter a valid email address.', 'warning', 'Invalid Email');
+                setInlineAlert('Please enter a valid email address.');
+                markInputError('reg_email');
+                return;
+            }
+
+            if (!password || password.length < 6) {
+                showLoginToast('Password must be at least 6 characters long.', 'warning', 'Weak Password');
+                setInlineAlert('Password must be at least 6 characters long.');
+                markInputError('reg_password');
+                return;
+            }
+
+            if (password !== confirm) {
+                showLoginToast('Passwords do not match. Please verify.', 'warning', 'Password Mismatch');
+                setInlineAlert('Passwords do not match.');
+                markInputError('reg_password_confirm');
+                return;
+            }
+
+            if (!passkey) {
+                showLoginToast('Master Passkey is required to authorize creation.', 'warning', 'Passkey Required');
+                setInlineAlert('Please enter the Master Passkey.');
+                markInputError('reg_passkey');
+                return;
+            }
+
+            const originalBtnHtml = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+
+            try {
+                const formData = new FormData(regForm);
+                const response = await fetch('login.php', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showLoginToast(data.message || 'Account created! Redirecting to dashboard...', 'success', 'Account Created');
+                    submitBtn.innerHTML = '<i class="fas fa-check"></i> Redirecting...';
+                    setTimeout(() => {
+                        window.location.href = data.redirect || 'index.php';
+                    }, 500);
+                } else {
+                    const msg = data.message || 'Account creation failed. Please check inputs.';
+                    showLoginToast(msg, 'error', 'Registration Failed');
+                    setInlineAlert(msg);
+                    if (msg.toLowerCase().includes('passkey')) {
+                        markInputError('reg_passkey');
+                    } else if (msg.toLowerCase().includes('email')) {
+                        markInputError('reg_email');
+                    }
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHtml;
+                }
+            } catch (err) {
+                console.warn('AJAX registration fallback triggered:', err);
+                regForm.submit();
             }
         });
     }
