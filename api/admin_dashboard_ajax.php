@@ -16,7 +16,145 @@ require_once __DIR__ . '/../config/settings.php';
 require_login();
 
 header('Content-Type: application/json; charset=UTF-8');
-header('Cache-Control: no-cache, must-revalidate');
+// ── 0. Check Pending Cash Approvals Real-Time Monitoring ───────────────────
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'check_pending_approvals') {
+    try {
+        // 1. Pending Cash Registrations Count (AUDIT-009: Actionable Cash requests only)
+        $reg_count_stmt = $pdo->query("
+            SELECT COUNT(*) FROM members m
+            WHERE m.account_status = 'Pending'
+              AND (
+                  EXISTS (
+                      SELECT 1 FROM renewal_requests rr 
+                      WHERE rr.member_id = m.id 
+                        AND rr.status = 'Pending' 
+                        AND rr.payment_method = 'Cash'
+                  )
+                  OR EXISTS (
+                      SELECT 1 FROM payment_transactions pt 
+                      WHERE pt.member_id = m.id 
+                        AND pt.status = 'PENDING' 
+                        AND pt.payment_method = 'Cash'
+                  )
+              )
+        ");
+        $pending_regs = (int)($reg_count_stmt ? $reg_count_stmt->fetchColumn() : 0);
+
+        // 2. Pending Cash Renewals Count
+        $renew_count_stmt = $pdo->query("
+            SELECT COUNT(*) FROM renewal_requests r
+            WHERE r.status = 'Pending'
+              AND r.payment_method = 'Cash'
+              AND (r.reference_no NOT LIKE 'REG-%' OR r.reference_no IS NULL)
+        ");
+        $pending_renews = (int)($renew_count_stmt ? $renew_count_stmt->fetchColumn() : 0);
+
+        // 3. Latest Cash Registration Record (AUDIT-009: Actionable Cash requests only)
+        $latest_reg_stmt = $pdo->query("
+            SELECT m.id, m.full_name, m.membership_id, m.created_at,
+                   COALESCE(p.name, 'Membership Plan') as plan_name,
+                   COALESCE(p.price, 0) as plan_price
+            FROM members m
+            LEFT JOIN membership_plans p ON p.id = m.selected_plan_id
+            WHERE m.account_status = 'Pending'
+              AND (
+                  EXISTS (
+                      SELECT 1 FROM renewal_requests rr 
+                      WHERE rr.member_id = m.id 
+                        AND rr.status = 'Pending' 
+                        AND rr.payment_method = 'Cash'
+                  )
+                  OR EXISTS (
+                      SELECT 1 FROM payment_transactions pt 
+                      WHERE pt.member_id = m.id 
+                        AND pt.status = 'PENDING' 
+                        AND pt.payment_method = 'Cash'
+                  )
+              )
+            ORDER BY m.id DESC LIMIT 1
+        ");
+        $latest_reg = $latest_reg_stmt ? $latest_reg_stmt->fetch(PDO::FETCH_ASSOC) : null;
+        $latest_reg_id = $latest_reg ? (int)$latest_reg['id'] : 0;
+
+        // 4. Latest Cash Renewal Record
+        $latest_renew_stmt = $pdo->query("
+            SELECT r.id, r.created_at, r.payment_method, m.full_name, m.membership_id,
+                   p.name as plan_name, p.price as plan_price
+            FROM renewal_requests r
+            JOIN members m ON r.member_id = m.id
+            JOIN membership_plans p ON r.plan_id = p.id
+            WHERE r.status = 'Pending'
+              AND r.payment_method = 'Cash'
+              AND (r.reference_no NOT LIKE 'REG-%' OR r.reference_no IS NULL)
+            ORDER BY r.id DESC LIMIT 1
+        ");
+        $latest_renew = $latest_renew_stmt ? $latest_renew_stmt->fetch(PDO::FETCH_ASSOC) : null;
+        $latest_renew_id = $latest_renew ? (int)$latest_renew['id'] : 0;
+
+        // Determine which request is newer to feature in toast
+        $latest_request = null;
+        if ($latest_reg && $latest_renew) {
+            $reg_ts = strtotime($latest_reg['created_at']);
+            $renew_ts = strtotime($latest_renew['created_at']);
+            if ($reg_ts >= $renew_ts) {
+                $latest_request = [
+                    'type'          => 'REGISTRATION',
+                    'id'            => (int)$latest_reg['id'],
+                    'member_name'   => $latest_reg['full_name'],
+                    'membership_id' => $latest_reg['membership_id'],
+                    'plan_name'     => $latest_reg['plan_name'],
+                    'plan_price'    => (float)$latest_reg['plan_price'],
+                    'created_at'    => $latest_reg['created_at']
+                ];
+            } else {
+                $latest_request = [
+                    'type'          => 'RENEWAL',
+                    'id'            => (int)$latest_renew['id'],
+                    'member_name'   => $latest_renew['full_name'],
+                    'membership_id' => $latest_renew['membership_id'],
+                    'plan_name'     => $latest_renew['plan_name'],
+                    'plan_price'    => (float)$latest_renew['plan_price'],
+                    'created_at'    => $latest_renew['created_at']
+                ];
+            }
+        } elseif ($latest_reg) {
+            $latest_request = [
+                'type'          => 'REGISTRATION',
+                'id'            => (int)$latest_reg['id'],
+                'member_name'   => $latest_reg['full_name'],
+                'membership_id' => $latest_reg['membership_id'],
+                'plan_name'     => $latest_reg['plan_name'],
+                'plan_price'    => (float)$latest_reg['plan_price'],
+                'created_at'    => $latest_reg['created_at']
+            ];
+        } elseif ($latest_renew) {
+            $latest_request = [
+                'type'          => 'RENEWAL',
+                'id'            => (int)$latest_renew['id'],
+                'member_name'   => $latest_renew['full_name'],
+                'membership_id' => $latest_renew['membership_id'],
+                'plan_name'     => $latest_renew['plan_name'],
+                'plan_price'    => (float)$latest_renew['plan_price'],
+                'created_at'    => $latest_renew['created_at']
+            ];
+        }
+
+        echo json_encode([
+            'success'         => true,
+            'total_pending'   => $pending_regs + $pending_renews,
+            'pending_regs'    => $pending_regs,
+            'pending_renews'  => $pending_renews,
+            'latest_reg_id'   => $latest_reg_id,
+            'latest_renew_id' => $latest_renew_id,
+            'latest_request'  => $latest_request
+        ]);
+    } catch (Exception $e) {
+        error_log("check_pending_approvals error: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Internal server error while checking pending approvals.']);
+    }
+    exit;
+}
 
 // ── 0. Dynamic Leaderboard Endpoint (Filter by Any Month / Period & Metric) ─────────
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'leaderboard_data') {
@@ -88,9 +226,13 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'leaderboard_data') {
                     GROUP BY member_id
                 ) sub_stats ON sub_stats.member_id = m.id
                 LEFT JOIN (
-                    SELECT member_id, SUM(amount) as total_spend
-                    FROM payments
-                    GROUP BY member_id
+                    SELECT p.member_id, SUM(p.amount) as total_spend
+                    FROM payments p
+                    LEFT JOIN subscriptions s ON p.subscription_id = s.id
+                    LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+                    WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+                      AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+                    GROUP BY p.member_id
                 ) pay_stats ON pay_stats.member_id = m.id
                 WHERE sub_stats.plans_availed > 0
                 ORDER BY metric_count DESC, total_spend DESC, m.full_name ASC

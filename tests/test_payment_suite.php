@@ -109,10 +109,44 @@ function create_test_member(PDO $pdo, string $suffix = 'A'): array {
     return ['id' => $member_id, 'full_name' => $full_name, 'email' => $email, 'membership_id' => $membership_id];
 }
 
-function get_test_plan(PDO $pdo, int $duration_minutes): ?array {
-    $stmt = $pdo->prepare("SELECT id, name, price, duration_minutes, duration_months FROM membership_plans WHERE duration_minutes = ? AND is_test_promo = 1 LIMIT 1");
-    $stmt->execute([$duration_minutes]);
-    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+function cleanup_test_fixtures(PDO $pdo): void {
+    try {
+        $stmt = $pdo->query("SELECT id FROM membership_plans WHERE name LIKE 'TEST FIXTURE - %'");
+        $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        if (!empty($ids)) {
+            $in = implode(',', array_map('intval', $ids));
+            $pdo->exec("DELETE FROM notifications WHERE subscription_id IN (SELECT id FROM subscriptions WHERE plan_id IN ($in))");
+            $pdo->exec("DELETE FROM payments WHERE subscription_id IN (SELECT id FROM subscriptions WHERE plan_id IN ($in))");
+            $pdo->exec("DELETE FROM payment_transactions WHERE plan_id IN ($in)");
+            $pdo->exec("DELETE FROM subscriptions WHERE plan_id IN ($in)");
+            $pdo->exec("DELETE FROM membership_plans WHERE id IN ($in)");
+        }
+    } catch (\Throwable $e) {}
+}
+
+function setup_test_fixtures(PDO $pdo): array {
+    cleanup_test_fixtures($pdo);
+
+    // Create isolated, temporary test promo plans for minute-based testing.
+    // These never permanently alter production data or require legacy test plans to stay active.
+    $stmt30 = $pdo->prepare("
+        INSERT INTO membership_plans (name, price, duration_months, duration_minutes, is_test_promo, is_active, plan_category, floor_access)
+        VALUES ('TEST FIXTURE - 30 MIN', 1.00, 0, 30, 1, 1, 'test_promo', 'all')
+    ");
+    $stmt30->execute();
+    $id30 = (int)$pdo->lastInsertId();
+
+    $stmt60 = $pdo->prepare("
+        INSERT INTO membership_plans (name, price, duration_months, duration_minutes, is_test_promo, is_active, plan_category, floor_access)
+        VALUES ('TEST FIXTURE - 60 MIN', 1.00, 0, 60, 1, 1, 'test_promo', 'all')
+    ");
+    $stmt60->execute();
+    $id60 = (int)$pdo->lastInsertId();
+
+    $plan30 = $pdo->query("SELECT * FROM membership_plans WHERE id = {$id30}")->fetch(PDO::FETCH_ASSOC);
+    $plan60 = $pdo->query("SELECT * FROM membership_plans WHERE id = {$id60}")->fetch(PDO::FETCH_ASSOC);
+
+    return [$plan30, $plan60];
 }
 
 function insert_pending_transaction(PDO $pdo, int $member_id, int $plan_id, float $amount, string $ref): void {
@@ -135,13 +169,9 @@ if (!$pdo) {
     exit(1);
 }
 
-// Verify test plans exist
-$plan30 = get_test_plan($pdo, 30);
-$plan60 = get_test_plan($pdo, 60);
-if (!$plan30 || !$plan60) {
-    echo "\n[WARNING] Test promo plans not found. Run migrate_clean_unified.php first.\n";
-    echo "         Continuing tests with whatever plans are available...\n";
-}
+// Set up isolated, temporary test fixtures with automated teardown
+register_shutdown_function('cleanup_test_fixtures', $pdo);
+list($plan30, $plan60) = setup_test_fixtures($pdo);
 
 // ─────────────────────────────────────────────────────────────────────────────
 section("TEST 1: ₱1 Payment Initialization (PENDING Transaction Created)");
@@ -446,11 +476,17 @@ if (!$plan30) {
     $pays12->execute([$m12['id']]);
     $pay_rows = $pays12->fetchAll(PDO::FETCH_ASSOC);
     
-    assert_true("Payment record exists", count($pay_rows) > 0);
-    $p = $pay_rows[0];
-    assert_equals("Payment amount = ₱1.00", '1.00', number_format((float)($p['amount'] ?? 0), 2));
-    assert_not_empty("Payment reference_number set", $p['reference_number'] ?? '');
-    assert_equals("Payment is_test = 1", 1, (int)($p['is_test'] ?? 0));
+    assert_true("Payment record exists", !empty($pay_rows));
+    if (!empty($pay_rows)) {
+        $p = $pay_rows[0];
+        assert_equals("Payment amount = ₱1.00", '1.00', number_format((float)($p['amount'] ?? 0), 2));
+        assert_not_empty("Payment reference_number set", $p['reference_number'] ?? '');
+        assert_equals("Payment is_test = 1", 1, (int)($p['is_test'] ?? 0));
+    } else {
+        assert_true("Payment amount = ₱1.00", false, "Payment row missing");
+        assert_true("Payment reference_number set", false, "Payment row missing");
+        assert_true("Payment is_test = 1", false, "Payment row missing");
+    }
     
     cleanup_test_member($pdo, $m12['membership_id']);
 }
@@ -576,6 +612,8 @@ printf(" ❌ FAILED:  %d\n", $fail);
 printf(" ⏭️  SKIPPED: %d\n", $skip);
 $total = $pass + $fail + $skip;
 printf(" 📊 TOTAL:   %d tests\n", $total);
+
+cleanup_test_fixtures($pdo);
 
 if ($fail > 0) {
     echo "\n FAILING TESTS:\n";

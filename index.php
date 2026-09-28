@@ -63,13 +63,16 @@ try {
         // B. Monthly Attendance Count
         $monthly_attendance = (int)$pdo->query("SELECT COUNT(DISTINCT CONCAT(member_id, '_', date)) FROM attendance WHERE MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())")->fetchColumn();
 
-        // C. Financial Ledger KPIs (Admin consolidated single scan)
         if ($is_admin) {
             $pay_stats = $pdo->query("
                 SELECT 
-                    COALESCE(SUM(amount), 0) AS total_earnings,
-                    COALESCE(SUM(CASE WHEN MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE()) THEN amount ELSE 0 END), 0) AS monthly_revenue
-                FROM payments
+                    COALESCE(SUM(p.amount), 0) AS total_earnings,
+                    COALESCE(SUM(CASE WHEN MONTH(p.payment_date) = MONTH(CURDATE()) AND YEAR(p.payment_date) = YEAR(CURDATE()) THEN p.amount ELSE 0 END), 0) AS monthly_revenue
+                FROM payments p
+                LEFT JOIN subscriptions s ON p.subscription_id = s.id
+                LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+                WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+                  AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
             ")->fetch(PDO::FETCH_ASSOC);
             $total_earnings     = (float)($pay_stats['total_earnings'] ?? 0);
             $monthly_revenue    = (float)($pay_stats['monthly_revenue'] ?? 0);
@@ -115,25 +118,38 @@ try {
         $daily_attendance = count($today_visitors);
         $currently_inside = count($currently_inside_set);
 
-        // ── 3. Overdue Renewals (Recurring Members Only, Excludes 1-Day Walk-ins) ─
+        // ── 3. Overdue Renewals (Expired Monthly & Yearly Memberships Only) ────
         $stmt_od = $pdo->query("
             SELECT m.id, m.full_name, m.membership_id, m.contact_number, m.email, m.photo,
                    m.annual_membership_expiry,
-                   s.expiry_date, p.id as plan_id, p.name as plan_name, p.price as plan_price,
+                   s.sub_id, s.expiry_date, p.id as plan_id, p.name as plan_name, p.price as plan_price,
                    p.duration_months, p.duration_minutes, p.plan_category,
                    DATEDIFF(CURDATE(), s.expiry_date) as overdue_days
-            FROM subscriptions s
-            JOIN (
-                SELECT member_id, MAX(id) AS latest_sub_id
-                FROM subscriptions
-                GROUP BY member_id
-            ) latest ON s.id = latest.latest_sub_id
+            FROM (
+                SELECT s_sub.id as sub_id, s_sub.member_id, s_sub.expiry_date, s_sub.plan_id,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY s_sub.member_id 
+                           ORDER BY s_sub.expiry_date DESC, s_sub.id DESC
+                       ) as rn
+                FROM subscriptions s_sub
+                JOIN membership_plans p_sub ON p_sub.id = s_sub.plan_id
+                WHERE p_sub.duration_months > 0
+                  AND (p_sub.plan_category IS NULL OR p_sub.plan_category NOT IN ('membership_fee', 'test_promo'))
+                  AND (p_sub.is_test_promo IS NULL OR p_sub.is_test_promo = 0)
+            ) s
             JOIN members m ON m.id = s.member_id
             JOIN membership_plans p ON p.id = s.plan_id
-            WHERE s.expiry_date < CURDATE()
-              AND (p.duration_months > 0 OR p.duration_minutes > 1440)
-              AND p.plan_category != 'membership_fee'
-              AND s.member_id NOT IN (SELECT member_id FROM subscriptions WHERE expiry_date >= CURDATE())
+            WHERE s.rn = 1
+              AND s.expiry_date < CURDATE()
+              AND s.member_id NOT IN (
+                  SELECT s_act.member_id 
+                  FROM subscriptions s_act 
+                  JOIN membership_plans p_act ON p_act.id = s_act.plan_id
+                  WHERE s_act.expiry_date >= CURDATE()
+                    AND p_act.duration_months > 0
+                    AND (p_act.plan_category IS NULL OR p_act.plan_category NOT IN ('membership_fee', 'test_promo'))
+                    AND (p_act.is_test_promo IS NULL OR p_act.is_test_promo = 0)
+              )
             ORDER BY s.expiry_date DESC
             LIMIT 50
         ");
@@ -316,6 +332,463 @@ try {
 
 <div class="dashboard-2-container">
 
+<style>
+/* ─── ADMIN DASHBOARD SCOPED ALIGNMENT & RESPONSIVE POLISH ──────────────── */
+.dashboard-2-container {
+    width: 100%;
+    max-width: 100%;
+}
+
+/* 1. TOP KPI MASTER GRID */
+.dashboard-2-container .kpi-master-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 1.25rem !important;
+    margin-bottom: 1.5rem !important;
+    align-items: stretch !important;
+}
+
+.dashboard-2-container .kpi-card {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    margin-bottom: 0 !important;
+    padding: 1.25rem 1.25rem !important;
+    border-radius: var(--radius-md, 14px) !important;
+    background: var(--card-bg, #ffffff) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-sm) !important;
+    justify-content: flex-start !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+    overflow: hidden !important;
+}
+
+.dashboard-2-container .kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: #cbd5e1;
+}
+
+.dashboard-2-container .kpi-card-head {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+    min-height: 40px !important;
+    margin-bottom: 0.75rem !important;
+    flex-shrink: 0 !important;
+}
+
+.dashboard-2-container .kpi-label {
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.6px !important;
+    color: var(--text-muted) !important;
+    line-height: 1.3 !important;
+}
+
+.dashboard-2-container .kpi-icon-box {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 11px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.05rem !important;
+    flex-shrink: 0 !important;
+}
+
+.dashboard-2-container .kpi-icon-green  { background: #e8f5e9 !important; color: var(--success, #2d6a4f) !important; }
+.dashboard-2-container .kpi-icon-blue   { background: #e0f2fe !important; color: #0284c7 !important; }
+.dashboard-2-container .kpi-icon-gold   { background: #fef3e2 !important; color: #d4a942 !important; }
+.dashboard-2-container .kpi-icon-yellow { background: #fef3e2 !important; color: #d4a942 !important; }
+.dashboard-2-container .kpi-icon-red    { background: #ffebee !important; color: var(--danger, #ef4444) !important; }
+
+.dashboard-2-container .kpi-number-wrap {
+    display: flex !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+    min-height: 2.5rem !important;
+    margin-bottom: 0.75rem !important;
+    flex-shrink: 0 !important;
+    flex-wrap: wrap !important;
+}
+
+.dashboard-2-container .kpi-number {
+    font-family: 'Outfit', sans-serif !important;
+    font-size: 1.85rem !important;
+    font-weight: 700 !important;
+    color: var(--text-main) !important;
+    line-height: 1 !important;
+    letter-spacing: -0.5px !important;
+    font-variant-numeric: tabular-nums !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+}
+
+.dashboard-2-container .kpi-card-financial .kpi-number {
+    font-size: 1.55rem !important;
+    letter-spacing: -0.3px !important;
+}
+
+.dashboard-2-container .kpi-number-sub {
+    font-size: 0.85rem !important;
+    color: var(--text-muted) !important;
+    font-weight: 500 !important;
+}
+
+.dashboard-2-container .kpi-trend-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+    padding: 0.2rem 0.55rem !important;
+    border-radius: 9999px !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    background: #f1f5f9 !important;
+    color: var(--text-soft) !important;
+    white-space: nowrap !important;
+    line-height: 1.3 !important;
+}
+
+.dashboard-2-container .kpi-trend-pill.positive {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+}
+
+.dashboard-2-container .kpi-trend-pill.info {
+    background: rgba(56, 189, 248, 0.12) !important;
+    color: #0284c7 !important;
+}
+
+.dashboard-2-container .kpi-trend-pill.warning {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+}
+
+.dashboard-2-container .kpi-trend-pill.danger {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+}
+
+.dashboard-2-container .kpi-footer-meta {
+    font-size: 0.76rem !important;
+    color: var(--text-muted) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    margin-top: auto !important;
+    padding-top: 0.65rem !important;
+    border-top: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.06)) !important;
+    min-height: 36px !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.dashboard-2-container .kpi-meta-sep {
+    color: var(--border, #cbd5e1);
+    font-size: 0.8rem;
+}
+
+.dashboard-2-container .kpi-meta-link {
+    color: var(--accent, #d4a942);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.75rem;
+    transition: color 0.15s ease;
+}
+
+.dashboard-2-container .kpi-meta-link:hover {
+    color: var(--primary, #2d6a4f);
+    text-decoration: underline;
+}
+
+.dashboard-2-container .kpi-footer-progress {
+    display: flex !important;
+    align-items: center !important;
+    padding-top: 0.75rem !important;
+}
+
+.dashboard-2-container .kpi-progress-bg {
+    width: 100% !important;
+    height: 7px !important;
+    background: #e2e8f0 !important;
+    border-radius: 9999px !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+}
+
+.dashboard-2-container .kpi-progress-bar {
+    height: 100% !important;
+    border-radius: 9999px !important;
+    transition: width 0.3s ease, background 0.3s ease !important;
+}
+
+/* 2. MIDDLE & BOTTOM DASHBOARD ROWS */
+.dashboard-2-container .dashboard-row-middle,
+.dashboard-2-container .dashboard-row-bottom {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.55fr) minmax(340px, 1fr) !important;
+    gap: 1.5rem !important;
+    align-items: stretch !important;
+    margin-bottom: 1.5rem !important;
+}
+
+.dashboard-2-container .dash-card {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    min-height: 480px !important;
+    max-height: 580px !important;
+    background: var(--card-bg, #ffffff) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-md, 14px) !important;
+    padding: 1.25rem 1.25rem !important;
+    box-shadow: var(--shadow-sm) !important;
+    overflow: hidden !important;
+    position: relative !important;
+    margin-bottom: 0 !important;
+}
+
+.dashboard-2-container .dash-card .card-header-flex {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 0.75rem !important;
+    margin-bottom: 0.85rem !important;
+    flex-shrink: 0 !important;
+}
+
+.dashboard-2-container .dash-card .card-header-flex .section-title {
+    margin: 0 !important;
+    font-size: 1.05rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.dashboard-2-container .dash-card .card-header-flex .section-subtitle {
+    margin: 0.2rem 0 0 0 !important;
+    font-size: 0.8rem !important;
+    color: var(--text-muted) !important;
+}
+
+.dashboard-2-container .dash-scroll-body {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(45, 106, 79, 0.3) transparent;
+}
+
+/* 3. TABLE ALIGNMENT & PREVENT NAME WRAPPING */
+.dashboard-2-container .dash-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 0.82rem !important;
+}
+
+.dashboard-2-container .dash-table th {
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    color: var(--text-muted) !important;
+    padding: 0.65rem 0.75rem !important;
+    border-bottom: 1px solid var(--border) !important;
+    background: var(--card-bg, #ffffff) !important;
+    white-space: nowrap !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 2 !important;
+}
+
+.dashboard-2-container .dash-table td {
+    padding: 0.65rem 0.75rem !important;
+    border-bottom: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.05)) !important;
+    vertical-align: middle !important;
+}
+
+.dashboard-2-container .dash-table tbody tr:hover {
+    background: rgba(0, 0, 0, 0.015) !important;
+}
+
+.dashboard-2-container .member-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.65rem !important;
+    white-space: nowrap !important;
+}
+
+.dashboard-2-container .member-cell .cell-primary {
+    font-weight: 700 !important;
+    color: var(--text-main) !important;
+    text-decoration: none !important;
+    white-space: nowrap !important;
+    display: inline-block !important;
+    max-width: 220px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    vertical-align: middle !important;
+}
+
+.dashboard-2-container .member-cell .member-avatar {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    background: #f1f5f9 !important;
+    font-weight: 700 !important;
+    color: #2d6a4f !important;
+    font-size: 0.82rem !important;
+}
+
+/* 4. LIVE ACTIVITY STREAM NORMALIZATION */
+.dashboard-2-container .feed-filters-bar {
+    display: flex !important;
+    gap: 0.35rem !important;
+    flex-wrap: wrap !important;
+    margin-bottom: 0.75rem !important;
+    flex-shrink: 0 !important;
+}
+
+.dashboard-2-container .feed-filter-btn {
+    padding: 0.25rem 0.65rem !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--border) !important;
+    background: var(--card-bg, #ffffff) !important;
+    color: var(--text-muted) !important;
+    font-size: 0.74rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    line-height: 1.4 !important;
+}
+
+.dashboard-2-container .feed-filter-btn.active,
+.dashboard-2-container .feed-filter-btn:hover {
+    background: var(--primary, #2d6a4f) !important;
+    color: #ffffff !important;
+    border-color: var(--primary, #2d6a4f) !important;
+}
+
+.dashboard-2-container .feed-items-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.45rem !important;
+}
+
+.dashboard-2-container .feed-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    padding: 0.6rem 0.75rem !important;
+    border-radius: 8px !important;
+    background: rgba(0, 0, 0, 0.02) !important;
+    border: 1px solid rgba(0, 0, 0, 0.04) !important;
+    transition: background 0.15s ease !important;
+    flex-shrink: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.dashboard-2-container .feed-item:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+}
+
+.dashboard-2-container .feed-item-icon {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.85rem !important;
+    flex-shrink: 0 !important;
+}
+
+.dashboard-2-container .feed-item-content {
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+
+.dashboard-2-container .feed-item-top {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+}
+
+.dashboard-2-container .feed-item-title {
+    font-size: 0.81rem !important;
+    font-weight: 700 !important;
+    color: var(--text-main) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.dashboard-2-container .feed-item-time {
+    font-size: 0.7rem !important;
+    color: var(--text-muted) !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+
+.dashboard-2-container .feed-item-desc {
+    font-size: 0.74rem !important;
+    color: var(--text-muted) !important;
+    margin: 0.12rem 0 0 0 !important;
+    line-height: 1.3 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* 5. RESPONSIVE BREAKPOINTS (Desktop -> Tablet -> Mobile) */
+@media (max-width: 1200px) {
+    .dashboard-2-container .kpi-master-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    .dashboard-2-container .dashboard-row-middle,
+    .dashboard-2-container .dashboard-row-bottom {
+        grid-template-columns: 1fr !important;
+    }
+    .dashboard-2-container .dash-card {
+        max-height: 520px !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-2-container .kpi-master-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .dashboard-2-container .kpi-card {
+        padding: 1rem !important;
+    }
+    .dashboard-2-container .dash-card {
+        padding: 1rem !important;
+        min-height: 400px !important;
+        max-height: 480px !important;
+    }
+    .dashboard-2-container .member-cell .cell-primary {
+        max-width: 140px !important;
+    }
+}
+</style>
+
     <!-- ── TOP BAR & EXECUTIVE HEADER ──────────────────────────────────────── -->
     <div class="dashboard-topbar">
         <div class="dashboard-title-area">
@@ -387,7 +860,7 @@ try {
             </div>
             <div class="kpi-footer-meta">
                 <span><strong><?php echo number_format($total_members); ?></strong> Total Registered</span>
-                <span>&bull;</span>
+                <span class="kpi-meta-sep">&bull;</span>
                 <span style="color:#ef4444;"><strong><?php echo number_format($expired_members); ?></strong> Expired</span>
             </div>
         </div>
@@ -400,7 +873,7 @@ try {
             </div>
             <div class="kpi-number-wrap">
                 <h2 class="kpi-number" style="color:#38bdf8;"><?php echo number_format($daily_attendance); ?></h2>
-                <span class="kpi-trend-pill" style="background:rgba(56,189,248,0.12); color:#38bdf8;">
+                <span class="kpi-trend-pill info">
                     Live Today
                 </span>
             </div>
@@ -421,474 +894,474 @@ try {
             </div>
             <div class="kpi-number-wrap">
                 <h2 class="kpi-number" style="color:<?php echo $live_occ_color; ?>;">
-                    <span id="kpi-live-occupancy-num"><?php echo $currently_inside; ?></span> <small style="font-size:0.9rem; color:var(--text-muted); font-weight:500;">/ <?php echo $max_capacity; ?> max</small>
+                    <span id="kpi-live-occupancy-num"><?php echo $currently_inside; ?></span> <small class="kpi-number-sub">/ <?php echo $max_capacity; ?> max</small>
                 </h2>
                 <span class="kpi-trend-pill" id="kpi-live-occupancy-pill" style="background:rgba(0,0,0,0.05); color:<?php echo $live_occ_color; ?>; font-weight:700;">
                     <?php echo $live_occupancy_pct; ?>% capacity
                 </span>
             </div>
-            <div class="kpi-progress-bg">
-                <div class="kpi-progress-bar" id="kpi-live-occupancy-bar" style="width: <?php echo $live_occupancy_pct; ?>%; background: <?php echo $live_occ_color; ?>;"></div>
+            <div class="kpi-footer-meta kpi-footer-progress">
+                <div class="kpi-progress-bg">
+                    <div class="kpi-progress-bar" id="kpi-live-occupancy-bar" style="width: <?php echo $live_occupancy_pct; ?>%; background: <?php echo $live_occ_color; ?>;"></div>
+                </div>
             </div>
         </div>
 
         <!-- 4. Revenue / Expiring Card -->
-        <div class="card kpi-card">
+        <div class="card kpi-card kpi-card-financial">
             <?php if ($is_admin): ?>
             <div class="kpi-card-head">
                 <span class="kpi-label">Monthly Revenue &amp; Net</span>
-                <div class="kpi-icon-box kpi-icon-yellow"><i class="fas fa-peso-sign"></i></div>
+                <div class="kpi-icon-box kpi-icon-gold"><i class="fas fa-peso-sign"></i></div>
             </div>
             <div class="kpi-number-wrap">
                 <h2 class="kpi-number" style="color:#52b788;">&#8369;<?php echo number_format($monthly_revenue, 2); ?></h2>
-                <span class="kpi-trend-pill" style="background:<?php echo $monthly_net_income >= 0 ? 'rgba(82,183,136,0.12)' : 'rgba(239,68,68,0.12)'; ?>; color:<?php echo $monthly_net_income >= 0 ? '#52b788' : '#ef4444'; ?>; font-weight:700;">
+                <span class="kpi-trend-pill <?php echo $monthly_net_income >= 0 ? 'positive' : 'danger'; ?>" style="font-weight:700;">
                     Net: <?php echo ($monthly_net_income < 0 ? '-' : '') . '&#8369;' . number_format(abs($monthly_net_income), 2); ?>
                 </span>
             </div>
             <div class="kpi-footer-meta">
                 <span>Costs: <strong style="color:#f87171;">&#8369;<?php echo number_format($monthly_expenses, 2); ?></strong></span>
-                <span>&bull;</span>
-                <a href="reports.php" style="color:var(--accent); text-decoration:none; font-weight:600; font-size:0.75rem;">View Financials &rarr;</a>
+                <span class="kpi-meta-sep">&bull;</span>
+                <a href="reports.php" class="kpi-meta-link">View Financials &rarr;</a>
             </div>
             <?php else: ?>
             <div class="kpi-card-head">
                 <span class="kpi-label">Expiring This Week</span>
-                <div class="kpi-icon-box" style="background:rgba(239,68,68,0.12); color:#ef4444;"><i class="fas fa-clock-rotate-left"></i></div>
+                <div class="kpi-icon-box kpi-icon-red"><i class="fas fa-clock-rotate-left"></i></div>
             </div>
             <div class="kpi-number-wrap">
                 <h2 class="kpi-number" style="color:#ef4444;"><?php echo number_format($expiring_this_week_cnt); ?></h2>
-                <span class="kpi-trend-pill" style="background:rgba(239,68,68,0.12); color:#ef4444;">
+                <span class="kpi-trend-pill danger">
                     Action Needed
                 </span>
             </div>
             <div class="kpi-footer-meta">
-                <a href="members.php" style="color:var(--accent); text-decoration:none; font-weight:600; font-size:0.8rem;">View Subscriptions &rarr;</a>
+                <a href="members.php" class="kpi-meta-link">View Subscriptions &rarr;</a>
             </div>
             <?php endif; ?>
         </div>
     </div>
 
-    <!-- ── STREAMLINED 2-COLUMN OPERATIONAL WORKSPACE ───────────────────────── -->
-    <div class="dashboard-grid-2col" style="margin-top: 1.5rem;">
+    <!-- ── MIDDLE DASHBOARD ROW: ATTENDANCE & ACTIVITY STREAM ──────────────── -->
+    <div class="dashboard-row-middle">
         
-        <!-- LEFT COLUMN: TODAY'S ATTENDANCE & OVERDUE RENEWALS -->
-        <div style="display:flex; flex-direction:column; gap:1.5rem;">
-            
-            <!-- Card 1: Today's Live Attendance Table -->
-            <div class="card dash-equal-card" style="height:580px; min-height:580px; max-height:580px; display:flex; flex-direction:column; overflow:hidden;">
-                <div class="card-header-flex" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:0.75rem; flex-shrink:0;">
-                    <div>
-                        <h3 class="section-title" style="margin:0;"><i class="fas fa-qrcode" style="color:var(--accent);"></i> Today's Live Attendance</h3>
-                        <p class="section-subtitle" style="margin:0.2rem 0 0 0;">Real-time gym visitors recorded today (<?php echo date('M d, Y'); ?>)</p>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:0.6rem;">
-                        <span class="badge badge-gold" id="dash-log-count"><?php echo count($today_attendance_list); ?> active entr<?php echo count($today_attendance_list) === 1 ? 'y' : 'ies'; ?></span>
-                        <a href="attendance.php" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:0.3rem 0.75rem;">
-                            Open Scanner <i class="fas fa-arrow-up-right-from-square" style="font-size:0.7rem; margin-left:2px;"></i>
-                        </a>
-                    </div>
+        <!-- Card 1: Today's Live Attendance Table -->
+        <div class="card dash-card" id="card-live-attendance">
+            <div class="card-header-flex">
+                <div>
+                    <h3 class="section-title"><i class="fas fa-qrcode" style="color:var(--accent);"></i> Today's Live Attendance</h3>
+                    <p class="section-subtitle">Real-time gym visitors recorded today (<?php echo date('M d, Y'); ?>)</p>
                 </div>
-
-                <div class="table-container dash-scroll-body" style="flex:1 1 0; min-height:0; overflow-y:auto; overflow-x:auto;">
-                    <table style="min-width: 650px;">
-                        <thead>
-                            <tr>
-                                <th>Member</th>
-                                <th>Member Tier &amp; Plan</th>
-                                <th>Floor Access</th>
-                                <th>Time In</th>
-                                <th>Time Out</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dash-logs-body">
-                            <?php if (empty($today_attendance_list)): ?>
-                            <tr id="no-logs">
-                                <td colspan="6" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
-                                    <i class="fas fa-qrcode" style="font-size:2rem; opacity:0.2; display:block; margin-bottom:0.5rem;"></i>
-                                    No attendance check-ins recorded yet today.
-                                </td>
-                            </tr>
-                            <?php else: ?>
-                            <?php foreach ($today_attendance_list as $att): 
-                                $has_timed_out = (!empty($att['time_out']) && $att['time_out'] !== '00:00:00');
-                                $ann_exp = $att['annual_membership_expiry'] ?? null;
-                                $is_official = (!empty($ann_exp) && strtotime($ann_exp) >= strtotime(date('Y-m-d')));
-                                $fa = $att['floor_access'] ?? 'all';
-                            ?>
-                            <tr id="att-row-<?php echo $att['id']; ?>">
-                                <td>
-                                    <div class="member-cell">
-                                        <div class="member-avatar" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                            <?php if (!empty($att['photo'])): ?>
-                                                <img src="<?php echo htmlspecialchars($att['photo']); ?>" alt="Photo" style="width:100%; height:100%; object-fit:cover;">
-                                            <?php else: ?>
-                                                <?php echo strtoupper(substr($att['full_name'], 0, 1)); ?>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div>
-                                            <a href="view-member.php?id=<?php echo $att['member_id']; ?>" class="cell-primary" style="font-weight:700; color:var(--text-main); text-decoration:none;">
-                                                <?php echo htmlspecialchars($att['full_name']); ?>
-                                            </a>
-                                            <div style="font-size:0.75rem; color:var(--text-muted); font-family:monospace;"><?php echo htmlspecialchars($att['membership_id']); ?></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div style="display:flex; flex-direction:column; gap:3px;">
-                                        <div>
-                                            <?php if ($is_official): ?>
-                                                <span class="badge" style="background:rgba(16,185,129,0.15); color:#059669; border:1px solid rgba(16,185,129,0.3); font-size:0.68rem; font-weight:700;">
-                                                    <i class="fas fa-id-card"></i> Official Member
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="badge" style="background:rgba(100,116,139,0.12); color:#64748b; border:1px solid rgba(100,116,139,0.25); font-size:0.68rem; font-weight:600;">
-                                                    <i class="fas fa-user"></i> Non-Member
-                                                </span>
-                                            <?php endif; ?>
-                                        </div>
-                                        <span style="font-size:0.75rem; color:var(--text-main); font-weight:600;">
-                                            <?php echo htmlspecialchars($att['plan_name']); ?>
-                                        </span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <?php if ($fa === 'second_floor_only'): ?>
-                                        <span class="badge" style="background:rgba(14,165,233,0.15); color:#0284c7; border:1px solid rgba(14,165,233,0.3); font-weight:700; font-size:0.72rem; padding:3px 8px;">
-                                            <i class="fas fa-stairs"></i> 2nd Floor Only
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="badge" style="background:rgba(34,197,94,0.15); color:#16a34a; border:1px solid rgba(34,197,94,0.3); font-weight:700; font-size:0.72rem; padding:3px 8px;">
-                                            <i class="fas fa-building"></i> Ground + 2nd Flr
-                                        </span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="cell-primary" style="font-weight:600;"><?php echo date('h:i A', strtotime($att['time_in'])); ?></td>
-                                <td class="cell-secondary" id="timeout-<?php echo $att['id']; ?>"><?php echo $has_timed_out ? date('h:i A', strtotime($att['time_out'])) : '&mdash;'; ?></td>
-                                <td id="status-cell-<?php echo $att['id']; ?>" style="white-space:nowrap;">
-                                    <?php if ($has_timed_out): ?>
-                                        <span class="badge badge-gray">Left</span>
-                                    <?php else: ?>
-                                        <div style="display:inline-flex; align-items:center; gap:8px;">
-                                            <span class="badge badge-success"><i class="fas fa-circle" style="font-size:0.35rem; margin-right:4px;"></i> Inside</span>
-                                            <button type="button"
-                                                    class="btn btn-outline manual-checkout-btn"
-                                                    onclick="manualCheckout(<?php echo $att['id']; ?>, '<?php echo htmlspecialchars(addslashes($att['full_name'])); ?>')"
-                                                    aria-label="Check out <?php echo htmlspecialchars($att['full_name']); ?>">
-                                                <i class="fas fa-arrow-right-from-bracket"></i> Check Out
-                                            </button>
-                                        </div>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+                    <span class="badge badge-gold" id="dash-log-count"><?php echo count($today_attendance_list); ?> active entr<?php echo count($today_attendance_list) === 1 ? 'y' : 'ies'; ?></span>
+                    <a href="attendance.php" class="btn btn-outline btn-sm dash-scanner-btn" style="font-size:0.75rem; padding:0.3rem 0.75rem;">
+                        Open Scanner <i class="fas fa-arrow-up-right-from-square" style="font-size:0.7rem; margin-left:2px;"></i>
+                    </a>
                 </div>
             </div>
 
-            <!-- Card 2: Overdue / Expired Renewals (Follow-up Center) -->
-            <div class="card dash-equal-card" id="card-expired-followups" style="height:580px; min-height:580px; max-height:580px; display:flex; flex-direction:column; overflow:hidden;">
-                <div class="card-header-flex" style="flex-wrap:wrap; gap:10px; margin-bottom:0.75rem; flex-shrink:0;">
-                    <div>
-                        <h3 class="section-title"><i class="fas fa-triangle-exclamation" style="color:#ef4444;"></i> Expired Plans &amp; Follow-ups</h3>
-                        <p class="section-subtitle">Recurring members with expired plans needing renewal</p>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <?php if (!empty($overdue_renewals)): ?>
-                        <button type="button" class="btn btn-outline btn-sm" id="btn-bulk-notify" onclick="sendBulkRenewalReminders()" style="font-size:0.75rem; padding:0.35rem 0.75rem; border-color:#fca5a5; color:#dc2626; background:#fff5f5; display:inline-flex; align-items:center; gap:5px; font-weight:700; border-radius:8px;" title="Send renewal reminder email to all expired members with email addresses">
-                            <i class="fas fa-bullhorn"></i> <span id="bulk-notify-label">Notify All Overdue (<?php echo count($overdue_renewals); ?>)</span>
-                        </button>
-                        <?php endif; ?>
-                        <span class="badge badge-danger" id="overdue-total-badge" style="background:rgba(239,68,68,0.12); color:#ef4444; font-weight:700;">
-                            <?php echo count($overdue_renewals); ?> Overdue
-                        </span>
-                    </div>
-                </div>
-
-                <div class="table-container dash-scroll-body" style="flex:1 1 0; min-height:0; overflow-y:auto; overflow-x:auto;">
-                    <table id="overdue-table">
-                        <thead>
-                            <tr>
-                                <th>Member</th>
-                                <th>Expired Date</th>
-                                <th>Plan</th>
-                                <th style="text-align:right;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="overdue-tbody">
-                            <?php if (empty($overdue_renewals)): ?>
-                            <tr id="row-no-overdue">
-                                <td colspan="4" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
-                                    <i class="fas fa-circle-check" style="font-size:1.8rem; color:#52b788; display:block; margin-bottom:0.5rem;"></i>
-                                    <strong>All recurring member subscriptions are in good standing!</strong>
-                                    <p style="margin:4px 0 0 0; font-size:0.78rem;">No expired memberships requiring immediate follow-up.</p>
-                                </td>
-                            </tr>
-                            <?php else: ?>
-                            <?php foreach ($overdue_renewals as $od): 
-                                $days = max(1, intval($od['overdue_days'] ?? 1));
-                                
-                                // Color-coded days overdue
-                                if ($days <= 3) {
-                                    $od_badge_style = 'background:#fef3c7; color:#b45309; border:1px solid #fde68a;';
-                                    $od_label = "🟡 {$days}d ago (Fresh)";
-                                } elseif ($days <= 14) {
-                                    $od_badge_style = 'background:#ffedd5; color:#c2410c; border:1px solid #fed7aa;';
-                                    $od_label = "🟠 {$days}d ago";
-                                } else {
-                                    $od_badge_style = 'background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;';
-                                    $od_label = "🔴 {$days}d ago (Lapsed)";
-                                }
-                            ?>
-                            <tr class="od-row" id="od-row-<?php echo $od['id']; ?>">
-                                <td>
-                                    <div class="member-cell">
-                                        <div class="member-avatar" style="width:34px; height:34px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#f1f5f9; font-weight:700; color:#2d6a4f; font-size:0.85rem;">
-                                            <?php if (!empty($od['photo'])): ?>
-                                                <img src="<?php echo htmlspecialchars($od['photo']); ?>" alt="Photo" style="width:100%; height:100%; object-fit:cover;">
-                                            <?php else: ?>
-                                                <?php echo strtoupper(substr($od['full_name'], 0, 1)); ?>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div>
-                                            <a href="view-member.php?id=<?php echo $od['id']; ?>" class="cell-primary" style="font-weight:700; color:var(--text-main); text-decoration:none; font-size:0.85rem;">
-                                                <?php echo htmlspecialchars($od['full_name']); ?>
-                                            </a>
-                                            <div style="font-size:0.72rem; color:var(--text-muted); font-family:monospace;">
-                                                <?php echo htmlspecialchars($od['membership_id']); ?>
-                                                <?php if (!empty($od['contact_number'])): ?>
-                                                    • <?php echo htmlspecialchars($od['contact_number']); ?>
-                                                <?php endif; ?>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div style="display:flex; flex-direction:column; gap:2px;">
-                                        <span style="font-size:0.82rem; color:#ef4444; font-weight:700;">
-                                            <?php echo date('M d, Y', strtotime($od['expiry_date'])); ?>
-                                        </span>
-                                        <span class="badge" style="<?php echo $od_badge_style; ?> font-size:0.65rem; padding:2px 6px; border-radius:6px; font-weight:700; width:fit-content;">
-                                            <?php echo $od_label; ?>
-                                        </span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div style="display:flex; flex-direction:column; gap:2px;">
-                                        <span class="badge badge-gold" style="font-size:0.75rem; font-weight:700;"><?php echo htmlspecialchars($od['plan_name']); ?></span>
-                                        <span style="font-size:0.68rem; color:var(--text-muted);">
-                                            ₱<?php echo number_format((float)($od['plan_price'] ?? 0), 2); ?> • Recurring Pass
-                                        </span>
-                                    </div>
-                                </td>
-                                <td style="text-align:right;">
-                                    <div style="display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
-                                        <!-- Email Reminder Button -->
-                                        <?php if (!empty($od['email'])): ?>
-                                        <button type="button" class="btn btn-outline btn-sm" 
-                                                onclick="sendRenewalReminder(<?php echo $od['id']; ?>, '<?php echo htmlspecialchars(addslashes($od['full_name'])); ?>', this)" 
-                                                style="padding:0.32rem 0.65rem; font-size:0.75rem; color:#0284c7; border-color:#bae6fd; background:#f0f9ff; border-radius:7px; font-weight:600; display:inline-flex; align-items:center; gap:4px;" 
-                                                title="Send Renewal Reminder Email">
-                                            <i class="fas fa-envelope"></i> Email Notif
-                                        </button>
-                                        <?php endif; ?>
-
-                                        <!-- Quick Renew Button -->
-                                        <button type="button" class="btn btn-primary btn-sm" 
-                                                onclick="openQuickRenewModal(<?php echo $od['id']; ?>, '<?php echo htmlspecialchars(addslashes($od['full_name'])); ?>', '<?php echo htmlspecialchars(addslashes($od['membership_id'])); ?>', <?php echo (int)($od['plan_id'] ?? 0); ?>, <?php echo floatval($od['plan_price'] ?? 0); ?>)" 
-                                                style="padding:0.32rem 0.75rem; font-size:0.75rem; font-weight:700; display:inline-flex; align-items:center; gap:4px; border-radius:7px;" 
-                                                title="Quick Renewal">
-                                            <i class="fas fa-arrows-rotate"></i> Renew
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- RIGHT COLUMN: LIVE ACTIVITY FEED & TOP MEMBERS -->
-        <div style="display:flex; flex-direction:column; gap:1.5rem;">
-            
-            <!-- Real-Time Activity Feed -->
-            <div class="card dash-equal-card" style="height:580px; min-height:580px; max-height:580px; display:flex; flex-direction:column; overflow:hidden;">
-                <div class="card-header-flex" style="margin-bottom:0.5rem; flex-shrink:0;">
-                    <div style="display:flex; align-items:center; gap:0.6rem;">
-                        <div class="live-dot-pulse"></div>
-                        <div>
-                            <h3 class="section-title">Live Activity Stream</h3>
-                            <p class="section-subtitle">Real-time check-ins, payments &amp; renewals</p>
-                        </div>
-                    </div>
-                    <button onclick="fetchLiveFeed()" class="btn btn-outline btn-sm" style="padding:0.25rem 0.6rem; font-size:0.75rem;" title="Refresh stream">
-                        <i class="fas fa-arrows-rotate" id="feed-refresh-icon"></i>
-                    </button>
-                </div>
-
-                <!-- Feed Category Filter Pills -->
-                <div class="feed-filters-bar" style="margin-bottom:0.65rem; flex-shrink:0;">
-                    <button class="feed-filter-btn active" onclick="filterFeed('all')" data-cat="all">All</button>
-                    <button class="feed-filter-btn" onclick="filterFeed('checkin')" data-cat="checkin">Check-ins</button>
-                    <button class="feed-filter-btn" onclick="filterFeed('payment')" data-cat="payment">Payments</button>
-                    <button class="feed-filter-btn" onclick="filterFeed('renewal')" data-cat="renewal">Renewals</button>
-                </div>
-
-                <!-- Feed Items Stream -->
-                <div id="live-feed-stream" class="feed-items-container dash-scroll-body" style="flex:1 1 0; min-height:0; overflow-y:auto; overflow-x:hidden;">
-                    <?php if (empty($server_live_feed)): ?>
-                        <div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">
-                            <i class="fas fa-inbox" style="font-size:1.6rem; display:block; margin-bottom:0.4rem; color:#cbd5e1;"></i>
-                            No recent activities recorded yet.
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($server_live_feed as $item): ?>
-                            <div class="feed-item" style="display:flex; align-items:flex-start; gap:0.75rem; padding:0.65rem 0.5rem; border-bottom:1px solid var(--border);">
-                                <div style="width:32px; height:32px; border-radius:8px; background:<?php echo $item['bg']; ?>; color:<?php echo $item['color']; ?>; display:flex; align-items:center; justify-content:center; font-size:0.85rem; flex-shrink:0;">
-                                    <i class="fas <?php echo $item['icon']; ?>"></i>
-                                </div>
-                                <div style="flex:1; min-width:0;">
-                                    <div style="display:flex; justify-content:space-between; align-items:center; gap:0.4rem;">
-                                        <span style="font-size:0.82rem; font-weight:700; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?php echo $item['title']; ?></span>
-                                        <span style="font-size:0.7rem; color:var(--text-muted); white-space:nowrap;"><?php echo $item['relative_time']; ?></span>
-                                    </div>
-                                    <p style="font-size:0.75rem; color:var(--text-muted); margin:0.15rem 0 0 0; line-height:1.3;"><?php echo $item['description']; ?></p>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- Top Loyalty Champions (Gamified Leaderboard with Timeframe Filters) -->
-            <?php
-            if (!function_exists('render_lb_rows')) {
-                function render_lb_rows($list, $period_label = 'this month') {
-                    if (empty($list)) {
-                        return '<tr><td colspan="4" style="text-align:center; padding:2rem 1rem; color:var(--text-muted);"><i class="fas fa-trophy" style="font-size:1.6rem; color:#cbd5e1; display:block; margin-bottom:0.4rem;"></i><strong>No check-ins recorded ' . htmlspecialchars($period_label) . ' yet.</strong><p style="margin:4px 0 0 0; font-size:0.75rem;">Visits will appear here once members scan their ID at the kiosk.</p></td></tr>';
-                    }
-                    $html = '';
-                    foreach ($list as $idx => $tm) {
-                        $rank_badge = '';
-                        $row_bg = '';
-                        if ($idx === 0) {
-                            $rank_badge = '<span class="badge" style="background:#fef9c3; color:#a16207; border:1px solid #fde047; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥇 1st</span>';
-                            $row_bg = 'background:rgba(254,249,195,0.12);';
-                        } elseif ($idx === 1) {
-                            $rank_badge = '<span class="badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥈 2nd</span>';
-                        } elseif ($idx === 2) {
-                            $rank_badge = '<span class="badge" style="background:#ffedd5; color:#c2410c; border:1px solid #fed7aa; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥉 3rd</span>';
-                        } else {
-                            $rank_badge = '<span style="font-weight:700; color:var(--text-muted); font-size:0.8rem;">#' . ($idx + 1) . '</span>';
-                        }
-
-                        $initial = strtoupper(substr($tm['full_name'] ?? 'M', 0, 1));
-                        $avatar_content = !empty($tm['photo']) 
-                            ? '<img src="' . htmlspecialchars($tm['photo']) . '" alt="" onerror="this.onerror=null; this.parentElement.textContent=\'' . htmlspecialchars($initial, ENT_QUOTES) . '\';" style="width:100%; height:100%; object-fit:cover;">'
-                            : htmlspecialchars($initial);
-
-                        $html .= '<tr style="' . $row_bg . '">
-                            <td style="text-align:center; width:60px;">' . $rank_badge . '</td>
+            <div class="table-container dash-scroll-body">
+                <table class="dash-table" id="dash-attendance-table" style="min-width: 680px;">
+                    <thead>
+                        <tr>
+                            <th style="min-width:180px;">Member</th>
+                            <th style="min-width:150px;">Member Tier &amp; Plan</th>
+                            <th style="min-width:130px;">Floor Access</th>
+                            <th style="min-width:90px;">Time In</th>
+                            <th style="min-width:90px;">Time Out</th>
+                            <th style="min-width:140px; text-align:right;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dash-logs-body">
+                        <?php if (empty($today_attendance_list)): ?>
+                        <tr id="no-logs">
+                            <td colspan="6" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
+                                <i class="fas fa-qrcode" style="font-size:2rem; opacity:0.2; display:block; margin-bottom:0.5rem;"></i>
+                                No attendance check-ins recorded yet today.
+                            </td>
+                        </tr>
+                        <?php else: ?>
+                        <?php foreach ($today_attendance_list as $att): 
+                            $has_timed_out = (!empty($att['time_out']) && $att['time_out'] !== '00:00:00');
+                            $ann_exp = $att['annual_membership_expiry'] ?? null;
+                            $is_official = (!empty($ann_exp) && strtotime($ann_exp) >= strtotime(date('Y-m-d')));
+                            $fa = $att['floor_access'] ?? 'all';
+                        ?>
+                        <tr id="att-row-<?php echo $att['id']; ?>">
                             <td>
                                 <div class="member-cell">
-                                    <div class="member-avatar" style="width:34px; height:34px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#f1f5f9; font-weight:700; color:#2d6a4f; font-size:0.85rem;">
-                                        ' . $avatar_content . '
+                                    <div class="member-avatar">
+                                        <?php if (!empty($att['photo'])): ?>
+                                            <img src="<?php echo htmlspecialchars($att['photo']); ?>" alt="Photo" style="width:100%; height:100%; object-fit:cover;">
+                                        <?php else: ?>
+                                            <?php echo strtoupper(substr($att['full_name'], 0, 1)); ?>
+                                        <?php endif; ?>
                                     </div>
                                     <div>
-                                        <a href="view-member.php?id=' . $tm['id'] . '" class="cell-primary" style="font-weight:700; color:var(--text-main); text-decoration:none; font-size:0.84rem;">
-                                            ' . htmlspecialchars($tm['full_name']) . '
+                                        <a href="view-member.php?id=<?php echo $att['member_id']; ?>" class="cell-primary" title="<?php echo htmlspecialchars($att['full_name']); ?>">
+                                            <?php echo htmlspecialchars($att['full_name']); ?>
                                         </a>
-                                        <div style="font-size:0.7rem; color:var(--text-muted); font-family:monospace;">
-                                            ' . htmlspecialchars($tm['membership_id']) . '
+                                        <div style="font-size:0.75rem; color:var(--text-muted); font-family:monospace;"><?php echo htmlspecialchars($att['membership_id']); ?></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display:flex; flex-direction:column; gap:3px;">
+                                    <div>
+                                        <?php if ($is_official): ?>
+                                            <span class="badge" style="background:rgba(16,185,129,0.15); color:#059669; border:1px solid rgba(16,185,129,0.3); font-size:0.68rem; font-weight:700;">
+                                                <i class="fas fa-id-card"></i> Official Member
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge" style="background:rgba(100,116,139,0.12); color:#64748b; border:1px solid rgba(100,116,139,0.25); font-size:0.68rem; font-weight:600;">
+                                                <i class="fas fa-user"></i> Non-Member
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <span style="font-size:0.75rem; color:var(--text-main); font-weight:600;">
+                                        <?php echo htmlspecialchars($att['plan_name']); ?>
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <?php if ($fa === 'second_floor_only'): ?>
+                                    <span class="badge" style="background:rgba(14,165,233,0.15); color:#0284c7; border:1px solid rgba(14,165,233,0.3); font-weight:700; font-size:0.72rem; padding:3px 8px;">
+                                        <i class="fas fa-stairs"></i> 2nd Floor Only
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge" style="background:rgba(34,197,94,0.15); color:#16a34a; border:1px solid rgba(34,197,94,0.3); font-weight:700; font-size:0.72rem; padding:3px 8px;">
+                                        <i class="fas fa-building"></i> Ground + 2nd Flr
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="cell-primary" style="font-weight:600;"><?php echo date('h:i A', strtotime($att['time_in'])); ?></td>
+                            <td class="cell-secondary" id="timeout-<?php echo $att['id']; ?>"><?php echo $has_timed_out ? date('h:i A', strtotime($att['time_out'])) : '&mdash;'; ?></td>
+                            <td id="status-cell-<?php echo $att['id']; ?>" style="white-space:nowrap; text-align:right;">
+                                <?php if ($has_timed_out): ?>
+                                    <span class="badge badge-gray">Left</span>
+                                <?php else: ?>
+                                    <div style="display:inline-flex; align-items:center; gap:8px; justify-content:flex-end;">
+                                        <span class="badge badge-success"><i class="fas fa-circle" style="font-size:0.35rem; margin-right:4px;"></i> Inside</span>
+                                        <button type="button"
+                                                class="btn btn-outline manual-checkout-btn"
+                                                onclick="manualCheckout(<?php echo $att['id']; ?>, '<?php echo htmlspecialchars(addslashes($att['full_name'])); ?>')"
+                                                aria-label="Check out <?php echo htmlspecialchars($att['full_name']); ?>">
+                                            <i class="fas fa-arrow-right-from-bracket"></i> Check Out
+                                        </button>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Card 2: Real-Time Activity Feed -->
+        <div class="card dash-card" id="card-live-activity">
+            <div class="card-header-flex">
+                <div style="display:flex; align-items:center; gap:0.6rem;">
+                    <div class="live-dot-pulse"></div>
+                    <div>
+                        <h3 class="section-title">Live Activity Stream</h3>
+                        <p class="section-subtitle">Real-time check-ins, payments &amp; renewals</p>
+                    </div>
+                </div>
+                <button onclick="fetchLiveFeed()" class="btn btn-outline btn-sm" style="padding:0.25rem 0.6rem; font-size:0.75rem;" title="Refresh stream" aria-label="Refresh stream">
+                    <i class="fas fa-arrows-rotate" id="feed-refresh-icon"></i>
+                </button>
+            </div>
+
+            <!-- Feed Category Filter Pills -->
+            <div class="feed-filters-bar">
+                <button class="feed-filter-btn active" onclick="filterFeed('all')" data-cat="all">All</button>
+                <button class="feed-filter-btn" onclick="filterFeed('checkin')" data-cat="checkin">Check-ins</button>
+                <button class="feed-filter-btn" onclick="filterFeed('payment')" data-cat="payment">Payments</button>
+                <button class="feed-filter-btn" onclick="filterFeed('renewal')" data-cat="renewal">Renewals</button>
+            </div>
+
+            <!-- Feed Items Stream -->
+            <div id="live-feed-stream" class="feed-items-container dash-scroll-body">
+                <?php if (empty($server_live_feed)): ?>
+                    <div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">
+                        <i class="fas fa-inbox" style="font-size:1.6rem; display:block; margin-bottom:0.4rem; color:#cbd5e1;"></i>
+                        No recent activities recorded yet.
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($server_live_feed as $item): ?>
+                        <div class="feed-item">
+                            <div class="feed-item-icon" style="background:<?php echo $item['bg']; ?>; color:<?php echo $item['color']; ?>;">
+                                <i class="fas <?php echo $item['icon']; ?>"></i>
+                            </div>
+                            <div class="feed-item-content">
+                                <div class="feed-item-top">
+                                    <span class="feed-item-title"><?php echo htmlspecialchars($item['title']); ?></span>
+                                    <span class="feed-item-time"><?php echo htmlspecialchars($item['relative_time']); ?></span>
+                                </div>
+                                <p class="feed-item-desc"><?php echo htmlspecialchars($item['description']); ?></p>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── BOTTOM DASHBOARD ROW: EXPIRED PLANS & LOYALTY LEADERBOARD ───────── -->
+    <div class="dashboard-row-bottom">
+        
+        <!-- Card 3: Overdue / Expired Renewals (Follow-up Center) -->
+        <div class="card dash-card" id="card-expired-followups">
+            <div class="card-header-flex">
+                <div>
+                    <h3 class="section-title"><i class="fas fa-triangle-exclamation" style="color:#ef4444;"></i> Expired Plans &amp; Follow-ups</h3>
+                    <p class="section-subtitle">Recurring members with expired plans needing renewal</p>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <?php if (!empty($overdue_renewals)): ?>
+                    <button type="button" class="btn btn-outline btn-sm" id="btn-bulk-notify" onclick="sendBulkRenewalReminders()" style="font-size:0.75rem; padding:0.35rem 0.75rem; border-color:#fca5a5; color:#dc2626; background:#fff5f5; display:inline-flex; align-items:center; gap:5px; font-weight:700; border-radius:8px;" title="Send renewal reminder email to all expired members with email addresses">
+                        <i class="fas fa-bullhorn"></i> <span id="bulk-notify-label">Notify All Overdue (<?php echo count($overdue_renewals); ?>)</span>
+                    </button>
+                    <?php endif; ?>
+                    <span class="badge badge-danger" id="overdue-total-badge" style="background:rgba(239,68,68,0.12); color:#ef4444; font-weight:700;">
+                        <?php echo count($overdue_renewals); ?> Overdue
+                    </span>
+                </div>
+            </div>
+
+            <div class="table-container dash-scroll-body">
+                <table class="dash-table" id="overdue-table">
+                    <thead>
+                        <tr>
+                            <th style="min-width:180px;">Member</th>
+                            <th style="min-width:125px;">Expired Date</th>
+                            <th style="min-width:130px;">Plan</th>
+                            <th style="min-width:140px; text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="overdue-tbody">
+                        <?php if (empty($overdue_renewals)): ?>
+                        <tr id="row-no-overdue">
+                            <td colspan="4" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
+                                <i class="fas fa-circle-check" style="font-size:1.8rem; color:#52b788; display:block; margin-bottom:0.5rem;"></i>
+                                <strong>All recurring member subscriptions are in good standing!</strong>
+                                <p style="margin:4px 0 0 0; font-size:0.78rem;">No expired memberships requiring immediate follow-up.</p>
+                            </td>
+                        </tr>
+                        <?php else: ?>
+                        <?php foreach ($overdue_renewals as $od): 
+                            $days = max(1, intval($od['overdue_days'] ?? 1));
+                            
+                            // Color-coded days overdue
+                            if ($days <= 3) {
+                                $od_badge_style = 'background:#fef3c7; color:#b45309; border:1px solid #fde68a;';
+                                $od_label = "🟡 {$days}d ago (Fresh)";
+                            } elseif ($days <= 14) {
+                                $od_badge_style = 'background:#ffedd5; color:#c2410c; border:1px solid #fed7aa;';
+                                $od_label = "🟠 {$days}d ago";
+                            } else {
+                                $od_badge_style = 'background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;';
+                                $od_label = "🔴 {$days}d ago (Lapsed)";
+                            }
+                        ?>
+                        <tr class="od-row" id="od-row-<?php echo $od['id']; ?>">
+                            <td>
+                                <div class="member-cell">
+                                    <div class="member-avatar">
+                                        <?php if (!empty($od['photo'])): ?>
+                                            <img src="<?php echo htmlspecialchars($od['photo']); ?>" alt="Photo" style="width:100%; height:100%; object-fit:cover;">
+                                        <?php else: ?>
+                                            <?php echo strtoupper(substr($od['full_name'], 0, 1)); ?>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div>
+                                        <a href="view-member.php?id=<?php echo $od['id']; ?>" class="cell-primary" title="<?php echo htmlspecialchars($od['full_name']); ?>">
+                                            <?php echo htmlspecialchars($od['full_name']); ?>
+                                        </a>
+                                        <div style="font-size:0.72rem; color:var(--text-muted); font-family:monospace;">
+                                            <?php echo htmlspecialchars($od['membership_id']); ?>
+                                            <?php if (!empty($od['contact_number'])): ?>
+                                                • <?php echo htmlspecialchars($od['contact_number']); ?>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                <span class="badge badge-gold" style="font-size:0.7rem; font-weight:700;">' . htmlspecialchars($tm['plan_name']) . '</span>
+                                <div style="display:flex; flex-direction:column; gap:2px;">
+                                    <span style="font-size:0.82rem; color:#ef4444; font-weight:700;">
+                                        <?php echo date('M d, Y', strtotime($od['expiry_date'])); ?>
+                                    </span>
+                                    <span class="badge" style="<?php echo $od_badge_style; ?> font-size:0.65rem; padding:2px 6px; border-radius:6px; font-weight:700; width:fit-content;">
+                                        <?php echo $od_label; ?>
+                                    </span>
+                                </div>
                             </td>
-                            <td style="text-align:right; white-space:nowrap;">
-                                <span class="badge" style="background:rgba(56,189,248,0.12); color:#0284c7; border:1px solid rgba(56,189,248,0.25); font-weight:800; font-size:0.78rem; padding:4px 9px; border-radius:8px; display:inline-flex; align-items:center; gap:4px;">
-                                    <i class="fas fa-dumbbell"></i> ' . number_format($tm['visit_count']) . '
-                                </span>
+                            <td>
+                                <div style="display:flex; flex-direction:column; gap:2px;">
+                                    <span class="badge badge-gold" style="font-size:0.75rem; font-weight:700; width:fit-content;"><?php echo htmlspecialchars($od['plan_name']); ?></span>
+                                    <?php 
+                                        $pass_label = ($od['duration_months'] >= 12) ? 'Yearly Pass' : 'Monthly Pass';
+                                    ?>
+                                    <span style="font-size:0.68rem; color:var(--text-muted); white-space:nowrap;">
+                                        ₱<?php echo number_format((float)($od['plan_price'] ?? 0), 2); ?> • <?php echo $pass_label; ?>
+                                    </span>
+                                </div>
                             </td>
-                        </tr>';
-                    }
-                    return $html;
+                            <td style="text-align:right;">
+                                <div style="display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+                                    <!-- Email Reminder Button -->
+                                    <?php if (!empty($od['email'])): ?>
+                                    <button type="button" class="btn btn-outline btn-sm" 
+                                            onclick="sendRenewalReminder(<?php echo $od['id']; ?>, '<?php echo htmlspecialchars(addslashes($od['full_name'])); ?>', this)" 
+                                            style="padding:0.32rem 0.65rem; font-size:0.75rem; color:#0284c7; border-color:#bae6fd; background:#f0f9ff; border-radius:7px; font-weight:600; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;" 
+                                            title="Send Renewal Reminder Email">
+                                        <i class="fas fa-envelope"></i> Email Notif
+                                    </button>
+                                    <?php endif; ?>
+
+                                    <!-- Quick Renew Button -->
+                                    <button type="button" class="btn btn-primary btn-sm" 
+                                            onclick="openQuickRenewModal(<?php echo $od['id']; ?>, '<?php echo htmlspecialchars(addslashes($od['full_name'])); ?>', '<?php echo htmlspecialchars(addslashes($od['membership_id'])); ?>', <?php echo (int)($od['plan_id'] ?? 0); ?>, <?php echo floatval($od['plan_price'] ?? 0); ?>)" 
+                                            style="padding:0.32rem 0.75rem; font-size:0.75rem; font-weight:700; display:inline-flex; align-items:center; gap:4px; border-radius:7px; white-space:nowrap;" 
+                                            title="Quick Renewal">
+                                        <i class="fas fa-arrows-rotate"></i> Renew
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Card 4: Top Loyalty Champions (Gamified Leaderboard with Timeframe Filters) -->
+        <?php
+        if (!function_exists('render_lb_rows')) {
+            function render_lb_rows($list, $period_label = 'this month') {
+                if (empty($list)) {
+                    return '<tr><td colspan="4" style="text-align:center; padding:2rem 1rem; color:var(--text-muted);"><i class="fas fa-trophy" style="font-size:1.6rem; color:#cbd5e1; display:block; margin-bottom:0.4rem;"></i><strong>No check-ins recorded ' . htmlspecialchars($period_label) . ' yet.</strong><p style="margin:4px 0 0 0; font-size:0.75rem;">Visits will appear here once members scan their ID at the kiosk.</p></td></tr>';
                 }
+                $html = '';
+                foreach ($list as $idx => $tm) {
+                    $rank_badge = '';
+                    $row_bg = '';
+                    if ($idx === 0) {
+                        $rank_badge = '<span class="badge" style="background:#fef9c3; color:#a16207; border:1px solid #fde047; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥇 1st</span>';
+                        $row_bg = 'background:rgba(254,249,195,0.12);';
+                    } elseif ($idx === 1) {
+                        $rank_badge = '<span class="badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥈 2nd</span>';
+                    } elseif ($idx === 2) {
+                        $rank_badge = '<span class="badge" style="background:#ffedd5; color:#c2410c; border:1px solid #fed7aa; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥉 3rd</span>';
+                    } else {
+                        $rank_badge = '<span style="font-weight:700; color:var(--text-muted); font-size:0.8rem;">#' . ($idx + 1) . '</span>';
+                    }
+
+                    $initial = strtoupper(substr($tm['full_name'] ?? 'M', 0, 1));
+                    $avatar_content = !empty($tm['photo']) 
+                        ? '<img src="' . htmlspecialchars($tm['photo']) . '" alt="" onerror="this.onerror=null; this.parentElement.textContent=\'' . htmlspecialchars($initial, ENT_QUOTES) . '\';" style="width:100%; height:100%; object-fit:cover;">'
+                        : htmlspecialchars($initial);
+
+                    $html .= '<tr style="' . $row_bg . '">
+                        <td style="text-align:center; width:50px;">' . $rank_badge . '</td>
+                        <td>
+                            <div class="member-cell">
+                                <div class="member-avatar">
+                                    ' . $avatar_content . '
+                                </div>
+                                <div>
+                                    <a href="view-member.php?id=' . $tm['id'] . '" class="cell-primary" title="' . htmlspecialchars($tm['full_name']) . '">
+                                        ' . htmlspecialchars($tm['full_name']) . '
+                                    </a>
+                                    <div style="font-size:0.7rem; color:var(--text-muted); font-family:monospace;">
+                                        ' . htmlspecialchars($tm['membership_id']) . '
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge badge-gold" style="font-size:0.7rem; font-weight:700; width:fit-content;">' . htmlspecialchars($tm['plan_name']) . '</span>
+                        </td>
+                        <td style="text-align:right; white-space:nowrap;">
+                            <span class="badge" style="background:rgba(56,189,248,0.12); color:#0284c7; border:1px solid rgba(56,189,248,0.25); font-weight:800; font-size:0.78rem; padding:4px 9px; border-radius:8px; display:inline-flex; align-items:center; gap:4px;">
+                                <i class="fas fa-dumbbell"></i> ' . number_format($tm['visit_count']) . '
+                            </span>
+                        </td>
+                    </tr>';
+                }
+                return $html;
             }
-            ?>
-            <div class="card dash-equal-card" id="card-loyalty-leaderboard" style="height:580px; min-height:580px; max-height:580px; display:flex; flex-direction:column; overflow:hidden;">
-                <div class="card-header-flex" style="flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:0.75rem; flex-shrink:0;">
-                    <div>
-                        <h3 class="section-title"><i class="fas fa-trophy" style="color:#eab308;"></i> Member Loyalty Leaderboard</h3>
-                        <p class="section-subtitle"><span id="lb-subtitle-mode">Top champions by workout visits</span> (<strong id="lb-period-title" style="color:var(--accent); font-weight:700;"><?php echo date('F Y'); ?></strong>)</p>
-                    </div>
-
-                    <!-- Metric & Calendar Filter Controls -->
-                    <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
-                        <!-- Metric Toggle: Gym Visits vs Plans Availed -->
-                        <div style="display:inline-flex; align-items:center; background:var(--bg-main, #f8fafc); padding:2px; border-radius:10px; border:1px solid var(--border);">
-                            <button type="button" id="lb-metric-visits" class="btn btn-sm" onclick="setLeaderboardMetric('visits')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:var(--primary, #2d6a4f); color:#fff; border:none; font-weight:700; cursor:pointer;" title="View Top Active Members by Gym Check-ins">
-                                <i class="fas fa-dumbbell"></i> Visits
-                            </button>
-                            <button type="button" id="lb-metric-plans" class="btn btn-sm" onclick="setLeaderboardMetric('plans')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:transparent; color:var(--text-muted); border:none; font-weight:700; cursor:pointer;" title="View Top Subscribers by Plan Availments">
-                                <i class="fas fa-layer-group"></i> Plans Availed
-                            </button>
-                        </div>
-
-                        <!-- Filter Scope: Month View / Day View / All-Time -->
-                        <div style="display:inline-flex; align-items:center; background:var(--bg-main, #f8fafc); padding:2px; border-radius:10px; border:1px solid var(--border);">
-                            <button type="button" id="lb-btn-month" class="btn btn-sm" onclick="setLeaderboardScope('month')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:var(--primary, #2d6a4f); color:#fff; border:none; font-weight:700; cursor:pointer;" title="View for Selected Month">
-                                <i class="fas fa-calendar-alt"></i> Month
-                            </button>
-                            <button type="button" id="lb-btn-date" class="btn btn-sm" onclick="setLeaderboardScope('date')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:transparent; color:var(--text-muted); border:none; font-weight:700; cursor:pointer;" title="View for Exact Day">
-                                <i class="fas fa-calendar-day"></i> Day
-                            </button>
-                            <button type="button" id="lb-btn-all" class="btn btn-sm" onclick="setLeaderboardScope('all_time')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:transparent; color:var(--text-muted); border:none; font-weight:700; cursor:pointer;" title="View All-Time">
-                                <i class="fas fa-crown"></i> All-Time
-                            </button>
-                        </div>
-
-                        <!-- Full Calendar Date Picker -->
-                        <div id="lb-calendar-container" style="display:inline-flex; align-items:center; gap:6px; background:var(--bg-main, #f8fafc); padding:3px 10px; border-radius:10px; border:1px solid var(--border);">
-                            <i class="fas fa-calendar-days" style="color:#2d6a4f; font-size:0.85rem;"></i>
-                            <input type="date" 
-                                   id="lb-full-calendar" 
-                                   value="<?php echo date('Y-m-d'); ?>" 
-                                   onchange="onLeaderboardDateChange(this.value)" 
-                                   style="border:none; background:transparent; font-size:0.8rem; font-weight:700; color:var(--text-main); cursor:pointer; outline:none; font-family:inherit; padding:2px 0;">
-                        </div>
-
-                        <button type="button" class="btn btn-outline btn-sm" onclick="refreshCurrentLeaderboard()" style="padding:0.25rem 0.5rem; font-size:0.75rem; border-radius:8px;" title="Refresh Leaderboard">
-                            <i class="fas fa-arrows-rotate" id="lb-refresh-icon"></i>
-                        </button>
-                    </div>
+        }
+        ?>
+        <div class="card dash-card" id="card-loyalty-leaderboard">
+            <div class="card-header-flex">
+                <div>
+                    <h3 class="section-title"><i class="fas fa-trophy" style="color:#eab308;"></i> Member Loyalty Leaderboard</h3>
+                    <p class="section-subtitle"><span id="lb-subtitle-mode">Top champions by workout visits</span> (<strong id="lb-period-title" style="color:var(--accent); font-weight:700;"><?php echo date('F Y'); ?></strong>)</p>
                 </div>
 
-                <div class="table-container dash-scroll-body" style="flex:1 1 0; min-height:0; overflow-y:auto; overflow-x:auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width:60px; text-align:center;">Rank</th>
-                                <th>Member</th>
-                                <th>Plan</th>
-                                <th style="text-align:right; white-space:nowrap;" id="lb-th-metric">Visits</th>
-                            </tr>
-                        </thead>
-                        <tbody id="lb-tbody">
-                            <?php echo render_lb_rows($top_active_month, 'this month'); ?>
-                        </tbody>
-                    </table>
+                <!-- Metric & Calendar Filter Controls -->
+                <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+                    <!-- Metric Toggle: Gym Visits vs Plans Availed -->
+                    <div style="display:inline-flex; align-items:center; background:var(--bg-main, #f8fafc); padding:2px; border-radius:10px; border:1px solid var(--border);">
+                        <button type="button" id="lb-metric-visits" class="btn btn-sm" onclick="setLeaderboardMetric('visits')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:var(--primary, #2d6a4f); color:#fff; border:none; font-weight:700; cursor:pointer;" title="View Top Active Members by Gym Check-ins">
+                            <i class="fas fa-dumbbell"></i> Visits
+                        </button>
+                        <button type="button" id="lb-metric-plans" class="btn btn-sm" onclick="setLeaderboardMetric('plans')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:transparent; color:var(--text-muted); border:none; font-weight:700; cursor:pointer;" title="View Top Subscribers by Plan Availments">
+                            <i class="fas fa-layer-group"></i> Plans Availed
+                        </button>
+                    </div>
+
+                    <!-- Filter Scope: Month View / Day View / All-Time -->
+                    <div style="display:inline-flex; align-items:center; background:var(--bg-main, #f8fafc); padding:2px; border-radius:10px; border:1px solid var(--border);">
+                        <button type="button" id="lb-btn-month" class="btn btn-sm" onclick="setLeaderboardScope('month')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:var(--primary, #2d6a4f); color:#fff; border:none; font-weight:700; cursor:pointer;" title="View for Selected Month">
+                            <i class="fas fa-calendar-alt"></i> Month
+                        </button>
+                        <button type="button" id="lb-btn-date" class="btn btn-sm" onclick="setLeaderboardScope('date')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:transparent; color:var(--text-muted); border:none; font-weight:700; cursor:pointer;" title="View for Exact Day">
+                            <i class="fas fa-calendar-day"></i> Day
+                        </button>
+                        <button type="button" id="lb-btn-all" class="btn btn-sm" onclick="setLeaderboardScope('all_time')" style="padding:4px 9px; font-size:0.75rem; border-radius:8px; background:transparent; color:var(--text-muted); border:none; font-weight:700; cursor:pointer;" title="View All-Time">
+                            <i class="fas fa-crown"></i> All-Time
+                        </button>
+                    </div>
+
+                    <!-- Full Calendar Date Picker -->
+                    <div id="lb-calendar-container" style="display:inline-flex; align-items:center; gap:6px; background:var(--bg-main, #f8fafc); padding:3px 10px; border-radius:10px; border:1px solid var(--border);">
+                        <i class="fas fa-calendar-days" style="color:#2d6a4f; font-size:0.85rem;"></i>
+                        <input type="date" 
+                               id="lb-full-calendar" 
+                               value="<?php echo date('Y-m-d'); ?>" 
+                               onchange="onLeaderboardDateChange(this.value)" 
+                               style="border:none; background:transparent; font-size:0.8rem; font-weight:700; color:var(--text-main); cursor:pointer; outline:none; font-family:inherit; padding:2px 0;">
+                    </div>
+
+                    <button type="button" class="btn btn-outline btn-sm" onclick="refreshCurrentLeaderboard()" style="padding:0.25rem 0.5rem; font-size:0.75rem; border-radius:8px;" title="Refresh Leaderboard">
+                        <i class="fas fa-arrows-rotate" id="lb-refresh-icon"></i>
+                    </button>
                 </div>
             </div>
 
+            <div class="table-container dash-scroll-body">
+                <table class="dash-table" id="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th style="width:50px; text-align:center;">Rank</th>
+                            <th style="min-width:160px;">Member</th>
+                            <th style="min-width:110px;">Plan</th>
+                            <th style="min-width:85px; text-align:right; white-space:nowrap;" id="lb-th-metric">Visits</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lb-tbody">
+                        <?php echo render_lb_rows($top_active_month, 'this month'); ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
     </div>
@@ -963,15 +1436,15 @@ function renderLiveFeed() {
     filtered.forEach(item => {
         html += `
             <div class="feed-item">
-                <div style="width:32px; height:32px; border-radius:8px; background:${item.bg}; color:${item.color}; display:flex; align-items:center; justify-content:center; font-size:0.85rem; flex-shrink:0;">
+                <div class="feed-item-icon" style="background:${item.bg}; color:${item.color};">
                     <i class="fas ${item.icon}"></i>
                 </div>
-                <div style="flex:1; min-width:0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; gap:0.4rem;">
-                        <span style="font-size:0.82rem; font-weight:700; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.title}</span>
-                        <span style="font-size:0.7rem; color:var(--text-muted); white-space:nowrap;">${item.relative_time}</span>
+                <div class="feed-item-content">
+                    <div class="feed-item-top">
+                        <span class="feed-item-title">${item.title}</span>
+                        <span class="feed-item-time">${item.relative_time}</span>
                     </div>
-                    <p style="font-size:0.75rem; color:var(--text-muted); margin:0.15rem 0 0 0; line-height:1.3;">${item.description}</p>
+                    <p class="feed-item-desc">${item.description}</p>
                 </div>
             </div>
         `;
@@ -1542,6 +2015,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
 
         <form id="quick-renew-form" onsubmit="submitQuickRenewForm(event)" style="padding:1.25rem 1.5rem;">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token()); ?>">
             <input type="hidden" name="member_id" id="qr-member-id">
 
             <!-- Member Summary Pill -->

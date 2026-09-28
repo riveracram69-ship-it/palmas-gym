@@ -5,15 +5,21 @@ require_once __DIR__ . '/../../config/logger.php';
 
 header('Content-Type: application/json');
 
-// Check for Kiosk API key OR logged in staff/admin
-$kiosk_api_key = (!empty(defined('KIOSK_API_KEY') ? KIOSK_API_KEY : '')) ? KIOSK_API_KEY : 'palmas_kiosk_2026_secure_key!';
+// AUDIT-002 FIX: Kiosk authentication now fails closed when KIOSK_API_KEY is not configured.
+// The application must NOT fall back to a hardcoded credential.
+$kiosk_api_key_raw = (defined('KIOSK_API_KEY') && is_string(KIOSK_API_KEY)) ? KIOSK_API_KEY : '';
 $provided_key = isset($_SERVER['HTTP_X_KIOSK_KEY']) ? (string)$_SERVER['HTTP_X_KIOSK_KEY'] : '';
-$is_kiosk = ($kiosk_api_key !== '' && $provided_key !== '' && hash_equals($kiosk_api_key, $provided_key));
+// Only allow kiosk auth when KIOSK_API_KEY is properly configured (non-empty, min length)
+$kiosk_configured = (strlen($kiosk_api_key_raw) >= 8);
+$is_kiosk = ($kiosk_configured && $provided_key !== '' && hash_equals($kiosk_api_key_raw, $provided_key));
 $is_staff = isset($_SESSION['user_id']);
 
 if (!$is_kiosk && !$is_staff) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'error_code' => 'UNAUTHORIZED', 'message' => 'Unauthorized access. Staff session required.']);
+    $deny_reason = (!$kiosk_configured && !empty($provided_key))
+        ? 'Kiosk authentication is not configured on this server.'
+        : 'Unauthorized access. Staff session required.';
+    echo json_encode(['success' => false, 'error_code' => 'UNAUTHORIZED', 'message' => $deny_reason]);
     exit;
 }
 
@@ -92,8 +98,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit;
                 }
 
-                // Recalculate HMAC signature using server QR_SECRET_KEY with consistent fallback
-                $secret_key = (!empty(defined('QR_SECRET_KEY') ? QR_SECRET_KEY : '')) ? QR_SECRET_KEY : 'palmas_secret_key_987';
+                // AUDIT-003 FIX: QR secret must be configured. Fail closed if missing.
+                // Do NOT fall back to any hardcoded secret — that would allow signature forgery.
+                $secret_key = (defined('QR_SECRET_KEY') && is_string(QR_SECRET_KEY) && strlen(QR_SECRET_KEY) >= 20)
+                    ? QR_SECRET_KEY
+                    : null;
+                if ($secret_key === null) {
+                    http_response_code(503);
+                    echo json_encode([
+                        'success'    => false,
+                        'error_code' => 'SERVER_MISCONFIGURATION',
+                        'request_id' => $request_id,
+                        'message'    => 'QR validation is temporarily unavailable. Please use your physical ID card or contact staff.'
+                    ]);
+                    exit;
+                }
                 $full_sig   = hash_hmac('sha256', $token_mem_id . '|' . $token_slot, $secret_key);
                 $expected_sig = (strlen($token_sig) <= 16) ? substr($full_sig, 0, strlen($token_sig)) : $full_sig;
 

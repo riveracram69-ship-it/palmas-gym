@@ -33,9 +33,13 @@ try {
                  GROUP BY member_id
              ) sub_stats ON sub_stats.member_id = m.id
              LEFT JOIN (
-                 SELECT member_id, SUM(amount) AS total_spend
-                 FROM payments
-                 GROUP BY member_id
+                 SELECT p.member_id, SUM(p.amount) AS total_spend
+                 FROM payments p
+                 LEFT JOIN subscriptions s ON p.subscription_id = s.id
+                 LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+                 WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+                   AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+                 GROUP BY p.member_id
              ) pay_stats ON pay_stats.member_id = m.id
              LEFT JOIN (
                  SELECT member_id, COUNT(*) AS total_visits
@@ -281,9 +285,10 @@ $active = array_filter($members, function($m) {
         </div>
     </div>
 
-    <div id="no-results" style="display:none;text-align:center;padding:4rem;color:var(--text-muted);">
-        <i class="fas fa-magnifying-glass" style="font-size:2rem;margin-bottom:1rem;opacity:0.2;display:block;"></i>
-        No members match your search.
+    <div id="no-results" class="empty-state" style="display:none; padding:3.5rem 1.5rem;">
+        <i class="fas fa-magnifying-glass" style="font-size:2.2rem; opacity:0.3; margin-bottom:0.75rem; display:block;"></i>
+        <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-main); margin-bottom:0.25rem;">No members found</h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin:0 auto;">Try adjusting your search or filters.</p>
     </div>
 </div>
 

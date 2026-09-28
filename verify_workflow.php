@@ -1,4 +1,13 @@
 <?php
+// Defense-in-Depth: Restrict execution to CLI or authenticated administrator (SEC-ROOT-001)
+if (php_sapi_name() !== 'cli') {
+    require_once __DIR__ . '/config/auth.php';
+    if (!function_exists('is_admin') || !is_admin()) {
+        http_response_code(403);
+        die("403 Forbidden: Maintenance and test scripts may only be executed via CLI or by an authenticated administrator.");
+    }
+}
+
 /**
  * Automated System & Workflow Validation Test
  */

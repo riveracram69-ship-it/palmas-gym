@@ -201,6 +201,243 @@ try {
     50% { top: 85%; opacity: 1; }
     100% { top: 15%; opacity: 0.2; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   HTML5-QRCODE CAMERA SELECTOR & SCANNER CONTROLS OVERHAUL
+   ══════════════════════════════════════════════════════════════════ */
+#reader {
+    border: none !important;
+    padding: 0 !important;
+    width: 100% !important;
+    background: #0a1912 !important;
+}
+
+#reader__dashboard {
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+#reader__dashboard_section {
+    padding: 0.75rem 1rem !important;
+    background: #0f2419 !important;
+    border-bottom: 1px solid rgba(82, 183, 136, 0.25) !important;
+}
+
+#reader__dashboard_section_csr {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.65rem !important;
+    margin: 0 !important;
+    text-align: center !important;
+}
+
+#reader__dashboard_section_csr > div {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.65rem !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+}
+
+/* Camera Selector Dropdown */
+#reader select,
+#reader__camera_selection {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-color: #173726 !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2352b788' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.85rem center !important;
+    background-size: 14px !important;
+    color: #e2f1e8 !important;
+    font-family: inherit !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    height: 42px !important;
+    line-height: 42px !important;
+    padding: 0 2.5rem 0 1rem !important;
+    border: 1px solid rgba(82, 183, 136, 0.4) !important;
+    border-radius: 9px !important;
+    outline: none !important;
+    cursor: pointer !important;
+    min-width: 220px !important;
+    max-width: 100% !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    transition: all 0.2s ease !important;
+    box-sizing: border-box !important;
+}
+
+#reader select:hover,
+#reader__camera_selection:hover {
+    border-color: #52b788 !important;
+    background-color: #1c422f !important;
+}
+
+#reader select:focus,
+#reader__camera_selection:focus {
+    border-color: #52b788 !important;
+    box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.25) !important;
+}
+
+#reader select option {
+    background: #173726 !important;
+    color: #e2f1e8 !important;
+    padding: 10px !important;
+}
+
+/* Scanner Action Buttons */
+#reader button,
+#html5-qrcode-button-camera-start,
+#html5-qrcode-button-camera-stop,
+#html5-qrcode-button-camera-permission,
+#html5-qrcode-button-file-selection {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    height: 42px !important;
+    padding: 0 1.35rem !important;
+    font-family: inherit !important;
+    font-size: 0.84rem !important;
+    font-weight: 700 !important;
+    border-radius: 9px !important;
+    cursor: pointer !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    text-decoration: none !important;
+    white-space: nowrap !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    box-sizing: border-box !important;
+}
+
+/* Start Scanning / Request Permission (Primary Admin Action) */
+#reader button,
+#html5-qrcode-button-camera-start,
+#html5-qrcode-button-camera-permission {
+    background: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(82, 183, 136, 0.5) !important;
+}
+
+#reader button:hover,
+#html5-qrcode-button-camera-start:hover,
+#html5-qrcode-button-camera-permission:hover {
+    background: linear-gradient(135deg, #388261 0%, #22563f 100%) !important;
+    border-color: #52b788 !important;
+    box-shadow: 0 4px 14px rgba(45, 106, 79, 0.5) !important;
+    transform: translateY(-1px) !important;
+}
+
+#reader button:active,
+#html5-qrcode-button-camera-start:active,
+#html5-qrcode-button-camera-permission:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 1px 4px rgba(45, 106, 79, 0.4) !important;
+}
+
+/* Stop Scanning Button (Warning / Secondary Action) */
+#html5-qrcode-button-camera-stop {
+    background: rgba(239, 68, 68, 0.18) !important;
+    color: #fca5a5 !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+#html5-qrcode-button-camera-stop:hover {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    border-color: #dc2626 !important;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Camera icon before Start Scanning button */
+#html5-qrcode-button-camera-start::before {
+    content: "\f030";
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 900 !important;
+    font-size: 0.85rem !important;
+}
+
+#html5-qrcode-button-camera-stop::before {
+    content: "\f04d";
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 900 !important;
+    font-size: 0.82rem !important;
+}
+
+#html5-qrcode-button-camera-permission::before {
+    content: "\f023";
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 900 !important;
+    font-size: 0.85rem !important;
+}
+
+/* Scan Region (Camera Viewport Frame) */
+#reader__scan_region {
+    background: #0a1912 !important;
+    min-height: 240px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+#reader__scan_region video {
+    border-radius: 8px !important;
+    max-width: 100% !important;
+    object-fit: cover !important;
+}
+
+/* Status text & info messages inside reader */
+#reader__status_span {
+    color: #94a3b8 !important;
+    font-size: 0.74rem !important;
+    margin-top: 5px !important;
+    display: block !important;
+    font-weight: 500 !important;
+}
+
+#reader__header_message {
+    color: #52b788 !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    padding: 0.35rem 0.5rem !important;
+    background: rgba(82, 183, 136, 0.1) !important;
+    border-radius: 6px !important;
+}
+
+/* Hide library's default info icon image if present */
+#reader img[alt="Info icon"] {
+    display: none !important;
+}
+
+/* Clean swaplink if file scanning switch is visible */
+#reader__dashboard_section_swaplink {
+    color: #52b788 !important;
+    font-size: 0.75rem !important;
+    text-decoration: underline !important;
+    margin-top: 6px !important;
+    display: inline-block !important;
+    font-weight: 600 !important;
+}
+
+@media (max-width: 480px) {
+    #reader select,
+    #reader__camera_selection {
+        width: 100% !important;
+        min-width: 100% !important;
+    }
+    #reader button,
+    #html5-qrcode-button-camera-start,
+    #html5-qrcode-button-camera-stop,
+    #html5-qrcode-button-camera-permission {
+        width: 100% !important;
+    }
+}
 </style>
 
 <div class="topbar">
@@ -501,39 +738,99 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
-// Audio Chime Synthesizer via Web Audio API
-function playScanBeep(isSuccess = true) {
+// ── WEB AUDIO FEEDBACK SYNTHESIZER (SINGLETON) ───────────────────────
+let attendanceAudioCtx = null;
+
+function getAttendanceAudioContext() {
     try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
-        if (ctx.state === 'suspended') ctx.resume();
-
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        if (isSuccess) {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.12);
-            gain.gain.setValueAtTime(0.2, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.18);
-        } else {
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(320, ctx.currentTime);
-            osc.frequency.linearRampToValueAtTime(180, ctx.currentTime + 0.22);
-            gain.gain.setValueAtTime(0.25, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.25);
+        if (!attendanceAudioCtx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) {
+                attendanceAudioCtx = new AudioContextClass();
+            }
         }
-    } catch (e) {}
+        if (attendanceAudioCtx && attendanceAudioCtx.state === 'suspended') {
+            attendanceAudioCtx.resume().catch(() => {});
+        }
+        return attendanceAudioCtx;
+    } catch (e) {
+        return null;
+    }
+}
+
+// Warm up / unlock audio context on initial user gesture (non-intrusive)
+function unlockAttendanceAudio() {
+    const ctx = getAttendanceAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+    }
+}
+['pointerdown', 'keydown', 'touchstart'].forEach(evt => {
+    window.addEventListener(evt, unlockAttendanceAudio, { once: true, passive: true });
+});
+
+/**
+ * Plays synthesized Web Audio feedback for attendance scanner events.
+ * Categories: 'SUCCESS' | 'DENIED' | 'SILENT'
+ */
+function playAttendanceAudio(type) {
+    if (!type || type === 'SILENT') return;
+
+    try {
+        const ctx = getAttendanceAudioContext();
+        if (!ctx) return;
+        if (ctx.state === 'suspended') {
+            ctx.resume().catch(() => {});
+        }
+        if (ctx.state !== 'running') return;
+
+        const now = ctx.currentTime;
+
+        if (type === 'SUCCESS') {
+            // Subtle, positive two-tone chime (A5 880Hz -> E6 1320Hz)
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, now);
+            osc.frequency.setValueAtTime(1320, now + 0.08);
+
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(now);
+            osc.stop(now + 0.16);
+        } else if (type === 'DENIED') {
+            // Crisp, gentle warning tone (descending 320Hz -> 180Hz)
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(320, now);
+            osc.frequency.exponentialRampToValueAtTime(180, now + 0.18);
+
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.20, now + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.20);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(now);
+            osc.stop(now + 0.20);
+        }
+    } catch (e) {
+        // Audio failures must never block attendance workflows
+    }
+}
+
+// Backward-compatible alias
+function playScanBeep(isSuccess = true) {
+    playAttendanceAudio(isSuccess ? 'SUCCESS' : 'DENIED');
 }
 
 function triggerVibration(isSuccess = true) {
@@ -626,11 +923,11 @@ function processCheckin(membershipId, isManual = false) {
             
             if (isCooldown) {
                 setScannerState('ALREADY_SCANNED', data.message);
-                playScanBeep(false);
+                playAttendanceAudio('SILENT');
                 triggerVibration(false);
             } else {
                 setScannerState('SUCCESS', data.action === 'check-out' ? 'Check-out Recorded' : 'Check-in Recorded');
-                playScanBeep(true);
+                playAttendanceAudio('SUCCESS');
                 triggerVibration(true);
                 flashReaderBorder(true);
             }
@@ -737,10 +1034,6 @@ function processCheckin(membershipId, isManual = false) {
                 setTimeout(() => location.reload(), 1500);
             }
         } else {
-            playScanBeep(false);
-            triggerVibration(false);
-            flashReaderBorder(false);
-
             const safeErrName = escapeHtml(data.member_name || 'Unverified Scan');
             const safeErrMsg = escapeHtml(data.message || 'Scan could not be processed.');
             const safeReqId = data.request_id ? escapeHtml(data.request_id) : '';
@@ -756,6 +1049,14 @@ function processCheckin(membershipId, isManual = false) {
                 mappedState = 'SERVER_ERROR';
             }
             setScannerState(mappedState, safeErrMsg);
+
+            if (mappedState === 'SERVER_ERROR') {
+                playAttendanceAudio('SILENT');
+            } else {
+                playAttendanceAudio('DENIED');
+                triggerVibration(false);
+                flashReaderBorder(false);
+            }
 
             res.style.background = '#fce8e6'; 
             res.style.color = '#c5221f'; 
@@ -788,7 +1089,7 @@ function processCheckin(membershipId, isManual = false) {
         }
     })
     .catch(err => {
-        playScanBeep(false);
+        playAttendanceAudio('SILENT');
         triggerVibration(false);
         flashReaderBorder(false);
         setScannerState('NETWORK_ERROR', 'Network connection unavailable. Please check your internet or Wi-Fi.');

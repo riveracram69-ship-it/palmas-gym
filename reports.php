@@ -77,7 +77,8 @@ if (isset($_GET['export']) && isset($pdo)) {
                 JOIN members m ON m.id = p.member_id
                 LEFT JOIN subscriptions s ON p.subscription_id = s.id
                 LEFT JOIN membership_plans plan ON s.plan_id = plan.id
-                WHERE 1=1";
+                WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+                  AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')";
         if (!empty($startDate) && !empty($endDate)) {
             $sql .= " AND p.payment_date BETWEEN :start_date AND :end_date";
             $params['start_date'] = $startDate;
@@ -100,7 +101,10 @@ if (isset($_GET['export']) && isset($pdo)) {
         $headers = ['Date', 'Day of Week', 'Completed Transactions', 'Total Revenue (PHP)'];
         $sql = "SELECT p.payment_date, DATE_FORMAT(p.payment_date, '%W') as day_name, COUNT(p.id) as txns, SUM(p.amount) as total
                 FROM payments p
-                WHERE 1=1";
+                LEFT JOIN subscriptions s ON p.subscription_id = s.id
+                LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+                WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+                  AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')";
         if (!empty($startDate) && !empty($endDate)) {
             $sql .= " AND p.payment_date BETWEEN :start_date AND :end_date";
             $params['start_date'] = $startDate;
@@ -115,7 +119,10 @@ if (isset($_GET['export']) && isset($pdo)) {
         $headers = ['Month / Year', 'Transactions Count', 'Unique Paying Members', 'Total Revenue (PHP)'];
         $sql = "SELECT DATE_FORMAT(p.payment_date, '%M %Y') as month_year, COUNT(p.id) as txns, COUNT(DISTINCT p.member_id) as unique_members, SUM(p.amount) as total
                 FROM payments p
-                WHERE 1=1";
+                LEFT JOIN subscriptions s ON p.subscription_id = s.id
+                LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+                WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+                  AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')";
         if (!empty($startDate) && !empty($endDate)) {
             $sql .= " AND p.payment_date BETWEEN :start_date AND :end_date";
             $params['start_date'] = $startDate;
@@ -248,7 +255,8 @@ if (isset($_GET['export']) && isset($pdo)) {
                 JOIN members m ON m.id = p.member_id 
                 LEFT JOIN subscriptions s ON p.subscription_id = s.id 
                 LEFT JOIN membership_plans plan ON s.plan_id = plan.id 
-                WHERE 1=1";
+                WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+                  AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')";
         if ($payMethod !== 'all') {
             $sql .= " AND p.payment_method = :payment_method";
             $params['payment_method'] = $payMethod;
@@ -284,10 +292,15 @@ if (isset($_GET['export']) && isset($pdo)) {
         }
 
         // Fetch monthly revenues
-        $sql_rev = "SELECT DATE_FORMAT(payment_date, '%Y-%m') as ym, SUM(amount) as total FROM payments WHERE 1=1";
+        $sql_rev = "SELECT DATE_FORMAT(p.payment_date, '%Y-%m') as ym, SUM(p.amount) as total 
+                    FROM payments p 
+                    LEFT JOIN subscriptions s ON p.subscription_id = s.id 
+                    LEFT JOIN membership_plans plan ON s.plan_id = plan.id 
+                    WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+                      AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')";
         $rev_params = [];
         if (!empty($startDate) && !empty($endDate)) {
-            $sql_rev .= " AND payment_date BETWEEN :start_date AND :end_date";
+            $sql_rev .= " AND p.payment_date BETWEEN :start_date AND :end_date";
             $rev_params['start_date'] = $startDate;
             $rev_params['end_date']   = $endDate;
         }
@@ -397,9 +410,13 @@ if (isset($_GET['export']) && isset($pdo)) {
                 GROUP BY member_id
             ) sub_stats ON sub_stats.member_id = m.id
             LEFT JOIN (
-                SELECT member_id, SUM(amount) AS total_spend
-                FROM payments
-                GROUP BY member_id
+                SELECT p.member_id, SUM(p.amount) AS total_spend
+                FROM payments p
+                LEFT JOIN subscriptions s ON p.subscription_id = s.id
+                LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+                WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+                  AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+                GROUP BY p.member_id
             ) pay_stats ON pay_stats.member_id = m.id
             LEFT JOIN (
                 SELECT member_id, COUNT(*) AS total_visits
@@ -1260,7 +1277,15 @@ try {
     // ═════════════════════════════════════════════════════════════════════════
     // 1. GLOBAL KPIS (Filtered by Selected Date Range)
     // ═════════════════════════════════════════════════════════════════════════
-    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) as rev, COUNT(id) as cnt FROM payments WHERE payment_date BETWEEN ? AND ?");
+    $stmt = $pdo->prepare("
+        SELECT COALESCE(SUM(p.amount), 0) as rev, COUNT(p.id) as cnt 
+        FROM payments p
+        LEFT JOIN subscriptions s ON p.subscription_id = s.id
+        LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+        WHERE p.payment_date BETWEEN ? AND ?
+          AND (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+          AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+    ");
     $stmt->execute([$start_date, $end_date]);
     $res = $stmt->fetch();
     $kpis['period_revenue'] = (float)$res['rev'];
@@ -1326,7 +1351,15 @@ try {
         $daily_report['is_single_day'] = ($start_date === $end_date);
     }
 
-    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) as rev, COUNT(id) as txns FROM payments WHERE payment_date BETWEEN ? AND ?");
+    $stmt = $pdo->prepare("
+        SELECT COALESCE(SUM(p.amount), 0) as rev, COUNT(p.id) as txns 
+        FROM payments p
+        LEFT JOIN subscriptions s ON p.subscription_id = s.id
+        LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+        WHERE p.payment_date BETWEEN ? AND ?
+          AND (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+          AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+    ");
     $stmt->execute([$rep1_start, $rep1_end]);
     $d_sum = $stmt->fetch();
     $daily_report['revenue'] = (float)$d_sum['rev'];
@@ -1339,6 +1372,8 @@ try {
          LEFT JOIN subscriptions s ON p.subscription_id = s.id
          LEFT JOIN membership_plans plan ON s.plan_id = plan.id
          WHERE p.payment_date BETWEEN ? AND ?
+           AND (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+           AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
          GROUP BY plan.id, plan.name ORDER BY revenue DESC"
     );
     $stmt->execute([$rep1_start, $rep1_end]);
@@ -1346,9 +1381,14 @@ try {
 
     // Method breakdown for selected day or period
     $stmt = $pdo->prepare(
-        "SELECT payment_method, COUNT(id) as count, SUM(amount) as revenue
-         FROM payments WHERE payment_date BETWEEN ? AND ?
-         GROUP BY payment_method ORDER BY revenue DESC"
+        "SELECT p.payment_method, COUNT(p.id) as count, SUM(p.amount) as revenue
+         FROM payments p
+         LEFT JOIN subscriptions s ON p.subscription_id = s.id
+         LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+         WHERE p.payment_date BETWEEN ? AND ?
+           AND (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+           AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+         GROUP BY p.payment_method ORDER BY revenue DESC"
     );
     $stmt->execute([$rep1_start, $rep1_end]);
     $daily_report['method_breakdown'] = $stmt->fetchAll();
@@ -1365,6 +1405,8 @@ try {
          LEFT JOIN membership_plans plan ON s.plan_id = plan.id
          LEFT JOIN users u ON u.id = p.verified_by
          WHERE p.payment_date BETWEEN ? AND ?
+           AND (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+           AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
          ORDER BY p.payment_date DESC, p.id DESC"
     );
     $stmt->execute([$rep1_start, $rep1_end]);
@@ -1389,12 +1431,28 @@ try {
         $day_name = date('D', strtotime($c_date));
 
         // Current week day revenue
-        $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payment_date = ?");
+        $stmt = $pdo->prepare("
+            SELECT COALESCE(SUM(p.amount), 0) 
+            FROM payments p
+            LEFT JOIN subscriptions s ON p.subscription_id = s.id
+            LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+            WHERE p.payment_date = ?
+              AND (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+              AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+        ");
         $stmt->execute([$c_date]);
         $c_rev = (float)$stmt->fetchColumn();
 
         // Prev week day revenue
-        $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payment_date = ?");
+        $stmt = $pdo->prepare("
+            SELECT COALESCE(SUM(p.amount), 0) 
+            FROM payments p
+            LEFT JOIN subscriptions s ON p.subscription_id = s.id
+            LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+            WHERE p.payment_date = ?
+              AND (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+              AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+        ");
         $stmt->execute([$p_date]);
         $p_rev = (float)$stmt->fetchColumn();
 
@@ -1426,13 +1484,17 @@ try {
     // 4. REPORT 3: MONTHLY REVENUE REPORT
     // ═════════════════════════════════════════════════════════════════════════
     $stmt = $pdo->query(
-        "SELECT DATE_FORMAT(payment_date, '%b %Y') as m_label, 
-                YEAR(payment_date) as y, MONTH(payment_date) as m,
-                SUM(amount) as total, COUNT(id) as txns
-         FROM payments
-         WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH)
-         GROUP BY DATE_FORMAT(payment_date, '%b %Y'), YEAR(payment_date), MONTH(payment_date)
-         ORDER BY YEAR(payment_date) ASC, MONTH(payment_date) ASC"
+        "SELECT DATE_FORMAT(p.payment_date, '%b %Y') as m_label, 
+                YEAR(p.payment_date) as y, MONTH(p.payment_date) as m,
+                SUM(p.amount) as total, COUNT(p.id) as txns
+         FROM payments p
+         LEFT JOIN subscriptions s ON p.subscription_id = s.id
+         LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+         WHERE p.payment_date >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH)
+           AND (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+           AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+         GROUP BY DATE_FORMAT(p.payment_date, '%b %Y'), YEAR(p.payment_date), MONTH(p.payment_date)
+         ORDER BY YEAR(p.payment_date) ASC, MONTH(p.payment_date) ASC"
     );
     $monthly_rows = $stmt->fetchAll();
     foreach ($monthly_rows as $mr) {
@@ -1446,7 +1508,15 @@ try {
     $prev_m_start = date('Y-m-01', strtotime('first day of last month'));
     $prev_m_end   = date('Y-m-t', strtotime('last day of last month'));
 
-    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payment_date BETWEEN ? AND ?");
+    $stmt = $pdo->prepare("
+        SELECT COALESCE(SUM(p.amount), 0) 
+        FROM payments p
+        LEFT JOIN subscriptions s ON p.subscription_id = s.id
+        LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+        WHERE p.payment_date BETWEEN ? AND ?
+          AND (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+          AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+    ");
     $stmt->execute([$cur_m_start, $cur_m_end]);
     $monthly_report['current_month_rev'] = (float)$stmt->fetchColumn();
 
@@ -1466,16 +1536,22 @@ try {
          LEFT JOIN subscriptions s ON p.subscription_id = s.id
          LEFT JOIN membership_plans plan ON s.plan_id = plan.id
          WHERE p.payment_date BETWEEN ? AND ?
+           AND (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+           AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
          GROUP BY plan.id, plan.name ORDER BY total DESC"
     );
     $stmt->execute([$start_date, $end_date]);
     $monthly_report['plan_dist'] = $stmt->fetchAll();
 
     $stmt = $pdo->prepare(
-        "SELECT payment_method as name, SUM(amount) as total, COUNT(id) as count
-         FROM payments
-         WHERE payment_date BETWEEN ? AND ?
-         GROUP BY payment_method ORDER BY total DESC"
+        "SELECT p.payment_method as name, SUM(p.amount) as total, COUNT(p.id) as count
+         FROM payments p
+         LEFT JOIN subscriptions s ON p.subscription_id = s.id
+         LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+         WHERE p.payment_date BETWEEN ? AND ?
+           AND (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+           AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+         GROUP BY p.payment_method ORDER BY total DESC"
     );
     $stmt->execute([$start_date, $end_date]);
     $monthly_report['method_dist'] = $stmt->fetchAll();
@@ -1503,10 +1579,14 @@ try {
 
     // Populate revenue for 12 months
     $stmt_fin_rev = $pdo->query("
-        SELECT DATE_FORMAT(payment_date, '%Y-%m') as ym, SUM(amount) as total
-        FROM payments
-        WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH)
-        GROUP BY DATE_FORMAT(payment_date, '%Y-%m')
+        SELECT DATE_FORMAT(p.payment_date, '%Y-%m') as ym, SUM(p.amount) as total
+        FROM payments p
+        LEFT JOIN subscriptions s ON p.subscription_id = s.id
+        LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+        WHERE p.payment_date >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH)
+          AND (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+          AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+        GROUP BY DATE_FORMAT(p.payment_date, '%Y-%m')
     ");
     foreach ($stmt_fin_rev->fetchAll(PDO::FETCH_ASSOC) as $r) {
         if (isset($fin_months[$r['ym']])) {
@@ -1898,9 +1978,13 @@ try {
             GROUP BY member_id
         ) sub_stats ON sub_stats.member_id = m.id
         LEFT JOIN (
-            SELECT member_id, SUM(amount) AS total_spend
-            FROM payments
-            GROUP BY member_id
+            SELECT p.member_id, SUM(p.amount) AS total_spend
+            FROM payments p
+            LEFT JOIN subscriptions s ON p.subscription_id = s.id
+            LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+            WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+              AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+            GROUP BY p.member_id
         ) pay_stats ON pay_stats.member_id = m.id
         LEFT JOIN (
             SELECT member_id, COUNT(*) AS total_visits

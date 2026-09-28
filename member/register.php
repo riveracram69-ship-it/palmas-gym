@@ -184,8 +184,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $password_hash = password_hash($password, PASSWORD_DEFAULT);
             $payment_method = trim($_POST['payment_method'] ?? 'GCash');
             $is_online_instant = in_array(strtolower($payment_method), ['gcash', 'maya', 'paymaya', 'online']);
-            $initial_acc_status = $is_online_instant ? 'Approved' : 'Pending';
-            $initial_status     = $is_online_instant ? 'Active' : 'Inactive';
+
+            // AUDIT-001 FIX: All web-portal registrations start as Pending/Inactive.
+            // Creating a checkout session is NOT proof of payment.
+            // Activation (Approved/Active) only occurs after the payment gateway confirms
+            // payment via webhook (api/payment_webhook.php) or on-demand verification
+            // in api/check_status.php — both enforce database locking and idempotency.
+            $initial_acc_status = 'Pending';
+            $initial_status     = 'Inactive';
 
             $stmt = $pdo->prepare("
                 INSERT INTO members (
@@ -193,7 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     house_street, barangay, municipality, province, zip_code, address,
                     dob, age, gender, photo, account_status, status, selected_plan_id, password_hash, approved_at, created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " . ($is_online_instant ? "NOW()" : "NULL") . ", NOW())
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NOW())
             ");
             $stmt->execute([
                 $membership_id, $first_name, $middle_name ?: null, $last_name, $extension ?: null, $full_name, $email, $contact_number,

@@ -35,7 +35,8 @@ try {
             LEFT JOIN subscriptions s ON p.subscription_id = s.id
             LEFT JOIN membership_plans plan ON s.plan_id = plan.id
             LEFT JOIN users u ON p.verified_by = u.id
-            WHERE 1=1
+            WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+              AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
         ";
         $params = [];
 
@@ -61,14 +62,18 @@ try {
         $payments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
-        // Fetch KPI stats
+        // Fetch KPI stats (excluding developer test promo plans)
         $stats_stmt = $pdo->query("
             SELECT 
-                SUM(amount) as total,
-                SUM(CASE WHEN payment_method = 'GCash' THEN amount ELSE 0 END) as gcash,
-                SUM(CASE WHEN payment_method = 'Maya' THEN amount ELSE 0 END) as maya,
-                SUM(CASE WHEN payment_method = 'Cash' THEN amount ELSE 0 END) as cash
-            FROM payments
+                SUM(p.amount) as total,
+                SUM(CASE WHEN p.payment_method = 'GCash' THEN p.amount ELSE 0 END) as gcash,
+                SUM(CASE WHEN p.payment_method = 'Maya' THEN p.amount ELSE 0 END) as maya,
+                SUM(CASE WHEN p.payment_method = 'Cash' THEN p.amount ELSE 0 END) as cash
+            FROM payments p
+            LEFT JOIN subscriptions s ON p.subscription_id = s.id
+            LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+            WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+              AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
         ")->fetch(PDO::FETCH_ASSOC);
 
         $total_revenue = floatval($stats_stmt['total'] ?? 0);

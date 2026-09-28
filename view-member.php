@@ -90,8 +90,8 @@ document.addEventListener('DOMContentLoaded', function() {
     <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
         <a href="renew-member.php?id=<?php echo $id; ?>" class="btn btn-outline" style="color:var(--accent); border-color:var(--accent-border); background:var(--accent-dim); text-decoration:none; display:inline-flex; align-items:center; gap:0.5rem;"><i class="fas fa-rotate-right"></i> Renew Plan</a>
         <button class="btn btn-primary" onclick="showIDModal()"><i class="fas fa-id-card"></i> View E-ID Card</button>
-        <a href="edit-member.php?id=<?php echo $id; ?>" class="btn btn-outline">Edit</a>
-        <a href="members.php" class="btn btn-outline">Back</a>
+        <a href="edit-member.php?id=<?php echo $id; ?>" class="btn btn-outline"><i class="fas fa-pen"></i> Edit</a>
+        <a href="members.php" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Back</a>
     </div>
 </div>
 

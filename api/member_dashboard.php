@@ -156,10 +156,19 @@ try {
     $member['photo'] = $member['photo'] ?: ($member['google_picture'] ?? null);
 
     // ── DYNAMIC HMAC ROTATING QR TOKEN (15-second window) ──
+    // AUDIT-003 FIX: Fail closed when QR_SECRET_KEY is not configured.
+    // Do NOT fall back to a hardcoded secret — that would allow HMAC forgery.
     $time_slot  = floor(time() / 15);
-    $secret_key = defined('QR_SECRET_KEY') ? QR_SECRET_KEY : 'palmas_secret_key_987';
-    $signature  = hash_hmac('sha256', $member['membership_id'] . '|' . $time_slot, $secret_key);
-    $qr_token   = $member['membership_id'] . ':' . $time_slot . ':' . substr($signature, 0, 16);
+    $qr_secret  = (defined('QR_SECRET_KEY') && is_string(QR_SECRET_KEY) && strlen(QR_SECRET_KEY) >= 20)
+        ? QR_SECRET_KEY
+        : null;
+    if ($qr_secret !== null) {
+        $signature = hash_hmac('sha256', $member['membership_id'] . '|' . $time_slot, $qr_secret);
+        $qr_token  = $member['membership_id'] . ':' . $time_slot . ':' . substr($signature, 0, 16);
+    } else {
+        // QR_SECRET_KEY not configured — suppress token; mobile app will call get_qr_token.php
+        $qr_token = null;
+    }
 
     // ── QUERY 2: Attendance (Safe Fallback) ──
     $attendance = [];

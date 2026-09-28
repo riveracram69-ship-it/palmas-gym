@@ -52,9 +52,7 @@ try {
             <a href="pending-approvals.php" class="nav-link <?php echo (nav_active('pending-approvals.php') || nav_active('pending-registrations.php') || nav_active('renewal-requests.php')) ? 'active' : ''; ?>">
                 <i class="fas fa-clipboard-check"></i> Pending Approvals
                 <?php $total_sidebar_pending = $pending_regs_count + $pending_renewals_count; ?>
-                <?php if ($total_sidebar_pending > 0): ?>
-                    <span class="badge badge-warning" style="margin-left:auto; font-size:0.72rem; padding:0.15rem 0.55rem; border-radius:var(--radius-full);"><?php echo $total_sidebar_pending; ?></span>
-                <?php endif; ?>
+                <span id="sidebar-pending-badge" class="badge badge-warning" style="margin-left:auto; font-size:0.72rem; padding:0.15rem 0.55rem; border-radius:var(--radius-full); <?php echo ($total_sidebar_pending > 0) ? '' : 'display:none;'; ?>"><?php echo $total_sidebar_pending; ?></span>
             </a>
         </li>
     </ul>

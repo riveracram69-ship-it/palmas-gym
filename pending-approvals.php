@@ -51,18 +51,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 if ($is_approve) {
                     $plan_id = intval($pending_member['selected_plan_id'] ?? 0);
-                    $plan_info = null;
+
+                    // AUDIT-022: Prevent silent fallback to cheapest/first plan.
+                    // Registration approval must stop safely if no valid, active plan is assigned.
                     if ($plan_id <= 0) {
-                        $first_plan = $pdo->query("SELECT id, name, duration_months, duration_minutes, price, is_test_promo, plan_category FROM membership_plans WHERE is_active = 1 ORDER BY price ASC LIMIT 1")->fetch();
-                        if ($first_plan) {
-                            $plan_id = (int)$first_plan['id'];
-                            $plan_info = $first_plan;
-                        }
+                        $pdo->rollBack();
+                        $error = 'Approval stopped: No membership plan was selected for this registration. Please assign a valid plan before approving.';
                     } else {
-                        $p_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes, price, is_test_promo, plan_category FROM membership_plans WHERE id = ?");
+                        $p_stmt = $pdo->prepare("SELECT id, name, duration_months, duration_minutes, price, is_test_promo, plan_category, is_active FROM membership_plans WHERE id = ?");
                         $p_stmt->execute([$plan_id]);
                         $plan_info = $p_stmt->fetch(PDO::FETCH_ASSOC);
-                    }
+
+                        if (!$plan_info) {
+                            $pdo->rollBack();
+                            $error = "Approval stopped: Selected membership plan (ID #{$plan_id}) was not found in the system catalog.";
+                        } elseif ((int)($plan_info['is_active'] ?? 0) !== 1) {
+                            $pdo->rollBack();
+                            $error = "Approval stopped: Selected membership plan '{$plan_info['name']}' is currently inactive or retired. Please select an active plan before approving.";
+                        } else {
 
                     $duration_minutes = intval($plan_info['duration_minutes'] ?? 0);
                     $duration_months  = intval($plan_info['duration_months'] ?? 0);
@@ -262,6 +268,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pdo->commit();
                     $message = "Member <strong>" . htmlspecialchars($pending_member['full_name']) . "</strong> ({$pending_member['membership_id']}) has been successfully approved and activated!";
 
+                        }
+                    }
+
                 } else {
                     // Reject Registration
                     if (empty($rejection_reason)) {
@@ -318,7 +327,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $pdo->prepare("
                 SELECT r.*, m.full_name, m.email, m.membership_id, m.status as member_status, m.annual_membership_expiry,
                        p.name as plan_name, p.price as plan_price, p.duration_months, p.duration_minutes, p.is_test_promo,
-                       p.plan_category, p.floor_access
+                       p.plan_category, p.floor_access, p.is_active
                 FROM renewal_requests r
                 JOIN members m ON r.member_id = m.id
                 JOIN membership_plans p ON r.plan_id = p.id
@@ -333,6 +342,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Renewal request not found or has already been processed.';
             } else {
                 if ($is_approve_renew) {
+                    if ((int)($req['is_active'] ?? 0) !== 1) {
+                        $pdo->rollBack();
+                        $error = "Approval stopped: Renewal plan '{$req['plan_name']}' is currently inactive or retired. Please update the request to an active plan before approving.";
+                    } else {
                     $cur_sub_stmt = $pdo->prepare("
                         SELECT expiry_date FROM subscriptions 
                         WHERE member_id = ? AND expiry_date > NOW() 
@@ -468,6 +481,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             try { send_email_notification($req['email'], $email_subject, $email_title, $email_body); } catch (Throwable $emEx) {}
                         }
                         $message = 'Renewal approved for <strong>' . htmlspecialchars($req['full_name']) . '</strong>. Active until ' . date('M d, Y', strtotime($expiry_date)) . '.';
+                    }
                     }
                 } else {
                     // Reject Renewal

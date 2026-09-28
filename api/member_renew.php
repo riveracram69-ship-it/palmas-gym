@@ -129,26 +129,18 @@ try {
         }
     }
 
-    // 3. For GCash and Maya: Instant auto-activation without waiting for staff approval!
-    if (in_array($payment_method, ['GCash', 'Maya'])) {
-        require_once __DIR__ . '/../config/payment.php';
-        $actRes = process_automated_subscription_activation(
-            $pdo,
-            $member_id,
-            $plan_id,
-            $plan['price'],
-            $payment_method,
-            $reference_no
-        );
-
-        if ($actRes && !empty($actRes['success'])) {
-            echo json_encode([
-                'success'   => true,
-                'is_active' => true,
-                'message'   => 'Renewal complete! Your ' . htmlspecialchars($plan['name']) . ' pass has been instantly activated via ' . $payment_method . '.'
-            ]);
-            exit;
+    // SEC-REN-001: Online renewals (GCash, Maya, etc.) must NOT auto-activate unverified.
+    // They must follow the established payment gateway checkout flow where payment remains PENDING
+    // until verified by PayMongo webhook or check_status verification.
+    if (in_array(strtolower($payment_method), ['gcash', 'maya', 'paymaya', 'online', 'qr ph', 'credit card', 'bank transfer'])) {
+        if (!isset($_SESSION['member_id']) && !empty($member_id)) {
+            if (session_status() === PHP_SESSION_NONE) {
+                @session_start();
+            }
+            $_SESSION['member_id'] = $member_id;
         }
+        require_once __DIR__ . '/payments/create.php';
+        exit;
     }
 
     // 4. For Cash (Front Desk): Check for existing pending request or insert new pending request

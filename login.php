@@ -17,7 +17,9 @@ if (isset($_SESSION['user_id'])) {
 }
 
 $error = '';
-$MASTER_PASSKEY = $app_settings['admin_registration_passkey'] ?? getenv('ADMIN_REGISTRATION_PASSKEY') ?: 'palmas2026';
+// AUDIT-004 FIX: Only the configured master passkey is accepted. No hardcoded fallback.
+// If admin_registration_passkey is not set in system_settings or environment, registration is disabled.
+$MASTER_PASSKEY = trim($app_settings['admin_registration_passkey'] ?? (defined('ADMIN_REGISTRATION_PASSKEY') ? ADMIN_REGISTRATION_PASSKEY : (getenv('ADMIN_REGISTRATION_PASSKEY') ?: '')));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
@@ -42,7 +44,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = $rate_check['message'];
         } elseif (empty($passkey)) {
             $error = 'Please enter the Master Passkey to authorize account creation.';
-        } elseif ($passkey !== $MASTER_PASSKEY && $passkey !== 'palmas2026' && $passkey !== 'PALMAS_SECRET_2026') {
+        } elseif (empty($MASTER_PASSKEY)) {
+            // AUDIT-004 FIX: If no master passkey is configured, registration is disabled.
+            // Fail closed — do NOT accept any input when the system has no configured passkey.
+            record_failed_login($pdo, $email ?: 'global_reg', 'admin_staff_registration');
+            $error = 'Admin registration is not available. Please contact the system administrator.';
+        } elseif (!hash_equals($MASTER_PASSKEY, $passkey)) {
+            // AUDIT-004 FIX: Timing-safe comparison using hash_equals.
+            // Only the configured master passkey is accepted — no hardcoded backdoors.
             record_failed_login($pdo, $email ?: 'global_reg', 'admin_staff_registration');
             $error = 'Invalid Master Passkey. Access denied.';
         } elseif (empty($name)) {

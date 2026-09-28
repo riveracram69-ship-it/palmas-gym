@@ -94,26 +94,12 @@ try {
         }
     }
 
-    // Instant Auto-Activation for GCash and Maya: No staff approval needed!
-    if (in_array($payment_method, ['GCash', 'Maya'])) {
-        if (empty($reference_no)) {
-            $reference_no = 'REN-' . strtoupper(substr($payment_method, 0, 2)) . '-' . strtoupper(bin2hex(random_bytes(3)));
-        }
-        $actRes = process_automated_subscription_activation($pdo, $member['id'], $plan_id, $plan['price'], $payment_method, $reference_no);
-        if ($actRes && !empty($actRes['success'])) {
-            echo json_encode([
-                'success'   => true,
-                'is_active' => true,
-                'message'   => 'Renewal complete! Your ' . htmlspecialchars($plan['name']) . ' pass has been instantly activated via ' . $payment_method . '.'
-            ]);
-            exit;
-        } else {
-            echo json_encode([
-                'success' => false,
-                'message' => $actRes['message'] ?? 'Failed to activate subscription.'
-            ]);
-            exit;
-        }
+    // SEC-REN-001: Online renewals (GCash, Maya, etc.) must NOT auto-activate unverified.
+    // They must follow the established payment gateway checkout flow where payment remains PENDING
+    // until verified by PayMongo webhook or check_status verification.
+    if (in_array(strtolower($payment_method), ['gcash', 'maya', 'paymaya', 'online', 'qr ph', 'credit card', 'bank transfer'])) {
+        require_once __DIR__ . '/../api/payments/create.php';
+        exit;
     }
 
     // Otherwise, Traditional Cash / Front Desk pending request

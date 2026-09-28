@@ -101,8 +101,9 @@ try {
             "SELECT p.*, COUNT(CASE WHEN s.expiry_date >= CURDATE() THEN 1 END) AS subscriber_count 
              FROM membership_plans p 
              LEFT JOIN subscriptions s ON s.plan_id = p.id
+             WHERE p.is_active = 1
              GROUP BY p.id
-             ORDER BY p.is_active DESC, p.id ASC"
+             ORDER BY p.id ASC"
         )->fetchAll(PDO::FETCH_ASSOC);
         foreach ($rows as $r) {
             $cat = $r['plan_category'] ?? 'legacy';

@@ -130,6 +130,15 @@ if (!function_exists('sync_attendance_auto_checkout')) {
      *    is closed at gym closing (22:00:00) or +2.5 hours from time_in.
      * 2. Today: Any check-in from today exceeding 4 hours workout duration is auto-closed.
      * 
+     * RATIONALE (AUDIT-008 Intentional Gym Rule):
+     * - The 4-hour (240 min) threshold provides a safety buffer so members doing long,
+     *   legitimate workouts (2-3+ hours) remain listed as 'Currently Inside' on the live
+     *   reception display without premature auto-checkout.
+     * - When a member forgets to scan out upon departure, their true checkout time is unknown.
+     *   Recording 4+ hours would artificially distort average workout duration metrics and
+     *   utilization reports. Gym policy caps forgotten checkouts at the standard estimated
+     *   session of 2.5 hours (or gym closing at 22:00:00).
+     * 
      * @param PDO $pdo
      * @return int Number of sessions auto-closed
      */
@@ -153,7 +162,10 @@ if (!function_exists('sync_attendance_auto_checkout')) {
             // 2. Auto-close today's sessions exceeding 4 hours workout duration
             $stmt2 = $pdo->prepare("
                 UPDATE attendance
-                SET time_out = ADDTIME(time_in, '02:30:00')
+                SET time_out = CASE 
+                    WHEN ADDTIME(time_in, '02:30:00') > '22:00:00' THEN '22:00:00'
+                    ELSE ADDTIME(time_in, '02:30:00')
+                END
                 WHERE (time_out IS NULL OR TRIM(time_out) = '' OR time_out = '00:00:00')
                   AND date = CURRENT_DATE()
                   AND TIMESTAMPDIFF(MINUTE, time_in, NOW()) >= 240

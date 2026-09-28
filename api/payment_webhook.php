@@ -55,7 +55,9 @@ if (!$signatureValid && in_array($paymentMode, ['demo', 'test'], true) && $isDem
     $signatureValid = true;
 }
 
-if (!$signatureValid && $paymentMode !== 'demo') {
+// Normal anonymous unsigned requests must NOT activate anything in any mode.
+// Only valid PayMongo signatures (live/test) or explicit authorized demo simulation headers (demo/test) are accepted.
+if (!$signatureValid) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Webhook signature verification failed']);
     exit;

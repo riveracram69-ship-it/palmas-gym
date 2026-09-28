@@ -115,7 +115,18 @@ function process_automated_subscription_activation($pdo, $member_id, $plan_id, $
         // IMPORTANT: daily passes (duration_minutes = 1440) are NOT test transactions even though they use duration_minutes.
         $is_daily_pass = ($duration_minutes === 1440);
         $is_minute_promo = ($duration_minutes > 0 && !$is_daily_pass);
-        $is_test = ($is_test_promo === 1 || $is_minute_promo || is_payment_demo() || is_payment_test() || (defined('PAYMENT_MODE') && in_array(PAYMENT_MODE, ['demo', 'test']))) ? 1 : 0;
+        $is_developer_test_plan = ($is_test_promo === 1 || $is_minute_promo || $plan_category === 'test_promo');
+
+        // AUDIT-006 REMEDIATION:
+        // Distinguish physical Cash from digital payment gateway sandbox processing.
+        // A physical Cash payment for an official/non-test plan is legitimate Cash revenue
+        // regardless of whether PAYMENT_MODE is demo or live.
+        // Digital gateway transactions (GCash, Maya, etc.) in demo/test mode retain their sandbox classification.
+        $upper_m = strtoupper($payment_method);
+        $is_cash_payment = (strpos($upper_m, 'CASH') !== false && strpos($upper_m, 'GCASH') === false);
+        $is_digital_sandbox = (is_payment_demo() || is_payment_test() || (defined('PAYMENT_MODE') && in_array(PAYMENT_MODE, ['demo', 'test'])));
+
+        $is_test = ($is_developer_test_plan || (!$is_cash_payment && $is_digital_sandbox)) ? 1 : 0;
 
         // 3. Check Prior Subscriptions to determine if this is First Activation or Renewal
         $prior_stmt = $pdo->prepare("SELECT COUNT(*) FROM subscriptions WHERE member_id = ?");
