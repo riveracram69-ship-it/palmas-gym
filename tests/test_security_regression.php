@@ -401,16 +401,18 @@ try {
         ->execute([$b2_att_mem_id, "att.{$b2_att_mem_id}@example.com"]);
     $b2_att_mid = (int)$pdo->lastInsertId();
 
-    // Session A: 2 hours ago (120 min) — should NOT auto-close
-    $time_2h_ago = date('H:i:s', strtotime('-120 minutes'));
+    // Session A: Recent session (< 4 hours) — should NOT auto-close
+    // Uses max() to guarantee time is on CURRENT_DATE() even if run in early morning hours
+    $time_recent = date('H:i:s', max(strtotime('today 00:01:00'), strtotime('-30 minutes')));
     $pdo->prepare("INSERT INTO attendance (member_id, date, time_in, time_out) VALUES (?, CURDATE(), ?, NULL)")
-        ->execute([$b2_att_mid, $time_2h_ago]);
+        ->execute([$b2_att_mid, $time_recent]);
     $att_row_2h = (int)$pdo->lastInsertId();
 
-    // Session B: 4.5 hours ago (270 min) — SHOULD auto-close to time_in + 2.5 hours
+    // Session B: 4.5 hours ago (270 min) with calendar date — SHOULD auto-close to time_in + 2.5 hours
+    $date_4h_ago = date('Y-m-d', strtotime('-270 minutes'));
     $time_4h_ago = date('H:i:s', strtotime('-270 minutes'));
-    $pdo->prepare("INSERT INTO attendance (member_id, date, time_in, time_out) VALUES (?, CURDATE(), ?, NULL)")
-        ->execute([$b2_att_mid, $time_4h_ago]);
+    $pdo->prepare("INSERT INTO attendance (member_id, date, time_in, time_out) VALUES (?, ?, ?, NULL)")
+        ->execute([$b2_att_mid, $date_4h_ago, $time_4h_ago]);
     $att_row_4h = (int)$pdo->lastInsertId();
 
     sync_attendance_auto_checkout($pdo);

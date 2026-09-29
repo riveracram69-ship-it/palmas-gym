@@ -128,8 +128,11 @@ if ($age === null || $age < 15 || $age > 120) {
 }
 
 // Address validation
-if (empty($address) && empty($municipality)) {
-    echo json_encode(['success' => false, 'message' => 'Home address is required.']);
+if (empty($municipality) && empty($address)) {
+    echo json_encode(['success' => false, 'message' => 'Home address details are required.']);
+    exit;
+} elseif (isset($data['region']) && (empty($municipality) || empty($province) || empty($barangay))) {
+    echo json_encode(['success' => false, 'message' => 'Home address details (Province, City/Municipality, and Barangay) are required.']);
     exit;
 }
 

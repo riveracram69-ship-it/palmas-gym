@@ -203,7 +203,7 @@ try {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   HTML5-QRCODE CAMERA SELECTOR & SCANNER CONTROLS OVERHAUL
+   HTML5-QRCODE CAMERA SELECTOR & SCANNER CONTROLS — REFINED POLISH
    ══════════════════════════════════════════════════════════════════ */
 #reader {
     border: none !important;
@@ -223,85 +223,144 @@ try {
     border-bottom: 1px solid rgba(82, 183, 136, 0.25) !important;
 }
 
+/* Main Controls Bar: Center-aligned flex container */
 #reader__dashboard_section_csr {
     display: flex !important;
     flex-wrap: wrap !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 0.65rem !important;
-    margin: 0 !important;
+    gap: 0.75rem !important;
+    margin: 0 auto !important;
+    padding: 0.2rem 0 !important;
     text-align: center !important;
-}
-
-#reader__dashboard_section_csr > div {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 0.65rem !important;
-    flex-wrap: wrap !important;
-    justify-content: center !important;
-    margin: 0 !important;
     max-width: 100% !important;
 }
 
-/* Camera Selector Dropdown */
+/* Action Buttons Wrapper (holds Start & Stop Scanning) */
+#reader__dashboard_section_csr > span:last-of-type,
+#reader__dashboard_section_csr > span:has(button) {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.65rem !important;
+    flex-wrap: wrap !important;
+    margin: 0 !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   SAFE UI SUPPRESSION: HIDE UNNECESSARY LIBRARY-GENERATED ELEMENTS
+   ────────────────────────────────────────────────────────────────── */
+
+/* 1. Hide faint/duplicate "Select Camera (X)" text label */
+#reader__dashboard_section_csr > span:first-of-type,
+#reader__dashboard_section_csr > span:not(:has(button)) {
+    display: none !important;
+}
+
+/* 2. Hide zoom range slider, "1x zoom" text, and zoom container */
+#html5-qrcode-input-range-zoom,
+#reader input[type="range"],
+#reader input[type="range"] + span,
+#reader span[id*="zoom"],
+#reader div[id*="zoom"],
+#reader__dashboard_section_csr > div:has(input[type="range"]),
+#reader__dashboard_section_csr > div:has(#html5-qrcode-input-range-zoom) {
+    display: none !important;
+}
+
+/* 3. Hide "Scan an Image File" / file scanning switch, drop UI, & helpers */
+#html5-qrcode-anchor-scan-type-change,
+#reader__dashboard_section_swaplink,
+#reader__dashboard_section_fsr,
+#html5-qrcode-button-file-selection,
+#html5-qrcode-private-filescan-input,
+#reader input[type="file"],
+#reader label[for*="file"],
+#reader div:has(> #html5-qrcode-anchor-scan-type-change) {
+    display: none !important;
+}
+
+/* 4. Hide external info dialog / icons / promo links */
+#reader img[alt="Info icon"],
+#reader a[href*="scanapp"],
+#reader a[href*="github"] {
+    display: none !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   CAMERA SELECTOR DROPDOWN (CENTERED, HIGH-CONTRAST, ELLIPSIS)
+   ────────────────────────────────────────────────────────────────── */
 #reader select,
+#html5-qrcode-select-camera,
 #reader__camera_selection {
     appearance: none !important;
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
-    background-color: #173726 !important;
+    background-color: #143523 !important;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2352b788' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
     background-repeat: no-repeat !important;
     background-position: right 0.85rem center !important;
     background-size: 14px !important;
-    color: #e2f1e8 !important;
+    color: #ffffff !important;
     font-family: inherit !important;
     font-size: 0.82rem !important;
     font-weight: 600 !important;
     height: 42px !important;
-    line-height: 42px !important;
+    line-height: 40px !important;
     padding: 0 2.5rem 0 1rem !important;
-    border: 1px solid rgba(82, 183, 136, 0.4) !important;
+    border: 1px solid rgba(82, 183, 136, 0.45) !important;
     border-radius: 9px !important;
     outline: none !important;
     cursor: pointer !important;
     min-width: 220px !important;
-    max-width: 100% !important;
+    max-width: 320px !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
     transition: all 0.2s ease !important;
     box-sizing: border-box !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    vertical-align: middle !important;
 }
 
 #reader select:hover,
+#html5-qrcode-select-camera:hover,
 #reader__camera_selection:hover {
     border-color: #52b788 !important;
-    background-color: #1c422f !important;
+    background-color: #1a442d !important;
 }
 
 #reader select:focus,
+#html5-qrcode-select-camera:focus,
 #reader__camera_selection:focus {
     border-color: #52b788 !important;
     box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.25) !important;
 }
 
+#reader select:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+}
+
 #reader select option {
-    background: #173726 !important;
+    background: #0f2419 !important;
     color: #e2f1e8 !important;
     padding: 10px !important;
 }
 
-/* Scanner Action Buttons */
+/* ──────────────────────────────────────────────────────────────────
+   SCANNER ACTION BUTTONS (START & STOP SCANNING)
+   ────────────────────────────────────────────────────────────────── */
 #reader button,
 #html5-qrcode-button-camera-start,
 #html5-qrcode-button-camera-stop,
-#html5-qrcode-button-camera-permission,
-#html5-qrcode-button-file-selection {
+#html5-qrcode-button-camera-permission {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     gap: 7px !important;
     height: 42px !important;
-    padding: 0 1.35rem !important;
+    padding: 0 1.25rem !important;
     font-family: inherit !important;
     font-size: 0.84rem !important;
     font-weight: 700 !important;
@@ -313,9 +372,10 @@ try {
     border: none !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
     box-sizing: border-box !important;
+    vertical-align: middle !important;
 }
 
-/* Start Scanning / Request Permission (Primary Admin Action) */
+/* Start Scanning / Request Permission (Palma Green Identity) */
 #reader button,
 #html5-qrcode-button-camera-start,
 #html5-qrcode-button-camera-permission {
@@ -324,30 +384,30 @@ try {
     border: 1px solid rgba(82, 183, 136, 0.5) !important;
 }
 
-#reader button:hover,
-#html5-qrcode-button-camera-start:hover,
-#html5-qrcode-button-camera-permission:hover {
+#reader button:not(:disabled):hover,
+#html5-qrcode-button-camera-start:not(:disabled):hover,
+#html5-qrcode-button-camera-permission:not(:disabled):hover {
     background: linear-gradient(135deg, #388261 0%, #22563f 100%) !important;
     border-color: #52b788 !important;
     box-shadow: 0 4px 14px rgba(45, 106, 79, 0.5) !important;
     transform: translateY(-1px) !important;
 }
 
-#reader button:active,
-#html5-qrcode-button-camera-start:active,
-#html5-qrcode-button-camera-permission:active {
+#reader button:not(:disabled):active,
+#html5-qrcode-button-camera-start:not(:disabled):active,
+#html5-qrcode-button-camera-permission:not(:disabled):active {
     transform: translateY(0) !important;
     box-shadow: 0 1px 4px rgba(45, 106, 79, 0.4) !important;
 }
 
-/* Stop Scanning Button (Warning / Secondary Action) */
+/* Stop Scanning Button (Warning / Destructive Red Action) */
 #html5-qrcode-button-camera-stop {
     background: rgba(239, 68, 68, 0.18) !important;
     color: #fca5a5 !important;
     border: 1px solid rgba(239, 68, 68, 0.4) !important;
 }
 
-#html5-qrcode-button-camera-stop:hover {
+#html5-qrcode-button-camera-stop:not(:disabled):hover {
     background: #ef4444 !important;
     color: #ffffff !important;
     border-color: #dc2626 !important;
@@ -355,7 +415,27 @@ try {
     transform: translateY(-1px) !important;
 }
 
-/* Camera icon before Start Scanning button */
+#html5-qrcode-button-camera-stop:not(:disabled):active {
+    transform: translateY(0) !important;
+    box-shadow: 0 1px 4px rgba(239, 68, 68, 0.4) !important;
+}
+
+/* Recognizable Disabled Button State (Requirement 8) */
+#reader button:disabled,
+#html5-qrcode-button-camera-stop:disabled,
+#html5-qrcode-button-camera-start:disabled {
+    opacity: 0.38 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    filter: grayscale(50%) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #94a3b8 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Button FontAwesome Icons */
 #html5-qrcode-button-camera-start::before {
     content: "\f030";
     font-family: "Font Awesome 6 Free" !important;
@@ -377,7 +457,9 @@ try {
     font-size: 0.85rem !important;
 }
 
-/* Scan Region (Camera Viewport Frame) */
+/* ──────────────────────────────────────────────────────────────────
+   SCAN REGION & STATUS MESSAGES
+   ────────────────────────────────────────────────────────────────── */
 #reader__scan_region {
     background: #0a1912 !important;
     min-height: 240px !important;
@@ -392,7 +474,6 @@ try {
     object-fit: cover !important;
 }
 
-/* Status text & info messages inside reader */
 #reader__status_span {
     color: #94a3b8 !important;
     font-size: 0.74rem !important;
@@ -410,32 +491,35 @@ try {
     border-radius: 6px !important;
 }
 
-/* Hide library's default info icon image if present */
-#reader img[alt="Info icon"] {
-    display: none !important;
-}
-
-/* Clean swaplink if file scanning switch is visible */
-#reader__dashboard_section_swaplink {
-    color: #52b788 !important;
-    font-size: 0.75rem !important;
-    text-decoration: underline !important;
-    margin-top: 6px !important;
-    display: inline-block !important;
-    font-weight: 600 !important;
-}
-
-@media (max-width: 480px) {
+/* ──────────────────────────────────────────────────────────────────
+   RESPONSIVE COMPACT & MOBILE STACKING (REQUIREMENT 9)
+   ────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+    #reader__dashboard_section_csr {
+        flex-direction: column !important;
+        gap: 0.65rem !important;
+    }
     #reader select,
+    #html5-qrcode-select-camera,
     #reader__camera_selection {
         width: 100% !important;
         min-width: 100% !important;
+        max-width: 100% !important;
+    }
+    #reader__dashboard_section_csr > span:last-of-type,
+    #reader__dashboard_section_csr > span:has(button) {
+        width: 100% !important;
+        display: flex !important;
+        gap: 0.5rem !important;
     }
     #reader button,
     #html5-qrcode-button-camera-start,
     #html5-qrcode-button-camera-stop,
     #html5-qrcode-button-camera-permission {
-        width: 100% !important;
+        flex: 1 !important;
+        width: auto !important;
+        min-width: 0 !important;
+        padding: 0 0.75rem !important;
     }
 }
 </style>

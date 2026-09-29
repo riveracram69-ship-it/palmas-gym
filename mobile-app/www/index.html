@@ -33,6 +33,8 @@
       document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>');
     }
   </script>
+  <!-- PSGC Address Selector (Cascading Region -> Province -> City -> Barangay) -->
+  <script src="assets/js/ph-address-selector.js"></script>
   <!-- Google Sign-In (GSI) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
@@ -438,6 +440,36 @@
 
     .input-field-wrap input::placeholder {
       color: var(--text-muted);
+    }
+
+    .input-field-wrap select {
+      flex: 1;
+      width: 100%;
+      min-width: 0;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238FCFBC' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      padding-right: 28px;
+    }
+
+    .input-field-wrap select:disabled {
+      opacity: 0.45 !important;
+      cursor: not-allowed !important;
+      color: var(--text-muted) !important;
+    }
+
+    .input-field-wrap select option {
+      background: #082119 !important;
+      color: #ffffff !important;
     }
 
     /* ── ENHANCED DATE SELECTOR & CALENDAR MODAL ─────────────────── */
@@ -3017,7 +3049,18 @@
         <div id="reg-step-4" style="display:none;">
           <div style="margin-bottom:16px;">
             <h4 style="color:#fff; font-size:1.1rem; font-weight:800; margin:0 0 4px;">Residential Address</h4>
-            <p style="color:var(--gym-muted); font-size:0.8rem; margin:0;">Select your home province, city/municipality, and barangay.</p>
+            <p style="color:var(--gym-muted); font-size:0.8rem; margin:0;">Select your region, province, city/municipality, and barangay.</p>
+          </div>
+
+          <!-- Region Dropdown -->
+          <div class="form-group">
+            <label>Region *</label>
+            <div class="input-field-wrap">
+              <i class="fa-solid fa-earth-asia" style="color: var(--gym-light); font-size:0.85rem;"></i>
+              <select id="reg-region" style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;">
+                <option value="" style="background:#0b261a; color:#fff;">Select Region ▼</option>
+              </select>
+            </div>
           </div>
 
           <!-- Province Dropdown -->
@@ -3025,22 +3068,8 @@
             <label>Province *</label>
             <div class="input-field-wrap">
               <i class="fa-solid fa-map" style="color: var(--gym-light); font-size:0.85rem;"></i>
-              <select id="reg-province" onchange="handleRegProvinceChange(this.value)" style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;">
-                <option value="Nueva Ecija" selected style="background:#0b261a; color:#fff;">Nueva Ecija (Default)</option>
-                <option value="Metro Manila / NCR" style="background:#0b261a; color:#fff;">Metro Manila / NCR</option>
-                <option value="Aurora" style="background:#0b261a; color:#fff;">Aurora</option>
-                <option value="Bataan" style="background:#0b261a; color:#fff;">Bataan</option>
-                <option value="Bulacan" style="background:#0b261a; color:#fff;">Bulacan</option>
-                <option value="Pampanga" style="background:#0b261a; color:#fff;">Pampanga</option>
-                <option value="Tarlac" style="background:#0b261a; color:#fff;">Tarlac</option>
-                <option value="Zambales" style="background:#0b261a; color:#fff;">Zambales</option>
-                <option value="Pangasinan" style="background:#0b261a; color:#fff;">Pangasinan</option>
-                <option value="Batangas" style="background:#0b261a; color:#fff;">Batangas</option>
-                <option value="Cavite" style="background:#0b261a; color:#fff;">Cavite</option>
-                <option value="Laguna" style="background:#0b261a; color:#fff;">Laguna</option>
-                <option value="Rizal" style="background:#0b261a; color:#fff;">Rizal</option>
-                <option value="Quezon" style="background:#0b261a; color:#fff;">Quezon</option>
-                <option value="OTHER" style="background:#0b261a; color:#fff;">Other Province (Type Manually)</option>
+              <select id="reg-province" disabled style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;">
+                <option value="" style="background:#0b261a; color:#fff;">Select Province ▼</option>
               </select>
             </div>
           </div>
@@ -3058,8 +3087,8 @@
             <label>Municipality / City *</label>
             <div class="input-field-wrap">
               <i class="fa-solid fa-city" style="color: var(--gym-light); font-size:0.85rem;"></i>
-              <select id="reg-municipality" onchange="handleRegMunicipalityChange(this.value)" style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;">
-                <!-- Populated dynamically via JS -->
+              <select id="reg-municipality" disabled style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;">
+                <option value="" style="background:#0b261a; color:#fff;">Select City / Municipality ▼</option>
               </select>
             </div>
           </div>
@@ -3077,8 +3106,8 @@
             <label>Barangay *</label>
             <div class="input-field-wrap" id="reg-barangay-select-wrap">
               <i class="fa-solid fa-map-pin" style="color: var(--gym-light); font-size:0.85rem;"></i>
-              <select id="reg-barangay" onchange="handleRegBarangayChange(this.value)" style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;">
-                <!-- Populated dynamically via JS -->
+              <select id="reg-barangay" disabled style="background:transparent; border:none; color:#fff; width:100%; height:48px; font-size:0.85rem; outline:none; cursor:pointer;">
+                <option value="" style="background:#0b261a; color:#fff;">Select Barangay ▼</option>
               </select>
             </div>
             <div class="input-field-wrap" id="reg-barangay-custom-wrap" style="display:none; margin-top:6px;">
@@ -5957,203 +5986,38 @@ function goToWizardStep(step) {
   }
 }
 
-// ── CASCADING ADDRESS DATA & HANDLERS ──────────────────────────────
-const PHILIPPINE_ADDRESS_DATA = {
-  "Nueva Ecija": {
-    "Talavera": {
-      zip: "3114",
-      barangays: [
-        "Maestrang Kikay", "Poblacion Sur", "Poblacion Norte", "Poblacion Center",
-        "Matias", "Sampaloc", "Pag-asa", "San Pascual", "Dimasalang", "Bantug",
-        "La Torre", "Dinarayat", "Valle", "Marcos", "Pulong San Miguel", "Burnay",
-        "Esguerra", "Andal Alino", "Bacal I", "Bacal II", "Bacal III", "Bagong Silang",
-        "Baluga", "Batingan", "Bugtong na Buli", "Bulac", "Caaniplahan", "Cabubulaunan",
-        "Calipahan", "Campos", "Casulucan Este", "Collado", "Concepcion", "Culebra",
-        "Gulod", "Homestead I", "Homestead II", "Kinalanguyan", "Lomboy", "Luna",
-        "Mabuhay", "Maligaya", "Mamandil", "Minabuyoc", "Palac-palac", "Pinagpanaan",
-        "Pula", "Pulong Buri", "San Ricardo", "Sibul", "Sinasajan", "Tabacao", "Tagcheta"
-      ]
-    },
-    "Cabanatuan City": {
-      zip: "3100",
-      barangays: ["General Luna", "Sangitan", "San Josef Sur", "San Josef Norte", "Barrera", "Magsaysay", "Camp Tinio", "Bitas", "Zulueta", "Dicarma", "Valdefuente", "Mayapyap Sur", "Mayapyap Norte", "Kapitan Pepe", "San Roque", "Aduas Centro", "Aduas Norte", "Aduas Sur", "Concepcion", "Rizal", "Sumacab Este", "Sumacab Norte", "Sumacab South", "Mabini Homesite"]
-    },
-    "San Jose City": { zip: "3121", barangays: ["Abar 1st", "Abar 2nd", "Caanawan", "Calaocan", "Canuto Ramos", "Crisamar", "FE Marcos", "Malasin", "Palestina", "Pinili", "Rafael Rueda", "Santo Tomas", "Tayabo"] },
-    "Science City of Muñoz": { zip: "3119", barangays: ["Poblacion East", "Poblacion West", "Poblacion North", "Poblacion South", "Bantug", "Bical", "Catalanacan", "CLSU", "Curva", "Maligaya", "Maragol", "Palusapis", "Rang-ayan", "San Antonio", "Villa Isla", "Villa Nati", "Villa Santos"] },
-    "Gapan City": { zip: "3105", barangays: ["San Vicente", "San Lorenzo", "San Nicolas", "Santa Cruz", "Santo Cristo Norte", "Santo Cristo Sur", "Bayanihan", "Bungo", "Mahipon", "Malimba", "Mangino", "Marelo", "Pambuan", "San Roque"] },
-    "Palayan City": { zip: "3132", barangays: ["Atate", "Cabalan", "Caimito", "Doña Josefa", "Ganaderia", "Imelda Valley", "Langka", "Malate", "Manacnac", "Mapalad", "Militar", "Poblacion", "Singalat"] },
-    "Aliaga": { zip: "3111", barangays: ["Poblacion Centro", "Poblacion East I", "Poblacion East II", "Poblacion West", "Betes", "Bibiclat", "Bucot", "La Purisima", "Magsaysay", "San Carlos", "San Emiliano", "San Felipe", "San Juan", "Santa Monica", "Santo Rosario", "Sunson"] },
-    "Bongabon": { zip: "3128", barangays: ["Commercial", "Kaingin", "Magtanggol", "Manteca", "Palo Maria", "Rizal", "San Agustin", "Social", "Vega Grande"] },
-    "Cabiao": { zip: "3107", barangays: ["San Fernando Norte", "San Fernando Sur", "San Gregorio", "San Roque", "San Vicente", "Santa Ines", "Santa Rita", "Sinipit"] },
-    "Carranglan": { zip: "3123", barangays: ["General Luna", "Joson", "Poblacion", "Putlan", "Salazar", "San Agustin", "R.A. Padilla"] },
-    "Cuyapo": { zip: "3117", barangays: ["District I", "District II", "District III", "District IV", "District V", "District VI", "District VII", "District VIII"] },
-    "Gabaldon": { zip: "3131", barangays: ["North Poblacion", "South Poblacion", "Bagong Sikat", "Cuyapa", "Ligaya", "Malinao", "Pantoc", "Sawmill"] },
-    "General Mamerto Natividad": { zip: "3125", barangays: ["Poblacion", "Balangkare Norte", "Balangkare Sur", "Kabulihan", "Mataas na Kahoy", "Platero", "Pula", "Sapang"] },
-    "General Tinio": { zip: "3104", barangays: ["Poblacion Central", "Poblacion East", "Poblacion West", "Concepcion", "Padolina", "Palale", "Pias", "Rio Chico", "Sampaguita", "San Pedro"] },
-    "Guimba": { zip: "3115", barangays: ["Ayeb", "Bacayao", "Bagong Barrio", "Bantug", "Bunol", "Caballero", "Cabaruan", "Cavite", "Cawayan Bugtong", "Faigal", "Manacsac", "Pacac", "Partida 1st", "Pasong Intsik", "Saint John", "San Agustin", "San Andres", "San Bernardino", "San Marcelino", "San Miguel", "San Roque", "Santa Cruz", "Santa Lucia", "Santa Veronica", "Santo Cristo", "Saranay", "Sinulatan", "Subol", "Tampac 1st", "Tampac 2nd", "Tampac 3rd", "Triala"] },
-    "Jaen": { zip: "3109", barangays: ["Camp Look-out", "Dampulan", "Hilera", "Imbunia", "Lambakin", "Malabon-Kaingin", "Marawa", "Niyugan", "Ocampo-Rivera", "Pakul", "Pamacpacan", "Pinanggaan", "Poblacion", "San Josef", "San Pablo", "San Roque", "Santa Ines", "Santo Tomas South"] },
-    "Laur": { zip: "3129", barangays: ["Barangay I", "Barangay II", "Barangay III", "Barangay IV", "Betania", "Canantong", "Nauzon", "Pang-ol", "Pinagbayanan", "Sagana", "San Fernando", "San Isidro", "San Josep", "San Juan", "San Vicente", "Siclong"] },
-    "Licab": { zip: "3112", barangays: ["Poblacion Norte", "Poblacion Sur", "Aquino", "Linao", "San Agustin", "San Cristobal", "San Jose", "San Mateo", "Santa Maria", "Scout Ramon Albano", "Villarosa"] },
-    "Llanera": { zip: "3126", barangays: ["Bagumbayan", "Bosque", "Caridad Norte", "Caridad Sur", "Casile", "General Luna", "General Ricarte", "Mabini", "Murcon", "Platero", "Poblacion", "San Felipe", "San Francisco", "San Nicolas", "San Vicente", "Santa Barbara", "Victoria", "Villa Viniegas"] },
-    "Lupao": { zip: "3122", barangays: ["Agupalo Este", "Agupalo Weste", "Alalay Chica", "Alalay Grande", "Bagong Flores", "Balbalungao", "Burgos", "Cordero", "Namulandayan", "Parista", "Poblacion East", "Poblacion North", "Poblacion South", "Salvacion", "San Antonio Este", "San Antonio Weste", "San Isidro", "San Pedro", "San Roque", "Santo Niño 1st", "Santo Niño 2nd"] },
-    "Nampicuan": { zip: "3116", barangays: ["Cabistucuan", "Estacion", "Maeling", "Mayantoc", "Mendez", "Monic", "North Poblacion", "Recuerdo", "South Poblacion", "Tony"] },
-    "Pantabangan": { zip: "3124", barangays: ["Cadaclan", "Cambitala", "Conversion", "Fatima", "Ganduz", "Liberty", "Malbang", "Marikit", "Napngan", "Poblacion East", "Poblacion West", "Sampaloc", "San Juan", "Villarica"] },
-    "Peñaranda": { zip: "3103", barangays: ["Callos", "Las Piñas", "Poblacion I", "Poblacion II", "Poblacion III", "Poblacion IV", "San Josef", "Santo Tomas", "Santo Domingo"] },
-    "Quezon": { zip: "3113", barangays: ["Bertese", "Doña Lucia", "Dularyo", "Ilog Baliwag", "Pulong Bahay", "San Alejandro", "San Andres I", "San Andres II", "San Manuel", "San Miguel", "Santa Clara", "Santa Rita", "Santo Cristo", "Santo Tomas Feria", "San Santos"] },
-    "Rizal": { zip: "3127", barangays: ["Agupalo", "Bicos", "Cabucbucan", "Calaocan", "Canaan East", "Canaan West", "Casilagan", "General Luna", "Macapsing", "Maligaya", "Poblacion Central", "Poblacion East", "Poblacion Norte", "Poblacion Sur", "Poblacion West", "Santa Monica", "Villa Paraiso"] },
-    "San Antonio": { zip: "3108", barangays: ["Buliran", "Cama Juan", "Julo", "Lawang Kupang", "Maugat", "Panabingan", "Papaya", "Poblacion", "San Cristo", "San Francisco", "San Jose", "San Mariano", "Santa Barbara", "Santa Cruz", "Santo Cristo", "Tikiw"] },
-    "San Isidro": { zip: "3106", barangays: ["Alua", "Calaba", "Maligaya", "Mangumit", "Poblacion", "Pulo", "San Roque", "Santo Cristo", "Tabon"] },
-    "San Leonardo": { zip: "3102", barangays: ["Bonifacio", "Burgos", "Castellano", "Diversion", "Magpapalayoc", "Mallorca", "Mambangnan", "Nieva", "Rizal", "San Anton", "San Bartolome", "San Francisco", "San Roque", "Tagumpay", "Tambitan"] },
-    "Santa Rosa": { zip: "3101", barangays: ["Aguinaldo", "Berang", "Cojuangco", "Del Pilar", "Gomez", "Inspector", "La Fuente", "Liwayway", "Malinao", "Marlboro", "Poblacion", "Rajal Centro", "Rajal Norte", "Rajal Sur", "San Gregorio", "San Mariano", "San Pedro", "San Roque", "Santa Ines", "Santo Rosario", "Soledad", "Tagpos", "Valenzuela", "Zamora"] },
-    "Santo Domingo": { zip: "3133", barangays: ["Baloc", "Buasao", "Cabugao", "Casulucan", "Comitang", "Concepcion", "Dolores", "General Luna", "Hulo", "Mabini", "Malasin", "Malayantoc", "Mambarao", "Poblacion", "Pulong Buli", "Sagaba", "San Agustin", "San Fabian", "San Francisco", "San Pascual", "Santa Rita", "Santo Domingo", "Santo Rosario"] },
-    "Talugtug": { zip: "3118", barangays: ["Alula", "Baybayao", "Caballero", "Cabiangan", "Calisitan", "Cinense", "Culiat", "Maasin", "Magsaysay", "Nangabulan", "Osmeña", "Pangit", "Patola", "Poblacion", "Quezon", "Quirino", "Roxas", "Saguing", "Sampaloc", "Santa Catalina", "Santo Domingo", "Santo Niño", "Sibul", "Silao", "Taguinod", "Tandoc", "Villa Rosario", "Virgen Milagrosa"] },
-    "Zaragoza": { zip: "3110", barangays: ["Batitang", "Carmen", "Concepcion", "Del Pilar", "General Luna", "H. Romero", "Julio Montemayor", "La Paz", "Macarse", "Manaul", "Mayamot", "Pantoc", "Poblacion", "San Antonio", "San Isidro", "San Rafael", "Santa Cruz", "Santa Lucia Old", "Santa Lucia Young", "Santo Rosario Old", "Santo Rosario Young", "Valeriana"] }
-  },
-  "Metro Manila / NCR": {
-    "Quezon City": { zip: "1100", barangays: ["Diliman", "Cubao", "Commonwealth", "Novaliches", "Batasan Hills", "Loyola Heights", "Kamuning", "Project 4", "Project 6", "Project 8", "Fairview", "Tandang Sora"] },
-    "Manila": { zip: "1000", barangays: ["Sampaloc", "Tondo", "Malate", "Ermita", "Santa Cruz", "Quiapo", "San Miguel", "Paco", "Pandacan", "Santa Ana", "Binondo", "Intramuros"] },
-    "Makati City": { zip: "1200", barangays: ["Bel-Air", "Poblacion", "San Lorenzo", "Urdaneta", "Dasmariñas", "San Antonio", "Pio Del Pilar", "Bangkal", "Guadalupe Nuevo", "Guadalupe Viejo"] },
-    "Taguig City": { zip: "1630", barangays: ["BGC", "Fort Bonifacio", "Ususan", "Tuktukan", "Pinagsama", "Western Bicutan", "Signal Village", "Lower Bicutan", "Maharlika Village"] },
-    "Pasig City": { zip: "1600", barangays: ["Kapitolyo", "San Antonio", "Ugong", "Rosario", "Caniogan", "Maybunga", "Manggahan", "Pinagbuhatan", "Santolan"] },
-    "Caloocan City": { zip: "1400", barangays: ["Grace Park", "Bagong Silang", "Camarin", "Tala", "Deparo", "Caloocan South", "Caloocan North"] }
-  },
-  "Bulacan": {
-    "Malolos City": { zip: "3000", barangays: ["Catmon", "Dakila", "Guinhawa", "Liang", "Lugam", "Mojon", "Panasahan", "San Gabriel", "San Vicente", "Santo Rosario"] },
-    "San Jose del Monte": { zip: "3023", barangays: ["Tungkong Mangga", "Muzon", "Gaya-Gaya", "Graceville", "Kaypian", "Santo Cristo", "Sapang Palay"] },
-    "Baliuag": { zip: "3006", barangays: ["Bagong Nayon", "Concepcion", "Makinabang", "Poblacion", "San Jose", "Santo Cristo", "Subic", "Tanggol", "Tarcan", "Tibag", "Virgen delas Flores"] },
-    "San Ildefonso": { zip: "3010", barangays: ["Anyatam", "Garlang", "Lapnit", "Makapilapil", "Malipampang", "Matimbubong", "Pinaod", "Poblacion", "San Juan", "Sapang Putik"] },
-    "San Miguel": { zip: "3011", barangays: ["Bantog", "Bardias", "Camias", "King Kabayo", "Labne", "Poblacion", "Salangan", "San Agustin", "San Jose", "San Juan", "Santa Ines", "Santa Lucia", "Santa Rita", "Tartaro", "Tigpalas"] }
-  },
-  "Pampanga": {
-    "Angeles City": { zip: "2009", barangays: ["Balibago", "Cutcut", "Lourdes North West", "Malabañas", "Pampang", "Pulung Maragul", "Santo Domingo", "Santo Rosario"] },
-    "San Fernando City": { zip: "2000", barangays: ["Dolores", "Maimpis", "San Agustin", "San Jose", "Sindalan", "Santo Rosario", "Telabastagan"] },
-    "Mabalacat City": { zip: "2010", barangays: ["Dau", "Camachiles", "Mabiga", "Poblacion", "San Francisco", "Santa Ines", "Tabun"] }
-  },
-  "Tarlac": {
-    "Tarlac City": { zip: "2300", barangays: ["Aguso", "Baras-baras", "Binauganan", "Matatalaib", "Poblacion", "San Manuel", "San Nicolas", "San Rafael", "San Roque", "San Sebastian", "Sepung Calzada", "Tibag"] },
-    "Concepcion": { zip: "2316", barangays: ["Alfonso", "Balutu", "Café", "Corazon de Jesus", "Green Village", "Minane", "Poblacion", "San Francisco", "San Jose", "San Nicolas", "Santa Rita"] },
-    "Capas": { zip: "2315", barangays: ["Aranguren", "Cristo Rey", "Cutcut 1st", "Dolores", "Estrada", "Lawy", "Manlapig", "O'Donnell", "Poblacion", "Santa Rita"] },
-    "Victoria": { zip: "2313", barangays: ["Bacabac", "Balayang", "Bangar", "Bantog", "Canal", "Cruz", "Maluid", "Palacpalac", "Poblacion I", "Poblacion II", "San Agustin", "San Andres", "San Fernando", "San Francisco", "San Gavino", "San Jacinto", "San Nicolas", "San Vicente", "Santa Barbara"] },
-    "La Paz": { zip: "2314", barangays: ["Balbalungao", "Bannuar", "Caramutan", "Caut", "Comillas", "Dumarais", "Guevara", "Kapanikian", "La Purisima", "Lara", "Macalong", "Matindeg", "Paludpud", "Rizal", "San Isidro", "San Manuel", "San Roque", "Sierra"] }
-  },
-  "Pangasinan": {
-    "Dagupan City": { zip: "2400", barangays: ["Bonuan Boquig", "Bonuan Gueset", "Downtown", "Lucao", "Mayombo", "Pantalan", "Poblacion Oeste", "Tapuac"] },
-    "Urdaneta City": { zip: "2428", barangays: ["Anonas", "Bactad East", "Camantiles", "Catablan", "Cayambanan", "Nancayasan", "Pinmaludpod", "Poblacion", "San Jose", "San Vicente"] },
-    "San Carlos City": { zip: "2420", barangays: ["Agdao", "Balite Sur", "Bani", "Capaoay", "Coliling", "Ilang", "Mabanogbog", "Palaris", "Poblacion", "Rizal", "Talence"] }
-  }
-};
-
-let isRegAddressInitialized = false;
+// ── CASCADING ADDRESS DATA & HANDLERS (PSGC UNIFIED SELECTOR) ──────────────
+let mobileRegAddressSelector = null;
 
 function initRegAddressDropdowns() {
-  const provEl = document.getElementById('reg-province');
-  if (!provEl) return;
-  if (!provEl.value) {
-    provEl.value = 'Nueva Ecija';
-  }
-  handleRegProvinceChange(provEl.value || 'Nueva Ecija', true);
-  isRegAddressInitialized = true;
-}
-
-function handleRegProvinceChange(provVal, isInitial = false) {
-  const provCustomWrap = document.getElementById('reg-province-custom-wrap');
-  const muniEl = document.getElementById('reg-municipality');
-  const muniCustomWrap = document.getElementById('reg-municipality-custom-wrap');
-  const brgySelectWrap = document.getElementById('reg-barangay-select-wrap');
-  const brgyCustomWrap = document.getElementById('reg-barangay-custom-wrap');
-  const zipEl = document.getElementById('reg-zip-code');
-
-  if (provVal === 'OTHER') {
-    if (provCustomWrap) provCustomWrap.style.display = 'block';
-    if (muniEl) {
-      muniEl.innerHTML = '<option value="OTHER" selected style="background:#0b261a; color:#fff;">Other (Type Manually)</option>';
+  if (mobileRegAddressSelector) return;
+  mobileRegAddressSelector = PhilippineAddressSelector.init({
+    apiBaseUrl: API_URL,
+    region: '#reg-region',
+    province: '#reg-province',
+    city: '#reg-municipality',
+    barangay: '#reg-barangay',
+    provinceCustomWrap: '#reg-province-custom-wrap',
+    provinceCustom: '#reg-province-custom',
+    cityCustomWrap: '#reg-municipality-custom-wrap',
+    cityCustom: '#reg-municipality-custom',
+    barangayCustomWrap: '#reg-barangay-custom-wrap',
+    barangayCustom: '#reg-barangay-custom',
+    defaultRegion: '030000000', // Central Luzon
+    defaultProvince: '034900000', // Nueva Ecija
+    defaultCity: '034930000', // Talavera
+    onChange: function() {
+      if (typeof populateRegSummary === 'function') {
+        populateRegSummary();
+      }
     }
-    if (muniCustomWrap) muniCustomWrap.style.display = 'block';
-    if (brgySelectWrap) brgySelectWrap.style.display = 'none';
-    if (brgyCustomWrap) brgyCustomWrap.style.display = 'block';
-    if (zipEl && !isInitial) zipEl.value = '';
-    return;
-  }
-
-  if (provCustomWrap) provCustomWrap.style.display = 'none';
-
-  const provinceData = PHILIPPINE_ADDRESS_DATA[provVal];
-  if (provinceData && muniEl) {
-    const munis = Object.keys(provinceData);
-    let optionsHtml = '';
-    munis.forEach(m => {
-      const isSel = (provVal === 'Nueva Ecija' && m === 'Talavera') ? 'selected' : '';
-      optionsHtml += `<option value="${m}" ${isSel} style="background:#0b261a; color:#fff;">${m}</option>`;
-    });
-    optionsHtml += '<option value="OTHER" style="background:#0b261a; color:#fff;">Other City/Municipality (Type Manually)</option>';
-    muniEl.innerHTML = optionsHtml;
-    const defaultMuni = (provVal === 'Nueva Ecija') ? 'Talavera' : (munis[0] || 'OTHER');
-    muniEl.value = defaultMuni;
-    handleRegMunicipalityChange(defaultMuni, isInitial);
-  } else if (muniEl) {
-    muniEl.innerHTML = '<option value="OTHER" selected style="background:#0b261a; color:#fff;">Other City/Municipality</option>';
-    handleRegMunicipalityChange('OTHER', isInitial);
-  }
-}
-
-function handleRegMunicipalityChange(muniVal, isInitial = false) {
-  const provEl = document.getElementById('reg-province');
-  const provVal = provEl ? provEl.value : 'Nueva Ecija';
-  const muniCustomWrap = document.getElementById('reg-municipality-custom-wrap');
-  const brgyEl = document.getElementById('reg-barangay');
-  const brgySelectWrap = document.getElementById('reg-barangay-select-wrap');
-  const brgyCustomWrap = document.getElementById('reg-barangay-custom-wrap');
-  const zipEl = document.getElementById('reg-zip-code');
-
-  if (muniVal === 'OTHER') {
-    if (muniCustomWrap) muniCustomWrap.style.display = 'block';
-    if (brgySelectWrap) brgySelectWrap.style.display = 'none';
-    if (brgyCustomWrap) brgyCustomWrap.style.display = 'block';
-    if (zipEl && !isInitial) zipEl.value = '';
-    return;
-  }
-
-  if (muniCustomWrap) muniCustomWrap.style.display = 'none';
-
-  const provData = PHILIPPINE_ADDRESS_DATA[provVal];
-  const muniData = provData ? provData[muniVal] : null;
-
-  if (muniData) {
-    if (zipEl && muniData.zip) {
-      zipEl.value = muniData.zip;
-    }
-    if (brgyEl && muniData.barangays && muniData.barangays.length > 0) {
-      if (brgySelectWrap) brgySelectWrap.style.display = 'block';
-      if (brgyCustomWrap) brgyCustomWrap.style.display = 'none';
-
-      let brgyHtml = '';
-      muniData.barangays.forEach((b, idx) => {
-        const isSel = (idx === 0) ? 'selected' : '';
-        brgyHtml += `<option value="${b}" ${isSel} style="background:#0b261a; color:#fff;">${b}</option>`;
-      });
-      brgyHtml += '<option value="OTHER" style="background:#0b261a; color:#fff;">Other Barangay (Type Manually)</option>';
-      brgyEl.innerHTML = brgyHtml;
-      brgyEl.value = muniData.barangays[0];
-    } else {
-      if (brgySelectWrap) brgySelectWrap.style.display = 'none';
-      if (brgyCustomWrap) brgyCustomWrap.style.display = 'block';
-    }
-  } else {
-    if (brgySelectWrap) brgySelectWrap.style.display = 'none';
-    if (brgyCustomWrap) brgyCustomWrap.style.display = 'block';
-  }
-}
-
-function handleRegBarangayChange(brgyVal) {
-  const brgyCustomWrap = document.getElementById('reg-barangay-custom-wrap');
-  if (brgyVal === 'OTHER') {
-    if (brgyCustomWrap) brgyCustomWrap.style.display = 'block';
-  } else {
-    if (brgyCustomWrap) brgyCustomWrap.style.display = 'none';
-  }
+  });
 }
 
 function getRegProvinceValue() {
+  if (mobileRegAddressSelector) {
+    return mobileRegAddressSelector.getValues().province;
+  }
   const p = document.getElementById('reg-province')?.value || '';
   if (p === 'OTHER') {
     return (document.getElementById('reg-province-custom')?.value || '').trim();
@@ -6162,6 +6026,9 @@ function getRegProvinceValue() {
 }
 
 function getRegMunicipalityValue() {
+  if (mobileRegAddressSelector) {
+    return mobileRegAddressSelector.getValues().municipality;
+  }
   const m = document.getElementById('reg-municipality')?.value || '';
   if (m === 'OTHER') {
     return (document.getElementById('reg-municipality-custom')?.value || '').trim();
@@ -6170,6 +6037,9 @@ function getRegMunicipalityValue() {
 }
 
 function getRegBarangayValue() {
+  if (mobileRegAddressSelector) {
+    return mobileRegAddressSelector.getValues().barangay;
+  }
   const b = document.getElementById('reg-barangay')?.value || '';
   const custom = (document.getElementById('reg-barangay-custom')?.value || '').trim();
   const isCustomVisible = document.getElementById('reg-barangay-custom-wrap')?.style.display !== 'none';
@@ -6693,10 +6563,12 @@ async function wizardNext(fromStep) {
 
     goToWizardStep(4);
   } else if (fromStep === 4) {
+    const reg = (document.getElementById('reg-region')?.value || '').trim();
     const prov = getRegProvinceValue();
     const muni = getRegMunicipalityValue();
     const brgy = getRegBarangayValue();
 
+    if (!reg) return showToast('Please select your Region.');
     if (!prov) return showToast('Please select or enter your Province.');
     if (!muni) return showToast('Please select or enter your Municipality or City.');
     if (!brgy) return showToast('Please select or enter your Barangay.');

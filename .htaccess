@@ -5,8 +5,8 @@
 # 1. Disable Directory Indexing
 Options -Indexes -MultiViews
 
-# 2. Prevent Access to Hidden Files, Environment Files, and SQL Dumps (Exempting PWA manifest.json and sw.js)
-<FilesMatch "(?i)^(?!(manifest\.json|sw\.js)$)(.*\.|\.(env|sql|log|ini|json|lock|git|sh|bat|md))$">
+# 2. Prevent Access to Hidden Files, Environment Files, SQL Dumps, and Database Files (Exempting PWA manifest.json and sw.js)
+<FilesMatch "(?i)^(?!(manifest\.json|sw\.js)$)(.*\.|\.(env|sql|log|ini|json|lock|git|sh|bat|md|db|sqlite|sqlite3))$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

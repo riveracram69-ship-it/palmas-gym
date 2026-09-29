@@ -74,10 +74,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $contact_number   = trim($_POST['contact_number'] ?? '');
     
     // Structured Address components
-    $house_street     = trim($_POST['house_street'] ?? '');
-    $barangay         = trim($_POST['barangay'] ?? '');
-    $municipality     = trim($_POST['municipality'] ?? '');
+    $region           = trim($_POST['region'] ?? '');
     $province         = trim($_POST['province'] ?? '');
+    if ($province === 'OTHER' && !empty($_POST['province_custom'])) {
+        $province = trim($_POST['province_custom']);
+    }
+    $municipality     = trim($_POST['municipality'] ?? '');
+    if ($municipality === 'OTHER' && !empty($_POST['municipality_custom'])) {
+        $municipality = trim($_POST['municipality_custom']);
+    }
+    $barangay         = trim($_POST['barangay'] ?? '');
+    if ($barangay === 'OTHER' && !empty($_POST['barangay_custom'])) {
+        $barangay = trim($_POST['barangay_custom']);
+    }
+    $house_street     = trim($_POST['house_street'] ?? '');
     $zip_code         = trim($_POST['zip_code'] ?? '');
     $address          = compose_member_address_string($house_street, $barangay, $municipality, $province, $zip_code, trim($_POST['address'] ?? ''));
 
@@ -108,8 +118,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $validation_errors[] = "Contact number must be 11 digits starting with 09 (e.g. 09123456789).";
     }
 
-    if (empty($address) && empty($municipality)) {
+    if (empty($municipality) && empty($address)) {
         $validation_errors[] = "Home address details are required.";
+    } elseif (isset($_POST['region']) && (empty($municipality) || empty($province) || empty($barangay))) {
+        $validation_errors[] = "Home address details (Province, City/Municipality, and Barangay) are required.";
     }
 
     if (!empty($dob)) {
@@ -1135,63 +1147,100 @@ select.if{
       <div id="step-section-4" class="wizard-step-container" style="display:none;">
         <div class="step-intro">
           <h3>Home Address</h3>
-          <p>Enter your primary residence for gym emergency contacts and membership records.</p>
+          <p>Select your region, province, city/municipality, and barangay for gym emergency contacts and membership records.</p>
         </div>
 
+        <!-- 1. Region Dropdown -->
         <div class="fg">
-          <label class="lbl" for="barangay">
-            Barangay <span class="req" aria-hidden="true">*</span>
+          <label class="lbl" for="region">
+            Region <span class="req" aria-hidden="true">*</span>
           </label>
           <div class="iw">
-            <i class="fa-solid fa-map-pin ii" aria-hidden="true"></i>
-            <input type="text" name="barangay" id="barangay" class="if"
-              placeholder="e.g. Poblacion"
-              value="<?php echo htmlspecialchars($_POST['barangay'] ?? ''); ?>" required>
+            <i class="fa-solid fa-earth-asia ii" aria-hidden="true"></i>
+            <select name="region" id="region" class="if" required>
+              <option value="">Select Region ▼</option>
+            </select>
           </div>
         </div>
 
+        <!-- 2. Province Dropdown -->
+        <div class="fg">
+          <label class="lbl" for="province">
+            Province <span class="req" aria-hidden="true">*</span>
+          </label>
+          <div class="iw">
+            <i class="fa-solid fa-map ii" aria-hidden="true"></i>
+            <select name="province" id="province" class="if" disabled required>
+              <option value="">Select Province ▼</option>
+            </select>
+          </div>
+        </div>
+        <div id="province_custom_wrap" class="fg" style="display:none; margin-top:-8px;">
+          <div class="iw">
+            <i class="fa-solid fa-pen ii" aria-hidden="true"></i>
+            <input type="text" name="province_custom" id="province_custom" class="if" placeholder="Specify your province">
+          </div>
+        </div>
+
+        <!-- 3. Municipality / City Dropdown -->
         <div class="fg">
           <label class="lbl" for="municipality">
             Municipality / City <span class="req" aria-hidden="true">*</span>
           </label>
           <div class="iw">
             <i class="fa-solid fa-city ii" aria-hidden="true"></i>
-            <input type="text" name="municipality" id="municipality" class="if"
-              placeholder="e.g. Talavera"
-              value="<?php echo htmlspecialchars($_POST['municipality'] ?? ''); ?>" required>
+            <select name="municipality" id="municipality" class="if" disabled required>
+              <option value="">Select City / Municipality ▼</option>
+            </select>
+          </div>
+        </div>
+        <div id="municipality_custom_wrap" class="fg" style="display:none; margin-top:-8px;">
+          <div class="iw">
+            <i class="fa-solid fa-pen ii" aria-hidden="true"></i>
+            <input type="text" name="municipality_custom" id="municipality_custom" class="if" placeholder="Specify your city or municipality">
           </div>
         </div>
 
+        <!-- 4. Barangay Dropdown -->
+        <div class="fg">
+          <label class="lbl" for="barangay">
+            Barangay <span class="req" aria-hidden="true">*</span>
+          </label>
+          <div class="iw">
+            <i class="fa-solid fa-map-pin ii" aria-hidden="true"></i>
+            <select name="barangay" id="barangay" class="if" disabled required>
+              <option value="">Select Barangay ▼</option>
+            </select>
+          </div>
+        </div>
+        <div id="barangay_custom_wrap" class="fg" style="display:none; margin-top:-8px;">
+          <div class="iw">
+            <i class="fa-solid fa-pen ii" aria-hidden="true"></i>
+            <input type="text" name="barangay_custom" id="barangay_custom" class="if" placeholder="Specify your barangay">
+          </div>
+        </div>
+
+        <!-- 5. House / Street / Purok (Manual Text Field) -->
         <div class="fg">
           <label class="lbl" for="house_street">
-            House No. / Street / Unit <span style="font-size:0.75rem; color:#888;">(Optional)</span>
+            Street / Purok / Sitio / House No. / Building <span style="font-size:0.75rem; color:#888;">(Optional)</span>
           </label>
           <div class="iw">
             <i class="fa-solid fa-house ii" aria-hidden="true"></i>
             <input type="text" name="house_street" id="house_street" class="if"
-              placeholder="e.g. 123 Rizal St."
+              placeholder="e.g. 123 Rizal St., Purok 2, or Unit 4B Sunshine Bldg."
               value="<?php echo htmlspecialchars($_POST['house_street'] ?? ''); ?>">
           </div>
         </div>
 
-        <div class="g2">
-          <div class="fg">
-            <label class="lbl" for="province">Province</label>
-            <div class="iw">
-              <i class="fa-solid fa-map ii" aria-hidden="true"></i>
-              <input type="text" name="province" id="province" class="if"
-                placeholder="e.g. Nueva Ecija"
-                value="<?php echo htmlspecialchars($_POST['province'] ?? 'Nueva Ecija'); ?>">
-            </div>
-          </div>
-          <div class="fg">
-            <label class="lbl" for="zip_code">ZIP Code <span style="font-size:0.75rem; color:#888;">(Optional)</span></label>
-            <div class="iw">
-              <i class="fa-solid fa-envelopes-bulk ii" aria-hidden="true"></i>
-              <input type="text" name="zip_code" id="zip_code" class="if"
-                placeholder="e.g. 3114" maxlength="10"
-                value="<?php echo htmlspecialchars($_POST['zip_code'] ?? ''); ?>">
-            </div>
+        <!-- 6. ZIP Code -->
+        <div class="fg">
+          <label class="lbl" for="zip_code">ZIP Code <span style="font-size:0.75rem; color:#888;">(Optional)</span></label>
+          <div class="iw">
+            <i class="fa-solid fa-envelopes-bulk ii" aria-hidden="true"></i>
+            <input type="text" name="zip_code" id="zip_code" class="if"
+              placeholder="e.g. 3114" maxlength="10"
+              value="<?php echo htmlspecialchars($_POST['zip_code'] ?? ''); ?>">
           </div>
         </div>
 
@@ -1586,9 +1635,38 @@ select.if{
 
 </div><!-- /.wrap -->
 
+<script src="../assets/js/ph-address-selector.js"></script>
 <script>
 let currentStep = 1;
 const totalSteps = 6;
+let webAddressSelector = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+  webAddressSelector = PhilippineAddressSelector.init({
+    region: '#region',
+    province: '#province',
+    city: '#municipality',
+    barangay: '#barangay',
+    provinceCustomWrap: '#province_custom_wrap',
+    provinceCustom: '#province_custom',
+    cityCustomWrap: '#municipality_custom_wrap',
+    cityCustom: '#municipality_custom',
+    barangayCustomWrap: '#barangay_custom_wrap',
+    barangayCustom: '#barangay_custom',
+    defaultRegion: '030000000',
+    defaultProvince: '034900000',
+    defaultCity: '034930000',
+    initialRegion: <?php echo json_encode($_POST['region'] ?? ''); ?>,
+    initialProvince: <?php echo json_encode($_POST['province'] ?? ''); ?>,
+    initialCity: <?php echo json_encode($_POST['municipality'] ?? ''); ?>,
+    initialBarangay: <?php echo json_encode($_POST['barangay'] ?? ''); ?>,
+    onChange: function() {
+      if (typeof updateSummaryReview === 'function') {
+        updateSummaryReview();
+      }
+    }
+  });
+});
 
 const stepTitles = {
   1: "Basic Information",
@@ -1754,15 +1832,47 @@ function validateStep(step) {
   }
   
   if (step === 4) {
-    const brgy = document.getElementById('barangay');
+    const reg = document.getElementById('region');
+    const prov = document.getElementById('province');
     const muni = document.getElementById('municipality');
-    if (!brgy || !brgy.value.trim()) {
-      showStepError(brgy, 'Please enter your Barangay.');
+    const brgy = document.getElementById('barangay');
+
+    if (!reg || !reg.value.trim()) {
+      showStepError(reg, 'Please select your Region.');
       return false;
     }
-    if (!muni || !muni.value.trim()) {
-      showStepError(muni, 'Please enter your Municipality / City.');
+    if (!prov || !prov.value.trim()) {
+      showStepError(prov, 'Please select your Province.');
       return false;
+    }
+    if (prov.value === 'OTHER') {
+      const pCust = document.getElementById('province_custom');
+      if (!pCust || !pCust.value.trim()) {
+        showStepError(pCust, 'Please specify your Province.');
+        return false;
+      }
+    }
+    if (!muni || !muni.value.trim()) {
+      showStepError(muni, 'Please select your Municipality / City.');
+      return false;
+    }
+    if (muni.value === 'OTHER') {
+      const mCust = document.getElementById('municipality_custom');
+      if (!mCust || !mCust.value.trim()) {
+        showStepError(mCust, 'Please specify your Municipality / City.');
+        return false;
+      }
+    }
+    if (!brgy || !brgy.value.trim()) {
+      showStepError(brgy, 'Please select your Barangay.');
+      return false;
+    }
+    if (brgy.value === 'OTHER') {
+      const bCust = document.getElementById('barangay_custom');
+      if (!bCust || !bCust.value.trim()) {
+        showStepError(bCust, 'Please specify your Barangay.');
+        return false;
+      }
     }
     return true;
   }
@@ -1880,10 +1990,21 @@ function updateSummaryReview() {
   const genderEl = document.querySelector('input[name="gender"]:checked');
   const gender = genderEl ? genderEl.value : '—';
   
-  const brgy = (document.getElementById('barangay')?.value || '').trim();
-  const muni = (document.getElementById('municipality')?.value || '').trim();
-  const prov = (document.getElementById('province')?.value || '').trim();
-  const address = [brgy, muni, prov].filter(Boolean).join(', ') || '—';
+  let brgy = '';
+  let muni = '';
+  let prov = '';
+  if (window.webAddressSelector) {
+    const vals = window.webAddressSelector.getValues();
+    brgy = vals.barangay;
+    muni = vals.municipality;
+    prov = vals.province;
+  } else {
+    brgy = (document.getElementById('barangay')?.value || '').trim();
+    muni = (document.getElementById('municipality')?.value || '').trim();
+    prov = (document.getElementById('province')?.value || '').trim();
+  }
+  const street = (document.getElementById('house_street')?.value || '').trim();
+  const address = [street, brgy, muni, prov].filter(Boolean).join(', ') || '—';
   
   const selPlanRadio = document.querySelector('input[name="plan_id"]:checked');
   let planName = '—';

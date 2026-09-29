@@ -1137,10 +1137,10 @@ try {
                 <table class="dash-table" id="overdue-table">
                     <thead>
                         <tr>
-                            <th style="min-width:180px;">Member</th>
+                            <th style="min-width:200px;">Member</th>
                             <th style="min-width:125px;">Expired Date</th>
                             <th style="min-width:130px;">Plan</th>
-                            <th style="min-width:140px; text-align:right;">Actions</th>
+                            <th style="min-width:185px; text-align:right;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="overdue-tbody">
@@ -1167,6 +1167,10 @@ try {
                                 $od_badge_style = 'background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;';
                                 $od_label = "🔴 {$days}d ago (Lapsed)";
                             }
+
+                            // Authoritative current Membership Status (Official Member vs Non-Member)
+                            $ann_exp = $od['annual_membership_expiry'] ?? null;
+                            $is_official = (!empty($ann_exp) && strtotime($ann_exp) >= strtotime(date('Y-m-d')));
                         ?>
                         <tr class="od-row" id="od-row-<?php echo $od['id']; ?>">
                             <td>
@@ -1178,16 +1182,30 @@ try {
                                             <?php echo strtoupper(substr($od['full_name'], 0, 1)); ?>
                                         <?php endif; ?>
                                     </div>
-                                    <div>
-                                        <a href="view-member.php?id=<?php echo $od['id']; ?>" class="cell-primary" title="<?php echo htmlspecialchars($od['full_name']); ?>">
+                                    <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
+                                        <a href="view-member.php?id=<?php echo $od['id']; ?>" class="cell-primary" title="<?php echo htmlspecialchars($od['full_name']); ?>" style="line-height:1.2; font-weight:700;">
                                             <?php echo htmlspecialchars($od['full_name']); ?>
                                         </a>
-                                        <div style="font-size:0.72rem; color:var(--text-muted); font-family:monospace;">
-                                            <?php echo htmlspecialchars($od['membership_id']); ?>
-                                            <?php if (!empty($od['contact_number'])): ?>
-                                                • <?php echo htmlspecialchars($od['contact_number']); ?>
+                                        <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap; line-height:1.1;">
+                                            <span style="font-size:0.72rem; color:var(--text-muted); font-family:monospace; font-weight:600;">
+                                                <?php echo htmlspecialchars($od['membership_id']); ?>
+                                            </span>
+                                            <span style="color:var(--text-muted); font-size:0.65rem;">•</span>
+                                            <?php if ($is_official): ?>
+                                                <span class="badge" style="background:rgba(16,185,129,0.15); color:#059669; border:1px solid rgba(16,185,129,0.3); font-size:0.63rem; font-weight:700; padding:1px 5px; border-radius:4px; display:inline-flex; align-items:center; gap:3px;">
+                                                    <i class="fas fa-id-card" style="font-size:0.58rem;"></i> Official Member
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="badge" style="background:rgba(100,116,139,0.12); color:#64748b; border:1px solid rgba(100,116,139,0.25); font-size:0.63rem; font-weight:600; padding:1px 5px; border-radius:4px; display:inline-flex; align-items:center; gap:3px;">
+                                                    <i class="fas fa-user" style="font-size:0.58rem;"></i> Non-Member
+                                                </span>
                                             <?php endif; ?>
                                         </div>
+                                        <?php if (!empty($od['contact_number'])): ?>
+                                            <div style="font-size:0.70rem; color:var(--text-muted); line-height:1.1; font-family:monospace;">
+                                                <?php echo htmlspecialchars($od['contact_number']); ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </td>
@@ -1213,7 +1231,7 @@ try {
                                 </div>
                             </td>
                             <td style="text-align:right;">
-                                <div style="display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+                                <div style="display:inline-flex; align-items:center; gap:6px; justify-content:flex-end; white-space:nowrap;">
                                     <!-- Email Reminder Button -->
                                     <?php if (!empty($od['email'])): ?>
                                     <button type="button" class="btn btn-outline btn-sm" 

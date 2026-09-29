@@ -10,13 +10,6 @@ try {
     if (isset($pdo) && $pdo) {
         ensure_notifications_table($pdo);
 
-        // Mark as read handler
-        if (isset($_GET['mark_read']) && is_numeric($_GET['mark_read'])) {
-            $pdo->prepare("UPDATE notifications SET read_status = 'Read' WHERE id = ?")->execute([$_GET['mark_read']]);
-            header("Location: notifications.php");
-            exit;
-        }
-
         $stmt = $pdo->query(
             "SELECT n.*, m.full_name, m.membership_id, m.email 
              FROM notifications n 
@@ -114,15 +107,6 @@ $type_meta = [
 
 .notif-item-row:hover {
     background: rgba(0, 0, 0, 0.015) !important;
-}
-
-.notif-item-row.is-unread {
-    background: rgba(45, 106, 79, 0.025) !important;
-    border-left: 3.5px solid var(--primary, #2d6a4f) !important;
-}
-
-.notif-item-row.is-read {
-    border-left: 3.5px solid transparent !important;
 }
 
 .notif-item-icon {
@@ -236,32 +220,6 @@ $type_meta = [
     gap: 4px !important;
 }
 
-.notif-action-btn {
-    padding: 0.3rem 0.65rem !important;
-    font-size: 0.74rem !important;
-    font-weight: 600 !important;
-    border-radius: 7px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-    white-space: nowrap !important;
-    color: var(--primary, #2d6a4f) !important;
-    border-color: rgba(45, 106, 79, 0.3) !important;
-    background: transparent !important;
-}
-
-.notif-action-btn:hover {
-    background: var(--primary, #2d6a4f) !important;
-    color: #ffffff !important;
-    border-color: var(--primary, #2d6a4f) !important;
-}
-
-.notif-read-indicator {
-    color: #94a3b8 !important;
-    font-size: 0.85rem !important;
-    padding: 0 4px !important;
-}
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .notif-item-row {
@@ -312,11 +270,19 @@ $type_meta = [
                 <?php echo count($notifications); ?> Total
             </span>
             <?php 
-                $unread_cnt = count(array_filter($notifications, fn($n) => ($n['read_status'] ?? '') === 'Unread'));
-                if ($unread_cnt > 0): 
+                $sent_cnt = count(array_filter($notifications, fn($n) => ($n['delivery_status'] ?? '') === 'Sent'));
+                $failed_cnt = count(array_filter($notifications, fn($n) => ($n['delivery_status'] ?? '') === 'Failed'));
             ?>
-            <span class="badge" style="background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.25); font-weight:700; font-size:0.75rem;">
-                <?php echo $unread_cnt; ?> Unread
+            <span class="badge" style="background:rgba(22,163,74,0.1); color:#16a34a; border:1px solid rgba(22,163,74,0.25); font-weight:700; font-size:0.75rem;">
+                <i class="fas fa-check"></i> <?php echo $sent_cnt; ?> Sent
+            </span>
+            <?php if ($failed_cnt > 0): ?>
+            <span class="badge" style="background:rgba(220,38,38,0.1); color:#dc2626; border:1px solid rgba(220,38,38,0.25); font-weight:700; font-size:0.75rem;">
+                <i class="fas fa-triangle-exclamation"></i> <?php echo $failed_cnt; ?> Failed
+            </span>
+            <?php else: ?>
+            <span class="badge" style="background:rgba(100,116,139,0.08); color:#64748b; border:1px solid rgba(100,116,139,0.2); font-weight:600; font-size:0.75rem;">
+                0 Failed
             </span>
             <?php endif; ?>
         </div>
@@ -324,10 +290,10 @@ $type_meta = [
 
     <div class="notif-list-body">
         <?php foreach ($notifications as $n):
-            $is_unread = (isset($n['read_status']) && $n['read_status'] === 'Unread');
             $meta = $type_meta[$n['type']] ?? ['icon' => 'fas fa-bell', 'bg' => 'rgba(100,116,139,0.1)', 'color' => '#64748b', 'label' => ($n['type'] ?: 'System')];
+            $is_failed = (($n['delivery_status'] ?? '') === 'Failed');
         ?>
-        <div class="notif-item-row <?php echo $is_unread ? 'is-unread' : 'is-read'; ?>">
+        <div class="notif-item-row">
             <!-- Left: Icon Column -->
             <div class="notif-item-icon" style="background:<?php echo $meta['bg']; ?>; color:<?php echo $meta['color']; ?>;">
                 <i class="<?php echo $meta['icon']; ?>"></i>
@@ -352,12 +318,12 @@ $type_meta = [
                 </div>
             </div>
 
-            <!-- Right: Meta & Action Column -->
+            <!-- Right: Delivery Status & Timestamp -->
             <div class="notif-item-meta">
                 <div class="notif-status-box">
-                    <?php if ($n['delivery_status'] === 'Failed'): ?>
+                    <?php if ($is_failed): ?>
                         <span class="notif-status-badge status-failed">
-                            <i class="fas fa-circle-exclamation"></i> Failed
+                            <i class="fas fa-triangle-exclamation"></i> Failed
                         </span>
                     <?php else: ?>
                         <span class="notif-status-badge status-sent">
@@ -368,14 +334,6 @@ $type_meta = [
                         <i class="far fa-clock"></i> <?php echo date('M d, Y • h:i A', strtotime($n['sent_at'])); ?>
                     </span>
                 </div>
-
-                <?php if ($is_unread): ?>
-                    <a href="?mark_read=<?php echo (int)$n['id']; ?>" class="btn btn-outline btn-sm notif-action-btn" title="Mark as Read">
-                        <i class="fas fa-check"></i> <span>Mark Read</span>
-                    </a>
-                <?php else: ?>
-                    <span class="notif-read-indicator" title="Already Read"><i class="fas fa-check-double"></i></span>
-                <?php endif; ?>
             </div>
         </div>
         <?php endforeach; ?>

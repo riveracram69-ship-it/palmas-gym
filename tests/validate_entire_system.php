@@ -441,9 +441,10 @@ $pdo->prepare("INSERT INTO members (membership_id, first_name, last_name, full_n
     ->execute([$val_att_mem_id, "attval.{$val_att_mem_id}@example.com"]);
 $val_att_mid = (int)$pdo->lastInsertId();
 
+$val_date_4h = date('Y-m-d', strtotime('-270 minutes'));
 $val_4h_ago = date('H:i:s', strtotime('-270 minutes'));
-$pdo->prepare("INSERT INTO attendance (member_id, date, time_in, time_out) VALUES (?, CURDATE(), ?, NULL)")
-    ->execute([$val_att_mid, $val_4h_ago]);
+$pdo->prepare("INSERT INTO attendance (member_id, date, time_in, time_out) VALUES (?, ?, ?, NULL)")
+    ->execute([$val_att_mid, $val_date_4h, $val_4h_ago]);
 $val_att_id = (int)$pdo->lastInsertId();
 
 sync_attendance_auto_checkout($pdo);
