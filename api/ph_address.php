@@ -11,6 +11,13 @@
  * fallback when the address service is unavailable.
  */
 
+require_once __DIR__ . '/cors.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 if (!headers_sent()) {
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: public, max-age=86400'); // Cache for 24 hours in client browser
