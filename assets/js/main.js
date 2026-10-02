@@ -64,25 +64,37 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // ── Form Validation & Loading State ───────────────────────────────────────
-    const forms = document.querySelectorAll('form');
-    Array.prototype.slice.call(forms).forEach(function(form) {
-        form.addEventListener('submit', function(event) {
-            if (form.classList.contains('needs-validation')) {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    form.classList.add('was-validated');
-                    return;
-                }
+    // ── Form Validation, CSRF Protection & Loading State ─────────────────────
+    document.addEventListener('submit', function(event) {
+        const form = event.target;
+        if (!form || form.tagName !== 'FORM') return;
+
+        // Auto-inject CSRF token for any POST form missing it
+        if ((form.method || '').toUpperCase() === 'POST') {
+            const metaCsrf = document.querySelector('meta[name="csrf-token"]');
+            if (metaCsrf && metaCsrf.content && !form.querySelector('input[name="csrf_token"]')) {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'csrf_token';
+                hiddenInput.value = metaCsrf.content;
+                form.appendChild(hiddenInput);
             }
-            const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
-            if (submitBtn && !submitBtn.classList.contains('no-spin') && !submitBtn.classList.contains('no-loading')) {
-                submitBtn.classList.add('is-loading');
+        }
+
+        if (form.classList.contains('needs-validation')) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                form.classList.add('was-validated');
+                return;
             }
-            form.classList.add('was-validated');
-        }, false);
-    });
+        }
+        const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+        if (submitBtn && !submitBtn.classList.contains('no-spin') && !submitBtn.classList.contains('no-loading')) {
+            submitBtn.classList.add('is-loading');
+        }
+        form.classList.add('was-validated');
+    }, true);
 
     // Initialize Real-time Pending Approvals Poller for authenticated staff/admin
     if (document.querySelector('.sidebar')) {

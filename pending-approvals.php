@@ -1013,6 +1013,7 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
 <div id="approveRegModal" class="modal" style="display:none; position:fixed; z-index:1050; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
     <div style="background:var(--card-bg, #1a231e); border:1px solid var(--border); border-radius:12px; max-width:460px; width:90%; overflow:hidden;">
         <form method="POST" action="pending-approvals.php" id="form-approve-reg" onsubmit="return handleFormSubmit(this, 'Confirming Payment...')" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token()); ?>">
             <input type="hidden" name="form_type" value="registration">
             <input type="hidden" name="action" value="approve">
             <input type="hidden" name="member_id" id="approve_reg_member_id" value="0">
@@ -1042,6 +1043,7 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
 <div id="rejectRegModal" class="modal" style="display:none; position:fixed; z-index:1050; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
     <div style="background:var(--card-bg, #1a231e); border:1px solid var(--border); border-radius:12px; max-width:460px; width:90%; overflow:hidden;">
         <form method="POST" action="pending-approvals.php" id="form-reject-reg" onsubmit="return handleFormSubmit(this, 'Cancelling...')" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token()); ?>">
             <input type="hidden" name="form_type" value="registration">
             <input type="hidden" name="action" value="reject">
             <input type="hidden" name="member_id" id="reject_reg_member_id" value="0">
@@ -1083,6 +1085,7 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
 <div id="approveRenewModal" class="modal" style="display:none; position:fixed; z-index:1050; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
     <div style="background:var(--card-bg, #1a231e); border:1px solid var(--border); border-radius:12px; max-width:460px; width:90%; overflow:hidden;">
         <form method="POST" action="pending-approvals.php" id="form-approve-ren" onsubmit="return handleFormSubmit(this, 'Confirming Payment...')" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token()); ?>">
             <input type="hidden" name="form_type" value="renewal">
             <input type="hidden" name="action" value="approve_renewal">
             <input type="hidden" name="request_id" id="approve_ren_id" value="0">
@@ -1112,6 +1115,7 @@ $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
 <div id="rejectRenewModal" class="modal" style="display:none; position:fixed; z-index:1050; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
     <div style="background:var(--card-bg, #1a231e); border:1px solid var(--border); border-radius:12px; max-width:460px; width:90%; overflow:hidden;">
         <form method="POST" action="pending-approvals.php" id="form-reject-ren" onsubmit="return handleFormSubmit(this, 'Cancelling...')" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(get_csrf_token()); ?>">
             <input type="hidden" name="form_type" value="renewal">
             <input type="hidden" name="action" value="reject_renewal">
             <input type="hidden" name="request_id" id="reject_ren_id" value="0">
