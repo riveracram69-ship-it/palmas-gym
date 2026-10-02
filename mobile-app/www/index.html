@@ -6880,7 +6880,7 @@ async function submitRegistration() {
       consentWrap.style.background = 'rgba(239, 68, 68, 0.15)';
       consentWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    return showToast('⚠️ Hindi makakapag-patuloy: Paki-lagyan ng check ang Terms & Conditions at Privacy Policy bago mag-submit.', 4500);
+    return showToast('⚠️ Please agree to the Terms & Conditions and Privacy Policy to complete registration.', 4500);
   }
 
   const btn = document.getElementById('btn-submit-reg');
