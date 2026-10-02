@@ -306,16 +306,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } catch (Exception $nEx) {}
 
             } else {
-                // Cash Payment: Record initial registration payment request for front desk
-                if ($plan_id > 0) {
-                    try {
-                        $pdo->prepare("
-                            INSERT INTO renewal_requests (member_id, plan_id, payment_method, reference_no, status, notes, created_at)
-                            VALUES (?, ?, 'Cash', ?, 'Pending', 'Initial Membership Registration Fee', NOW())
-                        ")->execute([$member_id, $plan_id, 'REG-' . $membership_id]);
-                    } catch (Exception $payEx) {}
-                }
-
+                // Cash Payment: Create admin notification for front desk verification
                 try {
                     $pdo->prepare("
                         INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)

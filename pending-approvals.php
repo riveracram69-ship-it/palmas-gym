@@ -565,7 +565,7 @@ $reg_stmt = $pdo->prepare($reg_sql);
 $reg_stmt->execute($reg_params);
 $registrations_list = $reg_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// B. Renewal Requests
+// B. Renewal Requests (Strictly for existing/approved members renewing their plans)
 $ren_params = [];
 $ren_sql = "
     SELECT r.*, 
@@ -576,7 +576,8 @@ $ren_sql = "
     JOIN members m ON r.member_id = m.id
     JOIN membership_plans p ON r.plan_id = p.id
     LEFT JOIN users u ON r.processed_by = u.id
-    WHERE 1=1
+    WHERE m.account_status != 'Pending'
+      AND (r.reference_no NOT LIKE 'REG-%' OR r.reference_no IS NULL)
 ";
 if ($status_filter !== 'all') {
     $ren_sql .= " AND r.status = ?";
@@ -595,9 +596,16 @@ $ren_stmt = $pdo->prepare($ren_sql);
 $ren_stmt->execute($ren_params);
 $renewals_list = $ren_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Real-time Badge Counts
+// Real-time Badge Counts (Segregated: Registrations vs Existing Member Renewals)
 $pending_regs_cnt = (int)$pdo->query("SELECT COUNT(*) FROM members WHERE account_status = 'Pending'")->fetchColumn();
-$pending_renews_cnt = (int)$pdo->query("SELECT COUNT(*) FROM renewal_requests WHERE status = 'Pending'")->fetchColumn();
+$pending_renews_cnt = (int)$pdo->query("
+    SELECT COUNT(*) 
+    FROM renewal_requests r 
+    JOIN members m ON r.member_id = m.id 
+    WHERE r.status = 'Pending' 
+      AND m.account_status != 'Pending'
+      AND (r.reference_no NOT LIKE 'REG-%' OR r.reference_no IS NULL)
+")->fetchColumn();
 $total_pending_all = $pending_regs_cnt + $pending_renews_cnt;
 ?>
 

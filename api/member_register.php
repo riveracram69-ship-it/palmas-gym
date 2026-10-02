@@ -391,25 +391,6 @@ try {
 
     } else {
         // ── CASH (FRONT DESK) PAYMENT ─────────────────────────────────
-        if ($plan_id > 0) {
-            try {
-                $req_stmt = $pdo->prepare("
-                    INSERT INTO renewal_requests 
-                    (member_id, plan_id, payment_method, reference_no, status, notes, created_at)
-                    VALUES (?, ?, ?, ?, 'Pending', ?, NOW())
-                ");
-                $req_stmt->execute([
-                    $member_id,
-                    $plan_id,
-                    'Cash',
-                    'REG-' . $membership_id,
-                    "Initial Registration Fee — {$plan_name}"
-                ]);
-            } catch (Exception $payEx) {
-                error_log("Failed to insert initial registration renewal request: " . $payEx->getMessage());
-            }
-        }
-
         try {
             $pdo->prepare("
                 INSERT INTO notifications (member_id, type, title, message, delivery_status, read_status, sent_at)

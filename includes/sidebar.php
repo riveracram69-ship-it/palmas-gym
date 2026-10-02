@@ -9,7 +9,12 @@ try {
         $pending_regs_count = (int)($counts['pending_regs'] ?? 0);
 
         $renew_counts = $pdo->query("
-            SELECT COUNT(*) AS pending_renews FROM renewal_requests WHERE status = 'Pending'
+            SELECT COUNT(*) AS pending_renews 
+            FROM renewal_requests r
+            JOIN members m ON r.member_id = m.id
+            WHERE r.status = 'Pending'
+              AND m.account_status != 'Pending'
+              AND (r.reference_no NOT LIKE 'REG-%' OR r.reference_no IS NULL)
         ")->fetch(PDO::FETCH_ASSOC);
         $pending_renewals_count = (int)($renew_counts['pending_renews'] ?? 0);
     }
