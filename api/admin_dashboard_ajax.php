@@ -468,10 +468,33 @@ if (isset($_GET['action']) && ($_GET['action'] === 'send_reminder' || $_GET['act
     exit;
 }
 
-// ── 3. Bulk Renewal Reminders ───────────────────────────────────────────────────
-if (isset($_GET['action']) && $_GET['action'] === 'send_bulk_renewal_reminders') {
+// ── 3. Bulk & Selective Renewal Reminders ───────────────────────────────────────
+if (isset($_GET['action']) && ($_GET['action'] === 'send_bulk_renewal_reminders' || $_GET['action'] === 'send_selected_renewal_reminders')) {
     try {
-        $stmt_all = $pdo->query("
+        $raw_input = file_get_contents('php://input');
+        $json_data = json_decode($raw_input, true) ?: [];
+        $selected_ids = $json_data['member_ids'] ?? $_POST['member_ids'] ?? $_GET['member_ids'] ?? null;
+
+        $where_ids_clause = "";
+        $params = [];
+
+        if (!empty($selected_ids)) {
+            if (is_string($selected_ids)) {
+                $id_list = array_filter(array_map('intval', explode(',', $selected_ids)));
+            } elseif (is_array($selected_ids)) {
+                $id_list = array_filter(array_map('intval', $selected_ids));
+            } else {
+                $id_list = [];
+            }
+
+            if (!empty($id_list)) {
+                $placeholders = implode(',', array_fill(0, count($id_list), '?'));
+                $where_ids_clause = " AND s.member_id IN ($placeholders) ";
+                $params = array_values($id_list);
+            }
+        }
+
+        $query = "
             SELECT m.id, m.full_name, m.email, m.membership_id, s.expiry_date, p.name as plan_name
             FROM subscriptions s
             JOIN (
@@ -486,7 +509,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'send_bulk_renewal_reminders')
               AND p.plan_category != 'membership_fee'
               AND s.member_id NOT IN (SELECT member_id FROM subscriptions WHERE expiry_date >= CURDATE())
               AND m.email IS NOT NULL AND m.email != ''
-        ");
+              {$where_ids_clause}
+        ";
+
+        $stmt_all = $pdo->prepare($query);
+        $stmt_all->execute($params);
         $expired_members = $stmt_all ? $stmt_all->fetchAll(PDO::FETCH_ASSOC) : [];
         $sent_count = 0;
         $gym_name = $app_settings['gym_name'] ?? "Palma's Elite Gym";
@@ -508,11 +535,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'send_bulk_renewal_reminders')
             } catch (Exception $e) {}
         }
 
-        log_activity($pdo, 'Bulk Renewal Reminders', "Sent automated renewal reminders to {$sent_count} expired members.", 'Member');
-        echo json_encode(['success' => true, 'sent_count' => $sent_count, 'message' => "Successfully dispatched renewal reminders to {$sent_count} member(s)!"]);
+        log_activity($pdo, 'Renewal Reminders', "Sent renewal reminders to {$sent_count} selected expired member(s).", 'Member');
+        echo json_encode([
+            'success'    => true, 
+            'sent_count' => $sent_count, 
+            'message'    => "Successfully dispatched renewal reminders to {$sent_count} selected member(s)!"
+        ]);
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Failed to send bulk reminders: ' . $e->getMessage()]);
+        echo json_encode(['success' => false, 'message' => 'Failed to send renewal reminders: ' . $e->getMessage()]);
     }
     exit;
 }

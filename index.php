@@ -1123,8 +1123,8 @@ try {
                 </div>
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                     <?php if (!empty($overdue_renewals)): ?>
-                    <button type="button" class="btn btn-outline btn-sm" id="btn-bulk-notify" onclick="sendBulkRenewalReminders()" style="font-size:0.75rem; padding:0.35rem 0.75rem; border-color:#fca5a5; color:#dc2626; background:#fff5f5; display:inline-flex; align-items:center; gap:5px; font-weight:700; border-radius:8px;" title="Send renewal reminder email to all expired members with email addresses">
-                        <i class="fas fa-bullhorn"></i> <span id="bulk-notify-label">Notify All Overdue (<?php echo count($overdue_renewals); ?>)</span>
+                    <button type="button" class="btn btn-sm" id="btn-bulk-notify" onclick="sendBulkRenewalReminders()" style="font-size:0.75rem; padding:0.35rem 0.85rem; border:1.5px solid #cbd5e1; color:#64748b; background:#f8fafc; display:inline-flex; align-items:center; gap:6px; font-weight:700; border-radius:8px; transition:all 0.2s; cursor:pointer;" title="Send renewal reminder email to selected expired members">
+                        <i class="fas fa-paper-plane"></i> <span id="bulk-notify-label">Notify Selected (0)</span>
                     </button>
                     <?php endif; ?>
                     <span class="badge badge-danger" id="overdue-total-badge" style="background:rgba(239,68,68,0.12); color:#ef4444; font-weight:700;">
@@ -1137,6 +1137,9 @@ try {
                 <table class="dash-table" id="overdue-table">
                     <thead>
                         <tr>
+                            <th style="width:38px; text-align:center;">
+                                <input type="checkbox" id="check-all-overdue" onchange="toggleSelectAllOverdue(this)" title="Select/Deselect All" style="width:16px; height:16px; cursor:pointer; accent-color:var(--primary, #2d6a4f); margin:0;">
+                            </th>
                             <th style="min-width:200px;">Member</th>
                             <th style="min-width:125px;">Expired Date</th>
                             <th style="min-width:130px;">Plan</th>
@@ -1146,7 +1149,7 @@ try {
                     <tbody id="overdue-tbody">
                         <?php if (empty($overdue_renewals)): ?>
                         <tr id="row-no-overdue">
-                            <td colspan="4" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
+                            <td colspan="5" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
                                 <i class="fas fa-circle-check" style="font-size:1.8rem; color:#52b788; display:block; margin-bottom:0.5rem;"></i>
                                 <strong>All recurring member subscriptions are in good standing!</strong>
                                 <p style="margin:4px 0 0 0; font-size:0.78rem;">No expired memberships requiring immediate follow-up.</p>
@@ -1173,6 +1176,9 @@ try {
                             $is_official = (!empty($ann_exp) && strtotime($ann_exp) >= strtotime(date('Y-m-d')));
                         ?>
                         <tr class="od-row" id="od-row-<?php echo $od['id']; ?>">
+                            <td style="text-align:center; vertical-align:middle;">
+                                <input type="checkbox" class="overdue-checkbox" value="<?php echo $od['id']; ?>" data-name="<?php echo htmlspecialchars($od['full_name']); ?>" data-has-email="<?php echo !empty($od['email']) ? '1' : '0'; ?>" onchange="updateSelectedOverdueCount()" style="width:16px; height:16px; cursor:pointer; accent-color:var(--primary, #2d6a4f); margin:0;">
+                            </td>
                             <td>
                                 <div class="member-cell">
                                     <div class="member-avatar">
@@ -1836,49 +1842,112 @@ function sendRenewalReminder(memberId, memberName, btn) {
         });
 }
 
-// ── Send Bulk Renewal Reminders to All Overdue ───────────────────────────
+// ── Checkbox Selection for Overdue Follow-ups ─────────────────────────────
+function toggleSelectAllOverdue(masterCb) {
+    const isChecked = masterCb.checked;
+    const checkboxes = document.querySelectorAll('.overdue-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = isChecked;
+    });
+    updateSelectedOverdueCount();
+}
+
+function updateSelectedOverdueCount() {
+    const checkboxes = document.querySelectorAll('.overdue-checkbox');
+    const checked = document.querySelectorAll('.overdue-checkbox:checked');
+    const count = checked.length;
+    const total = checkboxes.length;
+    
+    const masterCb = document.getElementById('check-all-overdue');
+    if (masterCb) {
+        masterCb.checked = (count > 0 && count === total);
+        masterCb.indeterminate = (count > 0 && count < total);
+    }
+
+    const btn = document.getElementById('btn-bulk-notify');
+    const label = document.getElementById('bulk-notify-label');
+    if (btn && label) {
+        if (count > 0) {
+            label.textContent = `Notify Selected (${count})`;
+            btn.style.borderColor = '#fca5a5';
+            btn.style.color = '#dc2626';
+            btn.style.background = '#fff5f5';
+            btn.style.boxShadow = '0 2px 8px rgba(220, 38, 38, 0.15)';
+        } else {
+            label.textContent = 'Notify Selected (0)';
+            btn.style.borderColor = '#cbd5e1';
+            btn.style.color = '#64748b';
+            btn.style.background = '#f8fafc';
+            btn.style.boxShadow = 'none';
+        }
+    }
+}
+
+// ── Send Renewal Reminders to Checked / Selected Overdue Members ──────────
 function sendBulkRenewalReminders() {
+    const checked = Array.from(document.querySelectorAll('.overdue-checkbox:checked'));
+    if (checked.length === 0) {
+        if (typeof palmasToast === 'function') {
+            palmasToast('Please check at least one expired member to send a reminder.', 'warning');
+        } else {
+            alert('Please check at least one expired member to send a reminder.');
+        }
+        return;
+    }
+
+    const selectedIds = checked.map(cb => parseInt(cb.value, 10)).filter(id => !isNaN(id) && id > 0);
+    const count = selectedIds.length;
     const btn = document.getElementById('btn-bulk-notify');
     const label = document.getElementById('bulk-notify-label');
 
     const executeBulk = () => {
         if (btn) btn.disabled = true;
-        if (label) label.textContent = 'Sending Reminders...';
+        if (label) label.textContent = `Sending (${count})...`;
 
-        fetch('api/admin_dashboard_ajax.php?action=send_bulk_renewal_reminders')
-            .then(r => r.json())
-            .then(data => {
-                if (btn) btn.disabled = false;
-                if (label) label.textContent = 'Notify All Overdue';
+        fetch('api/admin_dashboard_ajax.php?action=send_bulk_renewal_reminders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ member_ids: selectedIds })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (btn) btn.disabled = false;
+            updateSelectedOverdueCount();
 
-                if (data.success) {
-                    if (typeof palmasToast === 'function') {
-                        palmasToast(data.message, 'success');
-                    } else {
-                        alert(data.message);
-                    }
-                } else {
-                    if (typeof palmasToast === 'function') {
-                        palmasToast(data.message || 'Failed to send bulk reminders.', 'error');
-                    } else {
-                        alert(data.message || 'Failed to send bulk reminders.');
-                    }
-                }
-            })
-            .catch(err => {
-                if (btn) btn.disabled = false;
-                if (label) label.textContent = 'Notify All Overdue';
+            if (data.success) {
+                // Uncheck after successful dispatch
+                checked.forEach(cb => cb.checked = false);
+                const masterCb = document.getElementById('check-all-overdue');
+                if (masterCb) masterCb.checked = false;
+                updateSelectedOverdueCount();
+
                 if (typeof palmasToast === 'function') {
-                    palmasToast('Network error while sending bulk reminders.', 'error');
+                    palmasToast(data.message, 'success');
                 } else {
-                    alert('Network error while sending bulk reminders.');
+                    alert(data.message);
                 }
-            });
+            } else {
+                if (typeof palmasToast === 'function') {
+                    palmasToast(data.message || 'Failed to send reminders.', 'error');
+                } else {
+                    alert(data.message || 'Failed to send reminders.');
+                }
+            }
+        })
+        .catch(err => {
+            if (btn) btn.disabled = false;
+            updateSelectedOverdueCount();
+            if (typeof palmasToast === 'function') {
+                palmasToast('Network error while sending reminders.', 'error');
+            } else {
+                alert('Network error while sending reminders.');
+            }
+        });
     };
 
-    const confirmMsg = 'Send automated renewal reminder emails to all expired members with active email addresses?';
+    const confirmMsg = `Send automated renewal reminder email to the ${count} selected expired member(s)?`;
     if (typeof palmasConfirm === 'function') {
-        palmasConfirm('Bulk Renewal Reminders', confirmMsg, 'Send Reminders', '#0284c7', executeBulk);
+        palmasConfirm('Send Renewal Reminders', confirmMsg, 'Send Reminders', '#0284c7', executeBulk);
     } else {
         if (confirm(confirmMsg)) executeBulk();
     }
