@@ -7890,8 +7890,10 @@ if (typeof document !== 'undefined') {
         qrCountdownTimer = null;
       }
     } else {
-      const activeRef = currentPendingRef || currentResultRef || (document.getElementById('res-pending-ref') ? document.getElementById('res-pending-ref').textContent.trim() : null);
-      if (activeRef && activeRef !== '--') {
+      const activeRef = currentPendingRef || (function() {
+        try { return sessionStorage.getItem('peg_pending_checkout_ref'); } catch (e) { return null; }
+      })();
+      if (activeRef && activeRef !== '--' && !(typeof dismissedPaymentRefs !== 'undefined' && dismissedPaymentRefs.has(activeRef))) {
         pollPaymentStatus(activeRef, 1);
       }
       if (currentMember && currentActiveTab === 'tab-pass') {
@@ -7902,8 +7904,10 @@ if (typeof document !== 'undefined') {
   });
 
   window.addEventListener('focus', () => {
-    const activeRef = currentPendingRef || currentResultRef || (document.getElementById('res-pending-ref') ? document.getElementById('res-pending-ref').textContent.trim() : null);
-    if (activeRef && activeRef !== '--') {
+    const activeRef = currentPendingRef || (function() {
+      try { return sessionStorage.getItem('peg_pending_checkout_ref'); } catch (e) { return null; }
+    })();
+    if (activeRef && activeRef !== '--' && !(typeof dismissedPaymentRefs !== 'undefined' && dismissedPaymentRefs.has(activeRef))) {
       pollPaymentStatus(activeRef, 1);
     }
   });
@@ -8201,6 +8205,15 @@ let selectedRenewMethod = 'GCash';
 let currentPendingRef = null;
 let currentResultRef = null;
 let paymentPollingTimer = null;
+let dismissedPaymentRefs = new Set();
+try {
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const k = sessionStorage.key(i);
+    if (k && k.startsWith('peg_dismissed_ref_')) {
+      dismissedPaymentRefs.add(k.replace('peg_dismissed_ref_', ''));
+    }
+  }
+} catch (e) {}
 let currentHistoryFilter = 'ALL';
 let isPaymentHistoryExpanded = false;
 let lastPaymentRecordsList = [];
@@ -9121,6 +9134,12 @@ function showPaymentSuccessModal(data = {}, member = null) {
   const mObj = member || currentMember || (data ? data.member : null) || {};
   const isFee = !!(data.is_membership_fee || (data.plan_category === 'membership_fee') || (mObj && mObj.is_official_member && !data.subscription_id));
   const refCode = data.reference_code || data.ref_code || currentResultRef || (mObj ? mObj.membership_id : '--');
+
+  if (refCode && refCode !== '--' && dismissedPaymentRefs.has(refCode)) {
+    console.log('[PalmasGym] Payment success modal suppressed (already acknowledged):', refCode);
+    return;
+  }
+
   const planName = data.plan_name || (isFee ? '1-Year Official Membership' : (mObj.workout_pass_name || mObj.plan_name || 'Membership Pass'));
   const amountStr = data.amount_formatted || (data.amount ? ('₱' + parseFloat(data.amount).toFixed(2)) : (isFee ? '₱1,000.00' : '--'));
   const methodStr = data.payment_method ? `${data.payment_method} (${data.gateway || 'PayMongo'})` : 'GCash via PayMongo';
@@ -9165,6 +9184,31 @@ function showPaymentSuccessModal(data = {}, member = null) {
 }
 
 function dismissPaymentSuccessModal() {
+  const refEl = document.getElementById('psm-ref');
+  const dismissedRef = (refEl && refEl.textContent && refEl.textContent.trim() !== '--') ? refEl.textContent.trim() : (currentResultRef || currentPendingRef);
+  if (dismissedRef && dismissedRef !== '--') {
+    dismissedPaymentRefs.add(dismissedRef);
+    try {
+      sessionStorage.setItem('peg_dismissed_ref_' + dismissedRef, '1');
+    } catch (e) {}
+  }
+
+  if (paymentPollingTimer) {
+    clearTimeout(paymentPollingTimer);
+    clearInterval(paymentPollingTimer);
+    paymentPollingTimer = null;
+  }
+  currentPendingRef = null;
+  currentResultRef = null;
+  currentCheckoutUrl = null;
+  try {
+    sessionStorage.removeItem('peg_pending_checkout_ref');
+    localStorage.removeItem('peg_pending_checkout_ref');
+  } catch (e) {}
+
+  const resPendingEl = document.getElementById('res-pending-ref');
+  if (resPendingEl) resPendingEl.textContent = '--';
+
   const modal = document.getElementById('payment-success-modal');
   if (modal) {
     modal.style.transition = 'opacity 0.2s ease-out';
@@ -9439,6 +9483,12 @@ async function pollPaymentStatus(refCode, attempt = 1) {
       }
       currentPendingRef = null;
       currentResultRef = activeRef;
+      try {
+        sessionStorage.removeItem('peg_pending_checkout_ref');
+        localStorage.removeItem('peg_pending_checkout_ref');
+      } catch (e) {}
+      const resPendingEl = document.getElementById('res-pending-ref');
+      if (resPendingEl) resPendingEl.textContent = '--';
 
       // Unconditionally save session token if returned
       if (data.token) {
@@ -9461,8 +9511,10 @@ async function pollPaymentStatus(refCode, attempt = 1) {
       }
       loadPaymentHistory();
 
-      // Show persistent, dedicated receipt confirmation modal (requires user tap to dismiss)
-      showPaymentSuccessModal(data, currentMember);
+      // Show persistent, dedicated receipt confirmation modal if not already dismissed
+      if (!dismissedPaymentRefs.has(activeRef)) {
+        showPaymentSuccessModal(data, currentMember);
+      }
 
       const isFee = data.is_membership_fee || (data.plan_category === 'membership_fee');
       const successMsg = isFee 
@@ -10341,8 +10393,10 @@ function setupAppEventListeners() {
         App.addListener('appStateChange', (state) => {
           console.log('[PalmasGym] appStateChange:', state);
           if (state && state.isActive) {
-            const activeRef = currentPendingRef || currentResultRef || (document.getElementById('res-pending-ref') ? document.getElementById('res-pending-ref').textContent.trim() : null);
-            if (activeRef && activeRef !== '--') {
+            const activeRef = currentPendingRef || (function() {
+              try { return sessionStorage.getItem('peg_pending_checkout_ref'); } catch (e) { return null; }
+            })();
+            if (activeRef && activeRef !== '--' && !dismissedPaymentRefs.has(activeRef)) {
               pollPaymentStatus(activeRef, 1);
             }
           }
@@ -10352,8 +10406,10 @@ function setupAppEventListeners() {
       if (Browser && typeof Browser.addListener === 'function') {
         Browser.addListener('browserFinished', () => {
           console.log('[PalmasGym] Browser dismissed or closed');
-          const activeRef = currentPendingRef || currentResultRef || (document.getElementById('res-pending-ref') ? document.getElementById('res-pending-ref').textContent.trim() : null);
-          if (activeRef && activeRef !== '--') {
+          const activeRef = currentPendingRef || (function() {
+            try { return sessionStorage.getItem('peg_pending_checkout_ref'); } catch (e) { return null; }
+          })();
+          if (activeRef && activeRef !== '--' && !dismissedPaymentRefs.has(activeRef)) {
             handlePaymentReturn(null);
           }
         });
@@ -10365,11 +10421,11 @@ function setupAppEventListeners() {
 
   // ── BROWSER LIFECYCLE & PWA PAYMENT RESUME LISTENERS ──────────
   function checkPendingPaymentOnResume() {
-    const activeRef = currentPendingRef || currentResultRef || (function() {
+    const activeRef = currentPendingRef || (function() {
       try { return sessionStorage.getItem('peg_pending_checkout_ref'); } catch (e) { return null; }
-    })() || (document.getElementById('res-pending-ref') ? document.getElementById('res-pending-ref').textContent.trim() : null);
+    })();
 
-    if (activeRef && activeRef !== '--') {
+    if (activeRef && activeRef !== '--' && !dismissedPaymentRefs.has(activeRef)) {
       console.log('[PalmasGym] PWA/Browser resumed. Checking payment confirmation for:', activeRef);
       pollPaymentStatus(activeRef, 1);
     }
