@@ -3304,7 +3304,7 @@
           <!-- Terms & Privacy Consent Checkbox -->
           <div style="margin: 14px 0; background: rgba(15,45,32,0.6); border: 1px solid var(--gym-border); border-radius: 14px; padding: 12px 14px;">
             <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:0.8rem; color:var(--gym-pale, #e2ece9); line-height:1.45; user-select:none;">
-              <input type="checkbox" id="reg-privacy-consent" checked style="width:18px; height:18px; margin-top:2px; accent-color:var(--gym-green, #10b981); flex-shrink:0; cursor:pointer;" />
+              <input type="checkbox" id="reg-privacy-consent" style="width:18px; height:18px; margin-top:2px; accent-color:var(--gym-green, #10b981); flex-shrink:0; cursor:pointer;" />
               <span>I agree to the <a href="javascript:void(0)" onclick="openTermsModal()" style="color:var(--gym-light, #8fcfbc); font-weight:700; text-decoration:underline;">Terms &amp; Conditions</a> and consent to data processing under the <a href="javascript:void(0)" onclick="openPrivacyPolicyModal()" style="color:var(--gym-light, #8fcfbc); font-weight:700; text-decoration:underline;">Privacy Policy</a> (RA 10173).</span>
             </label>
           </div>
@@ -5815,6 +5815,8 @@ function openRegistrationWizard() {
     dobInp.max = maxDobDate.toISOString().split('T')[0];
   }
   initRegAddressDropdowns();
+  const consentBox = document.getElementById('reg-privacy-consent');
+  if (consentBox) consentBox.checked = false;
   goToWizardStep(1);
   loadPlansForRegistration();
   showScreen('view-register');
@@ -5823,6 +5825,8 @@ function openRegistrationWizard() {
 function openRegistrationWizardWithPrefill(prefill) {
   regPrefill = prefill || {};
   regSelectedPhotoBase64 = '';
+  const consentBox = document.getElementById('reg-privacy-consent');
+  if (consentBox) consentBox.checked = false;
   document.getElementById('google-prefill-badge').style.display = 'flex';
   document.getElementById('google-avatar').src = prefill.picture || 'https://via.placeholder.com/80';
   document.getElementById('google-name-badge').textContent = prefill.name || 'Google User';
