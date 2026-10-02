@@ -136,6 +136,13 @@ if (empty($municipality) && empty($address)) {
     exit;
 }
 
+// Terms & Privacy Consent validation (RA 10173 Compliance)
+$terms_consent = $data['terms_consent'] ?? $data['privacy_consent'] ?? false;
+if (empty($terms_consent) || $terms_consent === '0' || $terms_consent === false || $terms_consent === 'false') {
+    echo json_encode(['success' => false, 'message' => 'You must agree to the Terms & Conditions and Privacy Policy to complete registration.']);
+    exit;
+}
+
 // Password required only for traditional registration
 $password_hash = null;
 if ($auth_provider !== 'google') {

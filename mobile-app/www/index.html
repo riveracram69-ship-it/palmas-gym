@@ -3302,9 +3302,9 @@
           </div>
 
           <!-- Terms & Privacy Consent Checkbox -->
-          <div style="margin: 14px 0; background: rgba(15,45,32,0.6); border: 1px solid var(--gym-border); border-radius: 14px; padding: 12px 14px;">
+          <div id="reg-consent-wrapper" style="margin: 14px 0; background: rgba(15,45,32,0.6); border: 1px solid var(--gym-border); border-radius: 14px; padding: 12px 14px; transition: all 0.25s ease;">
             <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:0.8rem; color:var(--gym-pale, #e2ece9); line-height:1.45; user-select:none;">
-              <input type="checkbox" id="reg-privacy-consent" style="width:18px; height:18px; margin-top:2px; accent-color:var(--gym-green, #10b981); flex-shrink:0; cursor:pointer;" />
+              <input type="checkbox" id="reg-privacy-consent" onchange="onConsentCheckboxChanged()" style="width:18px; height:18px; margin-top:2px; accent-color:var(--gym-green, #10b981); flex-shrink:0; cursor:pointer;" />
               <span>I agree to the <a href="javascript:void(0)" onclick="openTermsModal()" style="color:var(--gym-light, #8fcfbc); font-weight:700; text-decoration:underline;">Terms &amp; Conditions</a> and consent to data processing under the <a href="javascript:void(0)" onclick="openPrivacyPolicyModal()" style="color:var(--gym-light, #8fcfbc); font-weight:700; text-decoration:underline;">Privacy Policy</a> (RA 10173).</span>
             </label>
           </div>
@@ -6860,10 +6860,27 @@ function closeTermsModal() {
   if (modal) modal.style.display = 'none';
 }
 
+function onConsentCheckboxChanged() {
+  const consent = document.getElementById('reg-privacy-consent');
+  const consentWrap = document.getElementById('reg-consent-wrapper');
+  if (consentWrap) {
+    if (consent && consent.checked) {
+      consentWrap.style.border = '1px solid var(--gym-border)';
+      consentWrap.style.background = 'rgba(15,45,32,0.6)';
+    }
+  }
+}
+
 async function submitRegistration() {
   const consent = document.getElementById('reg-privacy-consent');
-  if (consent && !consent.checked) {
-    return showToast('⚠️ Please agree to the Terms & Conditions and Privacy Policy to complete registration.');
+  const consentWrap = document.getElementById('reg-consent-wrapper');
+  if (!consent || !consent.checked) {
+    if (consentWrap) {
+      consentWrap.style.border = '2px solid #ef4444';
+      consentWrap.style.background = 'rgba(239, 68, 68, 0.15)';
+      consentWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return showToast('⚠️ Hindi makakapag-patuloy: Paki-lagyan ng check ang Terms & Conditions at Privacy Policy bago mag-submit.', 4500);
   }
 
   const btn = document.getElementById('btn-submit-reg');
@@ -6896,7 +6913,8 @@ async function submitRegistration() {
         photo_base64:   regSelectedPhotoBase64 || '',
         google_id:      regPrefill.google_id || '',
         google_picture: regPrefill.picture || '',
-        auth_provider:  regPrefill.google_id ? 'google' : 'password'
+        auth_provider:  regPrefill.google_id ? 'google' : 'password',
+        terms_consent:  1
       })
     });
     let data;

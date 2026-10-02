@@ -1889,8 +1889,11 @@ function validateStep(step) {
     }
     const consent = document.getElementById('terms_consent');
     if (!consent || !consent.checked) {
-      alert('Please accept the Terms & Conditions and Privacy Policy to complete registration.');
-      if (consent) consent.focus();
+      showStepError(consent, 'You must agree to the Terms & Conditions and Privacy Policy to register.');
+      if (consent) {
+        consent.focus();
+        consent.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return false;
     }
     return true;
