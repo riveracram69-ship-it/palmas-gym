@@ -50,9 +50,12 @@ function generate_native_sql_backup(PDO $pdo, string $target_file): bool {
     fwrite($fp, "-- Generated: " . date('Y-m-d H:i:s') . "\n");
     fwrite($fp, "-- Server: " . (defined('DB_HOST') ? DB_HOST : 'localhost') . "\n");
     fwrite($fp, "-- Database: " . (defined('DB_NAME') ? DB_NAME : 'gym_management') . "\n");
+    fwrite($fp, "-- Compatible: phpMyAdmin, MySQL Workbench, CLI MySQL\n");
     fwrite($fp, "-- ========================================================\n\n");
-    fwrite($fp, "SET FOREIGN_KEY_CHECKS=0;\n");
+    fwrite($fp, "SET FOREIGN_KEY_CHECKS = 0;\n");
     fwrite($fp, "SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';\n");
+    fwrite($fp, "SET AUTOCOMMIT = 0;\n");
+    fwrite($fp, "START TRANSACTION;\n");
     fwrite($fp, "SET time_zone = '+08:00';\n\n");
 
     try {
@@ -69,7 +72,7 @@ function generate_native_sql_backup(PDO $pdo, string $target_file): bool {
             $create_sql = preg_replace('/"([^"]+)"/', '`$1`', $create_sql);
             fwrite($fp, $create_sql . ";\n\n");
 
-            // Dump rows in batches
+            // Dump rows in small safe batches (10 rows max to stay well below max_allowed_packet)
             $stmt = $pdo->query("SELECT * FROM `{$table}`");
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -79,7 +82,7 @@ function generate_native_sql_backup(PDO $pdo, string $target_file): bool {
                 $quoted_cols = array_map(function($col) { return "`" . str_replace("`", "``", $col) . "`"; }, $cols);
                 $col_list = implode(', ', $quoted_cols);
 
-                $chunks = array_chunk($rows, 100);
+                $chunks = array_chunk($rows, 10);
                 foreach ($chunks as $chunk) {
                     $val_lines = [];
                     foreach ($chunk as $row) {
@@ -101,7 +104,8 @@ function generate_native_sql_backup(PDO $pdo, string $target_file): bool {
             }
         }
 
-        fwrite($fp, "SET FOREIGN_KEY_CHECKS=1;\n");
+        fwrite($fp, "COMMIT;\n");
+        fwrite($fp, "SET FOREIGN_KEY_CHECKS = 1;\n");
         fclose($fp);
         return true;
     } catch (\Throwable $e) {
