@@ -1,7 +1,10 @@
 <?php
-$page_title = 'Backup & Restore';
-include 'includes/header.php';
-include 'includes/sidebar.php';
+require_once __DIR__ . '/config/auth.php';
+require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/config/logger.php';
+require_once __DIR__ . '/config/settings.php';
+
+require_login();
 require_admin();
 
 $backup_dir = __DIR__ . '/backups/';
@@ -15,11 +18,20 @@ if (isset($_GET['download'])) {
     $file = basename($_GET['download']);
     $filepath = $backup_dir . $file;
     if (file_exists($filepath) && pathinfo($filepath, PATHINFO_EXTENSION) === 'sql') {
-        header('Content-Type: application/sql');
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/octet-stream');
         header('Content-Disposition: attachment; filename="' . $file . '"');
         header('Content-Length: ' . filesize($filepath));
+        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+        header('Pragma: public');
+        header('Expires: 0');
         readfile($filepath);
         exit;
+    } else {
+        $error = "Backup file not found.";
     }
 }
 
@@ -273,6 +285,10 @@ function formatBytes($bytes) {
     $bytes /= pow(1024, $pow);
     return round($bytes, 2) . ' ' . $units[$pow]; 
 } 
+
+$page_title = 'Backup & Restore';
+include 'includes/header.php';
+include 'includes/sidebar.php';
 ?>
 
 <div class="topbar">
