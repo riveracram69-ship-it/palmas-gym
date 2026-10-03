@@ -208,75 +208,18 @@ function mark_all_notifications_read(PDO $pdo, int $member_id): bool {
 }
 
 /**
- * Register a member device token for push notifications
+ * Register a member device token for push notifications (Safe no-op when push is disabled)
  */
 function register_member_device(PDO $pdo, int $member_id, string $device_token, string $device_type = 'android'): bool {
-    if ($member_id <= 0 || empty($device_token)) return false;
-
-    try {
-        $stmt = $pdo->prepare("
-            INSERT INTO member_devices (member_id, device_token, device_type, last_used_at, created_at)
-            VALUES (?, ?, ?, NOW(), NOW())
-            ON DUPLICATE KEY UPDATE last_used_at = NOW(), device_type = VALUES(device_type)
-        ");
-        return $stmt->execute([$member_id, $device_token, $device_type]);
-    } catch (Exception $e) {
-        error_log("register_member_device Error: " . $e->getMessage());
-        return false;
-    }
+    // Member devices table removed — email & in-app notifications are active
+    return true;
 }
 
 /**
  * Dispatch Push Notification to all active devices of a member
  */
 function dispatch_device_push_notification(PDO $pdo, int $member_id, string $title, string $body, array $data = []): void {
-    try {
-        $stmt = $pdo->prepare("SELECT device_token, device_type FROM member_devices WHERE member_id = ?");
-        $stmt->execute([$member_id]);
-        $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        if (empty($devices)) return;
-
-        $push_status = get_push_notification_status();
-
-        if ($push_status === 'NOT CONFIGURED') {
-            // Push provider not configured; log device delivery audit
-            foreach ($devices as $dev) {
-                error_log("[PUSH DISPATCH - NOT CONFIGURED] To Member #{$member_id} ({$dev['device_type']}): '{$title}' - {$body}");
-            }
-            return;
-        }
-
-        // When FCM is configured with server key or service account
-        $fcm_key = defined('FCM_SERVER_KEY') ? trim((string)FCM_SERVER_KEY) : '';
-        if (!empty($fcm_key)) {
-            foreach ($devices as $dev) {
-                $fcm_payload = [
-                    'to' => $dev['device_token'],
-                    'notification' => [
-                        'title' => $title,
-                        'body'  => $body,
-                        'sound' => 'default'
-                    ],
-                    'data' => $data
-                ];
-
-                $ch = curl_init('https://fcm.googleapis.com/fcm/send');
-                curl_setopt_array($ch, [
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_POST           => true,
-                    CURLOPT_POSTFIELDS     => json_encode($fcm_payload),
-                    CURLOPT_HTTPHEADER     => [
-                        'Authorization: key=' . $fcm_key,
-                        'Content-Type: application/json'
-                    ],
-                    CURLOPT_TIMEOUT        => 5
-                ]);
-                curl_exec($ch);
-                curl_close($ch);
-            }
-        }
-    } catch (Exception $e) {
-        error_log("dispatch_device_push_notification Error: " . $e->getMessage());
-    }
+    // Primary notifications are dispatched via Email & In-App / Activity logs
+    return;
 }
+

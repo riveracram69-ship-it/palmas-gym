@@ -89,7 +89,6 @@ function cleanup_test_member(PDO $pdo, string $membership_id): ?int {
         $pdo->prepare("DELETE FROM payment_transactions WHERE member_id = ?")->execute([$id]);
         $pdo->prepare("DELETE FROM payments WHERE member_id = ?")->execute([$id]);
         $pdo->prepare("DELETE FROM subscriptions WHERE member_id = ?")->execute([$id]);
-        $pdo->prepare("DELETE FROM member_devices WHERE member_id = ?")->execute([$id]);
         $pdo->prepare("DELETE FROM members WHERE id = ?")->execute([$id]);
         return $id;
     } catch (Exception $e) { return null; }
