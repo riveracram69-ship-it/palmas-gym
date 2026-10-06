@@ -5022,64 +5022,18 @@
       </div>
 
       <!-- Action Buttons -->
-      <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px; width:100%;">
-        <button type="button" class="btn-primary" id="btn-download-eid" onclick="downloadPrintableEID()" style="height:44px; font-size:0.88rem; width:100%;">
-          <i class="fa-solid fa-download"></i> Download E-ID (HD)
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:14px; width:100%;">
+        <button type="button" class="btn-primary" id="btn-download-eid" onclick="downloadPrintableEID()" style="height:46px; font-size:0.9rem; width:100%;">
+          <i class="fa-solid fa-download" style="margin-right:6px;"></i> Download E-ID (HD)
         </button>
-        <div style="display:flex; gap:8px;">
-          <button type="button" class="btn-outline" onclick="sharePrintableEID()" style="flex:1; height:42px; font-size:0.82rem; border-color:var(--border); color:#fff;">
-            <i class="fa-solid fa-share-nodes"></i> Share
-          </button>
-          <button type="button" class="btn-outline" onclick="printPrintableEID()" style="flex:1; height:42px; font-size:0.82rem; border-color:var(--border); color:#fff;">
-            <i class="fa-solid fa-print"></i> Print
-          </button>
-        </div>
+        <button type="button" class="btn-outline" onclick="printPrintableEID()" style="height:44px; font-size:0.85rem; border-color:var(--border); color:#fff; width:100%;">
+          <i class="fa-solid fa-print" style="margin-right:6px;"></i> Print ID Card / Save as PDF
+        </button>
       </div>
 
       <p style="margin:12px 0 0; font-size:0.72rem; color:var(--text-muted); line-height:1.4;">
         <i class="fa-solid fa-circle-info" style="color:var(--primary); margin-right:4px;"></i> Use this printable card or your live digital pass to check in at the gym scanner.
       </p>
-
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════════
-       E-ID IMAGE PREVIEW & SAVE DIALOG
-       ══════════════════════════════════════════════════════════ -->
-  <div id="modal-eid-image-preview" class="custom-dialog-overlay" style="display:none; z-index:100000;" onclick="closeEIDImagePreviewModal()">
-    <div class="custom-dialog-card" onclick="event.stopPropagation()" style="max-width:360px; width:92%; max-height:92vh; display:flex; flex-direction:column; padding:18px 16px; text-align:center; background:#082119; border:2px solid #52B788; box-shadow:0 25px 60px rgba(0,0,0,0.9); overflow-y:auto;">
-      
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid rgba(82,183,136,0.25);">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-image" style="color:var(--primary); font-size:1.1rem;"></i>
-          <h3 style="margin:0; font-family:'Outfit',sans-serif; font-size:1.05rem; font-weight:800; color:#fff;">Save ID to Gallery</h3>
-        </div>
-        <button onclick="closeEIDImagePreviewModal()" style="background:transparent; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer; padding:4px;">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-
-      <div style="background:rgba(82,183,136,0.12); border:1px solid rgba(82,183,136,0.3); border-radius:12px; padding:10px 12px; margin-bottom:12px; text-align:left; font-size:0.75rem; color:#d1fae5; line-height:1.45;">
-        👉 <strong>Tip:</strong> <em>Long-press (diinan)</em> ang image sa ibaba at piliin ang <strong>"Download image"</strong> o <strong>"Save image"</strong> para pumasok sa Photos/Gallery.
-      </div>
-
-      <!-- Rendered Image Frame -->
-      <div style="margin:0 auto 14px; max-width:280px; width:100%; display:flex; justify-content:center;">
-        <img id="eid-preview-img-target" src="" alt="Palma's Elite Gym E-ID Card" style="width:100%; border-radius:18px; box-shadow:0 12px 35px rgba(0,0,0,0.6); -webkit-touch-callout:default !important; -webkit-user-select:auto !important; user-select:auto !important; pointer-events:auto !important; display:block; background:#fff;" />
-      </div>
-
-      <!-- Actions -->
-      <div style="display:flex; flex-direction:column; gap:8px; width:100%;">
-        <button type="button" class="btn-primary" onclick="printPrintableEID()" style="height:44px; font-size:0.85rem; width:100%;">
-          <i class="fa-solid fa-file-pdf" style="margin-right:6px;"></i> Save as PDF / Print
-        </button>
-        <button type="button" class="btn-outline" onclick="sharePrintableEID()" style="height:42px; font-size:0.82rem; border-color:var(--border); color:#fff;">
-          <i class="fa-solid fa-share-nodes" style="margin-right:6px;"></i> Share Card
-        </button>
-        <button type="button" class="btn-outline" onclick="closeEIDImagePreviewModal()" style="height:40px; font-size:0.8rem; border-color:transparent; color:var(--text-muted);">
-          Close
-        </button>
-      </div>
 
     </div>
   </div>
@@ -5508,13 +5462,6 @@ function handleHardwareBack() {
   const printableEidModal = document.getElementById('modal-printable-eid');
   if (printableEidModal && printableEidModal.style.display !== 'none') {
     closePrintableEIDModal();
-    return;
-  }
-
-  // 1d. Check E-ID image preview modal
-  const previewModal = document.getElementById('modal-eid-image-preview');
-  if (previewModal && previewModal.style.display !== 'none') {
-    closeEIDImagePreviewModal();
     return;
   }
 
@@ -8394,82 +8341,6 @@ async function downloadPrintableEID() {
   if (btn) {
     btn.innerHTML = origHtml || '<i class="fa-solid fa-download"></i> Download E-ID (HD)';
     btn.disabled = false;
-  }
-  renderPrintableEIDQR(memId);
-}
-
-function closeEIDImagePreviewModal() {
-  const modal = document.getElementById('modal-eid-image-preview');
-  if (modal) modal.style.display = 'none';
-}
-
-async function sharePrintableEID() {
-  const memId = (currentMember && currentMember.membership_id) || 'ID';
-  const qrTarget = document.getElementById('printable-eid-qr');
-  const qrCanvas = qrTarget ? qrTarget.querySelector('canvas') : null;
-  if (qrCanvas) {
-    const img = new Image();
-    img.src = qrCanvas.toDataURL('image/png');
-    img.style.cssText = 'width:190px;height:190px;display:block;margin:0 auto;';
-    qrTarget.innerHTML = '';
-    qrTarget.appendChild(img);
-  }
-
-  await new Promise(r => setTimeout(r, 250));
-
-  const cardElem = document.getElementById('printable-eid-capture-card');
-  if (typeof html2canvas !== 'undefined' && cardElem) {
-    try {
-      const canvas = await html2canvas(cardElem, { scale: 3, useCORS: true, backgroundColor: null });
-      const dataUrl = canvas.toDataURL('image/png');
-      const base64Data = dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
-      const fileName = `Printable_ID_${memId}.png`;
-
-      // 1. Direct Native Android Share Sheet via Capacitor Share
-      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share && window.Capacitor.Plugins.Filesystem) {
-        try {
-          const { Share, Filesystem } = window.Capacitor.Plugins;
-          const tempFile = await Filesystem.writeFile({
-            path: fileName,
-            data: base64Data,
-            directory: 'CACHE'
-          });
-          await Share.share({
-            title: "Palma's Elite Gym Official E-ID",
-            text: `Palma's Elite Gym Member ID: ${memId}`,
-            url: tempFile.uri,
-            dialogTitle: "Share E-ID Card"
-          });
-          renderPrintableEIDQR(memId);
-          return;
-        } catch (capShareErr) {
-          console.warn('Capacitor native share error:', capShareErr);
-        }
-      }
-
-      // 2. Web Share API fallback
-      canvas.toBlob(async blob => {
-        if (navigator.share && blob) {
-          try {
-            const file = new File([blob], fileName, { type: 'image/png' });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              await navigator.share({ files: [file], title: "Palma's Elite Gym E-ID Card" });
-            } else {
-              await navigator.share({
-                title: "Palma's Elite Gym E-ID Card",
-                text: `Palma's Elite Gym Official ID: ${memId}`
-              });
-            }
-          } catch(err) {
-            console.warn('Share cancelled or failed:', err);
-          }
-        }
-        renderPrintableEIDQR(memId);
-      }, 'image/png');
-      return;
-    } catch(e) {
-      console.error('Share E-ID error:', e);
-    }
   }
   renderPrintableEIDQR(memId);
 }
