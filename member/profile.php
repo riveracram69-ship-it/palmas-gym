@@ -13,7 +13,7 @@ $contact_error   = '';
 $pw_success    = '';
 $pw_error      = '';
 
-// Handle profile update (email / contact / structured address / dob)
+// Handle profile update (name / email / contact / structured address / dob)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_contact') {
     $email        = trim($_POST['email'] ?? '');
     $contact      = trim($_POST['contact_number'] ?? '');
@@ -26,6 +26,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $dob          = trim($_POST['dob'] ?? '');
     $age          = compute_member_age($dob, !empty($member['age']) ? intval($member['age']) : null);
 
+    $curr_fn   = trim($member['first_name'] ?? '');
+    $curr_mn   = trim($member['middle_name'] ?? '');
+    $curr_ln   = trim($member['last_name'] ?? '');
+    $curr_ext  = trim($member['extension'] ?? '');
+    $curr_full = trim($member['full_name'] ?? '');
+
+    $new_fn    = isset($_POST['first_name']) ? trim($_POST['first_name']) : $curr_fn;
+    $new_mn    = isset($_POST['middle_name']) ? trim($_POST['middle_name']) : $curr_mn;
+    $new_ln    = isset($_POST['last_name']) ? trim($_POST['last_name']) : $curr_ln;
+    $new_ext   = isset($_POST['extension']) ? trim($_POST['extension']) : $curr_ext;
+
+    $name_changed = ($new_fn !== $curr_fn || $new_mn !== $curr_mn || $new_ln !== $curr_ln || $new_ext !== $curr_ext);
+    $cooldown_info = check_member_name_change_cooldown($member);
+
     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $contact_error = 'Please provide a valid email address.';
     } elseif (empty($contact)) {
@@ -34,22 +48,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $contact_error = 'Contact number must be 11 digits starting with 09 (e.g. 09123456789).';
     } elseif (empty($address) && empty($municipality)) {
         $contact_error = 'Home address details are required.';
+    } elseif ($name_changed && !$cooldown_info['can_change']) {
+        $contact_error = $cooldown_info['reason'];
+    } elseif ($name_changed && empty($new_fn)) {
+        $contact_error = 'First name cannot be empty.';
     } else {
         try {
-            $s = $pdo->prepare("
-                UPDATE members 
-                SET email = ?, contact_number = ?, house_street = ?, barangay = ?, municipality = ?, province = ?, zip_code = ?, address = ?, dob = ?, age = ?
-                WHERE id = ?
-            ");
-            $s->execute([
-                $email, $contact, $house_street ?: null, $barangay ?: null, $municipality ?: null, $province ?: null, $zip_code ?: null, $address ?: null,
-                $dob ?: null, $age, $member['id']
-            ]);
-            $contact_success = 'Profile info updated successfully.';
-            $member  = current_member($pdo); // refresh
-            if (function_exists('log_activity')) {
-                log_activity($pdo, 'Member Contact Updated', "Member {$member['full_name']} updated their profile info.", 'Member');
+            if ($name_changed) {
+                $new_full_name = trim(implode(' ', array_filter([$new_fn, $new_mn, $new_ln, $new_ext])));
+                if (empty($new_full_name)) {
+                    $new_full_name = $new_fn;
+                }
+                $s = $pdo->prepare("
+                    UPDATE members 
+                    SET first_name = ?, middle_name = ?, last_name = ?, extension = ?, full_name = ?,
+                        name_last_changed_at = NOW(),
+                        email = ?, contact_number = ?, house_street = ?, barangay = ?, municipality = ?, province = ?, zip_code = ?, address = ?, dob = ?, age = ?
+                    WHERE id = ?
+                ");
+                $s->execute([
+                    $new_fn ?: null, $new_mn ?: null, $new_ln ?: null, $new_ext ?: null, $new_full_name,
+                    $email, $contact, $house_street ?: null, $barangay ?: null, $municipality ?: null, $province ?: null, $zip_code ?: null, $address ?: null,
+                    $dob ?: null, $age, $member['id']
+                ]);
+                $_SESSION['member_name'] = $new_full_name;
+                if (function_exists('log_activity')) {
+                    log_activity($pdo, 'Member Name Changed', "Member {$member['membership_id']} updated name from '{$curr_full}' to '{$new_full_name}'.", 'Member');
+                }
+                $contact_success = 'Profile info and name updated successfully. Next name change will be available in 30 days.';
+            } else {
+                $s = $pdo->prepare("
+                    UPDATE members 
+                    SET email = ?, contact_number = ?, house_street = ?, barangay = ?, municipality = ?, province = ?, zip_code = ?, address = ?, dob = ?, age = ?
+                    WHERE id = ?
+                ");
+                $s->execute([
+                    $email, $contact, $house_street ?: null, $barangay ?: null, $municipality ?: null, $province ?: null, $zip_code ?: null, $address ?: null,
+                    $dob ?: null, $age, $member['id']
+                ]);
+                if (function_exists('log_activity')) {
+                    log_activity($pdo, 'Member Contact Updated', "Member {$member['full_name']} updated their profile info.", 'Member');
+                }
+                $contact_success = 'Profile info updated successfully.';
             }
+            $member  = current_member($pdo); // refresh
         } catch (\Throwable $e) {
             $contact_error = 'Could not update profile info. Please try again.';
         }
@@ -410,9 +452,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 </div>
             <?php endif; ?>
 
+            <?php 
+                $name_cooldown = check_member_name_change_cooldown($member); 
+                $fn_val = $member['first_name'] ?? '';
+                $mn_val = $member['middle_name'] ?? '';
+                $ln_val = $member['last_name'] ?? '';
+                $ext_val = $member['extension'] ?? '';
+                if (empty($fn_val) && !empty($member['full_name'])) {
+                    $name_parts = explode(' ', trim($member['full_name']));
+                    $fn_val = array_shift($name_parts);
+                    $ln_val = count($name_parts) ? implode(' ', $name_parts) : '';
+                }
+            ?>
+
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
                 <input type="hidden" name="action" value="update_contact">
+
+                <!-- Structured Name Fields with 30-Day Cooldown -->
+                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(82,183,136,0.2); border-radius:12px; padding:12px; margin-bottom:1rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+                        <label style="display:block; font-weight:700; font-size:0.8rem; color:var(--palmas-light, #8fcfbc); text-transform:uppercase; margin:0;">
+                            <i class="fas fa-user-pen"></i> Name Details
+                        </label>
+                        <?php if (!$name_cooldown['can_change']): ?>
+                            <span style="display:inline-flex; align-items:center; gap:4px; font-size:0.72rem; color:#f87171; background:rgba(239,68,68,0.15); padding:3px 8px; border-radius:6px; font-weight:600;">
+                                <i class="fas fa-lock"></i> Locked until <?php echo htmlspecialchars($name_cooldown['next_available_date']); ?>
+                            </span>
+                        <?php else: ?>
+                            <span style="display:inline-flex; align-items:center; gap:4px; font-size:0.72rem; color:#4ade80; background:rgba(74,222,128,0.15); padding:3px 8px; border-radius:6px; font-weight:600;">
+                                <i class="fas fa-circle-check"></i> Can Edit (1x per month)
+                            </span>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if (!$name_cooldown['can_change']): ?>
+                        <p style="font-size:0.75rem; color:#fca5a5; margin:0 0 10px 0; line-height:1.4;">
+                            <i class="fas fa-info-circle"></i> Name can only be changed once every 30 days. Next edit available in <strong><?php echo $name_cooldown['days_remaining']; ?> day(s)</strong> (<?php echo htmlspecialchars($name_cooldown['next_available_date']); ?>).
+                        </p>
+                    <?php else: ?>
+                        <p style="font-size:0.73rem; color:var(--text-secondary); margin:0 0 10px 0;">
+                            <i class="fas fa-circle-info"></i> Note: Name changes are limited to once every 30 days.
+                        </p>
+                    <?php endif; ?>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="first_name" style="font-size:0.75rem;">First Name *</label>
+                            <input type="text" name="first_name" id="first_name" class="form-control"
+                                   value="<?php echo htmlspecialchars($fn_val); ?>"
+                                   <?php echo !$name_cooldown['can_change'] ? 'readonly style="opacity:0.65; cursor:not-allowed;"' : 'required'; ?>>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="middle_name" style="font-size:0.75rem;">Middle Name</label>
+                            <input type="text" name="middle_name" id="middle_name" class="form-control"
+                                   value="<?php echo htmlspecialchars($mn_val); ?>"
+                                   <?php echo !$name_cooldown['can_change'] ? 'readonly style="opacity:0.65; cursor:not-allowed;"' : ''; ?>>
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 2fr 1fr; gap:8px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="last_name" style="font-size:0.75rem;">Last Name *</label>
+                            <input type="text" name="last_name" id="last_name" class="form-control"
+                                   value="<?php echo htmlspecialchars($ln_val); ?>"
+                                   <?php echo !$name_cooldown['can_change'] ? 'readonly style="opacity:0.65; cursor:not-allowed;"' : 'required'; ?>>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="extension" style="font-size:0.75rem;">Suffix</label>
+                            <input type="text" name="extension" id="extension" class="form-control" placeholder="Jr., III"
+                                   value="<?php echo htmlspecialchars($ext_val); ?>"
+                                   <?php echo !$name_cooldown['can_change'] ? 'readonly style="opacity:0.65; cursor:not-allowed;"' : ''; ?>>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="email"><i class="fas fa-envelope"></i> Email Address *</label>
                     <input type="email" name="email" id="email" class="form-control"

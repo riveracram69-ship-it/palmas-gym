@@ -37,6 +37,7 @@ try {
 
     $stmt = $pdo->prepare("
         SELECT id, membership_id, first_name, middle_name, last_name, extension, full_name,
+               name_last_changed_at,
                email, contact_number, house_street, barangay, municipality, province, zip_code, address,
                dob, age, gender, photo, google_picture, auth_provider, status, account_status, password_hash
         FROM members WHERE id = ?
@@ -53,21 +54,71 @@ try {
     $updates = [];
     $params  = [];
 
-    if (!empty($first_name) || !empty($last_name)) {
-        $full_name = trim(implode(' ', array_filter([$first_name, $middle_name, $last_name, $extension])));
-        $updates[] = "first_name = ?";
-        $params[]  = $first_name ?: null;
-        $updates[] = "middle_name = ?";
-        $params[]  = $middle_name ?: null;
-        $updates[] = "last_name = ?";
-        $params[]  = $last_name ?: null;
-        $updates[] = "extension = ?";
-        $params[]  = $extension ?: null;
+    // Check if name is being changed
+    $curr_fn  = trim($member['first_name'] ?? '');
+    $curr_mn  = trim($member['middle_name'] ?? '');
+    $curr_ln  = trim($member['last_name'] ?? '');
+    $curr_ext = trim($member['extension'] ?? '');
+
+    $has_name_input = (isset($data['first_name']) || isset($data['last_name']) || isset($data['middle_name']) || isset($data['extension']));
+    
+    if ($has_name_input) {
+        $new_fn  = isset($data['first_name']) ? trim($data['first_name']) : $curr_fn;
+        $new_mn  = isset($data['middle_name']) ? trim($data['middle_name']) : $curr_mn;
+        $new_ln  = isset($data['last_name']) ? trim($data['last_name']) : $curr_ln;
+        $new_ext = isset($data['extension']) ? trim($data['extension']) : $curr_ext;
+
+        $name_changed = ($new_fn !== $curr_fn || $new_mn !== $curr_mn || $new_ln !== $curr_ln || $new_ext !== $curr_ext);
+
+        if ($name_changed) {
+            $cooldown = check_member_name_change_cooldown($member);
+            if (!$cooldown['can_change']) {
+                http_response_code(422);
+                echo json_encode([
+                    'success'       => false,
+                    'message'       => $cooldown['reason'],
+                    'name_cooldown' => $cooldown
+                ]);
+                exit;
+            }
+
+            if (empty($new_fn)) {
+                http_response_code(422);
+                echo json_encode(['success' => false, 'message' => 'First name cannot be empty.']);
+                exit;
+            }
+
+            $computed_full_name = trim(implode(' ', array_filter([$new_fn, $new_mn, $new_ln, $new_ext])));
+            if (empty($computed_full_name)) {
+                $computed_full_name = $new_fn;
+            }
+
+            $updates[] = "first_name = ?";
+            $params[]  = $new_fn ?: null;
+            $updates[] = "middle_name = ?";
+            $params[]  = $new_mn ?: null;
+            $updates[] = "last_name = ?";
+            $params[]  = $new_ln ?: null;
+            $updates[] = "extension = ?";
+            $params[]  = $new_ext ?: null;
+            $updates[] = "full_name = ?";
+            $params[]  = $computed_full_name;
+            $updates[] = "name_last_changed_at = NOW()";
+        }
+    } elseif (!empty($full_name) && $full_name !== trim($member['full_name'] ?? '')) {
+        $cooldown = check_member_name_change_cooldown($member);
+        if (!$cooldown['can_change']) {
+            http_response_code(422);
+            echo json_encode([
+                'success'       => false,
+                'message'       => $cooldown['reason'],
+                'name_cooldown' => $cooldown
+            ]);
+            exit;
+        }
         $updates[] = "full_name = ?";
         $params[]  = $full_name;
-    } elseif (!empty($full_name)) {
-        $updates[] = "full_name = ?";
-        $params[]  = $full_name;
+        $updates[] = "name_last_changed_at = NOW()";
     }
 
     if (!empty($contact_number)) {
@@ -162,6 +213,7 @@ try {
     // Fetch updated member data
     $stmt = $pdo->prepare("
         SELECT id, membership_id, first_name, middle_name, last_name, extension, full_name,
+               name_last_changed_at,
                email, contact_number, house_street, barangay, municipality, province, zip_code, address,
                dob, age, gender, photo, google_picture, auth_provider, status, account_status,
                annual_membership_expiry
@@ -173,6 +225,7 @@ try {
     $updated_member['formatted_address'] = format_member_address($updated_member);
     $updated_member['formatted_dob']     = format_member_dob($updated_member['dob'] ?? null, $updated_member['age'] ?? null);
     $updated_member['computed_age']      = compute_member_age($updated_member['dob'] ?? null, $updated_member['age'] ?? null);
+    $updated_member['name_cooldown']     = check_member_name_change_cooldown($updated_member);
 
     $ann_exp = $updated_member['annual_membership_expiry'] ?? null;
     $is_official = (!empty($ann_exp) && strtotime($ann_exp . ' 23:59:59') >= time());

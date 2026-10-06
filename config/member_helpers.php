@@ -367,3 +367,66 @@ if (!function_exists('can_renew_gym_access')) {
     }
 }
 
+if (!function_exists('check_member_name_change_cooldown')) {
+    /**
+     * Checks if a member is eligible to change their name (once every 30 days / 1 month rule).
+     *
+     * @param array|string|null $member_or_date Member record array or name_last_changed_at datetime string
+     * @return array [
+     *     'can_change'          => bool,
+     *     'days_remaining'      => int,
+     *     'next_available_date' => string|null,
+     *     'reason'              => string
+     * ]
+     */
+    function check_member_name_change_cooldown($member_or_date): array {
+        $last_changed = is_array($member_or_date)
+            ? ($member_or_date['name_last_changed_at'] ?? null)
+            : $member_or_date;
+
+        if (empty($last_changed) || $last_changed === '0000-00-00 00:00:00') {
+            return [
+                'can_change'          => true,
+                'days_remaining'      => 0,
+                'next_available_date' => null,
+                'reason'              => ''
+            ];
+        }
+
+        $last_ts = strtotime($last_changed);
+        if (!$last_ts) {
+            return [
+                'can_change'          => true,
+                'days_remaining'      => 0,
+                'next_available_date' => null,
+                'reason'              => ''
+            ];
+        }
+
+        $cooldown_seconds = 30 * 86400; // 30 days
+        $next_ts = $last_ts + $cooldown_seconds;
+        $now = time();
+
+        if ($now >= $next_ts) {
+            return [
+                'can_change'          => true,
+                'days_remaining'      => 0,
+                'next_available_date' => null,
+                'reason'              => ''
+            ];
+        }
+
+        $remaining_seconds = $next_ts - $now;
+        $days_left = max(1, (int)ceil($remaining_seconds / 86400));
+        $next_date_str = date('M d, Y', $next_ts);
+
+        return [
+            'can_change'          => false,
+            'days_remaining'      => $days_left,
+            'next_available_date' => $next_date_str,
+            'reason'              => "You can only change your name once every 30 days. You will be able to change your name again on {$next_date_str} ({$days_left} day(s) remaining)."
+        ];
+    }
+}
+
+

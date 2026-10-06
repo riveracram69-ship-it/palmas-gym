@@ -121,7 +121,7 @@ try {
     // TEST 4: First-Time Membership Activation
     // -------------------------------------------------------------------------
     echo "\n--- TEST 4: FIRST-TIME MEMBERSHIP ACTIVATION ---\n";
-    $first_plan = $pdo->query("SELECT id, name, price, duration_months, duration_minutes FROM membership_plans ORDER BY price ASC LIMIT 1")->fetch();
+    $first_plan = $pdo->query("SELECT id, name, price, duration_months, duration_minutes FROM membership_plans WHERE is_active = 1 AND duration_months >= 1 AND (plan_category = 'non_member_pass' OR plan_category IS NULL) ORDER BY price ASC LIMIT 1")->fetch();
     $plan_id = (int)$first_plan['id'];
 
     $act_res = process_automated_subscription_activation($pdo, $member_id_1, $plan_id, 0, 'GCash', 'TEST-REF-001');

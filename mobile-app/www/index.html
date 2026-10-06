@@ -37,6 +37,8 @@
   <script src="assets/js/ph-address-selector.js"></script>
   <!-- Google Sign-In (GSI) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- html2canvas for Printable E-ID Card Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
     /* ══════════════════════════════════════════════════════════════════
@@ -2580,6 +2582,263 @@
       font-weight: 600;
       text-align: right;
     }
+
+    /* ── Printable E-ID Card Styles (Mobile & Print) ── */
+    .eid-scene-mobile {
+      padding: 6px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+    }
+    .eid-card-wrap-mobile {
+      width: 100%;
+      max-width: 330px;
+      margin: 0 auto;
+    }
+    .eid-card-elem {
+      width: 100%;
+      border-radius: 26px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.1);
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      position: relative;
+      color: #0c2219;
+      box-sizing: border-box;
+    }
+    .eid-card-elem .eid-header {
+      height: 135px;
+      background: linear-gradient(145deg, #1a4d35 0%, #0d2a1c 60%, #060f0a 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 1.15rem 1.15rem 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .eid-card-elem .eid-logo-box {
+      width: 36px;
+      height: 36px;
+      background: #ffffff;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      margin-bottom: 0.35rem;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    }
+    .eid-card-elem .eid-logo-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .eid-card-elem .eid-gym-name {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 0.92rem;
+      color: #ffffff;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin: 0;
+    }
+    .eid-card-elem .eid-gym-sub {
+      font-size: 0.45rem;
+      text-transform: uppercase;
+      letter-spacing: 2.2px;
+      color: rgba(255,255,255,0.45);
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .eid-card-elem .eid-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 1.25rem 1rem;
+      position: relative;
+      margin-top: -50px;
+    }
+    .eid-card-elem .eid-avatar-wrap {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: #ffffff;
+      padding: 4px;
+      box-shadow: 0 10px 25px rgba(8,28,21,0.18);
+      position: relative;
+      margin-bottom: 0.45rem;
+    }
+    .eid-card-elem .eid-avatar-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      overflow: hidden;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .eid-card-elem .eid-avatar-inner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .eid-card-elem .eid-avatar-initial {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #2d6a4f;
+    }
+    .eid-card-elem .eid-check-badge {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, #2d6a4f, #1b4332);
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .eid-card-elem .eid-check-badge i {
+      color: #ffffff;
+      font-size: 0.5rem;
+      font-weight: 900;
+    }
+    .eid-card-elem .eid-member-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #0c2219;
+      text-transform: capitalize;
+      letter-spacing: -0.3px;
+      text-align: center;
+      margin: 0 0 0.25rem;
+    }
+    .eid-card-elem .eid-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 3px 12px;
+      border-radius: 100px;
+      font-size: 0.55rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 0.75rem;
+      background: rgba(46,125,50,0.08);
+      color: #2d6a4f;
+      border: 1px solid rgba(46,125,50,0.22);
+    }
+    .eid-card-elem .eid-qr-box {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 10px 10px 6px;
+      border: 1.5px solid #e2e8f0;
+      box-shadow: 0 6px 20px rgba(8,28,21,0.06);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 0.8rem;
+      width: 100%;
+      max-width: 230px;
+      box-sizing: border-box;
+    }
+    .eid-card-elem .eid-qr-box #printable-eid-qr {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 190px;
+      height: 190px;
+    }
+    .eid-card-elem .eid-qr-box #printable-eid-qr canvas,
+    .eid-card-elem .eid-qr-box #printable-eid-qr img {
+      width: 190px !important;
+      height: 190px !important;
+      display: block;
+      border-radius: 6px;
+    }
+    .eid-card-elem .eid-details {
+      border-top: 1px dashed #cbd5e1;
+      padding-top: 0.6rem;
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+    }
+    .eid-card-elem .eid-detail-item p:first-child {
+      font-size: 0.45rem;
+      color: #64748b;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin: 0 0 2px;
+    }
+    .eid-card-elem .eid-detail-item p:last-child {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #0c2219;
+      margin: 0;
+      font-family: monospace;
+    }
+    .eid-card-elem .eid-detail-item.right {
+      text-align: right;
+    }
+    .eid-card-elem .eid-footer {
+      height: 36px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+    .eid-card-elem .eid-footer span {
+      font-size: 0.52rem;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
+
+    /* Print media rules */
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #printable-eid-capture-card,
+      #printable-eid-capture-card * {
+        visibility: visible !important;
+      }
+      #modal-printable-eid {
+        display: block !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+      }
+      #printable-eid-capture-card {
+        position: absolute !important;
+        left: 50% !important;
+        top: 20px !important;
+        transform: translateX(-50%) !important;
+        width: 320px !important;
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+        page-break-inside: avoid !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -3454,6 +3713,22 @@
             </button>
           </div>
 
+          <!-- SECTION C: Official E-ID Card (Printable & Downloadable HD Card) -->
+          <div id="pass-printable-eid-card" style="margin:0 16px 14px; background:linear-gradient(135deg, rgba(82,183,136,0.15) 0%, rgba(18,59,45,0.5) 100%); border:1px solid rgba(82,183,136,0.35); border-radius:18px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+              <div style="width:38px; height:38px; border-radius:10px; background:rgba(82,183,136,0.22); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">
+                <i class="fa-solid fa-id-card"></i>
+              </div>
+              <div style="min-width:0;">
+                <p style="margin:0; font-size:0.88rem; font-weight:800; color:#fff;">Official E-ID Card</p>
+                <p style="margin:2px 0 0; font-size:0.75rem; color:var(--text-secondary);">Printable &amp; Downloadable permanent QR pass</p>
+              </div>
+            </div>
+            <button type="button" class="btn-primary" onclick="openPrintableEIDModal()" style="padding:9px 14px; font-size:0.78rem; font-weight:800; height:auto; width:auto; border-radius:10px; white-space:nowrap; background:var(--primary); color:#082119;">
+              <i class="fa-solid fa-print" style="margin-right:4px;"></i> View / Print
+            </button>
+          </div>
+
           <!-- Club Information -->
           <div style="padding:0 16px; margin-bottom:16px;">
             <div class="club-info-card">
@@ -3797,7 +4072,10 @@
                 <div class="progress-bar-wrap">
                   <div id="prof-days-bar-fill" class="progress-bar-fill" style="width:80%;"></div>
                 </div>
-                <button onclick="switchToTab('tab-payments')" class="btn-outline" style="height:44px; margin-top:12px; font-size:0.85rem;">
+                <button onclick="openPrintableEIDModal()" class="btn-primary" style="height:44px; margin-top:12px; font-size:0.85rem; background:var(--primary); color:#082119;">
+                  <i class="fa-solid fa-id-card" style="margin-right:6px;"></i> Official Printable E-ID Card
+                </button>
+                <button onclick="switchToTab('tab-payments')" class="btn-outline" style="height:44px; margin-top:8px; font-size:0.85rem;">
                   <i class="fa-solid fa-clock-rotate-left"></i> Payment History
                 </button>
               </div>
@@ -4664,6 +4942,108 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════════
+       OFFICIAL PRINTABLE E-ID CARD MODAL
+       ══════════════════════════════════════════════════════════ -->
+  <div id="modal-printable-eid" class="custom-dialog-overlay" style="display:none; z-index:99999;" onclick="closePrintableEIDModal()">
+    <div class="custom-dialog-card" onclick="event.stopPropagation()" style="max-width:380px; width:95%; max-height:90vh; display:flex; flex-direction:column; padding:16px 14px 18px; text-align:center; background:#082119; border:1.5px solid rgba(82,183,136,0.35); box-shadow:0 25px 60px rgba(0,0,0,0.85); overflow-y:auto;">
+      
+      <!-- Top header with close icon -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid rgba(82,183,136,0.2);">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:32px; height:32px; border-radius:8px; background:rgba(82,183,136,0.15); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:15px;">
+            <i class="fa-solid fa-id-card"></i>
+          </div>
+          <h3 style="margin:0; font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:800; color:#fff;">Official E-ID Card</h3>
+        </div>
+        <button onclick="closePrintableEIDModal()" style="background:transparent; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer; padding:4px 6px;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Printable ID Card Target for Capture & Print -->
+      <div class="eid-scene-mobile">
+        <div class="eid-card-wrap-mobile" id="printable-eid-capture-card">
+          <div class="eid-card-elem">
+            <!-- Green header -->
+            <div class="eid-header">
+              <div class="eid-logo-box">
+                <img src="assets/images/icon-192.png" alt="Logo" onerror="this.src='../assets/images/palmas-logo.png';">
+              </div>
+              <h1 class="eid-gym-name">Palma's Elite Gym</h1>
+              <p class="eid-gym-sub">Elite Fitness Club</p>
+            </div>
+
+            <!-- Body -->
+            <div class="eid-body">
+              <!-- Avatar -->
+              <div class="eid-avatar-wrap">
+                <div class="eid-avatar-inner" id="printable-eid-avatar-wrap">
+                  <span class="eid-avatar-initial" id="printable-eid-avatar-initial">PE</span>
+                </div>
+                <div class="eid-check-badge"><i class="fa-solid fa-check"></i></div>
+              </div>
+
+              <!-- Member Name -->
+              <h2 class="eid-member-name" id="printable-eid-name">Palma's Member</h2>
+
+              <!-- Status Badge -->
+              <div class="eid-status-badge">
+                <i class="fa-solid fa-shield-halved" style="font-size:0.6rem;"></i>
+                Official Member ID
+              </div>
+
+              <!-- Static QR Box -->
+              <div class="eid-qr-box">
+                <div id="printable-eid-qr"></div>
+                <span style="font-family:'Outfit',sans-serif; font-size:0.52rem; font-weight:800; color:#64748b; letter-spacing:1.2px; text-transform:uppercase; margin-top:6px; display:block;">Scan for Gym Access</span>
+              </div>
+
+              <!-- Details -->
+              <div class="eid-details">
+                <div class="eid-detail-item">
+                  <p>Account ID</p>
+                  <p id="printable-eid-id-display">--</p>
+                </div>
+                <div class="eid-detail-item right">
+                  <p>Member Since</p>
+                  <p id="printable-eid-joined-display">--</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="eid-footer">
+              <span>Palma's Elite Gym</span>
+              <span style="color:#cbd5e1;">•</span>
+              <span>Official E-ID</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px; width:100%;">
+        <button type="button" class="btn-primary" id="btn-download-eid" onclick="downloadPrintableEID()" style="height:44px; font-size:0.88rem; width:100%;">
+          <i class="fa-solid fa-download"></i> Download E-ID (HD)
+        </button>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn-outline" onclick="sharePrintableEID()" style="flex:1; height:42px; font-size:0.82rem; border-color:var(--border); color:#fff;">
+            <i class="fa-solid fa-share-nodes"></i> Share
+          </button>
+          <button type="button" class="btn-outline" onclick="printPrintableEID()" style="flex:1; height:42px; font-size:0.82rem; border-color:var(--border); color:#fff;">
+            <i class="fa-solid fa-print"></i> Print
+          </button>
+        </div>
+      </div>
+
+      <p style="margin:12px 0 0; font-size:0.72rem; color:var(--text-muted); line-height:1.4;">
+        <i class="fa-solid fa-circle-info" style="color:var(--primary); margin-right:4px;"></i> Use this printable card or your live digital pass to check in at the gym scanner.
+      </p>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
        PRIVACY POLICY MODAL (Data Privacy Act of 2012 / RA 10173)
        ══════════════════════════════════════════════════════════ -->
   <div id="modal-privacy-policy" class="custom-dialog-overlay" style="display:none; z-index:99999;" onclick="closePrivacyPolicyModal()">
@@ -5080,6 +5460,13 @@ function handleHardwareBack() {
   const qrModal = document.getElementById('modal-enlarged-qr');
   if (qrModal && qrModal.style.display !== 'none') {
     closeEnlargedQRModal();
+    return;
+  }
+
+  // 1c. Check printable E-ID modal
+  const printableEidModal = document.getElementById('modal-printable-eid');
+  if (printableEidModal && printableEidModal.style.display !== 'none') {
+    closePrintableEIDModal();
     return;
   }
 
@@ -7786,6 +8173,187 @@ function openEnlargedQRModal() {
 function closeEnlargedQRModal() {
   const modal = document.getElementById('modal-enlarged-qr');
   if (modal) modal.style.display = 'none';
+}
+
+// ── OFFICIAL PRINTABLE E-ID CARD LOGIC ─────────────────────────────
+let printableEidQrInstance = null;
+
+function openPrintableEIDModal() {
+  const modal = document.getElementById('modal-printable-eid');
+  if (!modal) return;
+
+  const m = currentMember || {};
+  const memName = m.full_name || 'Palma\'s Member';
+  const memId = m.membership_id || '--';
+  const joinedDate = m.created_at ? new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+
+  const nameEl = document.getElementById('printable-eid-name');
+  if (nameEl) nameEl.textContent = memName;
+
+  const idEl = document.getElementById('printable-eid-id-display');
+  if (idEl) idEl.textContent = memId;
+
+  const joinedEl = document.getElementById('printable-eid-joined-display');
+  if (joinedEl) joinedEl.textContent = joinedDate;
+
+  // Avatar
+  const avatarWrap = document.getElementById('printable-eid-avatar-wrap');
+  const initial = (memName.charAt(0) || 'P').toUpperCase();
+  if (avatarWrap) {
+    if (m.photo) {
+      const photoSrc = getFullPhotoUrl(m.photo);
+      avatarWrap.innerHTML = `<img src="${photoSrc}" alt="${memName}" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;" onerror="this.remove(); const el=document.getElementById('printable-eid-avatar-initial'); if(el) el.style.display='block';" /><span class="eid-avatar-initial" id="printable-eid-avatar-initial" style="display:none;">${initial}</span>`;
+    } else {
+      avatarWrap.innerHTML = `<span class="eid-avatar-initial" id="printable-eid-avatar-initial">${initial}</span>`;
+    }
+  }
+
+  // Static Permanent QR for ID card
+  renderPrintableEIDQR(memId);
+
+  modal.style.display = 'flex';
+}
+
+function closePrintableEIDModal() {
+  const modal = document.getElementById('modal-printable-eid');
+  if (modal) modal.style.display = 'none';
+}
+
+function renderPrintableEIDQR(memId) {
+  const target = document.getElementById('printable-eid-qr');
+  if (!target) return;
+  target.innerHTML = '';
+  if (printableEidQrInstance) {
+    try { printableEidQrInstance.clear(); } catch(e) {}
+  }
+  const textVal = memId || (currentMember && currentMember.membership_id) || 'PALMAS-MEMBER';
+  try {
+    printableEidQrInstance = new QRCode(target, {
+      text: textVal,
+      width: 190,
+      height: 190,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+
+    const enforceSinglePrintableQR = () => {
+      const img = target.querySelector('img');
+      const cvs = target.querySelector('canvas');
+      if (img && img.src && img.src.startsWith('data:image')) {
+        if (cvs) cvs.style.setProperty('display', 'none', 'important');
+        img.style.setProperty('display', 'block', 'important');
+      } else if (cvs) {
+        cvs.style.setProperty('display', 'block', 'important');
+        if (img) img.style.setProperty('display', 'none', 'important');
+      }
+    };
+    enforceSinglePrintableQR();
+    setTimeout(enforceSinglePrintableQR, 50);
+    setTimeout(enforceSinglePrintableQR, 150);
+  } catch(e) {
+    console.error('Printable QR error:', e);
+  }
+}
+
+async function downloadPrintableEID() {
+  const btn = document.getElementById('btn-download-eid');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating HD Card...';
+    btn.disabled = true;
+  }
+
+  const memId = (currentMember && currentMember.membership_id) || 'ID';
+  const qrTarget = document.getElementById('printable-eid-qr');
+  const qrCanvas = qrTarget ? qrTarget.querySelector('canvas') : null;
+  if (qrCanvas) {
+    const img = new Image();
+    img.src = qrCanvas.toDataURL('image/png');
+    img.style.cssText = 'width:190px;height:190px;display:block;margin:0 auto;';
+    qrTarget.innerHTML = '';
+    qrTarget.appendChild(img);
+  }
+
+  await new Promise(r => setTimeout(r, 250));
+
+  const cardElem = document.getElementById('printable-eid-capture-card');
+  if (typeof html2canvas !== 'undefined' && cardElem) {
+    try {
+      const canvas = await html2canvas(cardElem, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: null,
+        logging: false
+      });
+      const link = document.createElement('a');
+      link.download = `Printable_ID_${memId}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('E-ID Card downloaded successfully!');
+    } catch (e) {
+      console.error('E-ID download error:', e);
+      showToast('Could not export image. Try taking a screenshot or use Print.');
+    }
+  } else {
+    showToast('Printing dialog opened.');
+    window.print();
+  }
+
+  if (btn) {
+    btn.innerHTML = origHtml || '<i class="fa-solid fa-download"></i> Download E-ID (HD)';
+    btn.disabled = false;
+  }
+  renderPrintableEIDQR(memId);
+}
+
+async function sharePrintableEID() {
+  const memId = (currentMember && currentMember.membership_id) || 'ID';
+  const qrTarget = document.getElementById('printable-eid-qr');
+  const qrCanvas = qrTarget ? qrTarget.querySelector('canvas') : null;
+  if (qrCanvas) {
+    const img = new Image();
+    img.src = qrCanvas.toDataURL('image/png');
+    img.style.cssText = 'width:190px;height:190px;display:block;margin:0 auto;';
+    qrTarget.innerHTML = '';
+    qrTarget.appendChild(img);
+  }
+
+  await new Promise(r => setTimeout(r, 250));
+
+  const cardElem = document.getElementById('printable-eid-capture-card');
+  if (typeof html2canvas !== 'undefined' && cardElem) {
+    try {
+      const canvas = await html2canvas(cardElem, { scale: 3, useCORS: true, backgroundColor: null });
+      canvas.toBlob(async blob => {
+        if (navigator.share && blob) {
+          try {
+            const file = new File([blob], `Printable_ID_${memId}.png`, { type: 'image/png' });
+            await navigator.share({ files: [file], title: 'Palma\'s Elite Gym E-ID Card' });
+          } catch(err) {
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = `Printable_ID_${memId}.png`;
+            link.click();
+          }
+        } else {
+          const link = document.createElement('a');
+          link.href = canvas.toDataURL('image/png');
+          link.download = `Printable_ID_${memId}.png`;
+          link.click();
+        }
+        renderPrintableEIDQR(memId);
+      }, 'image/png');
+      return;
+    } catch(e) {
+      console.error('Share E-ID error:', e);
+    }
+  }
+  renderPrintableEIDQR(memId);
+}
+
+function printPrintableEID() {
+  window.print();
 }
 
 let currentActiveTab = 'tab-pass';
