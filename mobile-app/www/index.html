@@ -39,6 +39,8 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <!-- html2canvas for Printable E-ID Card Generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- jsPDF for direct PDF creation and export on mobile and web -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
     /* ══════════════════════════════════════════════════════════════════
@@ -8345,8 +8347,98 @@ async function downloadPrintableEID() {
   renderPrintableEIDQR(memId);
 }
 
-function printPrintableEID() {
-  window.print();
+async function printPrintableEID() {
+  const memId = (currentMember && currentMember.membership_id) || 'ID';
+  const qrTarget = document.getElementById('printable-eid-qr');
+  const qrCanvas = qrTarget ? qrTarget.querySelector('canvas') : null;
+  if (qrCanvas) {
+    const img = new Image();
+    img.src = qrCanvas.toDataURL('image/png');
+    img.style.cssText = 'width:190px;height:190px;display:block;margin:0 auto;';
+    qrTarget.innerHTML = '';
+    qrTarget.appendChild(img);
+  }
+
+  showToast('Creating PDF ID Document...', 2000);
+  await new Promise(r => setTimeout(r, 250));
+
+  const cardElem = document.getElementById('printable-eid-capture-card');
+  if (typeof html2canvas !== 'undefined' && cardElem) {
+    try {
+      const canvas = await html2canvas(cardElem, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const fileName = `Printable_ID_${memId}.pdf`;
+
+      const { jsPDF } = window.jspdf || {};
+      if (jsPDF) {
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+
+        const cardWidth = 85;
+        const cardHeight = (canvas.height * cardWidth) / canvas.width;
+        const xPos = (210 - cardWidth) / 2;
+        const yPos = 35;
+
+        pdf.setFontSize(16);
+        pdf.setTextColor(27, 67, 50);
+        pdf.text("Palma's Elite Gym - Official Member ID", 105, 20, { align: 'center' });
+
+        pdf.setFontSize(9);
+        pdf.setTextColor(100, 116, 139);
+        pdf.text("Cut along the border to laminate or use as a physical wallet card", 105, 27, { align: 'center' });
+
+        pdf.addImage(imgData, 'PNG', xPos, yPos, cardWidth, cardHeight);
+
+        pdf.setDrawColor(203, 213, 225);
+        pdf.setLineDashPattern([2, 2], 0);
+        pdf.rect(xPos - 1, yPos - 1, cardWidth + 2, cardHeight + 2);
+
+        pdf.setFontSize(8);
+        pdf.setTextColor(148, 163, 184);
+        pdf.text(`Member: ${currentMember ? currentMember.full_name : 'Member'} • ID: ${memId}`, 105, yPos + cardHeight + 10, { align: 'center' });
+
+        let savedNative = false;
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem) {
+          try {
+            const { Filesystem } = window.Capacitor.Plugins;
+            const pdfBase64 = pdf.output('datauristring').split(',')[1];
+            await Filesystem.writeFile({
+              path: fileName,
+              data: pdfBase64,
+              directory: 'DOCUMENTS',
+              recursive: true
+            });
+            savedNative = true;
+            showToast(`✓ PDF saved to Documents folder! (${fileName})`, 4000);
+          } catch (fsErr) {
+            console.warn('Filesystem PDF save error:', fsErr);
+          }
+        }
+
+        if (!savedNative) {
+          pdf.save(fileName);
+          showToast(`✓ PDF downloaded: ${fileName}`, 3000);
+        }
+      } else {
+        window.print();
+      }
+    } catch (e) {
+      console.error('PDF generation error:', e);
+      window.print();
+    }
+  } else {
+    window.print();
+  }
+
+  renderPrintableEIDQR(memId);
 }
 
 let currentActiveTab = 'tab-pass';
