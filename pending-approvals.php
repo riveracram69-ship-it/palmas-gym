@@ -16,6 +16,28 @@ if (!in_array($active_tab, ['registrations', 'renewals'])) {
 $admin_id = $_SESSION['user_id'] ?? null;
 $admin_name = $_SESSION['user_name'] ?? 'Admin';
 
+if (!function_exists('sanitize_payment_reference_for_db')) {
+    /**
+     * Sanitizes a payment reference string before inserting into `payments`.
+     * Strips generic placeholders (like FRONT-DESK, CASH) to NULL to prevent duplicate key collisions,
+     * and guarantees uniqueness if a duplicate non-null reference exists.
+     */
+    function sanitize_payment_reference_for_db(PDO $pdo, ?string $raw_ref): ?string {
+        $ref = trim((string)($raw_ref ?? ''));
+        if ($ref === '' || in_array(strtoupper($ref), ['FRONT-DESK', 'FRONT_DESK', 'FRONT DESK', 'CASH', 'N/A', 'NONE', 'MANUAL', 'NULL', '—', '-'])) {
+            return null;
+        }
+        try {
+            $chk = $pdo->prepare("SELECT COUNT(*) FROM payments WHERE reference_number = ?");
+            $chk->execute([$ref]);
+            if ((int)$chk->fetchColumn() > 0) {
+                $ref = $ref . '-' . strtoupper(substr(bin2hex(random_bytes(2)), 0, 4));
+            }
+        } catch (Throwable $t) {}
+        return $ref;
+    }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. POST ACTION HANDLER (Registrations & Renewals)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -241,7 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $subscription_id,
                                 $plan_price,
                                 $pay_method,
-                                $pay_ref,
+                                sanitize_payment_reference_for_db($pdo, $pay_ref),
                                 $admin_id,
                                 $pay_notes,
                                 $is_test_tx
@@ -390,7 +412,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $payment_notes = 'Annual Membership Fee — ' . ($req['payment_method'] === 'Cash' ? 'Front Desk Cash' : ('Verified ' . $req['payment_method'] . ($req['reference_no'] ? ' | Ref: ' . $req['reference_no'] : '')));
                         $pay_stmt->execute([
                             $req['member_id'], $subscription_id, $req['plan_price'],
-                            $req['payment_method'], $req['reference_no'] ?: null,
+                            $req['payment_method'], sanitize_payment_reference_for_db($pdo, $req['reference_no']),
                             date('Y-m-d'), $admin_id, $payment_notes
                         ]);
 
@@ -454,7 +476,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $payment_notes = 'Online Renewal — ' . $req['plan_name'] . ' (' . $req['payment_method'] . ($req['reference_no'] ? ' | Ref: ' . $req['reference_no'] : '') . ')';
                         $pay_stmt->execute([
                             $req['member_id'], $subscription_id, $req['plan_price'],
-                            $req['payment_method'], $req['reference_no'] ?: null,
+                            $req['payment_method'], sanitize_payment_reference_for_db($pdo, $req['reference_no']),
                             date('Y-m-d'), $admin_id, $payment_notes
                         ]);
 
