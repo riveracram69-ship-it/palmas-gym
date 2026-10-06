@@ -8308,7 +8308,7 @@ async function downloadPrintableEID() {
   const btn = document.getElementById('btn-download-eid');
   const origHtml = btn ? btn.innerHTML : '';
   if (btn) {
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating HD Card...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving ID Card to Device...';
     btn.disabled = true;
   }
 
@@ -8335,26 +8335,53 @@ async function downloadPrintableEID() {
         logging: false
       });
       const dataUrl = canvas.toDataURL('image/png');
-      
-      // 1. Try standard browser download trigger
-      try {
-        const link = document.createElement('a');
-        link.download = `Printable_ID_${memId}.png`;
-        link.href = dataUrl;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (err) {}
+      const base64Data = dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+      const fileName = `Printable_ID_${memId}.png`;
 
-      // 2. Open Preview Dialog for mobile WebView gallery save & PDF export
-      const previewImg = document.getElementById('eid-preview-img-target');
-      const previewModal = document.getElementById('modal-eid-image-preview');
-      if (previewImg && previewModal) {
-        previewImg.src = dataUrl;
-        previewModal.style.display = 'flex';
-      } else {
-        showToast('Card generated! You can also use Save as PDF / Print.');
+      let savedNative = false;
+
+      // 1. DIRECT NATIVE SAVE: Write directly to Android Documents & Pictures storage via Capacitor Filesystem
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem) {
+        const { Filesystem } = window.Capacitor.Plugins;
+        try {
+          await Filesystem.writeFile({
+            path: fileName,
+            data: base64Data,
+            directory: 'DOCUMENTS',
+            recursive: true
+          });
+          savedNative = true;
+          showToast(`✓ E-ID saved directly to device! (${fileName})`);
+        } catch (fsErr) {
+          console.warn('Filesystem DOCUMENTS write failed, trying DATA directory:', fsErr);
+          try {
+            await Filesystem.writeFile({
+              path: fileName,
+              data: base64Data,
+              directory: 'DATA',
+              recursive: true
+            });
+            savedNative = true;
+            showToast(`✓ E-ID saved successfully!`);
+          } catch (e2) {
+            console.error('Filesystem DATA write failed:', e2);
+          }
+        }
       }
+
+      // 2. Web browser fallback download trigger
+      if (!savedNative) {
+        try {
+          const link = document.createElement('a');
+          link.download = fileName;
+          link.href = dataUrl;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          showToast(`✓ Downloading ${fileName}...`);
+        } catch (err) {}
+      }
+
     } catch (e) {
       console.error('E-ID download error:', e);
       showToast('Opening Print / PDF view...');
@@ -8394,33 +8421,47 @@ async function sharePrintableEID() {
   if (typeof html2canvas !== 'undefined' && cardElem) {
     try {
       const canvas = await html2canvas(cardElem, { scale: 3, useCORS: true, backgroundColor: null });
+      const dataUrl = canvas.toDataURL('image/png');
+      const base64Data = dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+      const fileName = `Printable_ID_${memId}.png`;
+
+      // 1. Direct Native Android Share Sheet via Capacitor Share
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share && window.Capacitor.Plugins.Filesystem) {
+        try {
+          const { Share, Filesystem } = window.Capacitor.Plugins;
+          const tempFile = await Filesystem.writeFile({
+            path: fileName,
+            data: base64Data,
+            directory: 'CACHE'
+          });
+          await Share.share({
+            title: "Palma's Elite Gym Official E-ID",
+            text: `Palma's Elite Gym Member ID: ${memId}`,
+            url: tempFile.uri,
+            dialogTitle: "Share E-ID Card"
+          });
+          renderPrintableEIDQR(memId);
+          return;
+        } catch (capShareErr) {
+          console.warn('Capacitor native share error:', capShareErr);
+        }
+      }
+
+      // 2. Web Share API fallback
       canvas.toBlob(async blob => {
-        let shared = false;
         if (navigator.share && blob) {
           try {
-            const file = new File([blob], `Printable_ID_${memId}.png`, { type: 'image/png' });
+            const file = new File([blob], fileName, { type: 'image/png' });
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
               await navigator.share({ files: [file], title: "Palma's Elite Gym E-ID Card" });
-              shared = true;
             } else {
               await navigator.share({
                 title: "Palma's Elite Gym E-ID Card",
                 text: `Palma's Elite Gym Official ID: ${memId}`
               });
-              shared = true;
             }
           } catch(err) {
-            console.warn('Share cancelled or not supported:', err);
-          }
-        }
-        
-        if (!shared) {
-          // Open interactive preview modal
-          const previewImg = document.getElementById('eid-preview-img-target');
-          const previewModal = document.getElementById('modal-eid-image-preview');
-          if (previewImg && previewModal) {
-            previewImg.src = canvas.toDataURL('image/png');
-            previewModal.style.display = 'flex';
+            console.warn('Share cancelled or failed:', err);
           }
         }
         renderPrintableEIDQR(memId);
