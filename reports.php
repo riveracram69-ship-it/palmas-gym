@@ -2999,79 +2999,88 @@ try {
 // applyPreset, openExportModal, generatePDFReport, etc.) are in assets/js/reports.js
 
 // 1. Report 1 Charts
-const dailyPlanChart = new Chart(document.getElementById('dailyPlanChart'), {
-    type: 'bar',
-    data: {
-        labels: <?php echo json_encode(array_column($daily_report['plan_breakdown'], 'plan_name')); ?>,
-        datasets: [{
-            label: 'Revenue (₱)',
-            data: <?php echo json_encode(array_map('floatval', array_column($daily_report['plan_breakdown'], 'revenue'))); ?>,
-            backgroundColor: themeGreen,
-            borderRadius: 6
-        }]
-    },
-    options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-            y: { grid: { color: gridColor }, ticks: { font: themeFont, callback: v => '₱' + Number(v).toLocaleString() } },
-            x: { grid: { display: false }, ticks: { font: themeFont } }
-        }
-    }
-});
-
-const dailyMethodChart = new Chart(document.getElementById('dailyMethodChart'), {
-    type: 'doughnut',
-    data: {
-        labels: <?php echo json_encode(array_column($daily_report['method_breakdown'], 'payment_method')); ?>,
-        datasets: [{
-            data: <?php echo json_encode(array_map('floatval', array_column($daily_report['method_breakdown'], 'revenue'))); ?>,
-            backgroundColor: ['#52b788', '#38bdf8', '#eab308', '#c084fc'],
-            borderWidth: 0
-        }]
-    },
-    options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'right', labels: { font: themeFont, color: '#94a3b8' } } }
-    }
-});
-
-// 2. Report 2 Chart: Weekly Comparison
-const weeklyCompareChart = new Chart(document.getElementById('weeklyCompareChart'), {
-    type: 'bar',
-    data: {
-        labels: <?php echo json_encode(array_keys($weekly_report['days']['current'])); ?>,
-        datasets: [
-            {
-                label: 'Current Week',
-                data: <?php echo json_encode(array_values(array_map(fn($d) => $d['revenue'], $weekly_report['days']['current']))); ?>,
+const dailyPlanCanvas = document.getElementById('dailyPlanChart');
+if (dailyPlanCanvas) {
+    new Chart(dailyPlanCanvas, {
+        type: 'bar',
+        data: {
+            labels: <?php echo json_encode(array_column($daily_report['plan_breakdown'], 'plan_name')); ?>,
+            datasets: [{
+                label: 'Revenue (₱)',
+                data: <?php echo json_encode(array_map('floatval', array_column($daily_report['plan_breakdown'], 'revenue'))); ?>,
                 backgroundColor: themeGreen,
                 borderRadius: 6
-            },
-            {
-                label: 'Previous Week',
-                data: <?php echo json_encode(array_values(array_map(fn($d) => $d['revenue'], $weekly_report['days']['previous']))); ?>,
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                borderRadius: 6
-            }
-        ]
-    },
-    options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                callbacks: {
-                    label: ctx => ctx.dataset.label + ': ₱' + Number(ctx.raw).toLocaleString('en-US', { minimumFractionDigits: 2 })
-                }
-            }
+            }]
         },
-        scales: {
-            y: { grid: { color: gridColor }, ticks: { font: themeFont, callback: v => '₱' + Number(v).toLocaleString() } },
-            x: { grid: { display: false }, ticks: { font: themeFont } }
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { grid: { color: gridColor }, ticks: { font: themeFont, callback: v => '₱' + Number(v).toLocaleString() } },
+                x: { grid: { display: false }, ticks: { font: themeFont } }
+            }
         }
-    }
-});
+    });
+}
+
+const dailyMethodCanvas = document.getElementById('dailyMethodChart');
+if (dailyMethodCanvas) {
+    new Chart(dailyMethodCanvas, {
+        type: 'doughnut',
+        data: {
+            labels: <?php echo json_encode(array_column($daily_report['method_breakdown'], 'payment_method')); ?>,
+            datasets: [{
+                data: <?php echo json_encode(array_map('floatval', array_column($daily_report['method_breakdown'], 'revenue'))); ?>,
+                backgroundColor: ['#52b788', '#38bdf8', '#eab308', '#c084fc'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'right', labels: { font: themeFont, color: '#94a3b8' } } }
+        }
+    });
+}
+
+// 2. Report 2 Chart: Weekly Comparison
+const weeklyCompareCanvas = document.getElementById('weeklyCompareChart');
+if (weeklyCompareCanvas) {
+    new Chart(weeklyCompareCanvas, {
+        type: 'bar',
+        data: {
+            labels: <?php echo json_encode(array_keys($weekly_report['days']['current'])); ?>,
+            datasets: [
+                {
+                    label: 'Current Week',
+                    data: <?php echo json_encode(array_values(array_map(fn($d) => $d['revenue'], $weekly_report['days']['current']))); ?>,
+                    backgroundColor: themeGreen,
+                    borderRadius: 6
+                },
+                {
+                    label: 'Previous Week',
+                    data: <?php echo json_encode(array_values(array_map(fn($d) => $d['revenue'], $weekly_report['days']['previous']))); ?>,
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    borderRadius: 6
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ctx.dataset.label + ': ₱' + Number(ctx.raw).toLocaleString('en-US', { minimumFractionDigits: 2 })
+                    }
+                }
+            },
+            scales: {
+                y: { grid: { color: gridColor }, ticks: { font: themeFont, callback: v => '₱' + Number(v).toLocaleString() } },
+                x: { grid: { display: false }, ticks: { font: themeFont } }
+            }
+        }
+    });
+}
 
 // 3. Report 3 Charts: Financial Profitability & Net Income
 const finCanvas = document.getElementById('financialComparisonChart');
@@ -3151,6 +3160,7 @@ if (expCatCanvas) {
             }
         }
     });
+}
 // ── Top Subscribers Client-Side Search & Sort ────────────────────────────────
 function filterSubscribersTable() {
     const q = (document.getElementById('subscribers-search-input')?.value || '').toLowerCase().trim();

@@ -34,6 +34,11 @@ function switchReportTab(tabId) {
     // Trigger chart recalculation & rendering on visible canvases
     setTimeout(() => {
         window.dispatchEvent(new Event('resize'));
+        if (typeof Chart !== 'undefined' && Chart.instances) {
+            Object.values(Chart.instances).forEach(chart => {
+                try { chart.resize(); } catch(e) {}
+            });
+        }
     }, 50);
 }
 
