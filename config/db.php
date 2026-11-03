@@ -30,6 +30,7 @@ $options = [
     PDO::ATTR_EMULATE_PREPARES      => true,
     PDO::ATTR_TIMEOUT               => 10,
     PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
+    PDO::MYSQL_ATTR_SSL_CA          => (file_exists(__DIR__ . '/cacert.pem') ? __DIR__ . '/cacert.pem' : (file_exists('C:/xamp/apache/bin/curl-ca-bundle.crt') ? 'C:/xamp/apache/bin/curl-ca-bundle.crt' : (file_exists('/etc/ssl/certs/ca-certificates.crt') ? '/etc/ssl/certs/ca-certificates.crt' : (ini_get('openssl.cafile') ?: '')))),
     // Single valid SET statement only
     PDO::MYSQL_ATTR_INIT_COMMAND    => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
 ];
