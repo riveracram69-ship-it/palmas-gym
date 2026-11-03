@@ -85,7 +85,7 @@
     $db_host_val = $get_conf('DB_HOST', $get_conf('Host', $get_conf('MYSQLHOST', $get_conf('MYSQL_HOST', 'localhost'))));
     $db_port_val = $get_conf('DB_PORT', $get_conf('Port', $get_conf('MYSQLPORT', $get_conf('MYSQL_PORT', '3306'))));
     $db_name_val = $get_conf('DB_NAME', $get_conf('Database', $get_conf('MYSQLDATABASE', $get_conf('MYSQL_DATABASE', 'gym_management'))));
-    $db_user_val = $get_conf('DB_USER', $get_conf('MYSQLUSER', $get_conf('MYSQL_USER', 'root')));
+    $db_user_val = $get_conf('DB_USER', $get_conf('User', $get_conf('MYSQLUSER', $get_conf('MYSQL_USER', 'root'))));
     $db_pass_val = $get_conf('DB_PASS', $get_conf('Password', $get_conf('DB_PASSWORD', $get_conf('MYSQLPASSWORD', $get_conf('MYSQL_PASSWORD', '')))));
 
     if (!defined('DB_HOST')) define('DB_HOST', $db_host_val);
