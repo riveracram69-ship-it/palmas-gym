@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * config/env.php
  * Universal Centralized Environment & Secrets Configuration Loader
