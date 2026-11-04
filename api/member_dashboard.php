@@ -19,7 +19,7 @@ try {
     $member_id = $auth_member_id;
     $t_start   = microtime(true);
 
-    // ── QUERY 1: Member + Latest Subscription (CRITICAL — renders the card) ──
+    // ── QUERY 1: Member Info (TiDB & MySQL compatible) ──
     $stmt = $pdo->prepare("
         SELECT 
             m.id, m.membership_id, m.first_name, m.middle_name, m.last_name, m.extension,
@@ -28,26 +28,8 @@ try {
             m.dob, m.age, m.gender,
             m.photo, m.google_picture, m.auth_provider, m.status,
             m.account_status,
-            m.annual_membership_expiry,
-            s.id    AS subscription_id,
-            s.expiry_date,
-            s.start_date,
-            p.name  AS plan_name,
-            p.id    AS plan_id,
-            p.duration_months,
-            p.duration_minutes,
-            p.is_test_promo,
-            p.plan_category,
-            p.floor_access
+            m.annual_membership_expiry
         FROM members m
-        LEFT JOIN subscriptions s 
-            ON s.id = (
-                SELECT s2.id FROM subscriptions s2 
-                LEFT JOIN membership_plans p2 ON p2.id = s2.plan_id
-                WHERE s2.member_id = m.id AND (p2.plan_category IS NULL OR p2.plan_category != 'membership_fee')
-                ORDER BY (s2.expiry_date >= NOW()) DESC, s2.expiry_date DESC, s2.id DESC LIMIT 1
-            )
-        LEFT JOIN membership_plans p ON p.id = s.plan_id
         WHERE m.id = ?
         LIMIT 1
     ");
@@ -58,6 +40,42 @@ try {
         http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'Member not found.']);
         exit;
+    }
+
+    // ── QUERY 1b: Latest Active Workout Pass Subscription (TiDB compatible, no subquery in ON) ──
+    $subStmt = $pdo->prepare("
+        SELECT 
+            s.id    AS subscription_id,
+            s.expiry_date,
+            s.start_date,
+            p.name  AS plan_name,
+            p.id    AS plan_id,
+            p.duration_months,
+            p.duration_minutes,
+            p.is_test_promo,
+            p.plan_category,
+            p.floor_access
+        FROM subscriptions s
+        LEFT JOIN membership_plans p ON p.id = s.plan_id
+        WHERE s.member_id = ? AND (p.plan_category IS NULL OR p.plan_category != 'membership_fee')
+        ORDER BY (s.expiry_date >= NOW()) DESC, s.expiry_date DESC, s.id DESC
+        LIMIT 1
+    ");
+    $subStmt->execute([$member_id]);
+    $sub = $subStmt->fetch(PDO::FETCH_ASSOC);
+    if ($sub) {
+        $member = array_merge($member, $sub);
+    } else {
+        $member['subscription_id'] = null;
+        $member['expiry_date']     = null;
+        $member['start_date']      = null;
+        $member['plan_name']       = null;
+        $member['plan_id']         = null;
+        $member['duration_months'] = null;
+        $member['duration_minutes']= null;
+        $member['is_test_promo']   = null;
+        $member['plan_category']   = null;
+        $member['floor_access']    = null;
     }
 
     $member['formatted_address'] = format_member_address($member);
