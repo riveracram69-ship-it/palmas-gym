@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * config/env.php
  * Universal Centralized Environment & Secrets Configuration Loader
@@ -82,11 +82,20 @@
     }
 
     // Database Configuration (Supports DB_HOST or Host, DB_PASS or Password, etc.)
+    // NOTE: DB_USER/.env value takes highest priority over getenv('DB_USER').
+    // Reason: Docker images (e.g. mariadb-client) may set DB_USER=root as a system-level
+    // env var, which silently shadows the correct TiDB prefixed username set in Render.
     $db_host_val = $get_conf('DB_HOST', $get_conf('Host', $get_conf('MYSQLHOST', $get_conf('MYSQL_HOST', 'localhost'))));
     $db_port_val = $get_conf('DB_PORT', $get_conf('Port', $get_conf('MYSQLPORT', $get_conf('MYSQL_PORT', '3306'))));
     $db_name_val = $get_conf('DB_NAME', $get_conf('Database', $get_conf('MYSQLDATABASE', $get_conf('MYSQL_DATABASE', 'gym_management'))));
-    $db_user_val = $get_conf('DB_USER', $get_conf('User', $get_conf('MYSQLUSER', $get_conf('MYSQL_USER', 'root'))));
-    $db_pass_val = $get_conf('DB_PASS', $get_conf('Password', $get_conf('DB_PASSWORD', $get_conf('MYSQLPASSWORD', $get_conf('MYSQL_PASSWORD', '')))));
+    // .env file DB_USER → Render 'User' env var → system DB_USER → fallback root
+    $db_user_val = (isset($loaded_env['DB_USER']) && $loaded_env['DB_USER'] !== '')
+        ? $loaded_env['DB_USER']
+        : $get_conf('User', $get_conf('DB_USER', $get_conf('MYSQLUSER', $get_conf('MYSQL_USER', 'root'))));
+    // .env file DB_PASS → Render 'Password' env var → other fallbacks
+    $db_pass_val = (isset($loaded_env['DB_PASS']) && $loaded_env['DB_PASS'] !== '')
+        ? $loaded_env['DB_PASS']
+        : $get_conf('Password', $get_conf('DB_PASS', $get_conf('DB_PASSWORD', $get_conf('MYSQLPASSWORD', $get_conf('MYSQL_PASSWORD', '')))));
 
     if (!defined('DB_HOST')) define('DB_HOST', $db_host_val);
     if (!defined('DB_PORT')) define('DB_PORT', $db_port_val);
@@ -123,7 +132,7 @@
         if (!empty($missing_secrets)) {
             $msg = '[CRITICAL] Production deployment is missing required secret keys: ' . implode(', ', $missing_secrets) . '. Set them in your environment variables or .env file.';
             error_log($msg);
-            // Halt the request gracefully — do NOT expose the key names to the browser
+            // Halt the request gracefully â€” do NOT expose the key names to the browser
             http_response_code(503);
             die('<html><body style="font-family:sans-serif;text-align:center;padding:4rem;"><h1>Service Unavailable</h1><p>A required server configuration is missing. Contact the administrator.</p></body></html>');
         }
