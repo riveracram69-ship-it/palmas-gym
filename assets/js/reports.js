@@ -67,7 +67,7 @@ function applyPreset(preset) {
 function openExportModal(type) {
     const select = document.getElementById('export-type-select');
     if (select && type) select.value = type;
-    if (type === 'top_visitors' || type === 'top_subscribers' || type === 'members') {
+    if (['top_visitors', 'top_visitors_member', 'top_visitors_non_member', 'top_subscribers', 'members'].includes(type)) {
         setExportModalPreset('all');
     }
     const btn = document.getElementById('btn-export-submit');

@@ -422,11 +422,11 @@ if (isset($_GET['export']) && isset($pdo)) {
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_NUM);
 
-    } elseif ($type === 'top_subscribers' || $type === 'top_visitors') {
-        $is_visitors_mode = ($type === 'top_visitors');
+    } elseif (in_array($type, ['top_subscribers', 'top_visitors', 'top_visitors_member', 'top_visitors_non_member'], true)) {
+        $is_visitors_mode = ($type !== 'top_subscribers');
         $headers = $is_visitors_mode
-            ? ['Rank', 'Membership ID', 'Member Name', 'Member Type', 'Number of Visits', 'Category Visit Rank', 'Last Visit Date', 'Favorite / Latest Plan', 'Plans Availed', 'Total Spend (PHP)', 'Account Status', 'Contact Number']
-            : ['Rank', 'Membership ID', 'Member Name', 'Member Type', 'Number of Visits', 'Category Visit Rank', 'Contact Number', 'Email', 'Account Status', 'Plans Availed', 'Total Spend (PHP)', 'Favorite Plan', 'Last Availment Date', 'Engagement Tier'];
+            ? ['Category Rank', 'Membership ID', 'Member Name', 'Member Type', 'Number of Visits', 'Last Visit Date', 'Favorite / Latest Plan', 'Plans Availed', 'Total Spend (PHP)', 'Account Status', 'Contact Number']
+            : ['Category Rank', 'Membership ID', 'Member Name', 'Member Type', 'Number of Visits', 'Contact Number', 'Email', 'Account Status', 'Plans Availed', 'Total Spend (PHP)', 'Favorite Plan', 'Last Availment Date', 'Engagement Tier'];
 
         $where_sub_filter = "1=1";
         if (!$is_visitors_mode && !empty($startDate) && !empty($endDate) && $datePreset !== 'all') {
@@ -441,11 +441,9 @@ if (isset($_GET['export']) && isset($pdo)) {
 
         $order_clause = $is_visitors_mode
             ? "ORDER BY total_visits DESC, plans_availed DESC, total_spend DESC, m.full_name ASC"
-            : "ORDER BY plans_availed DESC, total_visits DESC, total_spend DESC, m.full_name ASC";
+            : "ORDER BY total_visits DESC, plans_availed DESC, total_spend DESC, m.full_name ASC";
 
-        $where_main = $is_visitors_mode
-            ? "WHERE (COALESCE(att_stats.total_visits, 0) > 0 OR COALESCE(sub_stats.plans_availed, 0) > 0)"
-            : "WHERE (COALESCE(sub_stats.plans_availed, 0) > 0 OR COALESCE(att_stats.total_visits, 0) > 0)";
+        $where_main = "WHERE (COALESCE(att_stats.total_visits, 0) > 0 OR COALESCE(sub_stats.plans_availed, 0) > 0)";
 
         $build_engagement_sql = function($sub_filter_clause) use ($where_main, $order_clause) {
             return "
@@ -518,17 +516,9 @@ if (isset($_GET['export']) && isset($pdo)) {
             $raw_sub_rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
-        // Compute Category Visit Ranks (Official Member vs Non-Member sorted by total_visits DESC)
-        $sorted_by_visits = $raw_sub_rows;
-        usort($sorted_by_visits, function($a, $b) {
-            $vDiff = ((int)$b['total_visits']) <=> ((int)$a['total_visits']);
-            if ($vDiff !== 0) return $vDiff;
-            return ((int)$b['plans_availed']) <=> ((int)$a['plans_availed']);
-        });
-
-        $cat_visit_rank_map = [];
-        $off_rank = 0;
-        $non_rank = 0;
+        // Separate into Official Members and Non-Members, each ranked independently (#1, #2, #3...)
+        $official_raw   = [];
+        $non_member_raw = [];
         $visitor_highlights = [
             'top_official_name'       => 'None',
             'top_official_visits'     => 0,
@@ -537,75 +527,92 @@ if (isset($_GET['export']) && isset($pdo)) {
             'total_visits_all'        => 0
         ];
 
-        foreach ($sorted_by_visits as $sv) {
-            $m_id_key = $sv['membership_id'];
-            $v_count  = (int)$sv['total_visits'];
+        foreach ($raw_sub_rows as $r_item) {
+            $v_count = (int)$r_item['total_visits'];
             $visitor_highlights['total_visits_all'] += $v_count;
-
-            if ($sv['member_type'] === 'Official Member') {
-                $off_rank++;
-                if ($off_rank === 1) {
-                    $visitor_highlights['top_official_name']   = $sv['full_name'];
-                    $visitor_highlights['top_official_visits'] = $v_count;
-                    $cat_visit_rank_map[$m_id_key] = ($v_count > 0) ? '#1 Official Member (Most Visits)' : 'Official Member (0 Visits)';
-                } else {
-                    $cat_visit_rank_map[$m_id_key] = ($v_count > 0) ? '#' . $off_rank . ' Official Member' : 'Official Member (0 Visits)';
-                }
+            if ($r_item['member_type'] === 'Official Member') {
+                $official_raw[] = $r_item;
             } else {
-                $non_rank++;
-                if ($non_rank === 1) {
-                    $visitor_highlights['top_non_member_name']   = $sv['full_name'];
-                    $visitor_highlights['top_non_member_visits'] = $v_count;
-                    $cat_visit_rank_map[$m_id_key] = ($v_count > 0) ? '#1 Non-Member (Most Visits)' : 'Non-Member (0 Visits)';
-                } else {
-                    $cat_visit_rank_map[$m_id_key] = ($v_count > 0) ? '#' . $non_rank . ' Non-Member' : 'Non-Member (0 Visits)';
-                }
+                $non_member_raw[] = $r_item;
             }
         }
 
-        foreach ($raw_sub_rows as $s_idx => $sr) {
-            $p_cnt = (int)$sr['plans_availed'];
-            $v_cnt = (int)$sr['total_visits'];
-            $tier = 'New Subscriber';
-            if ($p_cnt >= 10) $tier = 'Top Subscriber';
-            elseif ($p_cnt >= 5) $tier = 'Active Subscriber';
-            elseif ($p_cnt >= 2) $tier = 'Regular Subscriber';
+        if (!empty($official_raw)) {
+            $visitor_highlights['top_official_name']   = $official_raw[0]['full_name'];
+            $visitor_highlights['top_official_visits'] = (int)$official_raw[0]['total_visits'];
+        }
+        if (!empty($non_member_raw)) {
+            $visitor_highlights['top_non_member_name']   = $non_member_raw[0]['full_name'];
+            $visitor_highlights['top_non_member_visits'] = (int)$non_member_raw[0]['total_visits'];
+        }
 
-            $cat_rank_label = $cat_visit_rank_map[$sr['membership_id']] ?? $sr['member_type'];
+        $format_group_rows = function(array $group_items) use ($is_visitors_mode) {
+            $out_rows = [];
+            foreach ($group_items as $idx => $sr) {
+                $p_cnt = (int)$sr['plans_availed'];
+                $v_cnt = (int)$sr['total_visits'];
+                $tier = 'New Subscriber';
+                if ($p_cnt >= 10) $tier = 'Top Subscriber';
+                elseif ($p_cnt >= 5) $tier = 'Active Subscriber';
+                elseif ($p_cnt >= 2) $tier = 'Regular Subscriber';
 
-            if ($is_visitors_mode) {
-                $rows[] = [
-                    $s_idx + 1,
-                    $sr['membership_id'],
-                    $sr['full_name'],
-                    $sr['member_type'],
-                    $v_cnt,
-                    $cat_rank_label,
-                    $sr['last_visit_date'],
-                    $sr['favorite_plan'],
-                    $p_cnt,
-                    number_format((float)$sr['total_spend'], 2, '.', ''),
-                    $sr['status'],
-                    $sr['contact_number']
-                ];
-            } else {
-                $rows[] = [
-                    $s_idx + 1,
-                    $sr['membership_id'],
-                    $sr['full_name'],
-                    $sr['member_type'],
-                    $v_cnt,
-                    $cat_rank_label,
-                    $sr['contact_number'],
-                    $sr['email'],
-                    $sr['status'],
-                    $p_cnt,
-                    number_format((float)$sr['total_spend'], 2, '.', ''),
-                    $sr['favorite_plan'],
-                    $sr['last_availment_date'],
-                    $tier
-                ];
+                $rank_num = $idx + 1;
+                $rank_str = ($rank_num === 1) ? '#1 (Top Visitor)' : '#' . $rank_num;
+
+                if ($is_visitors_mode) {
+                    $out_rows[] = [
+                        $rank_str,
+                        $sr['membership_id'],
+                        $sr['full_name'],
+                        $sr['member_type'],
+                        $v_cnt,
+                        $sr['last_visit_date'],
+                        $sr['favorite_plan'],
+                        $p_cnt,
+                        number_format((float)$sr['total_spend'], 2, '.', ''),
+                        $sr['status'],
+                        $sr['contact_number']
+                    ];
+                } else {
+                    $out_rows[] = [
+                        $rank_str,
+                        $sr['membership_id'],
+                        $sr['full_name'],
+                        $sr['member_type'],
+                        $v_cnt,
+                        $sr['contact_number'],
+                        $sr['email'],
+                        $sr['status'],
+                        $p_cnt,
+                        number_format((float)$sr['total_spend'], 2, '.', ''),
+                        $sr['favorite_plan'],
+                        $sr['last_availment_date'],
+                        $tier
+                    ];
+                }
             }
+            return $out_rows;
+        };
+
+        $official_formatted   = $format_group_rows($official_raw);
+        $non_member_formatted = $format_group_rows($non_member_raw);
+
+        if ($type === 'top_visitors_member') {
+            $separated_sections = [
+                ['title' => 'Official Members — Most Gym Visits Ranking', 'rows' => $official_formatted]
+            ];
+            $rows = $official_formatted;
+        } elseif ($type === 'top_visitors_non_member') {
+            $separated_sections = [
+                ['title' => 'Non-Members — Most Gym Visits Ranking', 'rows' => $non_member_formatted]
+            ];
+            $rows = $non_member_formatted;
+        } else {
+            $separated_sections = [
+                ['title' => '1. Official Members Ranking (Most Gym Visits)', 'rows' => $official_formatted],
+                ['title' => '2. Non-Members Ranking (Most Gym Visits)', 'rows' => $non_member_formatted]
+            ];
+            $rows = array_merge($official_formatted, $non_member_formatted);
         }
 
     } else {
@@ -614,20 +621,22 @@ if (isset($_GET['export']) && isset($pdo)) {
 
     while (ob_get_level()) { ob_end_clean(); }
     $type_file_names = [
-        'daily_revenue'     => 'Daily_Revenue',
-        'weekly_revenue'    => 'Weekly_Revenue',
-        'monthly_revenue'   => 'Monthly_Revenue',
-        'financial_summary' => 'Financial_Profitability_Summary',
-        'expenses'          => 'Operational_Expenses_Ledger',
-        'top_subscribers'   => 'Top_Subscribers_Engagement',
-        'top_visitors'      => 'Most_Gym_Visits_Member_And_NonMember',
-        'retention'         => 'Membership_Retention',
-        'conversion'        => 'Member_Conversion',
-        'attendance_hour'   => 'Peak_Hours_Attendance',
-        'attendance_day'    => 'Day_Of_Week_Attendance',
-        'members'           => 'Membership',
-        'attendance'        => 'Attendance',
-        'revenue'           => 'Payment'
+        'daily_revenue'           => 'Daily_Revenue',
+        'weekly_revenue'          => 'Weekly_Revenue',
+        'monthly_revenue'         => 'Monthly_Revenue',
+        'financial_summary'       => 'Financial_Profitability_Summary',
+        'expenses'                => 'Operational_Expenses_Ledger',
+        'top_subscribers'         => 'Top_Subscribers_Engagement',
+        'top_visitors'            => 'Most_Gym_Visits_Member_And_NonMember',
+        'top_visitors_member'     => 'Most_Gym_Visits_Official_Members',
+        'top_visitors_non_member' => 'Most_Gym_Visits_Non_Members',
+        'retention'               => 'Membership_Retention',
+        'conversion'              => 'Member_Conversion',
+        'attendance_hour'         => 'Peak_Hours_Attendance',
+        'attendance_day'          => 'Day_Of_Week_Attendance',
+        'members'                 => 'Membership',
+        'attendance'              => 'Attendance',
+        'revenue'                 => 'Payment'
     ];
     $clean_type = $type_file_names[$type] ?? ucwords(str_replace(' ', '_', str_replace('_', ' ', $type)));
     $period_tag = (!empty($startDate) && !empty($endDate)) ? date('Y-m', strtotime($startDate)) : date('Y-m');
@@ -639,22 +648,39 @@ if (isset($_GET['export']) && isset($pdo)) {
         header('Content-Disposition: attachment; filename="' . $filename . '.json"');
         header('Cache-Control: no-cache, must-revalidate');
         header('Pragma: no-cache');
-        $output_data = [];
-        foreach ($rows as $r) {
-            $item = [];
-            foreach ($headers as $index => $h) {
-                $item[$h] = $r[$index] ?? '';
+        if (isset($separated_sections)) {
+            $grouped_json = [];
+            foreach ($separated_sections as $sec) {
+                $sec_items = [];
+                foreach ($sec['rows'] as $r) {
+                    $item = [];
+                    foreach ($headers as $index => $h) {
+                        $item[$h] = $r[$index] ?? '';
+                    }
+                    $sec_items[] = $item;
+                }
+                $grouped_json[$sec['title']] = $sec_items;
             }
-            $output_data[] = $item;
+            $payload = [
+                'summary_highlights' => [
+                    'most_visits_official_member' => $visitor_highlights['top_official_name'] . ' (' . $visitor_highlights['top_official_visits'] . ' visits)',
+                    'most_visits_non_member'      => $visitor_highlights['top_non_member_name'] . ' (' . $visitor_highlights['top_non_member_visits'] . ' visits)',
+                    'total_gym_visits'            => $visitor_highlights['total_visits_all']
+                ],
+                'rankings' => $grouped_json
+            ];
+            echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        } else {
+            $output_data = [];
+            foreach ($rows as $r) {
+                $item = [];
+                foreach ($headers as $index => $h) {
+                    $item[$h] = $r[$index] ?? '';
+                }
+                $output_data[] = $item;
+            }
+            echo json_encode($output_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         }
-        $payload = isset($visitor_highlights)
-            ? ['summary_highlights' => [
-                'most_visits_official_member' => $visitor_highlights['top_official_name'] . ' (' . $visitor_highlights['top_official_visits'] . ' visits)',
-                'most_visits_non_member'      => $visitor_highlights['top_non_member_name'] . ' (' . $visitor_highlights['top_non_member_visits'] . ' visits)',
-                'total_gym_visits'            => $visitor_highlights['total_visits_all']
-              ], 'records' => $output_data]
-            : $output_data;
-        echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         exit;
 
     } elseif ($format === 'xls') {
@@ -663,41 +689,59 @@ if (isset($_GET['export']) && isset($pdo)) {
         header('Cache-Control: no-cache, must-revalidate');
         header('Pragma: no-cache');
         echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
-        echo '<head><meta http-equiv="Content-type" content="text/html;charset=UTF-8" /><style>table{border-collapse:collapse;} th{background-color:#1b4332;color:#ffffff;padding:8px;} td{padding:6px;border:1px solid #ccc;}</style></head>';
+        echo '<head><meta http-equiv="Content-type" content="text/html;charset=UTF-8" /><style>table{border-collapse:collapse;margin-bottom:20px;} th{background-color:#1b4332;color:#ffffff;padding:8px;} td{padding:6px;border:1px solid #ccc;} h3{color:#1b4332;margin-top:16px;margin-bottom:6px;}</style></head>';
         echo '<body><h2>Palma\'s Elite Gym — ' . ucwords(str_replace('_', ' ', $type)) . '</h2>';
         if (isset($visitor_highlights)) {
             echo '<p><strong>Most Visits (Official Member):</strong> ' . htmlspecialchars($visitor_highlights['top_official_name']) . ' (' . (int)$visitor_highlights['top_official_visits'] . ' Visits) &nbsp;|&nbsp; ';
             echo '<strong>Most Visits (Non-Member):</strong> ' . htmlspecialchars($visitor_highlights['top_non_member_name']) . ' (' . (int)$visitor_highlights['top_non_member_visits'] . ' Visits) &nbsp;|&nbsp; ';
             echo '<strong>Total Gym Visits:</strong> ' . (int)$visitor_highlights['total_visits_all'] . ' Visits</p>';
         }
-        echo '<table border="1"><tr>';
-        foreach ($headers as $h) { echo '<th>' . htmlspecialchars($h) . '</th>'; }
-        echo '</tr>';
-        foreach ($rows as $r) {
-            echo '<tr>';
-            foreach ($r as $val) { echo '<td>' . htmlspecialchars((string)$val) . '</td>'; }
+        if (isset($separated_sections)) {
+            foreach ($separated_sections as $sec) {
+                echo '<h3>' . htmlspecialchars($sec['title']) . '</h3>';
+                echo '<table border="1"><tr>';
+                foreach ($headers as $h) { echo '<th>' . htmlspecialchars($h) . '</th>'; }
+                echo '</tr>';
+                foreach ($sec['rows'] as $r) {
+                    echo '<tr>';
+                    foreach ($r as $val) { echo '<td>' . htmlspecialchars((string)$val) . '</td>'; }
+                    echo '</tr>';
+                }
+                echo '</table>';
+            }
+        } else {
+            echo '<table border="1"><tr>';
+            foreach ($headers as $h) { echo '<th>' . htmlspecialchars($h) . '</th>'; }
             echo '</tr>';
+            foreach ($rows as $r) {
+                echo '<tr>';
+                foreach ($r as $val) { echo '<td>' . htmlspecialchars((string)$val) . '</td>'; }
+                echo '</tr>';
+            }
+            echo '</table>';
         }
-        echo '</table></body></html>';
+        echo '</body></html>';
         exit;
 
     } elseif ($format === 'pdf' || $format === 'print') {
         // ── EXECUTIVE PDF & PRINTABLE REPORT RENDERER ────────────────────────
         $type_titles = [
-            'daily_revenue'     => 'Daily Revenue & Transaction Ledger',
-            'weekly_revenue'    => 'Weekly Revenue Summary',
-            'monthly_revenue'   => 'Monthly Revenue Performance',
-            'financial_summary' => 'Financial Profitability & Net Income Summary',
-            'expenses'          => 'Gym Operational Expenses & Cost Ledger',
-            'top_subscribers'   => 'Top Subscribers & Member Engagement Analysis',
-            'top_visitors'      => 'Most Gym Visits Ranking (Official Member & Non-Member)',
-            'retention'         => 'Membership Retention & Lifecycle Audit',
-            'conversion'        => 'Member Registration & Conversion Report',
-            'attendance_hour'   => 'Peak Hours Attendance Distribution',
-            'attendance_day'    => 'Day-of-Week Attendance Analytics',
-            'members'           => 'Registered Membership Directory',
-            'attendance'        => 'Member Attendance Check-In Records',
-            'revenue'           => 'Financial Payment Ledger'
+            'daily_revenue'           => 'Daily Revenue & Transaction Ledger',
+            'weekly_revenue'          => 'Weekly Revenue Summary',
+            'monthly_revenue'         => 'Monthly Revenue Performance',
+            'financial_summary'       => 'Financial Profitability & Net Income Summary',
+            'expenses'                => 'Gym Operational Expenses & Cost Ledger',
+            'top_subscribers'         => 'Top Subscribers & Member Engagement (Separated Member & Non-Member)',
+            'top_visitors'            => 'Most Gym Visits Ranking (Separated: Official Member & Non-Member)',
+            'top_visitors_member'     => 'Most Gym Visits Ranking — Official Members Only',
+            'top_visitors_non_member' => 'Most Gym Visits Ranking — Non-Members Only',
+            'retention'               => 'Membership Retention & Lifecycle Audit',
+            'conversion'              => 'Member Registration & Conversion Report',
+            'attendance_hour'         => 'Peak Hours Attendance Distribution',
+            'attendance_day'          => 'Day-of-Week Attendance Analytics',
+            'members'                 => 'Registered Membership Directory',
+            'attendance'              => 'Member Attendance Check-In Records',
+            'revenue'                 => 'Financial Payment Ledger'
         ];
         $report_title = $type_titles[$type] ?? ucwords(str_replace('_', ' ', $type)) . ' Report';
 
@@ -760,7 +804,19 @@ if (isset($_GET['export']) && isset($pdo)) {
                 $summary_cards[] = ['label' => 'Auditor Status', 'value' => 'VERIFIED'];
             }
             $pdf->RenderSummaryCards($summary_cards);
-            $pdf->RenderDataTable($headers, $rows);
+            if (isset($separated_sections)) {
+                foreach ($separated_sections as $s_i => $sec) {
+                    if ($s_i > 0) {
+                        $pdf->Ln(6);
+                    }
+                    $pdf->SetFont('Helvetica', 'B', 10);
+                    $pdf->SetTextColor(27, 67, 50);
+                    $pdf->Cell(0, 7, strtoupper($sec['title']), 0, 1, 'L');
+                    $pdf->RenderDataTable($headers, $sec['rows']);
+                }
+            } else {
+                $pdf->RenderDataTable($headers, $rows);
+            }
 
             $pdf_filename = $filename . '.pdf';
             $dest = (isset($_GET['download']) && $_GET['download'] == '1') ? 'D' : 'I';
@@ -1226,7 +1282,18 @@ if (isset($_GET['export']) && isset($pdo)) {
             </div>
         </div>
 
-        <!-- Data Table -->
+        <!-- Data Table(s) -->
+        <?php
+        $tables_to_render = isset($separated_sections) ? $separated_sections : [['title' => '', 'rows' => $rows]];
+        foreach ($tables_to_render as $sec_block):
+            $sec_rows = $sec_block['rows'];
+            $sec_title = $sec_block['title'];
+        ?>
+        <?php if (!empty($sec_title)): ?>
+            <div style="margin: 18px 0 10px; padding: 10px 16px; background: #e8f5e9; border-left: 4px solid #1b4332; border-radius: 6px; font-weight: 800; color: #1b4332; font-size: 0.95rem;">
+                <i class="fas fa-award" style="color:#2d6a4f; margin-right:6px;"></i> <?php echo htmlspecialchars($sec_title); ?>
+            </div>
+        <?php endif; ?>
         <div class="report-table-wrapper">
             <table class="report-table">
                 <thead>
@@ -1240,15 +1307,15 @@ if (isset($_GET['export']) && isset($pdo)) {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($rows)): ?>
+                    <?php if (empty($sec_rows)): ?>
                         <tr>
                             <td colspan="<?php echo count($headers) + 1; ?>" style="text-align:center; padding:32px; color:#64748b;">
                                 <i class="fas fa-folder-open" style="font-size:1.8rem; color:#cbd5e1; margin-bottom:8px; display:block;"></i>
-                                No matching records found for the selected timeframe.
+                                No matching records found for this category.
                             </td>
                         </tr>
                     <?php else: ?>
-                        <?php foreach ($rows as $r_idx => $r): ?>
+                        <?php foreach ($sec_rows as $r_idx => $r): ?>
                             <tr>
                                 <td style="text-align:center; color:#94a3b8; font-size:0.75rem; font-weight:600;"><?php echo $r_idx + 1; ?></td>
                                 <?php foreach ($r as $c_idx => $val): ?>
@@ -1280,7 +1347,7 @@ if (isset($_GET['export']) && isset($pdo)) {
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>
-                <?php if ($amount_col_idx !== -1 && !empty($rows)): ?>
+                <?php if (!isset($separated_sections) && $amount_col_idx !== -1 && !empty($sec_rows)): ?>
                 <tfoot>
                     <tr>
                         <th colspan="<?php echo $amount_col_idx + 1; ?>" style="text-align:right;">TOTAL SUMMARY:</th>
@@ -1293,6 +1360,7 @@ if (isset($_GET['export']) && isset($pdo)) {
                 <?php endif; ?>
             </table>
         </div>
+        <?php endforeach; ?>
 
         <!-- Executive Sign-Off / Approval Block -->
         <div class="signoff-section">
@@ -1345,9 +1413,20 @@ if (isset($_GET['export']) && isset($pdo)) {
             fputcsv($out, ['Total Gym Visits:', $visitor_highlights['total_visits_all'] . ' Visits']);
             fputcsv($out, []);
         }
-        fputcsv($out, $headers);
-        foreach ($rows as $r) {
-            fputcsv($out, $r);
+        if (isset($separated_sections)) {
+            foreach ($separated_sections as $sec) {
+                fputcsv($out, ['=== ' . strtoupper($sec['title']) . ' ===']);
+                fputcsv($out, $headers);
+                foreach ($sec['rows'] as $r) {
+                    fputcsv($out, $r);
+                }
+                fputcsv($out, []);
+            }
+        } else {
+            fputcsv($out, $headers);
+            foreach ($rows as $r) {
+                fputcsv($out, $r);
+            }
         }
         fclose($out);
         exit;
@@ -2909,44 +2988,81 @@ try {
             </div>
         </div>
 
-        <!-- Top Subscribers & Gym Visitors Analytics Table Card -->
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.75rem;">
-                <div>
-                    <h3 class="section-title" style="margin:0;"><i class="fas fa-medal" style="color:#eab308;"></i> Top Gym Visitors &amp; Subscribers Ranking (Member vs. Non-Member)</h3>
-                    <p style="margin:0.2rem 0 0 0; font-size:0.78rem; color:var(--text-muted);">Ranked breakdown of gym visit counts (Official Member &amp; Non-Member), plan subscriptions, and cumulative spend.</p>
-                </div>
-                <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-                    <div style="position:relative; width:200px;">
-                        <input type="text" id="subscribers-search-input" placeholder="Search members..." onkeyup="filterSubscribersTable()" class="form-control" style="margin:0; padding:0.4rem 0.75rem 0.4rem 2rem; font-size:0.8rem;">
+        <!-- Search & Sort Controls for Separated Member & Non-Member Rankings -->
+        <?php
+        $official_subs_list   = array_values(array_filter($top_subscribers_report['subscribers'], fn($r) => ($r['member_type'] ?? 'Non-Member') === 'Official Member'));
+        $non_member_subs_list = array_values(array_filter($top_subscribers_report['subscribers'], fn($r) => ($r['member_type'] ?? 'Non-Member') !== 'Official Member'));
+        $ranking_groups_ui = [
+            [
+                'key'         => 'official',
+                'title'       => '1. Official Members Ranking (Most Visits & Engagement)',
+                'subtitle'    => 'Independent ranking exclusively for Official Members (with active Annual Membership Card).',
+                'icon'        => 'fa-id-card',
+                'badge_color' => '#10b981',
+                'export_type' => 'top_visitors_member',
+                'export_lbl'  => 'Export Official Members',
+                'rows'        => $official_subs_list
+            ],
+            [
+                'key'         => 'nonmember',
+                'title'       => '2. Non-Members Ranking (Most Visits & Engagement)',
+                'subtitle'    => 'Independent ranking exclusively for Walk-in / Non-Member gym visitors.',
+                'icon'        => 'fa-person-walking',
+                'badge_color' => '#38bdf8',
+                'export_type' => 'top_visitors_non_member',
+                'export_lbl'  => 'Export Non-Members',
+                'rows'        => $non_member_subs_list
+            ]
+        ];
+        ?>
+        <div class="card" style="margin-bottom:1.25rem; padding:1rem 1.25rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+                <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+                    <div style="position:relative; width:240px;">
+                        <input type="text" id="subscribers-search-input" placeholder="Search Official or Non-Member..." onkeyup="filterSubscribersTable()" class="form-control" style="margin:0; padding:0.45rem 0.75rem 0.45rem 2rem; font-size:0.82rem;">
                         <i class="fas fa-search" style="position:absolute; left:0.75rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.75rem;"></i>
                     </div>
-                    <select id="subscribers-type-select" onchange="filterSubscribersTable()" class="form-control" style="margin:0; padding:0.4rem 0.75rem; font-size:0.8rem; width:auto;">
-                        <option value="all">All Types (Member &amp; Non-Member)</option>
-                        <option value="official member">🏅 Official Members Only</option>
-                        <option value="non-member">⚪ Non-Members Only</option>
+                    <select id="subscribers-sort-select" onchange="sortSubscribersTable(this.value)" class="form-control" style="margin:0; padding:0.45rem 0.75rem; font-size:0.82rem; width:auto;">
+                        <option value="visits-desc">Sort Both Tables: Most Visits (Check-ins)</option>
+                        <option value="plans-desc">Sort Both Tables: Most Plans Availed</option>
+                        <option value="spend-desc">Sort Both Tables: Highest Spending</option>
+                        <option value="date-desc">Sort Both Tables: Latest Availment</option>
+                        <option value="name-asc">Sort Both Tables: Name (A-Z)</option>
                     </select>
-                    <select id="subscribers-sort-select" onchange="sortSubscribersTable(this.value)" class="form-control" style="margin:0; padding:0.4rem 0.75rem; font-size:0.8rem; width:auto;">
-                        <option value="visits-desc">Sort: Most Visits (Check-ins)</option>
-                        <option value="plans-desc">Sort: Most Plans Availed</option>
-                        <option value="spend-desc">Sort: Highest Spending</option>
-                        <option value="date-desc">Sort: Latest Availment</option>
-                        <option value="name-asc">Sort: Name (A-Z)</option>
-                    </select>
-                    <button class="btn btn-primary" onclick="openExportModal('top_visitors')" style="font-size:0.8rem; padding:0.4rem 0.85rem;">
-                        <i class="fas fa-file-export"></i> Export Most Visits
+                </div>
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <button class="btn btn-primary" onclick="openExportModal('top_visitors')" style="font-size:0.8rem; padding:0.45rem 0.95rem;">
+                        <i class="fas fa-file-export"></i> Smart Export (Separated Member &amp; Non-Member)
                     </button>
-                    <button class="btn btn-outline" onclick="openExportModal('top_subscribers')" style="font-size:0.8rem; padding:0.4rem 0.85rem;">
-                        <i class="fas fa-download"></i> Export Analytics
+                </div>
+            </div>
+        </div>
+
+        <?php foreach ($ranking_groups_ui as $grp): ?>
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.75rem;">
+                <div>
+                    <h3 class="section-title" style="margin:0;">
+                        <i class="fas <?php echo $grp['icon']; ?>" style="color:<?php echo $grp['badge_color']; ?>;"></i>
+                        <?php echo htmlspecialchars($grp['title']); ?>
+                        <span class="badge" style="margin-left:8px; background:rgba(255,255,255,0.07); color:var(--text-main); font-size:0.75rem;">
+                            <?php echo count($grp['rows']); ?> Listed
+                        </span>
+                    </h3>
+                    <p style="margin:0.2rem 0 0 0; font-size:0.78rem; color:var(--text-muted);"><?php echo htmlspecialchars($grp['subtitle']); ?></p>
+                </div>
+                <div>
+                    <button class="btn btn-outline" onclick="openExportModal('<?php echo $grp['export_type']; ?>')" style="font-size:0.8rem; padding:0.4rem 0.85rem;">
+                        <i class="fas fa-download"></i> <?php echo htmlspecialchars($grp['export_lbl']); ?>
                     </button>
                 </div>
             </div>
 
             <div class="table-container">
-                <table id="top-subscribers-table">
+                <table class="separated-ranking-table">
                     <thead>
                         <tr>
-                            <th style="width:50px; text-align:center;">Rank</th>
+                            <th style="width:65px; text-align:center;">Rank</th>
                             <th>Member</th>
                             <th style="text-align:center;">Member Type</th>
                             <th style="text-align:center;">Number of Visits</th>
@@ -2956,15 +3072,14 @@ try {
                             <th style="text-align:right;">Total Spend</th>
                             <th>Favorite Plan</th>
                             <th>Last Availment</th>
-                            <th style="text-align:center;">Engagement Tier</th>
                             <th style="text-align:center;">Action</th>
                         </tr>
                     </thead>
-                    <tbody id="top-subscribers-tbody">
-                        <?php if (empty($top_subscribers_report['subscribers'])): ?>
-                        <tr><td colspan="12" style="text-align:center; padding:2.5rem; color:var(--text-muted);"><i class="fas fa-folder-open" style="font-size:1.8rem; color:#cbd5e1; display:block; margin-bottom:0.5rem;"></i>No subscriber records found for the selected timeframe.</td></tr>
+                    <tbody class="separated-ranking-tbody" id="tbody-<?php echo $grp['key']; ?>">
+                        <?php if (empty($grp['rows'])): ?>
+                        <tr><td colspan="11" style="text-align:center; padding:2.5rem; color:var(--text-muted);"><i class="fas fa-folder-open" style="font-size:1.8rem; color:#cbd5e1; display:block; margin-bottom:0.5rem;"></i>No records found in this category.</td></tr>
                         <?php else: ?>
-                        <?php foreach ($top_subscribers_report['subscribers'] as $s_idx => $sr): 
+                        <?php foreach ($grp['rows'] as $s_idx => $sr): 
                             $p_cnt = (int)$sr['plans_availed'];
                             $s_amt = (float)$sr['total_spend'];
                             $v_cnt = (int)$sr['total_visits'];
@@ -2983,18 +3098,6 @@ try {
                                 $rank_badge = '<span class="badge" style="background:#ffedd5; color:#c2410c; border:1px solid #fed7aa; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥉 3rd</span>';
                             } else {
                                 $rank_badge = '<span style="font-weight:700; color:var(--text-muted); font-size:0.8rem;">#' . ($s_idx + 1) . '</span>';
-                            }
-
-                            // Engagement Tier
-                            $tier_badge = '';
-                            if ($p_cnt >= 10) {
-                                $tier_badge = '<span class="badge" style="background:rgba(234,179,8,0.15); color:#a16207; border:1px solid rgba(234,179,8,0.4); font-weight:800;"><i class="fas fa-crown"></i> Top Subscriber</span>';
-                            } elseif ($p_cnt >= 5) {
-                                $tier_badge = '<span class="badge" style="background:rgba(82,183,136,0.15); color:#2d6a4f; border:1px solid rgba(82,183,136,0.4); font-weight:700;"><i class="fas fa-star"></i> Active Subscriber</span>';
-                            } elseif ($p_cnt >= 2) {
-                                $tier_badge = '<span class="badge" style="background:rgba(56,189,248,0.12); color:#0284c7; border:1px solid rgba(56,189,248,0.3); font-weight:700;"><i class="fas fa-user-check"></i> Regular</span>';
-                            } else {
-                                $tier_badge = '<span class="badge badge-gray" style="font-weight:600;"><i class="fas fa-user"></i> New</span>';
                             }
 
                             $initial = strtoupper(substr($sr['full_name'] ?? 'M', 0, 1));
@@ -3071,9 +3174,6 @@ try {
                             <td style="font-size:0.78rem; color:var(--text-muted); white-space:nowrap;">
                                 <i class="fas fa-calendar-check" style="margin-right:4px;"></i> <?php echo $last_d; ?>
                             </td>
-                            <td style="text-align:center;">
-                                <?php echo $tier_badge; ?>
-                            </td>
                             <td style="text-align:center; white-space:nowrap;">
                                 <a href="view-member.php?id=<?php echo $sr['id']; ?>" class="btn btn-outline btn-sm" style="padding:4px 10px; font-size:0.75rem; border-radius:6px;" title="View Member Profile">
                                     <i class="fas fa-eye"></i> View
@@ -3086,6 +3186,7 @@ try {
                 </table>
             </div>
         </div>
+        <?php endforeach; ?>
     </div>
 
     </div> <!-- End of #analytics-master-container -->
@@ -3115,8 +3216,10 @@ try {
                     <option value="daily_revenue">1. Daily Revenue &amp; Ledger</option>
                     <option value="weekly_revenue">2. Weekly Revenue Comparison</option>
                     <option value="financial_summary">3. Financial Profitability &amp; Net Income Summary</option>
-                    <option value="top_subscribers">4. Top Subscribers &amp; Member Engagement</option>
-                    <option value="top_visitors">5. Most Gym Visits Ranking (Official Member &amp; Non-Member)</option>
+                    <option value="top_subscribers">4. Top Subscribers &amp; Engagement (Separated Member &amp; Non-Member)</option>
+                    <option value="top_visitors">5. Most Gym Visits Ranking (Separated: Official Member &amp; Non-Member)</option>
+                    <option value="top_visitors_member">5A. Most Gym Visits — Official Members Only</option>
+                    <option value="top_visitors_non_member">5B. Most Gym Visits — Non-Members Only</option>
                     <option value="expenses">6. Gym Operational Expenses Ledger</option>
                     <option value="members">Master Members Directory (with Member Type &amp; Visits)</option>
                     <option value="attendance">Raw Attendance Logs (with Member Type &amp; Visits)</option>
@@ -3447,41 +3550,41 @@ function filterSubscribersTable() {
 }
 
 function sortSubscribersTable(sortVal) {
-    const tbody = document.getElementById('top-subscribers-tbody');
-    if (!tbody) return;
-    const rows = Array.from(tbody.querySelectorAll('.subscriber-row'));
+    const tbodies = document.querySelectorAll('.separated-ranking-tbody');
+    tbodies.forEach(tbody => {
+        const rows = Array.from(tbody.querySelectorAll('.subscriber-row'));
+        rows.sort((a, b) => {
+            const plansA = parseInt(a.getAttribute('data-plans') || '0', 10);
+            const plansB = parseInt(b.getAttribute('data-plans') || '0', 10);
+            const spendA = parseFloat(a.getAttribute('data-spend') || '0');
+            const spendB = parseFloat(b.getAttribute('data-spend') || '0');
+            const visitsA = parseInt(a.getAttribute('data-visits') || '0', 10);
+            const visitsB = parseInt(b.getAttribute('data-visits') || '0', 10);
+            const dateA = a.getAttribute('data-date') || '';
+            const dateB = b.getAttribute('data-date') || '';
+            const nameA = a.getAttribute('data-name') || '';
+            const nameB = b.getAttribute('data-name') || '';
 
-    rows.sort((a, b) => {
-        const plansA = parseInt(a.getAttribute('data-plans') || '0', 10);
-        const plansB = parseInt(b.getAttribute('data-plans') || '0', 10);
-        const spendA = parseFloat(a.getAttribute('data-spend') || '0');
-        const spendB = parseFloat(b.getAttribute('data-spend') || '0');
-        const visitsA = parseInt(a.getAttribute('data-visits') || '0', 10);
-        const visitsB = parseInt(b.getAttribute('data-visits') || '0', 10);
-        const dateA = a.getAttribute('data-date') || '';
-        const dateB = b.getAttribute('data-date') || '';
-        const nameA = a.getAttribute('data-name') || '';
-        const nameB = b.getAttribute('data-name') || '';
+            switch (sortVal) {
+                case 'plans-desc': return plansB - plansA || visitsB - visitsA || spendB - spendA;
+                case 'spend-desc': return spendB - spendA || visitsB - visitsA || plansB - plansA;
+                case 'visits-desc': return visitsB - visitsA || plansB - plansA || spendB - spendA;
+                case 'date-desc': return dateB.localeCompare(dateA);
+                case 'name-asc': return nameA.localeCompare(nameB);
+                default: return 0;
+            }
+        });
 
-        switch (sortVal) {
-            case 'plans-desc': return plansB - plansA || spendB - spendA;
-            case 'spend-desc': return spendB - spendA || plansB - plansA;
-            case 'visits-desc': return visitsB - visitsA || plansB - plansA;
-            case 'date-desc': return dateB.localeCompare(dateA);
-            case 'name-asc': return nameA.localeCompare(nameB);
-            default: return 0;
-        }
-    });
-
-    rows.forEach((row, idx) => {
-        const rankCell = row.querySelector('.rank-cell');
-        if (rankCell) {
-            if (idx === 0) rankCell.innerHTML = '<span class="badge" style="background:#fef9c3; color:#a16207; border:1px solid #fde047; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥇 1st</span>';
-            else if (idx === 1) rankCell.innerHTML = '<span class="badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥈 2nd</span>';
-            else if (idx === 2) rankCell.innerHTML = '<span class="badge" style="background:#ffedd5; color:#c2410c; border:1px solid #fed7aa; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥉 3rd</span>';
-            else rankCell.innerHTML = `<span style="font-weight:700; color:var(--text-muted); font-size:0.8rem;">#${idx + 1}</span>`;
-        }
-        tbody.appendChild(row);
+        rows.forEach((row, idx) => {
+            const rankCell = row.querySelector('.rank-cell');
+            if (rankCell) {
+                if (idx === 0) rankCell.innerHTML = '<span class="badge" style="background:#fef9c3; color:#a16207; border:1px solid #fde047; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥇 1st</span>';
+                else if (idx === 1) rankCell.innerHTML = '<span class="badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥈 2nd</span>';
+                else if (idx === 2) rankCell.innerHTML = '<span class="badge" style="background:#ffedd5; color:#c2410c; border:1px solid #fed7aa; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:10px;">🥉 3rd</span>';
+                else rankCell.innerHTML = `<span style="font-weight:700; color:var(--text-muted); font-size:0.8rem;">#${idx + 1}</span>`;
+            }
+            tbody.appendChild(row);
+        });
     });
 }
 </script>
