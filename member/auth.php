@@ -187,27 +187,38 @@ function current_member($pdo) {
     }
     
     try {
-        $stmt = $pdo->prepare("SELECT m.*, 
-                                      s.expiry_date,
-                                      s.start_date,
-                                      p.name as plan_name,
-                                      p.duration_months,
-                                      p.duration_minutes,
-                                      p.is_test_promo,
-                                      p.plan_category,
-                                      p.floor_access
-                               FROM members m 
-                                LEFT JOIN subscriptions s ON s.id = (
-                                    SELECT s2.id FROM subscriptions s2 
-                                    LEFT JOIN membership_plans p2 ON p2.id = s2.plan_id
-                                    WHERE s2.member_id = m.id AND (p2.plan_category IS NULL OR p2.plan_category != 'membership_fee')
-                                    ORDER BY (s2.expiry_date >= NOW()) DESC, s2.expiry_date DESC, s2.id DESC LIMIT 1
-                                )
-                               LEFT JOIN membership_plans p ON p.id = s.plan_id
-                               WHERE m.id = ?");
+        // TiDB Cloud compatible: Query member then latest subscription separately
+        $stmt = $pdo->prepare("SELECT m.* FROM members m WHERE m.id = ?");
         $stmt->execute([$_SESSION['member_id']]);
         $member = $stmt->fetch(PDO::FETCH_ASSOC);
+
         if ($member) {
+            $subStmt = $pdo->prepare("
+                SELECT s.id AS subscription_id, s.expiry_date, s.start_date,
+                       p.name AS plan_name, p.id AS plan_id, p.duration_months, p.duration_minutes,
+                       p.is_test_promo, p.plan_category, p.floor_access
+                FROM subscriptions s
+                LEFT JOIN membership_plans p ON p.id = s.plan_id
+                WHERE s.member_id = ? AND (p.plan_category IS NULL OR p.plan_category != 'membership_fee')
+                ORDER BY (s.expiry_date >= NOW()) DESC, s.expiry_date DESC, s.id DESC
+                LIMIT 1
+            ");
+            $subStmt->execute([$_SESSION['member_id']]);
+            $sub = $subStmt->fetch(PDO::FETCH_ASSOC);
+            if ($sub) {
+                $member = array_merge($member, $sub);
+            } else {
+                $member['subscription_id'] = null;
+                $member['expiry_date']     = null;
+                $member['start_date']      = null;
+                $member['plan_name']       = null;
+                $member['plan_id']         = null;
+                $member['duration_months'] = null;
+                $member['duration_minutes']= null;
+                $member['is_test_promo']   = null;
+                $member['plan_category']   = null;
+                $member['floor_access']    = null;
+            }
             $member['photo'] = $member['photo'] ?: ($member['google_picture'] ?? null);
             
             // Gym Access Expiry
