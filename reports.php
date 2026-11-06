@@ -139,9 +139,15 @@ if (isset($_GET['export']) && isset($pdo)) {
                        COALESCE(s.start_date, '—') as start_date, COALESCE(s.expiry_date, '—') as expiry_date,
                        m.status, (SELECT COUNT(*) FROM subscriptions sub WHERE sub.member_id = m.id) as renewal_count
                 FROM members m
-                LEFT JOIN subscriptions s ON s.member_id = m.id AND s.id = (
-                    SELECT id FROM subscriptions WHERE member_id = m.id ORDER BY expiry_date DESC LIMIT 1
-                )
+                LEFT JOIN (
+                    SELECT s1.id, s1.member_id, s1.plan_id, s1.start_date, s1.expiry_date
+                    FROM subscriptions s1
+                    JOIN (
+                        SELECT member_id, MAX(id) AS latest_id
+                        FROM subscriptions
+                        GROUP BY member_id
+                    ) latest ON s1.id = latest.latest_id
+                ) s ON s.member_id = m.id
                 LEFT JOIN membership_plans p ON s.plan_id = p.id
                 WHERE 1=1";
         if ($status !== 'all') {
@@ -160,9 +166,15 @@ if (isset($_GET['export']) && isset($pdo)) {
                        COALESCE(s.start_date, 'Pending') as act_date,
                        CASE WHEN s.id IS NOT NULL THEN 'Activated' ELSE 'Unactivated Registration' END as conversion_status
                 FROM members m
-                LEFT JOIN subscriptions s ON s.member_id = m.id AND s.id = (
-                    SELECT id FROM subscriptions WHERE member_id = m.id ORDER BY start_date ASC LIMIT 1
-                )
+                LEFT JOIN (
+                    SELECT s1.id, s1.member_id, s1.plan_id, s1.start_date
+                    FROM subscriptions s1
+                    JOIN (
+                        SELECT member_id, MIN(id) AS first_id
+                        FROM subscriptions
+                        GROUP BY member_id
+                    ) first_sub ON s1.id = first_sub.first_id
+                ) s ON s.member_id = m.id
                 LEFT JOIN membership_plans plan ON s.plan_id = plan.id
                 WHERE 1=1";
         if (!empty($startDate) && !empty($endDate)) {
