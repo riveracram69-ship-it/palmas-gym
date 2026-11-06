@@ -220,8 +220,15 @@ if (isset($_GET['export']) && isset($pdo)) {
         $rows = $stmt->fetchAll(PDO::FETCH_NUM);
 
     } elseif ($type === 'members') {
-        $headers = ['Membership ID', 'Full Name', 'Email', 'Contact Number', 'DOB', 'Age', 'Home Address', 'Status', 'Date Joined', 'Active Plan', 'Expiry Date'];
-        $sql = "SELECT m.membership_id, m.full_name, m.email, m.contact_number,
+        $headers = ['Membership ID', 'Full Name', 'Member Type', 'Number of Visits', 'Email', 'Contact Number', 'DOB', 'Age', 'Home Address', 'Status', 'Date Joined', 'Active Plan', 'Expiry Date'];
+        $sql = "SELECT m.membership_id, m.full_name,
+                       CASE 
+                           WHEN (m.annual_membership_expiry IS NOT NULL AND m.annual_membership_expiry >= CURDATE()) OR af.member_id IS NOT NULL
+                           THEN 'Official Member'
+                           ELSE 'Non-Member'
+                       END as member_type,
+                       COALESCE(att_stats.total_visits, 0) as total_visits,
+                       m.email, m.contact_number,
                        COALESCE(m.dob, '—') as dob,
                        COALESCE(m.age, '—') as age,
                        COALESCE(m.address, '—') as address,
@@ -230,26 +237,60 @@ if (isset($_GET['export']) && isset($pdo)) {
                            (SELECT p2.name FROM subscriptions s2 JOIN membership_plans p2 ON p2.id = s2.plan_id WHERE s2.member_id = m.id AND s2.expiry_date >= CURDATE() ORDER BY s2.expiry_date DESC LIMIT 1), '—'
                        ) as plan_name,
                        (SELECT s3.expiry_date FROM subscriptions s3 WHERE s3.member_id = m.id ORDER BY s3.expiry_date DESC LIMIT 1) as expiry_date
-                FROM members m WHERE 1=1";
+                FROM members m
+                LEFT JOIN (
+                    SELECT DISTINCT s_af.member_id
+                    FROM subscriptions s_af
+                    JOIN membership_plans p_af ON p_af.id = s_af.plan_id
+                    WHERE (p_af.plan_category = 'membership_fee' OR p_af.name LIKE '%Annual Membership%')
+                      AND s_af.expiry_date >= CURDATE()
+                ) af ON af.member_id = m.id
+                LEFT JOIN (
+                    SELECT member_id, COUNT(*) AS total_visits
+                    FROM attendance
+                    GROUP BY member_id
+                ) att_stats ON att_stats.member_id = m.id
+                WHERE 1=1";
         if ($status !== 'all') {
             $sql .= " AND m.status = :status";
             $params['status'] = $status;
         }
-        if (!empty($startDate) && !empty($endDate)) {
+        if (!empty($startDate) && !empty($endDate) && $datePreset !== 'all') {
             $sql .= " AND DATE(m.created_at) BETWEEN :start_date AND :end_date";
             $params['start_date'] = $startDate;
             $params['end_date']   = $endDate;
         }
-        $sql .= " ORDER BY m.created_at DESC";
+        $sql .= " ORDER BY total_visits DESC, m.created_at DESC";
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_NUM);
 
     } elseif ($type === 'attendance') {
-        $headers = ['Date', 'Member Name', 'Membership ID', 'Time In', 'Time Out'];
-        $sql = "SELECT a.date, m.full_name, m.membership_id, a.time_in, COALESCE(a.time_out, '—') as time_out 
-                FROM attendance a JOIN members m ON m.id = a.member_id WHERE 1=1";
-        if (!empty($startDate) && !empty($endDate)) {
+        $headers = ['Date', 'Member Name', 'Membership ID', 'Member Type', 'Number of Visits (Total)', 'Time In', 'Time Out'];
+        $sql = "SELECT a.date, m.full_name, m.membership_id,
+                       CASE 
+                           WHEN (m.annual_membership_expiry IS NOT NULL AND m.annual_membership_expiry >= CURDATE()) OR af.member_id IS NOT NULL
+                           THEN 'Official Member'
+                           ELSE 'Non-Member'
+                       END as member_type,
+                       COALESCE(att_stats.total_visits, 0) as total_visits,
+                       a.time_in, COALESCE(a.time_out, '—') as time_out 
+                FROM attendance a
+                JOIN members m ON m.id = a.member_id
+                LEFT JOIN (
+                    SELECT DISTINCT s_af.member_id
+                    FROM subscriptions s_af
+                    JOIN membership_plans p_af ON p_af.id = s_af.plan_id
+                    WHERE (p_af.plan_category = 'membership_fee' OR p_af.name LIKE '%Annual Membership%')
+                      AND s_af.expiry_date >= CURDATE()
+                ) af ON af.member_id = m.id
+                LEFT JOIN (
+                    SELECT member_id, COUNT(*) AS total_visits
+                    FROM attendance
+                    GROUP BY member_id
+                ) att_stats ON att_stats.member_id = m.id
+                WHERE 1=1";
+        if (!empty($startDate) && !empty($endDate) && $datePreset !== 'all') {
             $sql .= " AND a.date BETWEEN :start_date AND :end_date";
             $params['start_date'] = $startDate;
             $params['end_date']   = $endDate;
@@ -381,10 +422,14 @@ if (isset($_GET['export']) && isset($pdo)) {
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_NUM);
 
-    } elseif ($type === 'top_subscribers') {
-        $headers = ['Rank', 'Membership ID', 'Member Name', 'Contact Number', 'Email', 'Account Status', 'Plans Availed', 'Total Spend (PHP)', 'Favorite Plan', 'Last Availment Date', 'Gym Check-ins', 'Engagement Tier'];
+    } elseif ($type === 'top_subscribers' || $type === 'top_visitors') {
+        $is_visitors_mode = ($type === 'top_visitors');
+        $headers = $is_visitors_mode
+            ? ['Rank', 'Membership ID', 'Member Name', 'Member Type', 'Number of Visits', 'Category Visit Rank', 'Last Visit Date', 'Favorite / Latest Plan', 'Plans Availed', 'Total Spend (PHP)', 'Account Status', 'Contact Number']
+            : ['Rank', 'Membership ID', 'Member Name', 'Member Type', 'Number of Visits', 'Category Visit Rank', 'Contact Number', 'Email', 'Account Status', 'Plans Availed', 'Total Spend (PHP)', 'Favorite Plan', 'Last Availment Date', 'Engagement Tier'];
+
         $where_sub_filter = "1=1";
-        if (!empty($startDate) && !empty($endDate) && $datePreset !== 'all') {
+        if (!$is_visitors_mode && !empty($startDate) && !empty($endDate) && $datePreset !== 'all') {
             $where_sub_filter .= " AND s.start_date BETWEEN :start_date AND :end_date";
             $params['start_date'] = $startDate;
             $params['end_date']   = $endDate;
@@ -394,75 +439,173 @@ if (isset($_GET['export']) && isset($pdo)) {
             $params['plan_id'] = $planId;
         }
 
-        $sql = "
-            SELECT 
-                m.membership_id,
-                m.full_name,
-                COALESCE(m.contact_number, '—') AS contact_number,
-                COALESCE(m.email, '—') AS email,
-                m.status,
-                COALESCE(sub_stats.plans_availed, 0) AS plans_availed,
-                COALESCE(pay_stats.total_spend, 0) AS total_spend,
-                COALESCE((
-                    SELECT p.name 
-                    FROM subscriptions s 
-                    JOIN membership_plans p ON p.id = s.plan_id 
-                    WHERE s.member_id = m.id 
-                    GROUP BY s.plan_id, p.name 
-                    ORDER BY COUNT(*) DESC, MAX(s.start_date) DESC 
-                    LIMIT 1
-                ), 'None') AS favorite_plan,
-                COALESCE(sub_stats.last_availment_date, '—') AS last_availment_date,
-                COALESCE(att_stats.total_visits, 0) AS total_visits
-            FROM members m
-            JOIN (
-                SELECT member_id, COUNT(*) AS plans_availed, MAX(start_date) AS last_availment_date
-                FROM subscriptions s
-                WHERE {$where_sub_filter}
-                GROUP BY member_id
-            ) sub_stats ON sub_stats.member_id = m.id
-            LEFT JOIN (
-                SELECT p.member_id, SUM(p.amount) AS total_spend
-                FROM payments p
-                LEFT JOIN subscriptions s ON p.subscription_id = s.id
-                LEFT JOIN membership_plans plan ON s.plan_id = plan.id
-                WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
-                  AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
-                GROUP BY p.member_id
-            ) pay_stats ON pay_stats.member_id = m.id
-            LEFT JOIN (
-                SELECT member_id, COUNT(*) AS total_visits
-                FROM attendance
-                GROUP BY member_id
-            ) att_stats ON att_stats.member_id = m.id
-            WHERE sub_stats.plans_availed > 0
-            ORDER BY plans_availed DESC, total_spend DESC, m.full_name ASC
-        ";
-        $stmt = $pdo->prepare($sql);
+        $order_clause = $is_visitors_mode
+            ? "ORDER BY total_visits DESC, plans_availed DESC, total_spend DESC, m.full_name ASC"
+            : "ORDER BY plans_availed DESC, total_visits DESC, total_spend DESC, m.full_name ASC";
+
+        $where_main = $is_visitors_mode
+            ? "WHERE (COALESCE(att_stats.total_visits, 0) > 0 OR COALESCE(sub_stats.plans_availed, 0) > 0)"
+            : "WHERE (COALESCE(sub_stats.plans_availed, 0) > 0 OR COALESCE(att_stats.total_visits, 0) > 0)";
+
+        $build_engagement_sql = function($sub_filter_clause) use ($where_main, $order_clause) {
+            return "
+                SELECT 
+                    m.membership_id,
+                    m.full_name,
+                    CASE 
+                        WHEN (m.annual_membership_expiry IS NOT NULL AND m.annual_membership_expiry >= CURDATE()) OR af.member_id IS NOT NULL
+                        THEN 'Official Member'
+                        ELSE 'Non-Member'
+                    END AS member_type,
+                    COALESCE(m.contact_number, '—') AS contact_number,
+                    COALESCE(m.email, '—') AS email,
+                    m.status,
+                    COALESCE(sub_stats.plans_availed, 0) AS plans_availed,
+                    COALESCE(pay_stats.total_spend, 0) AS total_spend,
+                    COALESCE((
+                        SELECT p.name 
+                        FROM subscriptions s 
+                        JOIN membership_plans p ON p.id = s.plan_id 
+                        WHERE s.member_id = m.id 
+                        GROUP BY s.plan_id, p.name 
+                        ORDER BY COUNT(*) DESC, MAX(s.start_date) DESC 
+                        LIMIT 1
+                    ), 'None') AS favorite_plan,
+                    COALESCE(sub_stats.last_availment_date, '—') AS last_availment_date,
+                    COALESCE(att_stats.total_visits, 0) AS total_visits,
+                    COALESCE(att_stats.last_visit_date, '—') AS last_visit_date
+                FROM members m
+                LEFT JOIN (
+                    SELECT DISTINCT s_af.member_id
+                    FROM subscriptions s_af
+                    JOIN membership_plans p_af ON p_af.id = s_af.plan_id
+                    WHERE (p_af.plan_category = 'membership_fee' OR p_af.name LIKE '%Annual Membership%')
+                      AND s_af.expiry_date >= CURDATE()
+                ) af ON af.member_id = m.id
+                LEFT JOIN (
+                    SELECT member_id, COUNT(*) AS plans_availed, MAX(start_date) AS last_availment_date
+                    FROM subscriptions s
+                    WHERE {$sub_filter_clause}
+                    GROUP BY member_id
+                ) sub_stats ON sub_stats.member_id = m.id
+                LEFT JOIN (
+                    SELECT p.member_id, SUM(p.amount) AS total_spend
+                    FROM payments p
+                    LEFT JOIN subscriptions s ON p.subscription_id = s.id
+                    LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+                    WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+                      AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+                    GROUP BY p.member_id
+                ) pay_stats ON pay_stats.member_id = m.id
+                LEFT JOIN (
+                    SELECT member_id, COUNT(*) AS total_visits, MAX(date) AS last_visit_date
+                    FROM attendance
+                    GROUP BY member_id
+                ) att_stats ON att_stats.member_id = m.id
+                {$where_main}
+                {$order_clause}
+            ";
+        };
+
+        $stmt = $pdo->prepare($build_engagement_sql($where_sub_filter));
         $stmt->execute($params);
         $raw_sub_rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // Fallback to all-time if narrow date preset returned 0 rows
+        if (empty($raw_sub_rows) && $where_sub_filter !== "1=1") {
+            $stmt = $pdo->prepare($build_engagement_sql("1=1"));
+            $stmt->execute([]);
+            $raw_sub_rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        // Compute Category Visit Ranks (Official Member vs Non-Member sorted by total_visits DESC)
+        $sorted_by_visits = $raw_sub_rows;
+        usort($sorted_by_visits, function($a, $b) {
+            $vDiff = ((int)$b['total_visits']) <=> ((int)$a['total_visits']);
+            if ($vDiff !== 0) return $vDiff;
+            return ((int)$b['plans_availed']) <=> ((int)$a['plans_availed']);
+        });
+
+        $cat_visit_rank_map = [];
+        $off_rank = 0;
+        $non_rank = 0;
+        $visitor_highlights = [
+            'top_official_name'       => 'None',
+            'top_official_visits'     => 0,
+            'top_non_member_name'     => 'None',
+            'top_non_member_visits'   => 0,
+            'total_visits_all'        => 0
+        ];
+
+        foreach ($sorted_by_visits as $sv) {
+            $m_id_key = $sv['membership_id'];
+            $v_count  = (int)$sv['total_visits'];
+            $visitor_highlights['total_visits_all'] += $v_count;
+
+            if ($sv['member_type'] === 'Official Member') {
+                $off_rank++;
+                if ($off_rank === 1) {
+                    $visitor_highlights['top_official_name']   = $sv['full_name'];
+                    $visitor_highlights['top_official_visits'] = $v_count;
+                    $cat_visit_rank_map[$m_id_key] = ($v_count > 0) ? '#1 Official Member (Most Visits)' : 'Official Member (0 Visits)';
+                } else {
+                    $cat_visit_rank_map[$m_id_key] = ($v_count > 0) ? '#' . $off_rank . ' Official Member' : 'Official Member (0 Visits)';
+                }
+            } else {
+                $non_rank++;
+                if ($non_rank === 1) {
+                    $visitor_highlights['top_non_member_name']   = $sv['full_name'];
+                    $visitor_highlights['top_non_member_visits'] = $v_count;
+                    $cat_visit_rank_map[$m_id_key] = ($v_count > 0) ? '#1 Non-Member (Most Visits)' : 'Non-Member (0 Visits)';
+                } else {
+                    $cat_visit_rank_map[$m_id_key] = ($v_count > 0) ? '#' . $non_rank . ' Non-Member' : 'Non-Member (0 Visits)';
+                }
+            }
+        }
+
         foreach ($raw_sub_rows as $s_idx => $sr) {
             $p_cnt = (int)$sr['plans_availed'];
+            $v_cnt = (int)$sr['total_visits'];
             $tier = 'New Subscriber';
             if ($p_cnt >= 10) $tier = 'Top Subscriber';
             elseif ($p_cnt >= 5) $tier = 'Active Subscriber';
             elseif ($p_cnt >= 2) $tier = 'Regular Subscriber';
 
-            $rows[] = [
-                $s_idx + 1,
-                $sr['membership_id'],
-                $sr['full_name'],
-                $sr['contact_number'],
-                $sr['email'],
-                $sr['status'],
-                $p_cnt,
-                number_format((float)$sr['total_spend'], 2, '.', ''),
-                $sr['favorite_plan'],
-                $sr['last_availment_date'],
-                $sr['total_visits'],
-                $tier
-            ];
+            $cat_rank_label = $cat_visit_rank_map[$sr['membership_id']] ?? $sr['member_type'];
+
+            if ($is_visitors_mode) {
+                $rows[] = [
+                    $s_idx + 1,
+                    $sr['membership_id'],
+                    $sr['full_name'],
+                    $sr['member_type'],
+                    $v_cnt,
+                    $cat_rank_label,
+                    $sr['last_visit_date'],
+                    $sr['favorite_plan'],
+                    $p_cnt,
+                    number_format((float)$sr['total_spend'], 2, '.', ''),
+                    $sr['status'],
+                    $sr['contact_number']
+                ];
+            } else {
+                $rows[] = [
+                    $s_idx + 1,
+                    $sr['membership_id'],
+                    $sr['full_name'],
+                    $sr['member_type'],
+                    $v_cnt,
+                    $cat_rank_label,
+                    $sr['contact_number'],
+                    $sr['email'],
+                    $sr['status'],
+                    $p_cnt,
+                    number_format((float)$sr['total_spend'], 2, '.', ''),
+                    $sr['favorite_plan'],
+                    $sr['last_availment_date'],
+                    $tier
+                ];
+            }
         }
 
     } else {
@@ -477,6 +620,7 @@ if (isset($_GET['export']) && isset($pdo)) {
         'financial_summary' => 'Financial_Profitability_Summary',
         'expenses'          => 'Operational_Expenses_Ledger',
         'top_subscribers'   => 'Top_Subscribers_Engagement',
+        'top_visitors'      => 'Most_Gym_Visits_Member_And_NonMember',
         'retention'         => 'Membership_Retention',
         'conversion'        => 'Member_Conversion',
         'attendance_hour'   => 'Peak_Hours_Attendance',
@@ -503,7 +647,14 @@ if (isset($_GET['export']) && isset($pdo)) {
             }
             $output_data[] = $item;
         }
-        echo json_encode($output_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $payload = isset($visitor_highlights)
+            ? ['summary_highlights' => [
+                'most_visits_official_member' => $visitor_highlights['top_official_name'] . ' (' . $visitor_highlights['top_official_visits'] . ' visits)',
+                'most_visits_non_member'      => $visitor_highlights['top_non_member_name'] . ' (' . $visitor_highlights['top_non_member_visits'] . ' visits)',
+                'total_gym_visits'            => $visitor_highlights['total_visits_all']
+              ], 'records' => $output_data]
+            : $output_data;
+        echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         exit;
 
     } elseif ($format === 'xls') {
@@ -514,6 +665,11 @@ if (isset($_GET['export']) && isset($pdo)) {
         echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
         echo '<head><meta http-equiv="Content-type" content="text/html;charset=UTF-8" /><style>table{border-collapse:collapse;} th{background-color:#1b4332;color:#ffffff;padding:8px;} td{padding:6px;border:1px solid #ccc;}</style></head>';
         echo '<body><h2>Palma\'s Elite Gym — ' . ucwords(str_replace('_', ' ', $type)) . '</h2>';
+        if (isset($visitor_highlights)) {
+            echo '<p><strong>Most Visits (Official Member):</strong> ' . htmlspecialchars($visitor_highlights['top_official_name']) . ' (' . (int)$visitor_highlights['top_official_visits'] . ' Visits) &nbsp;|&nbsp; ';
+            echo '<strong>Most Visits (Non-Member):</strong> ' . htmlspecialchars($visitor_highlights['top_non_member_name']) . ' (' . (int)$visitor_highlights['top_non_member_visits'] . ' Visits) &nbsp;|&nbsp; ';
+            echo '<strong>Total Gym Visits:</strong> ' . (int)$visitor_highlights['total_visits_all'] . ' Visits</p>';
+        }
         echo '<table border="1"><tr>';
         foreach ($headers as $h) { echo '<th>' . htmlspecialchars($h) . '</th>'; }
         echo '</tr>';
@@ -534,6 +690,7 @@ if (isset($_GET['export']) && isset($pdo)) {
             'financial_summary' => 'Financial Profitability & Net Income Summary',
             'expenses'          => 'Gym Operational Expenses & Cost Ledger',
             'top_subscribers'   => 'Top Subscribers & Member Engagement Analysis',
+            'top_visitors'      => 'Most Gym Visits Ranking (Official Member & Non-Member)',
             'retention'         => 'Membership Retention & Lifecycle Audit',
             'conversion'        => 'Member Registration & Conversion Report',
             'attendance_hour'   => 'Peak Hours Attendance Distribution',
@@ -556,7 +713,7 @@ if (isset($_GET['export']) && isset($pdo)) {
         $amount_col_idx = -1;
         $total_amount = 0;
         foreach ($headers as $idx => $h) {
-            if (stripos($h, 'amount') !== false || stripos($h, 'revenue') !== false || (stripos($h, 'total') !== false && stripos($h, 'check') === false && stripos($h, 'renew') === false)) {
+            if (stripos($h, 'amount') !== false || stripos($h, 'revenue') !== false || (stripos($h, 'total') !== false && stripos($h, 'check') === false && stripos($h, 'renew') === false && stripos($h, 'visit') === false)) {
                 $amount_col_idx = $idx;
                 break;
             }
@@ -592,7 +749,11 @@ if (isset($_GET['export']) && isset($pdo)) {
             $summary_cards = [
                 ['label' => 'Total Records', 'value' => number_format($total_records)],
             ];
-            if ($amount_col_idx !== -1) {
+            if (isset($visitor_highlights)) {
+                $summary_cards[] = ['label' => 'Most Visits (Member)', 'value' => $visitor_highlights['top_official_name'] . ' (' . $visitor_highlights['top_official_visits'] . ' visits)'];
+                $summary_cards[] = ['label' => 'Most Visits (Non-Member)', 'value' => $visitor_highlights['top_non_member_name'] . ' (' . $visitor_highlights['top_non_member_visits'] . ' visits)'];
+                $summary_cards[] = ['label' => 'Total Gym Visits', 'value' => number_format($visitor_highlights['total_visits_all']) . ' visits'];
+            } elseif ($amount_col_idx !== -1) {
                 $summary_cards[] = ['label' => 'Total Volume', 'value' => 'PHP ' . number_format($total_amount, 2)];
                 $summary_cards[] = ['label' => 'Average / Trans', 'value' => 'PHP ' . number_format($avg_amount, 2)];
             } else {
@@ -1034,7 +1195,22 @@ if (isset($_GET['export']) && isset($pdo)) {
                 <div class="metric-label">Total Records Listed</div>
                 <div class="metric-val"><?php echo number_format($total_records); ?></div>
             </div>
-            <?php if ($amount_col_idx !== -1): ?>
+            <?php if (isset($visitor_highlights)): ?>
+            <div class="metric-card">
+                <div class="metric-label">Most Visits (Official Member)</div>
+                <div class="metric-val" style="font-size:1.05rem; color:#1b4332;"><?php echo htmlspecialchars($visitor_highlights['top_official_name']); ?></div>
+                <div style="font-size:0.78rem; font-weight:700; color:#2d6a4f; margin-top:2px;"><i class="fas fa-user-check"></i> <?php echo number_format($visitor_highlights['top_official_visits']); ?> Visits</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Most Visits (Non-Member)</div>
+                <div class="metric-val" style="font-size:1.05rem; color:#1b4332;"><?php echo htmlspecialchars($visitor_highlights['top_non_member_name']); ?></div>
+                <div style="font-size:0.78rem; font-weight:700; color:#0284c7; margin-top:2px;"><i class="fas fa-user-check"></i> <?php echo number_format($visitor_highlights['top_non_member_visits']); ?> Visits</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Gym Visits</div>
+                <div class="metric-val" style="color:#2d6a4f;"><?php echo number_format($visitor_highlights['total_visits_all']); ?></div>
+            </div>
+            <?php elseif ($amount_col_idx !== -1): ?>
             <div class="metric-card">
                 <div class="metric-label">Total Period Volume</div>
                 <div class="metric-val" style="color:#2d6a4f;">&#8369;<?php echo number_format($total_amount, 2); ?></div>
@@ -1163,6 +1339,12 @@ if (isset($_GET['export']) && isset($pdo)) {
         header('Pragma: no-cache');
         $out = fopen('php://output', 'w');
         fputs($out, "\xEF\xBB\xBF"); // UTF-8 BOM
+        if (isset($visitor_highlights)) {
+            fputcsv($out, ['Most Visits (Official Member):', $visitor_highlights['top_official_name'], $visitor_highlights['top_official_visits'] . ' Visits']);
+            fputcsv($out, ['Most Visits (Non-Member):', $visitor_highlights['top_non_member_name'], $visitor_highlights['top_non_member_visits'] . ' Visits']);
+            fputcsv($out, ['Total Gym Visits:', $visitor_highlights['total_visits_all'] . ' Visits']);
+            fputcsv($out, []);
+        }
         fputcsv($out, $headers);
         foreach ($rows as $r) {
             fputcsv($out, $r);
@@ -1929,15 +2111,19 @@ try {
     // 7. REPORT 4 (TAB 4): TOP SUBSCRIBERS & PLAN ENGAGEMENT REPORT
     // ═════════════════════════════════════════════════════════════════════════
     $top_subscribers_report = [
-        'subscribers'        => [],
-        'total_subscribers'  => 0,
-        'top_availer_name'   => '—',
-        'top_availer_plans'  => 0,
-        'top_spender_name'   => '—',
-        'top_spender_amount' => 0,
-        'avg_plans'          => 0,
-        'total_plans'        => 0,
-        'total_spend'        => 0
+        'subscribers'                 => [],
+        'total_subscribers'           => 0,
+        'top_availer_name'            => '—',
+        'top_availer_plans'           => 0,
+        'top_spender_name'            => '—',
+        'top_spender_amount'          => 0,
+        'top_official_visitor_name'   => '—',
+        'top_official_visitor_visits' => 0,
+        'top_non_member_visitor_name' => '—',
+        'top_non_member_visitor_visits' => 0,
+        'avg_plans'                   => 0,
+        'total_plans'                 => 0,
+        'total_spend'                 => 0
     ];
 
     $where_sub_filter = "1=1";
@@ -1952,64 +2138,84 @@ try {
         $sub_filter_params[] = $plan_filter;
     }
 
-    $top_sub_sql = "
-        SELECT 
-            m.id,
-            m.membership_id,
-            m.full_name,
-            m.contact_number,
-            m.email,
-            m.status,
-            m.photo,
-            COALESCE(sub_stats.plans_availed, 0) AS plans_availed,
-            COALESCE(pay_stats.total_spend, 0) AS total_spend,
-            COALESCE(att_stats.total_visits, 0) AS total_visits,
-            sub_stats.last_availment_date,
-            (
-                SELECT p.name 
-                FROM subscriptions s 
-                JOIN membership_plans p ON p.id = s.plan_id 
-                WHERE s.member_id = m.id 
-                GROUP BY s.plan_id, p.name 
-                ORDER BY COUNT(*) DESC, MAX(s.start_date) DESC 
-                LIMIT 1
-            ) AS favorite_plan,
-            (
-                SELECT p2.name 
-                FROM subscriptions s2 
-                JOIN membership_plans p2 ON p2.id = s2.plan_id 
-                WHERE s2.member_id = m.id 
-                ORDER BY s2.start_date DESC, s2.id DESC 
-                LIMIT 1
-            ) AS latest_plan
-        FROM members m
-        JOIN (
-            SELECT member_id, COUNT(*) AS plans_availed, MAX(start_date) AS last_availment_date
-            FROM subscriptions s
-            WHERE {$where_sub_filter}
-            GROUP BY member_id
-        ) sub_stats ON sub_stats.member_id = m.id
-        LEFT JOIN (
-            SELECT p.member_id, SUM(p.amount) AS total_spend
-            FROM payments p
-            LEFT JOIN subscriptions s ON p.subscription_id = s.id
-            LEFT JOIN membership_plans plan ON s.plan_id = plan.id
-            WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
-              AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
-            GROUP BY p.member_id
-        ) pay_stats ON pay_stats.member_id = m.id
-        LEFT JOIN (
-            SELECT member_id, COUNT(*) AS total_visits
-            FROM attendance
-            GROUP BY member_id
-        ) att_stats ON att_stats.member_id = m.id
-        WHERE sub_stats.plans_availed > 0
-        ORDER BY plans_availed DESC, total_spend DESC, m.full_name ASC
-    ";
+    $build_tab4_sql = function($sub_clause) {
+        return "
+            SELECT 
+                m.id,
+                m.membership_id,
+                m.full_name,
+                CASE 
+                    WHEN (m.annual_membership_expiry IS NOT NULL AND m.annual_membership_expiry >= CURDATE()) OR af.member_id IS NOT NULL
+                    THEN 'Official Member'
+                    ELSE 'Non-Member'
+                END AS member_type,
+                m.contact_number,
+                m.email,
+                m.status,
+                m.photo,
+                COALESCE(sub_stats.plans_availed, 0) AS plans_availed,
+                COALESCE(pay_stats.total_spend, 0) AS total_spend,
+                COALESCE(att_stats.total_visits, 0) AS total_visits,
+                sub_stats.last_availment_date,
+                (
+                    SELECT p.name 
+                    FROM subscriptions s 
+                    JOIN membership_plans p ON p.id = s.plan_id 
+                    WHERE s.member_id = m.id 
+                    GROUP BY s.plan_id, p.name 
+                    ORDER BY COUNT(*) DESC, MAX(s.start_date) DESC 
+                    LIMIT 1
+                ) AS favorite_plan,
+                (
+                    SELECT p2.name 
+                    FROM subscriptions s2 
+                    JOIN membership_plans p2 ON p2.id = s2.plan_id 
+                    WHERE s2.member_id = m.id 
+                    ORDER BY s2.start_date DESC, s2.id DESC 
+                    LIMIT 1
+                ) AS latest_plan
+            FROM members m
+            LEFT JOIN (
+                SELECT DISTINCT s_af.member_id
+                FROM subscriptions s_af
+                JOIN membership_plans p_af ON p_af.id = s_af.plan_id
+                WHERE (p_af.plan_category = 'membership_fee' OR p_af.name LIKE '%Annual Membership%')
+                  AND s_af.expiry_date >= CURDATE()
+            ) af ON af.member_id = m.id
+            LEFT JOIN (
+                SELECT member_id, COUNT(*) AS plans_availed, MAX(start_date) AS last_availment_date
+                FROM subscriptions s
+                WHERE {$sub_clause}
+                GROUP BY member_id
+            ) sub_stats ON sub_stats.member_id = m.id
+            LEFT JOIN (
+                SELECT p.member_id, SUM(p.amount) AS total_spend
+                FROM payments p
+                LEFT JOIN subscriptions s ON p.subscription_id = s.id
+                LEFT JOIN membership_plans plan ON s.plan_id = plan.id
+                WHERE (plan.is_test_promo IS NULL OR plan.is_test_promo = 0)
+                  AND (plan.plan_category IS NULL OR plan.plan_category != 'test_promo')
+                GROUP BY p.member_id
+            ) pay_stats ON pay_stats.member_id = m.id
+            LEFT JOIN (
+                SELECT member_id, COUNT(*) AS total_visits
+                FROM attendance
+                GROUP BY member_id
+            ) att_stats ON att_stats.member_id = m.id
+            WHERE COALESCE(sub_stats.plans_availed, 0) > 0 OR COALESCE(att_stats.total_visits, 0) > 0
+            ORDER BY total_visits DESC, plans_availed DESC, total_spend DESC, m.full_name ASC
+        ";
+    };
 
-    $stmt_top_sub = $pdo->prepare($top_sub_sql);
+    $stmt_top_sub = $pdo->prepare($build_tab4_sql($where_sub_filter));
     $stmt_top_sub->execute($sub_filter_params);
     $top_sub_rows = $stmt_top_sub->fetchAll(PDO::FETCH_ASSOC);
+
+    if (empty($top_sub_rows) && $where_sub_filter !== "1=1") {
+        $stmt_top_sub = $pdo->prepare($build_tab4_sql("1=1"));
+        $stmt_top_sub->execute([]);
+        $top_sub_rows = $stmt_top_sub->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     $top_subscribers_report['subscribers'] = $top_sub_rows;
     $top_subscribers_report['total_subscribers'] = count($top_sub_rows);
@@ -2018,10 +2224,14 @@ try {
     $sum_spend = 0;
     $highest_plans = 0;
     $highest_spend = 0;
+    $highest_official_visits = 0;
+    $highest_non_member_visits = 0;
 
     foreach ($top_sub_rows as $ts_row) {
         $p_cnt = (int)$ts_row['plans_availed'];
         $s_amt = (float)$ts_row['total_spend'];
+        $v_cnt = (int)$ts_row['total_visits'];
+        $m_type = $ts_row['member_type'] ?? 'Non-Member';
         $sum_plans += $p_cnt;
         $sum_spend += $s_amt;
 
@@ -2034,6 +2244,16 @@ try {
             $highest_spend = $s_amt;
             $top_subscribers_report['top_spender_name'] = $ts_row['full_name'];
             $top_subscribers_report['top_spender_amount'] = $s_amt;
+        }
+        if ($m_type === 'Official Member' && $v_cnt > $highest_official_visits) {
+            $highest_official_visits = $v_cnt;
+            $top_subscribers_report['top_official_visitor_name']   = $ts_row['full_name'];
+            $top_subscribers_report['top_official_visitor_visits'] = $v_cnt;
+        }
+        if ($m_type === 'Non-Member' && $v_cnt > $highest_non_member_visits) {
+            $highest_non_member_visits = $v_cnt;
+            $top_subscribers_report['top_non_member_visitor_name']   = $ts_row['full_name'];
+            $top_subscribers_report['top_non_member_visitor_visits'] = $v_cnt;
         }
     }
 
@@ -2616,15 +2836,43 @@ try {
          REPORT 4: TOP SUBSCRIBERS & PLAN ENGAGEMENT REPORT
          ======================================================================= -->
     <div class="report-tab-pane" id="tab-subscribers">
-        <!-- 4 Engagement Highlights Ribbon -->
-        <div class="stats-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-            <!-- Card 1: Top Plan Availer -->
+        <!-- Engagement & Most Visits Highlights Ribbon -->
+        <div class="stats-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <!-- Card 1: Most Visits (Official Member) -->
+            <div class="card stat-card" style="padding: 1.25rem; border: 1px solid rgba(16,185,129,0.28);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
+                    <span class="stat-label" style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Most Visits (Official Member)</span>
+                    <div class="stat-icon green" style="width:34px; height:34px; font-size:0.95rem; margin:0;"><i class="fas fa-id-card"></i></div>
+                </div>
+                <h2 class="stat-value" style="font-size:1.25rem; font-weight:800; color:#10b981; margin:0; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="<?php echo htmlspecialchars($top_subscribers_report['top_official_visitor_name']); ?>">
+                    <?php echo htmlspecialchars($top_subscribers_report['top_official_visitor_name']); ?>
+                </h2>
+                <p class="stat-meta" style="font-size:0.75rem; margin-top:0.35rem; color:#10b981; font-weight:800;">
+                    <i class="fas fa-user-check"></i> <?php echo number_format($top_subscribers_report['top_official_visitor_visits']); ?> <?php echo $top_subscribers_report['top_official_visitor_visits'] == 1 ? 'Visit' : 'Visits'; ?>
+                </p>
+            </div>
+
+            <!-- Card 2: Most Visits (Non-Member) -->
+            <div class="card stat-card" style="padding: 1.25rem; border: 1px solid rgba(56,189,248,0.28);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
+                    <span class="stat-label" style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Most Visits (Non-Member)</span>
+                    <div class="stat-icon blue" style="width:34px; height:34px; font-size:0.95rem; margin:0;"><i class="fas fa-person-walking"></i></div>
+                </div>
+                <h2 class="stat-value" style="font-size:1.25rem; font-weight:800; color:#38bdf8; margin:0; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="<?php echo htmlspecialchars($top_subscribers_report['top_non_member_visitor_name']); ?>">
+                    <?php echo htmlspecialchars($top_subscribers_report['top_non_member_visitor_name']); ?>
+                </h2>
+                <p class="stat-meta" style="font-size:0.75rem; margin-top:0.35rem; color:#38bdf8; font-weight:800;">
+                    <i class="fas fa-user-check"></i> <?php echo number_format($top_subscribers_report['top_non_member_visitor_visits']); ?> <?php echo $top_subscribers_report['top_non_member_visitor_visits'] == 1 ? 'Visit' : 'Visits'; ?>
+                </p>
+            </div>
+
+            <!-- Card 3: Top Plan Availer -->
             <div class="card stat-card" style="padding: 1.25rem;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
                     <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Top Plan Subscriber</span>
                     <div class="stat-icon" style="width:34px; height:34px; font-size:0.95rem; margin:0; background:rgba(234,179,8,0.15); color:#eab308;"><i class="fas fa-crown"></i></div>
                 </div>
-                <h2 class="stat-value" style="font-size:1.3rem; font-weight:800; color:var(--text-main); margin:0; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="<?php echo htmlspecialchars($top_subscribers_report['top_availer_name']); ?>">
+                <h2 class="stat-value" style="font-size:1.25rem; font-weight:800; color:var(--text-main); margin:0; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="<?php echo htmlspecialchars($top_subscribers_report['top_availer_name']); ?>">
                     <?php echo htmlspecialchars($top_subscribers_report['top_availer_name']); ?>
                 </h2>
                 <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:#eab308; font-weight:700;">
@@ -2632,13 +2880,13 @@ try {
                 </p>
             </div>
 
-            <!-- Card 2: Highest Spender -->
+            <!-- Card 4: Highest Spender -->
             <div class="card stat-card" style="padding: 1.25rem;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
                     <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Highest Spending Member</span>
                     <div class="stat-icon green" style="width:34px; height:34px; font-size:0.95rem; margin:0;"><i class="fas fa-money-bill-trend-up"></i></div>
                 </div>
-                <h2 class="stat-value" style="font-size:1.3rem; font-weight:800; color:#52b788; margin:0; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="<?php echo htmlspecialchars($top_subscribers_report['top_spender_name']); ?>">
+                <h2 class="stat-value" style="font-size:1.25rem; font-weight:800; color:#52b788; margin:0; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="<?php echo htmlspecialchars($top_subscribers_report['top_spender_name']); ?>">
                     <?php echo htmlspecialchars($top_subscribers_report['top_spender_name']); ?>
                 </h2>
                 <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:#52b788; font-weight:700;">
@@ -2646,27 +2894,13 @@ try {
                 </p>
             </div>
 
-            <!-- Card 3: Avg Plans per Member -->
+            <!-- Card 5: Total Subscribers -->
             <div class="card stat-card" style="padding: 1.25rem;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
-                    <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Average Plans / Member</span>
-                    <div class="stat-icon blue" style="width:34px; height:34px; font-size:0.95rem; margin:0;"><i class="fas fa-chart-pie"></i></div>
-                </div>
-                <h2 class="stat-value" style="font-size:1.4rem; font-weight:800; color:#38bdf8; margin:0;">
-                    <?php echo $top_subscribers_report['avg_plans']; ?> <span style="font-size:0.85rem; font-weight:600; color:var(--text-muted);">plans / member</span>
-                </h2>
-                <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:var(--text-muted);">
-                    <i class="fas fa-receipt"></i> <?php echo number_format($top_subscribers_report['total_plans']); ?> total plans availed
-                </p>
-            </div>
-
-            <!-- Card 4: Total Subscribers -->
-            <div class="card stat-card" style="padding: 1.25rem;">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
-                    <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Active Subscribers Population</span>
+                    <span class="stat-label" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Engaged Members</span>
                     <div class="stat-icon" style="width:34px; height:34px; font-size:0.95rem; margin:0; background:rgba(192,132,252,0.15); color:#c084fc;"><i class="fas fa-users-viewfinder"></i></div>
                 </div>
-                <h2 class="stat-value" style="font-size:1.4rem; font-weight:800; color:#c084fc; margin:0;">
+                <h2 class="stat-value" style="font-size:1.3rem; font-weight:800; color:#c084fc; margin:0;">
                     <?php echo number_format($top_subscribers_report['total_subscribers']); ?>
                 </h2>
                 <p class="stat-meta" style="font-size:0.72rem; margin-top:0.35rem; color:var(--text-muted);">
@@ -2675,25 +2909,33 @@ try {
             </div>
         </div>
 
-        <!-- Top Subscribers Analytics Table Card -->
+        <!-- Top Subscribers & Gym Visitors Analytics Table Card -->
         <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.75rem;">
                 <div>
-                    <h3 class="section-title" style="margin:0;"><i class="fas fa-medal" style="color:#eab308;"></i> Top Subscribers &amp; Member Engagement Ranking</h3>
-                    <p style="margin:0.2rem 0 0 0; font-size:0.78rem; color:var(--text-muted);">Ranked analytical breakdown of plan subscriptions, cumulative spend, favorite plans, and check-in engagement.</p>
+                    <h3 class="section-title" style="margin:0;"><i class="fas fa-medal" style="color:#eab308;"></i> Top Gym Visitors &amp; Subscribers Ranking (Member vs. Non-Member)</h3>
+                    <p style="margin:0.2rem 0 0 0; font-size:0.78rem; color:var(--text-muted);">Ranked breakdown of gym visit counts (Official Member &amp; Non-Member), plan subscriptions, and cumulative spend.</p>
                 </div>
                 <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-                    <div style="position:relative; width:220px;">
+                    <div style="position:relative; width:200px;">
                         <input type="text" id="subscribers-search-input" placeholder="Search members..." onkeyup="filterSubscribersTable()" class="form-control" style="margin:0; padding:0.4rem 0.75rem 0.4rem 2rem; font-size:0.8rem;">
                         <i class="fas fa-search" style="position:absolute; left:0.75rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.75rem;"></i>
                     </div>
+                    <select id="subscribers-type-select" onchange="filterSubscribersTable()" class="form-control" style="margin:0; padding:0.4rem 0.75rem; font-size:0.8rem; width:auto;">
+                        <option value="all">All Types (Member &amp; Non-Member)</option>
+                        <option value="official member">🏅 Official Members Only</option>
+                        <option value="non-member">⚪ Non-Members Only</option>
+                    </select>
                     <select id="subscribers-sort-select" onchange="sortSubscribersTable(this.value)" class="form-control" style="margin:0; padding:0.4rem 0.75rem; font-size:0.8rem; width:auto;">
+                        <option value="visits-desc">Sort: Most Visits (Check-ins)</option>
                         <option value="plans-desc">Sort: Most Plans Availed</option>
                         <option value="spend-desc">Sort: Highest Spending</option>
-                        <option value="visits-desc">Sort: Most Check-ins</option>
                         <option value="date-desc">Sort: Latest Availment</option>
                         <option value="name-asc">Sort: Name (A-Z)</option>
                     </select>
+                    <button class="btn btn-primary" onclick="openExportModal('top_visitors')" style="font-size:0.8rem; padding:0.4rem 0.85rem;">
+                        <i class="fas fa-file-export"></i> Export Most Visits
+                    </button>
                     <button class="btn btn-outline" onclick="openExportModal('top_subscribers')" style="font-size:0.8rem; padding:0.4rem 0.85rem;">
                         <i class="fas fa-download"></i> Export Analytics
                     </button>
@@ -2706,25 +2948,28 @@ try {
                         <tr>
                             <th style="width:50px; text-align:center;">Rank</th>
                             <th>Member</th>
+                            <th style="text-align:center;">Member Type</th>
+                            <th style="text-align:center;">Number of Visits</th>
                             <th>Contact &amp; Email</th>
                             <th style="text-align:center;">Status</th>
                             <th style="text-align:center;">Plans Availed</th>
                             <th style="text-align:right;">Total Spend</th>
                             <th>Favorite Plan</th>
                             <th>Last Availment</th>
-                            <th style="text-align:center;">Check-ins</th>
                             <th style="text-align:center;">Engagement Tier</th>
                             <th style="text-align:center;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="top-subscribers-tbody">
                         <?php if (empty($top_subscribers_report['subscribers'])): ?>
-                        <tr><td colspan="11" style="text-align:center; padding:2.5rem; color:var(--text-muted);"><i class="fas fa-folder-open" style="font-size:1.8rem; color:#cbd5e1; display:block; margin-bottom:0.5rem;"></i>No subscriber records found for the selected timeframe.</td></tr>
+                        <tr><td colspan="12" style="text-align:center; padding:2.5rem; color:var(--text-muted);"><i class="fas fa-folder-open" style="font-size:1.8rem; color:#cbd5e1; display:block; margin-bottom:0.5rem;"></i>No subscriber records found for the selected timeframe.</td></tr>
                         <?php else: ?>
                         <?php foreach ($top_subscribers_report['subscribers'] as $s_idx => $sr): 
                             $p_cnt = (int)$sr['plans_availed'];
                             $s_amt = (float)$sr['total_spend'];
                             $v_cnt = (int)$sr['total_visits'];
+                            $m_type = $sr['member_type'] ?? 'Non-Member';
+                            $is_off_mem = ($m_type === 'Official Member');
                             $last_d = $sr['last_availment_date'] ? date('M d, Y', strtotime($sr['last_availment_date'])) : '—';
 
                             $rank_badge = '';
@@ -2763,6 +3008,7 @@ try {
                             style="<?php echo $row_bg; ?>"
                             data-name="<?php echo strtolower(htmlspecialchars($sr['full_name'])); ?>"
                             data-id="<?php echo strtolower(htmlspecialchars($sr['membership_id'])); ?>"
+                            data-member-type="<?php echo strtolower(htmlspecialchars($m_type)); ?>"
                             data-plans="<?php echo $p_cnt; ?>"
                             data-spend="<?php echo $s_amt; ?>"
                             data-visits="<?php echo $v_cnt; ?>"
@@ -2782,6 +3028,22 @@ try {
                                         </div>
                                     </div>
                                 </div>
+                            </td>
+                            <td style="text-align:center;">
+                                <?php if ($is_off_mem): ?>
+                                    <span class="badge" style="background:rgba(16,185,129,0.15); color:#059669; border:1px solid rgba(16,185,129,0.3); font-weight:700; font-size:0.72rem; padding:4px 9px;">
+                                        <i class="fas fa-id-card"></i> Official Member
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge" style="background:rgba(100,116,139,0.12); color:#64748b; border:1px solid rgba(100,116,139,0.25); font-weight:600; font-size:0.72rem; padding:4px 9px;">
+                                        <i class="fas fa-user"></i> Non-Member
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <td style="text-align:center;">
+                                <span class="badge" style="background:rgba(56,189,248,0.12); color:#0284c7; font-weight:800; font-size:0.78rem; padding:4px 10px; border-radius:8px;">
+                                    <i class="fas fa-user-check" style="margin-right:3px;"></i> <?php echo number_format($v_cnt); ?> <?php echo $v_cnt === 1 ? 'visit' : 'visits'; ?>
+                                </span>
                             </td>
                             <td style="font-size:0.78rem;">
                                 <div><i class="fas fa-phone" style="font-size:0.7rem; color:var(--text-muted); width:14px;"></i> <?php echo htmlspecialchars($sr['contact_number'] ?: '—'); ?></div>
@@ -2808,11 +3070,6 @@ try {
                             </td>
                             <td style="font-size:0.78rem; color:var(--text-muted); white-space:nowrap;">
                                 <i class="fas fa-calendar-check" style="margin-right:4px;"></i> <?php echo $last_d; ?>
-                            </td>
-                            <td style="text-align:center;">
-                                <span class="badge" style="background:rgba(56,189,248,0.12); color:#0284c7; font-weight:800; font-size:0.78rem; padding:3px 8px; border-radius:8px;">
-                                    <?php echo number_format($v_cnt); ?>
-                                </span>
                             </td>
                             <td style="text-align:center;">
                                 <?php echo $tier_badge; ?>
@@ -2859,9 +3116,10 @@ try {
                     <option value="weekly_revenue">2. Weekly Revenue Comparison</option>
                     <option value="financial_summary">3. Financial Profitability &amp; Net Income Summary</option>
                     <option value="top_subscribers">4. Top Subscribers &amp; Member Engagement</option>
-                    <option value="expenses">5. Gym Operational Expenses Ledger</option>
-                    <option value="members">Master Members Directory</option>
-                    <option value="attendance">Raw Attendance Logs</option>
+                    <option value="top_visitors">5. Most Gym Visits Ranking (Official Member &amp; Non-Member)</option>
+                    <option value="expenses">6. Gym Operational Expenses Ledger</option>
+                    <option value="members">Master Members Directory (with Member Type &amp; Visits)</option>
+                    <option value="attendance">Raw Attendance Logs (with Member Type &amp; Visits)</option>
                     <option value="revenue">Master Payments &amp; Revenue</option>
                 </select>
             </div>
@@ -3176,12 +3434,15 @@ if (expCatCanvas) {
 // ── Top Subscribers Client-Side Search & Sort ────────────────────────────────
 function filterSubscribersTable() {
     const q = (document.getElementById('subscribers-search-input')?.value || '').toLowerCase().trim();
+    const typeFilter = (document.getElementById('subscribers-type-select')?.value || 'all').toLowerCase().trim();
     const rows = document.querySelectorAll('.subscriber-row');
     rows.forEach(row => {
         const name = row.getAttribute('data-name') || '';
         const id = row.getAttribute('data-id') || '';
-        const matches = !q || name.includes(q) || id.includes(q);
-        row.style.display = matches ? '' : 'none';
+        const mType = row.getAttribute('data-member-type') || '';
+        const matchesQuery = !q || name.includes(q) || id.includes(q);
+        const matchesType = (typeFilter === 'all') || (mType === typeFilter);
+        row.style.display = (matchesQuery && matchesType) ? '' : 'none';
     });
 }
 

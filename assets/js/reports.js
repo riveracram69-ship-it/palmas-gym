@@ -67,6 +67,9 @@ function applyPreset(preset) {
 function openExportModal(type) {
     const select = document.getElementById('export-type-select');
     if (select && type) select.value = type;
+    if (type === 'top_visitors' || type === 'top_subscribers' || type === 'members') {
+        setExportModalPreset('all');
+    }
     const btn = document.getElementById('btn-export-submit');
     if (btn) {
         btn.classList.remove('is-loading');
