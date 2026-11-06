@@ -237,9 +237,11 @@ $active = array_filter($members, function($m) {
                             <a href="view-member.php?id=<?php echo $m['id']; ?>" class="btn btn-outline btn-icon" title="View Profile" aria-label="View Profile">
                                 <i class="fas fa-eye"></i>
                             </a>
+                            <?php if (is_admin()): ?>
                             <a href="edit-member.php?id=<?php echo $m['id']; ?>" class="btn btn-outline btn-icon" title="Edit" aria-label="Edit Member">
                                 <i class="fas fa-pen-to-square"></i>
                             </a>
+                            <?php endif; ?>
                             <a href="renew-member.php?id=<?php echo $m['id']; ?>" class="btn btn-outline btn-icon" title="Renew Subscription" style="color:var(--accent);border-color:rgba(45,106,79,0.2);" aria-label="Renew Subscription">
                                 <i class="fas fa-rotate-right"></i>
                             </a>

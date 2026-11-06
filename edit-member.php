@@ -2,6 +2,7 @@
 $page_title = 'Edit Member';
 include 'includes/header.php';
 include 'includes/sidebar.php';
+require_admin(); // Restrict member editing strictly to Administrators
 
 $id = intval($_GET['id'] ?? 0);
 if (!$id) { echo "<script>window.location.href='members.php';</script>"; exit; }
